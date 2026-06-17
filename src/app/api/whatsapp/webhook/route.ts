@@ -318,7 +318,7 @@ export async function POST(req: NextRequest) {
             }
 
             if (matchedOrder) {
-              const statusRaw = String(matchedOrder.STATUS || matchedOrder.status || 'pending');
+              const statusRaw = String(matchedOrder.STATUS || matchedOrder.status || 'pending') as string;
               const statusLabel = STATUS_LABELS[statusRaw] || statusRaw;
               const dateStr = matchedOrder.$createdAt ? new Date(String(matchedOrder.$createdAt)).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '?';
               
@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
             const id    = o.ORDERCODE || String(o.$id || '').slice(-6).toUpperCase();
             const name  = o.CUSTOMERNAME || 'Sin nombre';
             const total = o.total || o.TOTAL || 0;
-            const statusRaw = String(o.STATUS || o.status || 'pending');
+            const statusRaw = String(o.STATUS || o.status || 'pending') as string;
             const status = STATUS_LABELS[statusRaw] || statusRaw;
             const date  = o.$createdAt ? new Date(String(o.$createdAt)).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '?';
             return `#${id} | ${name} | $${Number(total).toLocaleString('es-CL')} | ${status} | ${date}`;
