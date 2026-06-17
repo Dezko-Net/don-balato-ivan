@@ -450,7 +450,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e396bf' }}><X size={14} /></button>}
           </div>
 
-          {/* Selector de Categorías en Toolbar */}
+          <div className="pk-toolbar-actions">
+            {/* Selector de Categorías en Toolbar */}
           {!lockCategoryId && (
             <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
               <select
@@ -544,6 +545,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           <div className="pk-view-toggle" style={{ display: 'flex', background: '#fff', borderRadius: 14, border: '1.5px solid #e5e7eb', overflow: 'hidden' }}>
             <button onClick={() => setView('grid')} style={{ padding: '11px 13px', background: view === 'grid' ? '#f8f9fa' : 'transparent', color: view === 'grid' ? '#e396bf' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Grid3x3 size={16} /></button>
             <button onClick={() => setView('list')} style={{ padding: '11px 13px', background: view === 'list' ? '#f8f9fa' : 'transparent', color: view === 'list' ? '#e396bf' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><List size={16} /></button>
+          </div>
           </div>
         </div>
 
@@ -886,35 +888,22 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .pk-toolbar-select-wrap,
-        .pk-filters-btn,
-        .pk-sort-wrap,
-        .pk-view-toggle {
-          transition: opacity 0.25s ease, max-height 0.25s ease, max-width 0.25s ease, transform 0.25s ease, margin 0.25s ease, padding 0.25s ease;
-          max-height: 80px;
-          max-width: 300px;
+        .pk-toolbar-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          align-items: center;
+          transition: opacity 0.3s ease, max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
+          max-height: 150px;
           opacity: 1;
-          transform: scale(1) translateY(0);
+          transform: translateY(0);
           overflow: hidden;
         }
         
-        .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-select-wrap,
-        .pk-toolbar.pk-toolbar-scrolled .pk-filters-btn,
-        .pk-toolbar.pk-toolbar-scrolled .pk-sort-wrap,
-        .pk-toolbar.pk-toolbar-scrolled .pk-view-toggle {
+        .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-actions {
           opacity: 0;
           max-height: 0 !important;
-          max-width: 0 !important;
-          margin-top: 0 !important;
-          margin-bottom: 0 !important;
-          margin-left: 0 !important;
-          margin-right: 0 !important;
-          padding-top: 0 !important;
-          padding-bottom: 0 !important;
-          padding-left: 0 !important;
-          padding-right: 0 !important;
-          border-width: 0 !important;
-          transform: scale(0.85) translateY(-10px);
+          transform: translateY(-10px);
           pointer-events: none;
         }
         .pk-desktop-only { display: block; }
