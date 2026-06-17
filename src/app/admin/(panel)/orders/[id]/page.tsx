@@ -218,6 +218,33 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleUpdateQty = async (index: number, newQty: number) => {
+    if (!order) return;
+    let parsedItems: any[] = [];
+    try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    const targetItem = parsedItems[index];
+    if (!targetItem) return;
+
+    targetItem.qty = newQty;
+    targetItem.total = targetItem.price * newQty;
+
+    const newSubtotal = parsedItems.reduce((s, x) => s + (x.price * x.qty), 0);
+    const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        ITEMS: JSON.stringify(parsedItems),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newTotal
+      });
+      await load();
+    } catch (err: any) {
+      alert('Error al actualizar cantidad: ' + err.message);
+    }
+  };
+
   const handleOpenSimilarSearch = async (index: number) => {
     const oldItem = items[index];
     if (!oldItem) return;
@@ -1711,7 +1738,21 @@ export default function OrderDetailPage() {
                     <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
                       <span className="text-[10px] sm:text-xs text-gray-500">{fmt(it.price)} c/u</span>
                       <span className="text-gray-300">×</span>
-                      <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{it.qty}</span>
+                      <div className="flex items-center gap-1 no-print">
+                        <input
+                          type="number"
+                          min={1}
+                          value={it.qty}
+                          onChange={async (e) => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val >= 1) {
+                              await handleUpdateQty(i, val);
+                            }
+                          }}
+                          className="w-12 px-1 py-0.5 border border-gray-300 rounded text-center focus:ring-1 focus:ring-indigo-500 focus:outline-none font-bold text-xs bg-white text-gray-800"
+                        />
+                      </div>
+                      <span className="hidden print:inline text-[10px] sm:text-xs font-semibold text-gray-700">{it.qty}</span>
                       {it.originalPrice && it.originalPrice !== it.price && (
                         <span className="text-[9px] sm:text-[10px] line-through text-gray-300">{fmt(it.originalPrice)}</span>
                       )}
