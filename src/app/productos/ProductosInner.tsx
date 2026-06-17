@@ -865,7 +865,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           position: sticky !important;
           top: 86px !important;
           z-index: 20 !important;
-          transition: all 0.3s ease;
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .pk-toolbar.pk-toolbar-scrolled {
           position: fixed !important;
@@ -876,12 +876,46 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           z-index: 999 !important;
           max-width: 1568px;
           margin: 0 auto;
+          background-color: rgba(255, 255, 255, 0.95) !important;
+          box-shadow: 0 10px 30px rgba(227,150,191,0.18) !important;
+          border-radius: 18px !important;
+          padding: 8px 12px !important;
         }
+        
+        .pk-toolbar-search {
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .pk-toolbar-select-wrap,
+        .pk-filters-btn,
+        .pk-sort-wrap,
+        .pk-view-toggle {
+          transition: opacity 0.25s ease, max-height 0.25s ease, max-width 0.25s ease, transform 0.25s ease, margin 0.25s ease, padding 0.25s ease;
+          max-height: 80px;
+          max-width: 300px;
+          opacity: 1;
+          transform: scale(1) translateY(0);
+          overflow: hidden;
+        }
+        
         .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-select-wrap,
         .pk-toolbar.pk-toolbar-scrolled .pk-filters-btn,
         .pk-toolbar.pk-toolbar-scrolled .pk-sort-wrap,
         .pk-toolbar.pk-toolbar-scrolled .pk-view-toggle {
-          display: none !important;
+          opacity: 0;
+          max-height: 0 !important;
+          max-width: 0 !important;
+          margin-top: 0 !important;
+          margin-bottom: 0 !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          border-width: 0 !important;
+          transform: scale(0.85) translateY(-10px);
+          pointer-events: none;
         }
         .pk-desktop-only { display: block; }
         .pk-mobile-only { display: none; }
