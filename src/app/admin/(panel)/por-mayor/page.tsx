@@ -15,7 +15,9 @@ import {
   Boxes, 
   Layers,
   AlertCircle,
-  Undo2
+  Undo2,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { 
   getServices, 
@@ -24,6 +26,10 @@ import {
   CATEGORIES_COLLECTION_ID 
 } from '@/lib/appwrite-admin';
 import { Product, Category } from '@/types/admin';
+
+const PRODUCTS_CACHE_KEY = 'yaxsel_pormayor_products_cache';
+const CATEGORIES_CACHE_KEY = 'yaxsel_pormayor_categories_cache';
+const CACHE_TIME_KEY = 'yaxsel_pormayor_cache_time';
 
 function getSku(p: Product): string {
   const featMatch = (typeof p.FEATURES === 'string') ? p.FEATURES.match(/SKU:\s*(.+)/i) : null;
@@ -42,6 +48,10 @@ export default function PorMayorPage() {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
   
+  // Cache info
+  const [cacheTime, setCacheTime] = useState<string | null>(null);
+  const [isFromCache, setIsFromCache] = useState(false);
+  
   // States for inline editing (local memory, no network requests while typing)
   const [editPackQty, setEditPackQty] = useState<Record<string, string>>({});
   const [editWholesalePrice, setEditWholesalePrice] = useState<Record<string, string>>({});
@@ -55,7 +65,8 @@ export default function PorMayorPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<Record<string, 'success' | 'error' | null>>({});
 
-  const loadData = useCallback(async () => {
+  // Function to load fresh data from Appwrite
+  const loadFreshData = async () => {
     setLoading(true);
     try {
       const { databases } = getServices();
@@ -63,7 +74,8 @@ export default function PorMayorPage() {
       
       // Load categories
       const catResp = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
-      setCategories(catResp.documents as unknown as Category[]);
+      const freshCats = catResp.documents as unknown as Category[];
+      setCategories(freshCats);
 
       // Load all products
       const all: Product[] = [];
@@ -77,23 +89,62 @@ export default function PorMayorPage() {
         cursor = res.documents[res.documents.length - 1].$id;
       }
       setProducts(all);
+
+      // Save to localStorage cache
+      const nowStr = new Date().toLocaleString('es-CL');
+      localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(all));
+      localStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(freshCats));
+      localStorage.setItem(CACHE_TIME_KEY, nowStr);
+      
+      setCacheTime(nowStr);
+      setIsFromCache(false);
     } catch (e) {
       console.error('Error loading data:', e);
+      alert('Error al recargar catálogo desde Appwrite');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Initial load check cache first
+  useEffect(() => {
+    const cachedProds = localStorage.getItem(PRODUCTS_CACHE_KEY);
+    const cachedCats = localStorage.getItem(CATEGORIES_CACHE_KEY);
+    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+
+    if (cachedProds && cachedCats && cachedTime) {
+      try {
+        setProducts(JSON.parse(cachedProds));
+        setCategories(JSON.parse(cachedCats));
+        setCacheTime(cachedTime);
+        setIsFromCache(true);
+        setLoading(false);
+      } catch (err) {
+        console.warn('Failed to parse cached data, fetching fresh:', err);
+        loadFreshData();
+      }
+    } else {
+      loadFreshData();
+    }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Sync state modifications to cache
+  const updateCacheLocally = (updatedProducts: Product[]) => {
+    try {
+      localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(updatedProducts));
+      const nowStr = new Date().toLocaleString('es-CL') + ' (Actualizado)';
+      localStorage.setItem(CACHE_TIME_KEY, nowStr);
+      setCacheTime(nowStr);
+    } catch (e) {
+      console.error('Failed to sync cache locally:', e);
+    }
+  };
 
   // Determine modified product IDs
   const modifiedIds = Array.from(new Set([
     ...Object.keys(editPackQty),
     ...Object.keys(editWholesalePrice)
   ])).filter(id => {
-    // Only count as modified if it actually differs from current value
     const prod = products.find(p => p.$id === id);
     if (!prod) return false;
     
@@ -135,7 +186,9 @@ export default function PorMayorPage() {
 
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, updateData);
 
-      setProducts(prev => prev.map(p => p.$id === productId ? { ...p, ...updateData } : p));
+      const updated = products.map(p => p.$id === productId ? { ...p, ...updateData } : p);
+      setProducts(updated);
+      updateCacheLocally(updated);
       
       // Clean up edited inputs for this product
       setEditPackQty(prev => { const n = { ...prev }; delete n[productId]; return n; });
@@ -202,16 +255,17 @@ export default function PorMayorPage() {
       } finally {
         setSavingId(null);
         setBulkProgress(prev => ({ ...prev, current: i + 1 }));
-        // Brief sleep to prevent Appwrite rate limits
         await delay(100);
       }
     }
 
     // Apply all successful updates to local state
-    setProducts(prev => prev.map(p => {
+    const updated = products.map(p => {
       const update = successfulUpdates[p.$id];
       return update ? { ...p, ...update } : p;
-    }));
+    });
+    setProducts(updated);
+    updateCacheLocally(updated);
 
     // Clear edit inputs for successfully updated products
     setEditPackQty(prev => {
@@ -263,17 +317,13 @@ export default function PorMayorPage() {
   // Group filtered lists by PACKQTY
   const withUnitsList = filtered.filter(p => {
     const editedQty = editPackQty[p.$id];
-    if (editedQty !== undefined) {
-      return parseInt(editedQty, 10) > 0;
-    }
+    if (editedQty !== undefined) return parseInt(editedQty, 10) > 0;
     return p.PACKQTY && p.PACKQTY > 0;
   });
 
   const withoutPackagingList = filtered.filter(p => {
     const editedQty = editPackQty[p.$id];
-    if (editedQty !== undefined) {
-      return !editedQty || parseInt(editedQty, 10) <= 0;
-    }
+    if (editedQty !== undefined) return !editedQty || parseInt(editedQty, 10) <= 0;
     return !p.PACKQTY || p.PACKQTY <= 0;
   });
 
@@ -292,7 +342,7 @@ export default function PorMayorPage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto py-4 relative">
       
-      {/* Floating Bulk Action Bar (fixed at the bottom when there are modifications) */}
+      {/* Floating Bulk Action Bar */}
       {modifiedIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="flex flex-col">
@@ -343,14 +393,25 @@ export default function PorMayorPage() {
             <p className="text-sm text-gray-500 mt-0.5">Control de productos por cantidad de unidades y asignación de embalaje</p>
           </div>
         </div>
-        <button
-          onClick={loadData}
-          disabled={loading || isBulkSaving}
-          className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition flex items-center gap-2 shadow-sm disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          Recargar Catálogo
-        </button>
+        
+        <div className="flex items-center gap-3">
+          {cacheTime && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs text-gray-500 font-medium">
+              <Database className="w-3.5 h-3.5 text-gray-400" />
+              <span>Caché: {cacheTime}</span>
+              {isFromCache && <span className="bg-indigo-50 text-indigo-600 px-1 py-0.2 rounded text-[10px] ml-1">Local</span>}
+            </div>
+          )}
+          <button
+            onClick={loadFreshData}
+            disabled={loading || isBulkSaving}
+            className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 rounded-xl text-sm font-semibold text-gray-700 transition flex items-center gap-2 shadow-sm disabled:opacity-50"
+            title="Borrar Caché y Recargar de la BD"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Borrar Caché y Sincronizar
+          </button>
+        </div>
       </div>
 
       {/* Bulk Error Log Display */}
