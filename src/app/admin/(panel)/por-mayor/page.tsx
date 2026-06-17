@@ -25,7 +25,7 @@ import {
 import { Product, Category } from '@/types/admin';
 
 function getSku(p: Product): string {
-  const featMatch = p.FEATURES?.match(/SKU:\s*(.+)/i);
+  const featMatch = (typeof p.FEATURES === 'string') ? p.FEATURES.match(/SKU:\s*(.+)/i) : null;
   if (featMatch) return featMatch[1].trim();
   const tagParts = Array.isArray(p.TAGS)
     ? p.TAGS
