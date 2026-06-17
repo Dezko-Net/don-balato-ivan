@@ -86,12 +86,12 @@ const ORDER_STATUS_COPY: Record<
     buildMessage: (c) => `Tu pedido ${c} está en proceso de negociación. Te contactaremos pronto.`,
   },
   preparing_shipping: {
-    title: 'Preparando etiqueta de envío',
-    buildMessage: (c) => `Estamos preparando la etiqueta de envío para tu pedido ${c}.`,
+    title: 'Etiqueta de envío lista',
+    buildMessage: (c) => `La etiqueta de despacho de tu pedido ${c} ya está lista.`,
   },
   ready_to_ship: {
-    title: 'Etiqueta de envío lista',
-    buildMessage: (c) => `La etiqueta de envío para tu pedido ${c} está lista.`,
+    title: 'Pedido listo para enviar',
+    buildMessage: (c) => `Tu pedido ${c} ya está preparado y etiquetado para ser retirado por la agencia.`,
   },
   shipped: {
     title: 'Pedido enviado',

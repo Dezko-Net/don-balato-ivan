@@ -8,8 +8,14 @@ const WA_API_BASE = `https://graph.facebook.com/v20.0`;
 
 import { serverListDocuments, serverCreateDocument, serverDeleteDocument } from './appwrite-server';
 import { ADMIN_CHAT_COLLECTION_ID } from './appwrite-admin';
+import crypto from 'crypto';
 
 const MAX_HISTORY = 20; // máx turnos a mantener por usuario
+
+export function getWhatsAppDocId(msgId: string, role: 'user' | 'assistant'): string {
+  const hash = crypto.createHash('md5').update(msgId).digest('hex');
+  return role === 'user' ? `u_${hash}` : `a_${hash}`;
+}
 
 export async function getHistory(phone: string): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
   try {
@@ -40,7 +46,7 @@ export async function addToHistory(
 ): Promise<void> {
   try {
     const docId = msgId 
-      ? (role === 'user' ? `wa_msg_${msgId}` : `wa_reply_${msgId}`)
+      ? getWhatsAppDocId(msgId, role)
       : `wa_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     
     await serverCreateDocument(ADMIN_CHAT_COLLECTION_ID, docId, {

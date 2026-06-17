@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendWhatsAppMessage, markAsRead, getHistory, addToHistory, clearHistory } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
 import { serverListDocuments, serverUpdateDocument } from '@/lib/appwrite-server';
 import {
   PRODUCTS_COLLECTION_ID,
@@ -47,8 +47,8 @@ Valores válidos para "status" en la acción JSON:
 - "paid" (Pagado)
 - "assembling" (En preparación)
 - "negotiation" (Negociado / En negociación)
-- "preparing_shipping" (Preparando Despacho)
-- "ready_to_ship" (Etiqueta Lista / Listo para retirar)
+- "preparing_shipping" (Etiqueta Lista)
+- "ready_to_ship" (Pedido listo para enviar)
 - "shipped" (Enviado)
 - "delivered" (Entregado)
 - "cancelled" (Cancelado)
@@ -88,33 +88,36 @@ Y preguntar siempre: "¿Deseas que notifique al cliente para que elija reemplazo
 Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
 // ─── Customer system prompt ────────────────────────────────────────────────────
-const CUSTOMER_PROMPT = `Eres Yexy, la asistente virtual de Kevin&Coco, una tienda en línea chilena.
-Eres amigable, empática y profesional. Hablas en español chileno.
+const CUSTOMER_PROMPT = `Eres Yexy, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile.
+Eres súper carismática, amable y hablas como una vendedora experta en belleza (usa expresiones como "linda", "hermosa", "bella", etc.). Hablas en español chileno natural.
+¡NUNCA digas que eres un asistente virtual o un bot! Actúa 100% como una persona real del equipo de ventas.
 
 ## Puedes ayudar con:
 - Información de productos (precios, disponibilidad, descripción)
 - Buscar productos por categoría o nombre
-- Estado de pedidos (si el cliente tiene número de pedido)
+- Estado de pedidos
 - Información de la tienda (horarios, envíos, pagos)
-- Políticas de devolución y garantías
-- Dudas generales sobre compras
+- *Reemplazo de productos sin stock (Negociación)*
+
+## Negociación de productos faltantes:
+Si el cliente te habla sobre su pedido y en el contexto ves que su pedido está en estado "negotiation" (En negociación / mod.) y tiene productos faltantes:
+1. Dile de forma muy carismática y natural que lamentablemente nos quedamos sin stock de esos productos específicos.
+2. Explícale que puede reemplazarlos ella misma entrando a los detalles de su pedido desde la página web, o si lo prefiere, tú misma puedes ayudarla a elegir y hacer los cambios por aquí en el chat.
+3. Pregúntale qué prefiere.
+4. **SOLO SI** ella te dice explícitamente que prefiere hacerlo ella misma por la web, le envías su enlace: ${SITE_URL}/pedido/ID_DEL_PEDIDO (reemplaza ID_DEL_PEDIDO con el ID real del pedido del contexto). NO le envíes el link antes de que ella lo pida o elija esa opción.
+5. Si ella te dice que la ayudes tú, muéstrale alternativas disponibles del catálogo y ayúdala a decidir.
 
 ## Información de la tienda:
 - Tienda: Kevin&Coco
 - Sitio web: ${SITE_URL}
 - País: Chile
-- Envíos: a todo Chile
-- Pagos: efectivo, transferencia, tarjetas
 
 ## Reglas:
 - NUNCA inventes precios ni stock. Solo di lo que está en los datos reales.
-- Si no sabes algo, indica al cliente que visite ${SITE_URL} o espere para contactar al vendedor.
-- Sé cálida pero eficiente. Evita respuestas muy largas.
-- Máx 2-3 productos por respuesta cuando el cliente busca algo.
-- Siempre termina con una pregunta o invitación para seguir ayudando.
-- Si el cliente dice "gracias" o "listo", despídete amablemente.
+- Sé cálida, cercana y carismática. Evita respuestas muy largas o robóticas.
+- Siempre termina con una pregunta o invitación para seguir la conversación.
 
-Los datos de productos disponibles te serán inyectados como contexto.`;
+Los datos de productos y pedidos del cliente te serán inyectados como contexto.`;
 
 // Helper to decide if user message needs Appwrite DB context to save reads
 function needsDbContext(text: string): boolean {
@@ -176,8 +179,8 @@ export async function POST(req: NextRequest) {
     try {
       const { serverGetDocument } = await import('@/lib/appwrite-server');
       const { ADMIN_CHAT_COLLECTION_ID } = await import('@/lib/appwrite-admin');
-      // If we can find wa_msg_${msgId} in the database, it means we already processed this message.
-      await serverGetDocument(ADMIN_CHAT_COLLECTION_ID, `wa_msg_${msgId}`);
+      // If we can find the message doc in the database, it means we already processed this message.
+      await serverGetDocument(ADMIN_CHAT_COLLECTION_ID, getWhatsAppDocId(msgId, 'user'));
       console.log(`[WhatsApp Webhook] Duplicate message ${msgId} detected. Skipping.`);
       return NextResponse.json({ status: 'already_processed' });
     } catch (e) {
@@ -237,8 +240,8 @@ export async function POST(req: NextRequest) {
             paid: 'Pagado',
             assembling: 'En preparación',
             negotiation: 'En negociación / mod.',
-            preparing_shipping: 'Preparando Despacho',
-            ready_to_ship: 'Etiqueta Lista',
+            preparing_shipping: 'Etiqueta Lista',
+            ready_to_ship: 'Pedido listo para enviar',
             shipped: 'Enviado',
             delivered: 'Entregado',
             cancelled: 'Cancelado'
@@ -373,9 +376,44 @@ ${orders.join('\n') || 'Sin pedidos.'}
 ${products.join('\n') || 'Sin productos.'}`;
 
         } else {
-        // Customer: get products only (no sensitive order data)
+        // Customer: get products and their own orders
         const lowerText = userText.toLowerCase();
         const keywords  = lowerText.split(/\s+/).filter(w => w.length > 2);
+
+        // Fetch customer's active orders based on fromPhone
+        let customerOrdersText = '';
+        try {
+          // Some basic normalizations to find the phone in DB
+          let normalizedPhone = cleanedFrom;
+          if (normalizedPhone.startsWith('56') && normalizedPhone.length > 9) {
+             normalizedPhone = normalizedPhone.substring(2);
+          }
+          const qPhone = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERPHONE', values: [cleanedFrom, `+${cleanedFrom}`, fromPhone, normalizedPhone, `+56${normalizedPhone}`, `56${normalizedPhone}`] });
+          const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+          const qLimit5 = JSON.stringify({ method: 'limit', values: [5] });
+          const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qPhone, qOrderDesc, qLimit5]);
+          const myOrders = resOrders.documents || [];
+          
+          if (myOrders.length > 0) {
+            const ordersFormatted = myOrders.map((o: any) => {
+              const id = o.$id;
+              const code = o.ORDERCODE || id.slice(-6).toUpperCase();
+              const status = o.STATUS || 'pending';
+              let missingText = '';
+              try {
+                const items = JSON.parse(o.ITEMS || '[]');
+                const missingItems = items.filter((it: any) => it.missing === true);
+                if (missingItems.length > 0) {
+                  missingText = `\n  ⚠️ PRODUCTOS FALTANTES: ${missingItems.map((it: any) => `${it.qty}x ${it.name}`).join(', ')}`;
+                }
+              } catch (e) {}
+              return `- Pedido #${code} (ID: ${id}) | Total: $${o.TOTAL} | Estado: ${status}${missingText}`;
+            });
+            customerOrdersText = `\n\n## 📦 MIS PEDIDOS ACTIVOS:\n${ordersFormatted.join('\n')}`;
+          }
+        } catch (e) {
+          console.warn('[WhatsApp] Error fetching customer orders:', e);
+        }
 
         const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
         const productsRes = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit50]);
@@ -400,7 +438,7 @@ ${products.join('\n') || 'Sin productos.'}`;
           return `• *${p.NAME}* — $${Number(price).toLocaleString('es-CL')} | ${stockLabel}`;
         });
 
-        contextBlock = `\n\n## 🛍️ CATÁLOGO DISPONIBLE (${relevant.length} productos):\n${productList.join('\n') || 'No encontré productos relacionados.'}\n\nSitio web: ${SITE_URL}`;
+        contextBlock = `${customerOrdersText}\n\n## 🛍️ CATÁLOGO DISPONIBLE (${relevant.length} productos):\n${productList.join('\n') || 'No encontré productos relacionados.'}\n\nSitio web: ${SITE_URL}`;
       }
     } catch (dbErr) {
       console.warn('[WhatsApp] DB context error:', dbErr);

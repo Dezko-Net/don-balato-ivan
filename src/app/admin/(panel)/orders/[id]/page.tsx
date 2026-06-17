@@ -22,8 +22,8 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
   assembling:         { label: 'Armando',                   bg: 'bg-indigo-50',  text: 'text-indigo-700',   border: 'border-indigo-200',  dot: 'bg-indigo-400',  icon: '📦' },
   negotiation:        { label: 'Negociación',                bg: 'bg-pink-50',    text: 'text-pink-700',     border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
-  preparing_shipping: { label: 'Preparando Etiqueta Envío', bg: 'bg-orange-50',  text: 'text-orange-700',   border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🏷️' },
-  ready_to_ship:      { label: 'Etiqueta Lista',            bg: 'bg-cyan-50',    text: 'text-cyan-700',     border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '📋' },
+  preparing_shipping: { label: 'Etiqueta Lista', bg: 'bg-orange-50',  text: 'text-orange-700',   border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🏷️' },
+  ready_to_ship:      { label: 'Pedido listo para enviar', bg: 'bg-cyan-50',    text: 'text-cyan-700',     border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '📋' },
   shipped:            { label: 'Enviado',                   bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
   delivered:          { label: 'Entregado',                 bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
@@ -76,6 +76,9 @@ export default function OrderDetailPage() {
   const [editingAgency, setEditingAgency] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState('');
   const [savingAgency, setSavingAgency] = useState(false);
+  const [editingTracking, setEditingTracking] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [savingTracking, setSavingTracking] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
   // Out of stock & Replacement states
@@ -225,8 +228,13 @@ export default function OrderDetailPage() {
     const targetItem = parsedItems[index];
     if (!targetItem) return;
 
-    targetItem.qty = newQty;
-    targetItem.total = targetItem.price * newQty;
+    if (newQty === 0) {
+      if (!confirm('¿Eliminar este producto de la orden?')) return;
+      parsedItems.splice(index, 1);
+    } else {
+      targetItem.qty = newQty;
+      targetItem.total = targetItem.price * newQty;
+    }
 
     const newSubtotal = parsedItems.reduce((s, x) => s + (x.price * x.qty), 0);
     const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
@@ -419,19 +427,8 @@ export default function OrderDetailPage() {
         }
       };
 
-      if (missingQty < oldItem.qty) {
-        // Reducir la cantidad del item original
-        parsedItems[replacingIdx] = {
-          ...oldItem,
-          qty: oldItem.qty - missingQty,
-          total: oldItem.price * (oldItem.qty - missingQty)
-        };
-        // Agregar el nuevo producto de reemplazo a la lista
-        parsedItems.push(newReplacedItem);
-      } else {
-        // Reemplazo total
-        parsedItems[replacingIdx] = newReplacedItem;
-      }
+      // Reemplazo total siempre para evitar items duplicados o divididos por error
+      parsedItems[replacingIdx] = newReplacedItem;
 
       const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
       const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
@@ -472,6 +469,7 @@ export default function OrderDetailPage() {
       const o = doc as unknown as Order;
       setOrder(o);
       setAdminNotes(o.adminNotes || '');
+      setTrackingNumber((o as any).TRACKINGNUMBER || '');
 
       // Fetch product stocks
       let items: { id?: string }[] = [];
@@ -838,6 +836,25 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleSaveTracking = async () => {
+    if (!order) return;
+    setSavingTracking(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
+        TRACKINGNUMBER: trackingNumber,
+      });
+      setOrder(prev => prev ? { ...prev, TRACKINGNUMBER: trackingNumber } as any : prev);
+      setEditingTracking(false);
+      alert('Número de seguimiento guardado.');
+    } catch (err: any) {
+      alert('Error al guardar el número de seguimiento: ' + (err.message || err));
+    } finally {
+      setSavingTracking(false);
+    }
+  };
+
   const handleAdminDeleteShippingProof = async () => {
     if (!order) return;
     if (!confirm('¿Seguro que deseas eliminar el comprobante de envío?')) return;
@@ -957,13 +974,18 @@ export default function OrderDetailPage() {
           <div className="bg-white rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-xl border border-gray-100">
             {/* Modal Header */}
             <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-gray-50">
-              <div>
-                <h3 className="font-bold text-gray-900 text-sm sm:text-base">
-                  {isSimilarSearch ? 'Buscar Productos Similares' : 'Reemplazar Producto'}
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Reemplazando: <span className="font-semibold text-gray-700">{items[replacingIdx]?.name}</span> ({fmt(items[replacingIdx]?.price)})
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                  {items[replacingIdx]?.img ? <img src={items[replacingIdx]?.img} className="w-full h-full object-contain p-1" /> : <Package className="w-5 h-5 text-gray-300" />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm sm:text-base">
+                    {isSimilarSearch ? 'Buscar Productos Similares' : 'Reemplazar Producto'}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Reemplazando: <span className="font-semibold text-gray-700">{items[replacingIdx]?.name}</span> ({fmt(items[replacingIdx]?.price)})
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {isSimilarSearch && searchResults.length > 0 && (
@@ -1544,6 +1566,54 @@ export default function OrderDetailPage() {
                   <img src={(order as any).ADDRESSPHOTOURL} alt="Foto dirección" className="w-full h-20 sm:h-24 object-cover rounded-lg border border-gray-200" />
                 </a>
               )}
+              {/* Tracking Number */}
+              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100 no-print">
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-[10px] sm:text-xs font-semibold text-gray-500">N° de Seguimiento</p>
+                  {editingTracking ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={trackingNumber}
+                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        placeholder="Ej. 123456789"
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      />
+                      <button
+                        onClick={handleSaveTracking}
+                        disabled={savingTracking}
+                        className="px-3 py-1.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50"
+                      >
+                        {savingTracking ? '...' : 'Guardar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingTracking(false);
+                          setTrackingNumber((order as any).TRACKINGNUMBER || '');
+                        }}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-200"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      {(order as any).TRACKINGNUMBER ? (
+                        <p className="text-sm sm:text-base font-bold text-violet-700 flex-1 break-all">{(order as any).TRACKINGNUMBER}</p>
+                      ) : (
+                        <p className="text-sm sm:text-base font-medium text-gray-400 italic flex-1">Sin número asignado</p>
+                      )}
+                      <button
+                        onClick={() => setEditingTracking(true)}
+                        className="text-[10px] font-bold px-2 py-1 bg-violet-50 text-violet-600 rounded-lg hover:bg-violet-100 transition flex items-center gap-1 shrink-0"
+                      >
+                        <Truck className="w-3 h-3" /> {(order as any).TRACKINGNUMBER ? 'Editar' : 'Añadir'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Comprobante de envío */}
               {(order.SHIPPINGPROOFURL || order.STATUS === 'preparing_shipping') && (
                 <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
@@ -1725,9 +1795,16 @@ export default function OrderDetailPage() {
                         </span>
                       )}
                       {isReplaced && (
-                        <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                          🔄 Reemplazado
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                            🔄 Reemplazado
+                          </span>
+                          {it.originalPrice && it.originalPrice > it.price && (
+                            <span className="text-[9px] sm:text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
+                              Dif molestias: {fmt(((origItem?.price || it.originalPrice) * it.qty) - (it.price * it.qty))}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                     {(it as any).note && (
@@ -1741,11 +1818,11 @@ export default function OrderDetailPage() {
                       <div className="flex items-center gap-1 no-print">
                         <input
                           type="number"
-                          min={1}
+                          min={0}
                           value={it.qty}
                           onChange={async (e) => {
                             const val = parseInt(e.target.value);
-                            if (!isNaN(val) && val >= 1) {
+                            if (!isNaN(val) && val >= 0) {
                               await handleUpdateQty(i, val);
                             }
                           }}

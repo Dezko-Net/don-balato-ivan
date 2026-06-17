@@ -133,60 +133,10 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // 3. Compose WhatsApp message (use Gemini for a warm natural tone, fallback to template)
-      const missingItemsText = missingDetails.join('\n');
-      const alternativesText = suggestionsTextList.join('\n') || 'No encontramos alternativas exactas en stock en este momento, pero puedes elegir otro reemplazo en la web.';
-      const customerLink = `${SITE_URL}/pedido/${orderId}`;
-
-      let messageText = '';
-
-      if (GEMINI_KEY) {
-        try {
-          const prompt = `Eres Yexy, la asistente virtual de la tienda Kevin&Coco.
-Estás contactando al cliente ${order.CUSTOMERNAME} por WhatsApp.
-Su pedido #${orderCode} está en preparación, pero nos percatamos que algunos productos no tienen stock.
-El/los producto(s) faltante(s) son:
-${missingItemsText}
-
-Hemos buscado estas alternativas similares en stock:
-${alternativesText}
-
-El cliente puede elegir su reemplazo ingresando a este link:
-${customerLink}
-
-Redacta un mensaje de WhatsApp amigable, directo, profesional y en español de Chile.
-No uses listas gigantes de productos. Sé proactivo, ofrece las alternativas sugeridas y el link directo.
-El mensaje debe ser breve para que el cliente decida fácilmente. No pongas códigos JSON ni markdown de bloques. Solo el mensaje final listo para enviar.`;
-
-          const geminiBody = {
-            system_instruction: { parts: [{ text: "Eres Yexy, la asistente de WhatsApp de Kevin&Coco. Hablas en español chileno, amigable y profesional." }] },
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
-          };
-
-          const modelUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`;
-          const geminiRes = await fetch(modelUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(geminiBody),
-          });
-
-          if (geminiRes.ok) {
-            const geminiData = await geminiRes.json();
-            const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              messageText = text.replace(/\*\*(.*?)\*\*/g, '*$1*').trim(); // Convert **bold** to WA *bold*
-            }
-          }
-        } catch (geminiErr) {
-          console.error('[Cron Negotiation] Gemini API error:', geminiErr);
-        }
-      }
-
-      // Fallback message template if Gemini failed or wasn't configured
-      if (!messageText) {
-        messageText = `¡Hola, *${order.CUSTOMERNAME}*! 👋 Te saluda Yexy de *Kevin&Coco*.\n\nNos percatamos que algunos productos en tu pedido *#${orderCode}* no tienen stock disponible en este momento:\n${missingItemsText}\n\nTe sugerimos estas opciones alternativas:\n${alternativesText}\n\nPuedes revisar y confirmar tu reemplazo ingresando al siguiente link:\n🔗 ${customerLink}\n\n¡Muchas gracias por tu comprensión! Si tienes dudas, escríbenos por aquí.`;
-      }
+      // 3. Compose WhatsApp message (Greeting only, wait for response)
+      const customerName = order.CUSTOMERNAME || 'Amiga';
+      const firstName = customerName.split(' ')[0];
+      const messageText = `¡Hola linda, *${firstName}*! ✨ ¿Cómo estás? Te escribimos de *Kevin&Coco* por tu pedidito *#${orderCode}* 🛍️.`;
 
       // 4. Send message to WhatsApp
       const rawPhone = (order.CUSTOMERPHONE as string) || '';

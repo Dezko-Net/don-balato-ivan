@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink, MessageSquare } from 'lucide-react';
+import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink, MessageSquare, Box } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
+import { useAuth } from '@/hooks/useAuth';
 
 const BANK_DEFAULTS = {
   bankAccountHolder: 'YESBELLA LTDA.',
@@ -48,8 +49,8 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
   assembling:         { label: 'Armando',                   color: '#7b1fa2', bg: '#f3e5f5' },
   negotiation:        { label: 'Negociación',                color: '#be185d', bg: '#fdf2f8' },
-  preparing_shipping: { label: 'Preparando etiqueta',        color: '#5d4037', bg: '#efebe9' },
-  ready_to_ship:      { label: 'Etiqueta lista',            color: '#00838f', bg: '#e0f7fa' },
+  preparing_shipping: { label: 'Etiqueta lista',        color: '#5d4037', bg: '#efebe9' },
+  ready_to_ship:      { label: 'Pedido listo para enviar',            color: '#00838f', bg: '#e0f7fa' },
   shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
   delivered:          { label: 'Entregado',                 color: '#166534', bg: '#f0fdf4' },
   cancelled:          { label: 'Cancelado',                 color: '#991b1b', bg: '#fff5f5' },
@@ -82,12 +83,12 @@ const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertTy
     alertType: 'warning'
   },
   preparing_shipping: {
-    title: 'Preparando Etiqueta de Despacho',
+    title: 'Etiqueta de Despacho Lista',
     desc: 'Estamos generando la etiqueta de envío con tus datos de entrega y sellando la caja para entregarla a la empresa de transporte.',
     alertType: 'indigo'
   },
   ready_to_ship: {
-    title: 'Listo para ser Retirado',
+    title: 'Pedido listo para enviar',
     desc: 'El paquete ya está embalado y etiquetado en nuestro centro de despacho, a la espera de ser retirado por la agencia de envíos seleccionada.',
     alertType: 'indigo'
   },
@@ -154,6 +155,7 @@ function getProductBarcode(p: any): string {
 
 export default function PedidoPage() {
   const { id } = useParams<{ id: string }>();
+  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -829,7 +831,7 @@ export default function PedidoPage() {
 
   const card: React.CSSProperties = { background: '#fff', borderRadius: 4, padding: '20px 22px', marginBottom: 12 };
 
-  if (isLoading) return (
+  if (isLoading || authLoading) return (
     <div style={{ background: '#ebebeb', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: '#999', fontSize: 15 }}>Cargando pedido...</p>
     </div>
@@ -842,6 +844,23 @@ export default function PedidoPage() {
       <Link href="/" style={{ color: '#3483fa', textDecoration: 'none', fontSize: 14 }}>Ir al inicio</Link>
     </div>
   );
+
+  if (order.USERID && order.USERID !== 'guest') {
+    if (!isLoggedIn || user?.id !== order.USERID) {
+      return (
+        <div style={{ background: '#ebebeb', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20, textAlign: 'center' }}>
+          <Shield size={48} color="#e396bf" />
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#333', margin: 0 }}>Acceso Denegado</h2>
+          <p style={{ color: '#666', fontSize: 14, maxWidth: 400 }}>
+            Este pedido pertenece a una cuenta registrada. Para proteger la privacidad, debes iniciar sesión con la cuenta dueña de este pedido para verlo.
+          </p>
+          <Link href="/login" style={{ display: 'inline-block', marginTop: 10, padding: '12px 24px', background: '#e396bf', color: '#fff', textDecoration: 'none', borderRadius: 8, fontWeight: 700 }}>
+            Iniciar Sesión
+          </Link>
+        </div>
+      );
+    }
+  }
 
   const isPending = order.STATUS === 'pending';
   const BANK = getBankDetails();
@@ -945,8 +964,8 @@ export default function PedidoPage() {
             { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
             { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
             { key: 'negotiation',        label: 'Negociación',  icon: <MessageSquare size={15} /> },
-            { key: 'preparing_shipping', label: 'Prep. Envío',  icon: <Tag size={15} /> },
-            { key: 'ready_to_ship',      label: isRetiro ? 'Retiro' : 'Etiqueta',     icon: <Receipt size={15} /> },
+            { key: 'preparing_shipping', label: 'Etiqueta Lista',  icon: <Tag size={15} /> },
+            { key: 'ready_to_ship',      label: 'Pedido listo para enviar',     icon: <Box size={15} /> },
             { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
             { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
           ];
@@ -1547,6 +1566,27 @@ export default function PedidoPage() {
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-pink-50 text-pink-700 rounded-md border border-pink-100">Modificada</span>
               )}
             </div>
+
+            {(order as any).TRACKINGNUMBER && (
+              <div className="mt-4 p-4 bg-violet-50/50 border border-violet-100 rounded-2xl flex flex-col gap-1">
+                <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wider">Número de Seguimiento</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-mono text-base font-bold text-violet-800 break-all select-all">
+                    {(order as any).TRACKINGNUMBER}
+                  </p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText((order as any).TRACKINGNUMBER);
+                      alert('¡Número de seguimiento copiado!');
+                    }}
+                    className="p-2 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-xl transition shrink-0"
+                    title="Copiar número"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Agency change option */}
             {order.STATUS === 'pending' && !order.AGENCYCHANGED && (
