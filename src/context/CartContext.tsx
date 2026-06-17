@@ -74,9 +74,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       : item.quantity >= minQty;
 
     const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
+    
+    // Explicit wholesalePrice passed in item takes highest priority (e.g. from Embalajes)
+    if (item.wholesalePrice !== undefined) {
+      return item.wholesalePrice;
+    }
+
     const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) 
       ? item.product.WHOLESALEPRICE 
-      : (hasConfiguredWholesale ? undefined : item.wholesalePrice);
+      : undefined;
 
     if (effectiveWholesale) {
       return effectiveWholesale;

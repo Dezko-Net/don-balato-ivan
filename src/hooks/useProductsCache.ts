@@ -17,9 +17,21 @@ interface UseProductsParams {
   priceMin?: number;
   priceMax?: number;
   ofertasOnly?: boolean;
+  catalogMode?: 'retail' | 'paquetes' | 'embalajes';
 }
 
-export function useProductsCache(params: UseProductsParams) {
+export function useProductsCache({
+  categoryId,
+  subcategoryId,
+  subSubcategoryId,
+  sortBy = 'newest',
+  search,
+  tag,
+  priceMin,
+  priceMax,
+  ofertasOnly,
+  catalogMode
+}: UseProductsParams) {
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [page, setPage] = useState(1);
@@ -60,42 +72,48 @@ export function useProductsCache(params: UseProductsParams) {
   const processedData = useMemo(() => {
     if (!data || !data.products) {
       return {
-        products: [],
+        products: [] as Product[],
         total: 0,
-        priceRange: [0, 0],
-        categoryCounts: {},
-        subcategoryCounts: {},
-        subSubcategoryCounts: {},
-        allTags: [],
+        priceRange: [0, 0] as [number, number],
+        categoryCounts: {} as Record<string, number>,
+        subcategoryCounts: {} as Record<string, number>,
+        subSubcategoryCounts: {} as Record<string, number>,
+        allTags: [] as string[],
       };
     }
 
     let filtered: Product[] = [...data.products];
     const activeOffers = data.activeOffers || [];
     
-    if (params.categoryId) {
-      filtered = filtered.filter(p => p.CATEGORYID === params.categoryId);
+    if (categoryId) {
+      filtered = filtered.filter(p => p.CATEGORYID === categoryId);
     }
-    if (params.subcategoryId) {
-      filtered = filtered.filter(p => p.SUBCATEGORYID === params.subcategoryId);
+    if (subcategoryId) {
+      filtered = filtered.filter(p => p.SUBCATEGORYID === subcategoryId);
     }
-    if (params.subSubcategoryId) {
-      filtered = filtered.filter(p => p.SUBSUBCATEGORYID === params.subSubcategoryId);
+    if (subSubcategoryId) {
+      filtered = filtered.filter(p => p.SUBSUBCATEGORYID === subSubcategoryId);
     }
-    if (params.ofertasOnly && activeOffers.length > 0) {
+    if (ofertasOnly && activeOffers.length > 0) {
       filtered = filtered.filter(p => activeOffers.includes(p.$id));
     }
-    if (params.tag) {
+    if (catalogMode === 'paquetes' || catalogMode === 'embalajes') {
       filtered = filtered.filter(p => {
-        const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
-        return pTags.some(t => t.toLowerCase() === params.tag!.toLowerCase());
+        const qty = p.PACKQTY ? Number(p.PACKQTY) : 0;
+        return !isNaN(qty) && qty > 1;
       });
     }
-    if (params.search) {
+    if (tag) {
+      filtered = filtered.filter(p => {
+        const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
+        return pTags.some(t => t.toLowerCase() === tag.toLowerCase());
+      });
+    }
+    if (search) {
       const normalizeText = (text: string) => 
         text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/g, "").toLowerCase();
       
-      const qTokens = normalizeText(params.search).trim().split(/\s+/).filter(Boolean);
+      const qTokens = normalizeText(search).trim().split(/\s+/).filter(Boolean);
       if (qTokens.length > 0) {
         filtered = filtered.filter(p => {
           const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
@@ -108,14 +126,68 @@ export function useProductsCache(params: UseProductsParams) {
       }
     }
 
-    if (params.priceMin !== undefined && params.priceMax !== undefined) {
+    // Calculate priceRange dynamically for the current mode
+    let minPrice = Infinity;
+    let maxPrice = -Infinity;
+    
+    const modeProducts = data.products.filter((p: Product) => {
+      if (catalogMode === 'paquetes' || catalogMode === 'embalajes') {
+        const qty = p.PACKQTY ? Number(p.PACKQTY) : 0;
+        return !isNaN(qty) && qty > 1;
+      }
+      return true;
+    });
+
+    // Calculate Category, Subcategory and SubSubcategory Counts dynamically for this catalog mode
+    const categoryCounts: Record<string, number> = {};
+    const subcategoryCounts: Record<string, number> = {};
+    const subSubcategoryCounts: Record<string, number> = {};
+    modeProducts.forEach((p: Product) => {
+      if (p.ISACTIVE === false) return;
+      if (p.CATEGORYID) {
+        categoryCounts[p.CATEGORYID] = (categoryCounts[p.CATEGORYID] || 0) + 1;
+      }
+      if (p.SUBCATEGORYID) {
+        subcategoryCounts[p.SUBCATEGORYID] = (subcategoryCounts[p.SUBCATEGORYID] || 0) + 1;
+      }
+      if (p.SUBSUBCATEGORYID) {
+        subSubcategoryCounts[p.SUBSUBCATEGORYID] = (subSubcategoryCounts[p.SUBSUBCATEGORYID] || 0) + 1;
+      }
+    });
+    
+    modeProducts.forEach((p: Product) => {
+      let price = resolveProductDisplayPrice(p, apertura).displayPrice;
+      if (catalogMode === 'embalajes') {
+        price = p.WHOLESALEPRICE || p.PRICE;
+      } else if (catalogMode === 'paquetes') {
+        price = p.PRICE * 0.8;
+      }
+      if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
+        price *= p.PACKQTY;
+      }
+      if (price < minPrice) minPrice = price;
+      if (price > maxPrice) maxPrice = price;
+    });
+    
+    if (minPrice === Infinity) minPrice = 0;
+    if (maxPrice === -Infinity) maxPrice = 0;
+    const finalPriceRange: [number, number] = [minPrice, maxPrice];
+
+    if (priceMin !== undefined && priceMax !== undefined) {
       filtered = filtered.filter(p => {
-        const price = resolveProductDisplayPrice(p, apertura).displayPrice;
-        return price >= params.priceMin! && price <= params.priceMax!;
+        let price = resolveProductDisplayPrice(p, apertura).displayPrice;
+        if (catalogMode === 'embalajes') {
+          price = p.WHOLESALEPRICE || p.PRICE;
+        } else if (catalogMode === 'paquetes') {
+          price = p.PRICE * 0.8;
+        }
+        if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
+          price *= p.PACKQTY;
+        }
+        return price >= priceMin! && price <= priceMax!;
       });
     }
 
-    const sortBy = params.sortBy || 'newest';
     if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.$createdAt || 0).getTime() - new Date(a.$createdAt || 0).getTime());
     } else if (sortBy === 'updated') {
@@ -125,21 +197,47 @@ export function useProductsCache(params: UseProductsParams) {
         return timeB - timeA;
       });
     } else if (sortBy === 'price_asc') {
-      filtered.sort((a, b) => resolveProductDisplayPrice(a, apertura).displayPrice - resolveProductDisplayPrice(b, apertura).displayPrice);
+      filtered.sort((a, b) => {
+        let priceA = resolveProductDisplayPrice(a, apertura).displayPrice;
+        let priceB = resolveProductDisplayPrice(b, apertura).displayPrice;
+        if (catalogMode === 'embalajes') {
+          priceA = a.WHOLESALEPRICE || a.PRICE;
+          priceB = b.WHOLESALEPRICE || b.PRICE;
+        } else if (catalogMode === 'paquetes') {
+          priceA = a.PRICE * 0.8;
+          priceB = b.PRICE * 0.8;
+        }
+        if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && a.PACKQTY) priceA *= a.PACKQTY;
+        if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && b.PACKQTY) priceB *= b.PACKQTY;
+        return priceA - priceB;
+      });
     } else if (sortBy === 'price_desc') {
-      filtered.sort((a, b) => resolveProductDisplayPrice(b, apertura).displayPrice - resolveProductDisplayPrice(a, apertura).displayPrice);
+      filtered.sort((a, b) => {
+        let priceA = resolveProductDisplayPrice(a, apertura).displayPrice;
+        let priceB = resolveProductDisplayPrice(b, apertura).displayPrice;
+        if (catalogMode === 'embalajes') {
+          priceA = a.WHOLESALEPRICE || a.PRICE;
+          priceB = b.WHOLESALEPRICE || b.PRICE;
+        } else if (catalogMode === 'paquetes') {
+          priceA = a.PRICE * 0.8;
+          priceB = b.PRICE * 0.8;
+        }
+        if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && a.PACKQTY) priceA *= a.PACKQTY;
+        if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && b.PACKQTY) priceB *= b.PACKQTY;
+        return priceB - priceA;
+      });
     }
 
     return {
       products: filtered,
       total: filtered.length,
-      priceRange: data.priceRange || [0, 0],
-      categoryCounts: data.categoryCounts || {},
-      subcategoryCounts: data.subcategoryCounts || {},
-      subSubcategoryCounts: data.subSubcategoryCounts || {},
+      priceRange: finalPriceRange,
+      categoryCounts,
+      subcategoryCounts,
+      subSubcategoryCounts,
       allTags: data.allTags || [],
     };
-  }, [data, params, apertura]);
+  }, [data, categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, priceMin, priceMax, ofertasOnly, catalogMode, apertura]);
 
   const paginatedProducts = useMemo(() => {
     return processedData.products.slice(0, page * limit);
@@ -147,7 +245,7 @@ export function useProductsCache(params: UseProductsParams) {
 
   useEffect(() => {
     setPage(1);
-  }, [params.categoryId, params.subcategoryId, params.search, params.tag, params.sortBy, params.priceMin, params.priceMax, params.ofertasOnly]);
+  }, [categoryId, subcategoryId, subSubcategoryId, search, tag, sortBy, priceMin, priceMax, ofertasOnly, catalogMode]);
 
   const hasMore = paginatedProducts.length < processedData.products.length;
 

@@ -211,8 +211,15 @@ export default function HomePage23() {
     const root = containerRef.current;
     if (!root) return;
 
-    // 1. Timer Setup (Target midnight CLT on June 15, 2026 -> 2026-06-16T00:00:00-04:00)
-    const targetTime = new Date('2026-06-16T00:00:00-04:00').getTime();
+    // 1. Timer Setup — cuenta regresiva hasta el día 1 del siguiente mes (00:00 hora local).
+    //    Se recalcula en cada carga, por lo que siempre apunta al próximo "1".
+    const nowForTarget = new Date();
+    const targetTime = new Date(
+      nowForTarget.getFullYear(),
+      nowForTarget.getMonth() + 1,
+      1,
+      0, 0, 0, 0
+    ).getTime();
     try {
       localStorage.removeItem('yaxsell_offers_timer_3d');
     } catch (e) {
@@ -1977,9 +1984,18 @@ export default function HomePage23() {
     // Insert Live Shopping, Wholesale Offers and Latest Products placeholders right after the Hero banner (slideshow)
     const heroBannerSection = tempDiv.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
     if (heroBannerSection) {
+      // Move the "Oferta de Apertura" countdown timer to sit directly below the hero banner.
+      // (En el HTML original queda más abajo; el cliente lo quiere justo debajo del hero.)
+      let anchor: Element = heroBannerSection;
+      const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
+      if (countdownSection) {
+        heroBannerSection.insertAdjacentElement('afterend', countdownSection);
+        anchor = countdownSection;
+      }
+
       const liveShoppingRoot = document.createElement('div');
       liveShoppingRoot.id = 'yaxsell-live-shopping-root';
-      heroBannerSection.insertAdjacentElement('afterend', liveShoppingRoot);
+      anchor.insertAdjacentElement('afterend', liveShoppingRoot);
 
       const wholesaleOffersRoot = document.createElement('div');
       wholesaleOffersRoot.id = 'yaxsell-wholesale-offers-root';

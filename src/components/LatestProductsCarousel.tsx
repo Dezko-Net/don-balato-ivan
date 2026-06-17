@@ -15,7 +15,6 @@ export default function LatestProductsCarousel() {
   const { addItem } = useCart();
   const { settings: apertura } = useAperturaPromotion();
 
-  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const getScrollAmount = () => {
@@ -25,7 +24,9 @@ export default function LatestProductsCarousel() {
     if (!card) return 206;
     const styles = window.getComputedStyle(container);
     const gap = Number.parseFloat(styles.columnGap || styles.gap || '16') || 16;
-    return card.offsetWidth + gap;
+    // Scroll by ~2 cards on desktop, 1 on mobile for a natural feel
+    const perStep = window.innerWidth >= 768 ? 2 : 1;
+    return (card.offsetWidth + gap) * perStep;
   };
 
   const handleScrollPrev = () => {
@@ -39,42 +40,6 @@ export default function LatestProductsCarousel() {
       containerRef.current.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
     }
   };
-
-  const handleScroll = () => {
-    const container = containerRef.current;
-    if (!container || products.length === 0) return;
-    const { scrollLeft, scrollWidth } = container;
-    const singleCopyWidth = scrollWidth / 3;
-
-    if (scrollLeft < 10) {
-      container.scrollLeft = singleCopyWidth + scrollLeft;
-    } else if (scrollLeft >= singleCopyWidth * 2 - 10) {
-      container.scrollLeft = scrollLeft - singleCopyWidth;
-    }
-  };
-
-  // Autoplay
-  useEffect(() => {
-    if (products.length === 0 || isHovered) return;
-    const interval = setInterval(() => {
-      if (containerRef.current) {
-        containerRef.current.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
-      }
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [products, isHovered]);
-
-  // Center scroll position on mount/update
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container && products.length > 0) {
-      const timer = setTimeout(() => {
-        const singleCopyWidth = container.scrollWidth / 3;
-        container.scrollLeft = singleCopyWidth;
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [products]);
 
   useEffect(() => {
     const loadNewest = async () => {
@@ -162,17 +127,28 @@ export default function LatestProductsCarousel() {
           display: flex !important;
           overflow-x: auto !important;
           scroll-behavior: smooth !important;
-          gap: 16px !important;
-          padding: 12px 10px 24px !important;
+          gap: 14px !important;
+          padding: 12px 4px 24px !important;
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
+          -webkit-overflow-scrolling: touch !important;
         }
         .latest-carousel-container::-webkit-scrollbar {
           display: none !important;
         }
         .latest-product-card {
-          width: clamp(165px, 16vw, 226px) !important;
+          width: clamp(210px, 60vw, 240px) !important;
           flex-shrink: 0 !important;
+        }
+        @media (min-width: 640px) {
+          .latest-product-card {
+            width: clamp(200px, 26vw, 230px) !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .latest-product-card {
+            width: clamp(200px, 16vw, 226px) !important;
+          }
         }
         .animate-spin-slow {
           animation: spin 1.8s linear infinite;
@@ -180,10 +156,8 @@ export default function LatestProductsCarousel() {
       `}} />
 
       {/* Carousel */}
-      <div 
+      <div
         className="latest-carousel-wrapper group/wrapper relative w-full"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Navigation Buttons */}
         <button 
@@ -202,104 +176,98 @@ export default function LatestProductsCarousel() {
         </button>
 
         {/* Scroll Container */}
-        <div 
+        <div
           ref={containerRef}
-          onScroll={handleScroll}
-          className="latest-carousel-container scrollbar-hide snap-x snap-mandatory"
+          className="latest-carousel-container scrollbar-hide snap-x"
         >
-          {[...products, ...products, ...products].map((p, idx) => {
+          {products.map((p, idx) => {
             const pricing = resolveProductDisplayPrice(p, apertura);
             const displayPrice = pricing.displayPrice;
             const hasDiscount = pricing.hasDiscount;
             const isAdding = addingId === p.$id;
 
-            const prodIdx = idx % products.length;
             const createdAt = new Date(p.$createdAt || '').getTime();
             const now = Date.now();
-            
-            const isNew = (now - createdAt < 7 * 24 * 60 * 60 * 1000) || (prodIdx < 4);
+
+            const isNew = (now - createdAt < 7 * 24 * 60 * 60 * 1000) || (idx < 4);
             const isRestocked = !isNew && p.STOCK > 0;
 
             return (
-              <div 
-                key={`latest-carousel-${p.$id}-${idx}`} 
+              <div
+                key={`latest-carousel-${p.$id}-${idx}`}
                 data-latest-card
                 className="latest-product-card snap-start group"
               >
-                <div className="relative h-full rounded-2xl bg-gradient-to-br from-pink-500/35 via-fuchsia-500/10 to-violet-500/35 p-[1px] shadow-[0_6px_24px_rgba(0,0,0,0.06)] transition-all duration-300 hover:shadow-[0_14px_40px_rgba(0,0,0,0.10)] hover:-translate-y-1 will-change-transform">
-                  <div className="h-full rounded-[15px] bg-white/95 backdrop-blur overflow-hidden flex flex-col justify-between border border-white/60">
-                    <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gradient-to-br from-pink-50 via-white to-violet-50 p-1.5">
-                      <div className="w-full h-full rounded-xl overflow-hidden relative">
-                        {p.IMAGEURL ? (
-                          <img 
-                            src={p.IMAGEURL} 
-                            alt={p.NAME} 
-                            loading="lazy" 
-                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">
-                            📦
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative h-full rounded-3xl bg-white overflow-hidden flex flex-col border border-pink-100/70 shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(236,72,153,0.12)] hover:-translate-y-1 hover:border-pink-200 will-change-transform">
+                  <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gradient-to-br from-pink-50 via-white to-violet-50">
+                    {p.IMAGEURL ? (
+                      <img
+                        src={p.IMAGEURL}
+                        alt={p.NAME}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">
+                        📦
                       </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none"></div>
 
-                      <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
-                        {isNew ? (
-                          <span className="bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md flex items-center gap-1 border border-white/25">
-                            <Sparkles size={8} /> Nuevo
-                          </span>
-                        ) : (
-                          <span className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md flex items-center gap-1 border border-white/25">
-                            <RefreshCw size={8} className="animate-spin-slow" /> Reingreso
-                          </span>
-                        )}
-                      </div>
-
-                      {pricing.hasDiscount && (
-                        <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10 border border-white/25">
-                          -{pricing.discountPercent}% OFF
+                    {/* New / Restock badge */}
+                    <div className="absolute top-3 left-3 z-10">
+                      {isNew ? (
+                        <span className="bg-gradient-to-br from-pink-500 to-fuchsia-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide shadow-md shadow-pink-500/30 flex items-center gap-1 ring-1 ring-white/40">
+                          <Sparkles size={10} /> Nuevo
+                        </span>
+                      ) : (
+                        <span className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide shadow-md shadow-emerald-500/30 flex items-center gap-1 ring-1 ring-white/40">
+                          <RefreshCw size={9} className="animate-spin-slow" /> Reingreso
                         </span>
                       )}
-                    </a>
+                    </div>
 
-                    <div className="p-3 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-[11px] leading-[14px] h-[28px] line-clamp-2 mb-1.5 group-hover:text-fuchsia-700 transition-colors">
-                          {p.NAME}
-                        </h3>
+                    {/* Discount badge — compact */}
+                    {pricing.hasDiscount && (
+                      <span className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-rose-600 font-black text-[10px] px-2 py-0.5 rounded-full shadow-sm z-10 ring-1 ring-rose-100">
+                        -{pricing.discountPercent}%
+                      </span>
+                    )}
+                  </a>
 
-                        <div className="flex flex-col gap-0.5 mb-2.5">
-                          {hasDiscount && (
-                            <span className="text-[10px] text-gray-400 line-through leading-none">
-                              {formatPrice(p.PRICE)}
-                            </span>
-                          )}
-                          <div className="flex items-end gap-1.5">
-                            <span className="font-black text-gray-950 text-sm leading-none">
-                              {formatPrice(displayPrice)}
-                            </span>
-                          </div>
-                        </div>
+                  <div className="p-3.5 flex-1 flex flex-col justify-between">
+                    <h3 className="font-bold text-gray-900 text-[13px] leading-snug line-clamp-2 mb-2 group-hover:text-fuchsia-700 transition-colors min-h-[34px]">
+                      {p.NAME}
+                    </h3>
+
+                    <div>
+                      <div className="flex items-baseline gap-2 mb-2.5">
+                        <span className="font-black text-gray-950 text-lg leading-none tracking-tight">
+                          {formatPrice(displayPrice)}
+                        </span>
+                        {hasDiscount && (
+                          <span className="text-[11px] text-gray-400 line-through leading-none">
+                            {formatPrice(p.PRICE)}
+                          </span>
+                        )}
                       </div>
 
                       <button
                         onClick={(e) => handleAddToCart(e, p)}
-                        className={`w-full py-2.5 px-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                        className={`w-full py-2.5 px-3 rounded-xl font-black text-[11px] uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                           isAdding
                             ? 'bg-emerald-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)]'
-                            : 'bg-gradient-to-r from-pink-600 to-violet-600 text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] hover:from-pink-500 hover:to-violet-500'
+                            : 'bg-gradient-to-br from-pink-500 to-fuchsia-600 text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] hover:brightness-105'
                         }`}
                       >
                         {isAdding ? (
                           <>
-                            <Check size={12} strokeWidth={3} />
+                            <Check size={13} strokeWidth={3} />
                             Listo
                           </>
                         ) : (
                           <>
-                            <ShoppingCart size={11} />
+                            <ShoppingCart size={12} />
                             Agregar
                           </>
                         )}

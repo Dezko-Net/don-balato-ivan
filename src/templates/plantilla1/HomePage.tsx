@@ -503,11 +503,7 @@ export default function HomePage1() {
         processed = processed.replace(/Mi tienda 3/gi, '');
         processed = processed.replace(/>MUSK</gi, '><');
         processed = processed.replace(/shop now/gi, 'Ver productos');
-        // Fix navbar: add "En Camino" after Catálogo and replace "Contacto" with "Mis Pedidos"
-        processed = processed.replace(
-          /(<li[^>]*class="nav_li[^"]*"[^>]*>\s*<a[^>]*href="\/catalogo"[^>]*>[^<]*<\/a>\s*<\/li>)/i,
-          '$1<li class="nav_li link_menu_men heading_font"><a href="/llegan-pronto" aria-label="En Camino">En Camino</a></li>'
-        );
+        // Fix navbar: replace "Contacto" with "Mis Pedidos"
         processed = processed.replace(
           /<a[^>]*href="[^"]*contact[^"]*"[^>]*aria-label="Contacto"[^>]*>Contacto<\/a>/i,
           '<a href="/cuenta/pedidos" aria-label="Mis Pedidos">Mis Pedidos</a>'
@@ -728,22 +724,6 @@ export default function HomePage1() {
         const tiendaLink = navbar.querySelector('.nav_li a[href="/productos"]');
         if (tiendaLink?.parentElement) {
           tiendaLink.parentElement.after(li);
-        } else {
-          navbar.querySelector('ul')?.appendChild(li);
-        }
-      }
-      // Add "En Camino" link after Catálogo
-      if (!navbar.querySelector('a[href="/llegan-pronto"]')) {
-        const li = document.createElement('li');
-        li.className = 'nav_li link_menu_men heading_font';
-        const a = document.createElement('a');
-        a.href = '/llegan-pronto';
-        a.setAttribute('aria-label', 'En Camino');
-        a.textContent = 'En Camino';
-        li.appendChild(a);
-        const catalogoLink = navbar.querySelector('.nav_li a[href="/catalogo"]');
-        if (catalogoLink?.parentElement) {
-          catalogoLink.parentElement.after(li);
         } else {
           navbar.querySelector('ul')?.appendChild(li);
         }

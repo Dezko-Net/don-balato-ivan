@@ -511,13 +511,31 @@
 </a>
 
       <div class="lg:flex hidden items-center justify-center pl-[30px] gap-2 text-[0.9em]">
-        
+
+        <!-- Botones de compra por unidad y paquete -->
+        <a href="/productos" class="px-[1rem] uppercase hover:opacity-80 transition-opacity flex flex-col items-center gap-0.5 text-[11px]">
+          <span class="link-hover-animation" style="font-weight:900; color:#fff; line-height:1.2;">
+            <span style="font-size:9px; opacity:0.85; display:block;">COMPRAR</span>
+            <span style="font-size:12px;">UNIDAD</span>
+          </span>
+        </a>
+
+        <div style="width:1px; height:28px; background:rgba(255,255,255,0.2);"></div>
+
+        <a href="/paquetes" class="px-[1rem] uppercase hover:opacity-80 transition-opacity flex flex-col items-center gap-0.5 text-[11px]">
+          <span class="link-hover-animation" style="font-weight:900; color:#fff; line-height:1.2;">
+            <span style="font-size:9px; opacity:0.85; display:block;">COMPRAR</span>
+            <span style="font-size:12px;">PAQUETE</span>
+          </span>
+        </a>
+
+        <div style="width:1px; height:28px; background:rgba(255,255,255,0.2);"></div>
 
 <a href="#" data-action="open" data-object="search" role="button" aria-label="Buscar" class="search-icon px-[0.5rem] uppercase">
     <span class="link-hover-animation">
-        
+
             Buscar
-        
+
     </span>
 </a>
 
@@ -2674,22 +2692,30 @@
       
 
       
-        <div class="flex lg:hidden justify-center items-center">
-          
+        <div class="flex lg:hidden justify-start items-center gap-3 w-full">
+
+          <!-- Botones de compra móvil -->
+          <div class="flex flex-col gap-1 flex-1">
+            <div style="font-size:11px; font-weight:900; color:#fff; letter-spacing:0.5px; opacity:0.95;">COMPRA DESDE:</div>
+            <div class="flex gap-2">
+              <a href="/productos" class="px-3 py-1.5 uppercase hover:opacity-80 transition-opacity text-[12px] font-black text-white rounded" style="letter-spacing:0.5px; background:linear-gradient(135deg, #e396bf, #f472b6); box-shadow:0 2px 8px rgba(227,150,191,0.25);">UNIDAD</a>
+              <a href="/paquetes" class="px-3 py-1.5 uppercase hover:opacity-80 transition-opacity text-[12px] font-black text-white rounded" style="letter-spacing:0.5px; background:linear-gradient(135deg, #e396bf, #f472b6); box-shadow:0 2px 8px rgba(227,150,191,0.25);">PAQUETE</a>
+            </div>
+          </div>
 
 <a href="#" data-action="open" data-object="search" role="button" aria-label="Buscar" class="search-icon px-[0.5rem] uppercase">
     <span class="link-hover-animation">
-        
+
             Buscar
-        
+
     </span>
 </a>
 
     <a href="#" data-action="open" data-object="cart" role="button" aria-label="Carrito" class="relative px-[0.5rem] cart-icon uppercase">
         <span class="link-hover-animation">
-            
+
                 Carrito
-            
+
             <span class="cart-item-size" aria-hidden="true">(0)</span>
         </span>
     </a>
@@ -5221,115 +5247,143 @@
 
 </div>
 <div id="shopify-section-template--KEVIN & COCO CHILE_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10;">
-  
+
+  <!-- Fade superior: overlay que sube sobre la base de la imagen del hero y la funde con el rosa -->
+  <div style="position: absolute; top: -140px; left: 0; right: 0; height: 140px; background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, rgba(255,201,224,0.85) 65%, #ffc9e0 100%); pointer-events: none; z-index: 5;"></div>
+
   <!-- Particle Canvas Wrapper (with overflow hidden) -->
   <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 11;">
     <canvas id="yaxsell-timer-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.85;"></canvas>
   </div>
 
   <style>
-    @keyframes blinkColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-    
+    @keyframes blinkColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+    @keyframes yxsCardGlow {
+      0%, 100% { box-shadow: 0 10px 30px rgba(219,39,119,0.12), inset 0 1px 0 rgba(255,255,255,0.9); }
+      50% { box-shadow: 0 16px 40px rgba(219,39,119,0.22), inset 0 1px 0 rgba(255,255,255,0.9); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
     .yaxsell-countdown-wrapper {
       display: flex !important;
       justify-content: center !important;
       align-items: center !important;
-      gap: 12px !important;
-      margin: 0 auto 24px !important;
+      gap: 10px !important;
+      margin: 0 auto 22px !important;
       width: 100% !important;
-      max-width: 480px !important;
+      max-width: 470px !important;
+      animation: fadeInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both !important;
     }
     .yaxsell-countdown-card {
-      background: rgba(255, 255, 255, 0.88) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.6) !important;
-      padding: 16px 12px !important;
-      border-radius: 18px !important;
+      background: linear-gradient(160deg, #ffffff 0%, #fff5fa 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.9) !important;
+      padding: 18px 10px 13px !important;
+      border-radius: 20px !important;
       flex: 1 !important;
-      min-width: 76px !important;
-      max-width: 96px !important;
-      box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08) !important;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      min-width: 72px !important;
+      max-width: 98px !important;
+      box-shadow: 0 10px 30px rgba(219, 39, 119, 0.12), inset 0 1px 0 rgba(255,255,255,0.9) !important;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
       position: relative !important;
       overflow: hidden !important;
+      animation: yxsCardGlow 3s ease-in-out infinite, fadeInUp 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
     }
+    .yaxsell-countdown-card:nth-child(1) { animation-delay: 0.5s !important; }
+    .yaxsell-countdown-card:nth-child(3) { animation-delay: 0.7s !important; }
+    .yaxsell-countdown-card:nth-child(5) { animation-delay: 0.9s !important; }
+    .yaxsell-countdown-card:nth-child(7) { animation-delay: 1.1s !important; }
     .yaxsell-countdown-card::before {
       content: '' !important;
       position: absolute !important;
       top: 0 !important;
       left: 0 !important;
       right: 0 !important;
-      height: 3px !important;
-      background: linear-gradient(90deg, #db2777, #f5a8cf) !important;
-      opacity: 0.8 !important;
+      height: 4px !important;
+      background: linear-gradient(90deg, #db2777, #f472b6, #db2777) !important;
+    }
+    /* Línea central tipo reloj flip */
+    .yaxsell-countdown-card::after {
+      content: '' !important;
+      position: absolute !important;
+      left: 10px !important;
+      right: 10px !important;
+      top: 58% !important;
+      height: 1px !important;
+      background: rgba(219, 39, 119, 0.07) !important;
     }
     .yaxsell-countdown-card:hover {
-      transform: translateY(-4px) !important;
-      box-shadow: 0 14px 35px rgba(219, 39, 119, 0.16) !important;
-      border-color: rgba(219, 39, 119, 0.3) !important;
-      background: rgba(255, 255, 255, 0.95) !important;
+      transform: translateY(-5px) scale(1.02) !important;
     }
     .yaxsell-countdown-num {
       display: block !important;
-      font-size: clamp(1.8rem, 3.5vw, 2.5rem) !important;
+      font-size: clamp(2rem, 4vw, 2.7rem) !important;
       font-weight: 900 !important;
-      color: #111827 !important;
+      background: linear-gradient(135deg, #db2777 0%, #be185d 100%) !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
       line-height: 1 !important;
       font-feature-settings: "tnum" !important;
       font-variant-numeric: tabular-nums !important;
-      letter-spacing: -0.03em !important;
+      letter-spacing: -0.04em !important;
     }
     .yaxsell-countdown-label {
       display: block !important;
-      font-size: 10px !important;
+      font-size: 9.5px !important;
       font-weight: 800 !important;
-      color: #db2777 !important;
+      color: #9d174d !important;
       text-transform: uppercase !important;
-      margin-top: 6px !important;
-      letter-spacing: 0.08em !important;
+      margin-top: 8px !important;
+      letter-spacing: 0.1em !important;
     }
     .yaxsell-countdown-colon {
-      font-size: 24px !important;
+      font-size: 26px !important;
       font-weight: 900 !important;
-      color: #db2777 !important;
+      color: #be185d !important;
       animation: blinkColon 1.2s infinite !important;
       line-height: 1 !important;
-      margin-top: -14px !important;
-      text-shadow: 0 0 10px rgba(219, 39, 119, 0.15) !important;
+      margin-top: -16px !important;
+      text-shadow: 0 2px 6px rgba(190, 24, 93, 0.2) !important;
       display: inline-block !important;
     }
-    
+
     @media (max-width: 480px) {
       .yaxsell-countdown-wrapper {
-        gap: 6px !important;
+        gap: 7px !important;
       }
       .yaxsell-countdown-card {
-        padding: 10px 4px !important;
-        min-width: 55px !important;
-        border-radius: 12px !important;
+        padding: 13px 4px 9px !important;
+        min-width: 58px !important;
+        border-radius: 15px !important;
       }
       .yaxsell-countdown-num {
-        font-size: 1.45rem !important;
+        font-size: 1.6rem !important;
       }
       .yaxsell-countdown-label {
         font-size: 8px !important;
-        margin-top: 4px !important;
-        letter-spacing: 0.03em !important;
+        margin-top: 5px !important;
+        letter-spacing: 0.04em !important;
       }
       .yaxsell-countdown-colon {
-        font-size: 16px !important;
-        margin-top: -10px !important;
+        font-size: 18px !important;
+        margin-top: -12px !important;
       }
     }
   </style>
-  <div class="custom-container" style="padding: 48px 24px 72px 24px; text-align: center; font-family: 'Outfit', 'Inter', sans-serif; position: relative; z-index: 20;">
-    
+  <div class="custom-container" style="padding: 48px 24px 72px 24px; text-align: center; font-family: 'Outfit', 'Inter', sans-serif; position: relative; z-index: 20; animation: fadeInUp 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 1;">
+
     <!-- Countdown Header details -->
-    <div style="margin-bottom: 28px; text-align: center;">
+    <div style="margin-bottom: 28px; text-align: center; animation: fadeInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;">
       <span style="display: inline-block; background: #fdf2f8; color: #db2777; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; padding: 6px 16px; border-radius: 999px; margin-bottom: 12px; border: 1px solid rgba(219, 39, 119, 0.2);">
         🔥 Oferta de Apertura
       </span>
@@ -5380,322 +5434,11 @@
     </div>
 
     <!-- Dynamic Product Cards Showcase -->
-    <div id="yaxsell-homepage-offers-carousel" style="margin-top: 40px; display: flex; flex-direction: column; align-items: center; width: 100%;">
-
-      <!-- ===== TARJETAS DE OFERTA MAYORISTA (mejoradas) ===== -->
-      <style>
-        /* Grid de tarjetas */
-        .yxs-offers-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 16px;
-          width: 100%;
-          max-width: 760px;
-        }
-        @media (min-width: 640px) {
-          .yxs-offers-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-          }
-        }
-
-        /* Tarjeta individual */
-        .yxs-offer-card {
-          display: flex;
-          flex-direction: column;
-          background: #ffffff;
-          border-radius: 20px;
-          overflow: hidden;
-          box-shadow: 0 4px 20px rgba(219,39,119,0.10), 0 1px 4px rgba(0,0,0,0.06);
-          border: 1px solid rgba(219,39,119,0.10);
-          transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease;
-          cursor: pointer;
-          text-decoration: none;
-          color: inherit;
-          position: relative;
-        }
-        .yxs-offer-card:hover {
-          transform: translateY(-6px) scale(1.012);
-          box-shadow: 0 16px 40px rgba(219,39,119,0.18), 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        /* Imagen */
-        .yxs-offer-card__img-wrap {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 4/3;
-          overflow: hidden;
-          background: #fdf2f8;
-          flex-shrink: 0;
-        }
-        .yxs-offer-card__img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-          display: block;
-        }
-        .yxs-offer-card:hover .yxs-offer-card__img {
-          transform: scale(1.08);
-        }
-
-        /* Degradado inferior sobre imagen */
-        .yxs-offer-card__img-wrap::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to top, rgba(0,0,0,0.28) 0%, transparent 50%);
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        /* Badge de descuento */
-        .yxs-offer-badge {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          z-index: 3;
-          background: #fdf2f8;
-          color: #db2777;
-          border: 1px solid rgba(219, 39, 119, 0.2);
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          padding: 5px 11px;
-          border-radius: 999px;
-          box-shadow: 0 4px 12px rgba(219,39,119,0.1);
-        }
-
-        /* Badge mayorista */
-        .yxs-offer-badge-wholesale {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          z-index: 3;
-          background: rgba(255,255,255,0.92);
-          backdrop-filter: blur(6px);
-          color: #9d174d;
-          font-size: 9.5px;
-          font-weight: 800;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          padding: 4px 9px;
-          border-radius: 999px;
-          border: 1px solid rgba(219,39,119,0.2);
-        }
-
-        /* Contenido */
-        .yxs-offer-card__body {
-          padding: 16px 18px 18px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          flex: 1;
-        }
-        .yxs-offer-card__category {
-          font-size: 10.5px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #db2777;
-          opacity: 0.85;
-        }
-        .yxs-offer-card__name {
-          font-size: 15px;
-          font-weight: 800;
-          color: #111827;
-          line-height: 1.3;
-          margin: 0;
-        }
-        .yxs-offer-card__desc {
-          font-size: 12px;
-          color: #6b7280;
-          line-height: 1.45;
-          margin: 0;
-        }
-        .yxs-offer-card__footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(219,39,119,0.08);
-        }
-        .yxs-offer-card__prices {
-          display: flex;
-          align-items: baseline;
-          gap: 7px;
-        }
-        .yxs-offer-card__price-now {
-          font-size: 18px;
-          font-weight: 900;
-          color: #db2777;
-          letter-spacing: -0.02em;
-        }
-        .yxs-offer-card__price-was {
-          font-size: 12px;
-          font-weight: 500;
-          color: #9ca3af;
-          text-decoration: line-through;
-        }
-        .yxs-offer-card__cta {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 12px;
-          font-weight: 800;
-          color: #db2777;
-          background: #ffffff;
-          border: 1px solid rgba(219,39,119,0.2);
-          border-radius: 999px;
-          padding: 8px 16px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-          box-shadow: 0 4px 12px rgba(219,39,119,0.10);
-          white-space: nowrap;
-        }
-        .yxs-offer-card__cta:hover {
-          background: #fdf2f8;
-          box-shadow: 0 6px 18px rgba(219,39,119,0.20);
-          transform: scale(1.04);
-        }
-
-        /* Encabezado de la sección de tarjetas */
-        .yxs-offers-header {
-          text-align: center;
-          margin-bottom: 24px;
-          width: 100%;
-        }
-        .yxs-offers-header__eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 10.5px;
-          font-weight: 800;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: #db2777;
-          background: #fdf2f8;
-          border: 1px solid rgba(219,39,119,0.2);
-          border-radius: 999px;
-          padding: 5px 14px;
-          margin-bottom: 10px;
-        }
-        .yxs-offers-header__title {
-          font-size: clamp(1.15rem, 3.5vw, 1.55rem);
-          font-weight: 900;
-          color: #111827;
-          margin: 0;
-          letter-spacing: -0.025em;
-          line-height: 1.2;
-        }
-        .yxs-offers-header__sub {
-          font-size: 12.5px;
-          color: #6b7280;
-          margin: 6px 0 0;
-          line-height: 1.5;
-        }
-
-        /* Separador decorativo */
-        .yxs-offers-divider {
-          width: 100%;
-          max-width: 760px;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(219,39,119,0.20), transparent);
-          margin: 0 auto 32px;
-        }
-      </style>
-
-      <!-- Separador -->
-      <div class="yxs-offers-divider"></div>
-
-      <!-- Encabezado de tarjetas -->
-      <div class="yxs-offers-header">
-        <div class="yxs-offers-header__eyebrow">
-          🛒 Ofertas por Mayor
-        </div>
-        <h4 class="yxs-offers-header__title">Grandes Ofertas Mayoristas</h4>
-        <p class="yxs-offers-header__sub">Precios especiales al comprar en cantidad · desde $20.000</p>
-      </div>
-
-      <!-- Grid de tarjetas -->
-      <div class="yxs-offers-grid">
-
-        <!-- Tarjeta 1: Brillo Labial Corazón Sugar Dew -->
-        <a href="/productos/6a1a4dac001885b6b069" class="yxs-offer-card" aria-label="Brillo Labial Corazón Sugar Dew">
-          <div class="yxs-offer-card__img-wrap">
-            <span class="yxs-offer-badge">x12+ $1.000 c/u</span>
-            <span class="yxs-offer-badge-wholesale">Mayor</span>
-            <img
-              loading="lazy"
-              alt="Brillo Labial Corazón Sugar Dew Hidratante y Glossy"
-              class="yxs-offer-card__img"
-              src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781382997424-pegada-1781382994712.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=HLc2fc52tRTasJ7W8b6kNqzVw9j769Q9tosx4WhCx3r5tpOGpBSp%2BI6%2BiW1Iqh8iow5EqyXs6xyCyTo25PESb2VGRFZpEewDoDQ1sU5gWUlBz4YfuCNo958uvlt9U5MSeaMncwa0TCZ6KDf0lgdzXm0R7MDR9QjJXuQuLOlokLpifc9sUj8PVKxeWecbqJtzUFd0o7mYMPfOQmaSfXhO27Frz0ksQV9vW6scFPmMqgHyuLrVe6o7gdefaDWbDOtVI%2FKRKlLsOnJqrjIEmtch5%2B7VANK2KnOGC1qXY7RAI86wdxFQSYzNXhgW5%2FMUfje993OuIJC67HiDAWD5VAE44A%3D%3D"
-            >
-          </div>
-          <div class="yxs-offer-card__body">
-            <span class="yxs-offer-card__category">SKU: KC1641</span>
-            <p class="yxs-offer-card__name">Brillo Labial Corazón Sugar Dew Hidratante y Glossy</p>
-            <p class="yxs-offer-card__desc">Acabado glossy de alto impacto con fórmula ultra hidratante. Sin sensación pegajosa. Diseño corazón icónico.</p>
-            <div class="yxs-offer-card__footer">
-              <div class="yxs-offer-card__prices">
-                <span class="yxs-offer-card__price-now">$1.000 c/u</span>
-                <span class="yxs-offer-card__price-was">$2.000</span>
-              </div>
-              <span class="yxs-offer-card__cta">
-                Ver oferta
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </span>
-            </div>
-          </div>
-        </a>
-
-        <!-- Tarjeta 2: Rizador de Pestañas -->
-        <a href="/productos/6a1a4d1000173cabe6b1" class="yxs-offer-card" aria-label="Rizador de Pestañas">
-          <div class="yxs-offer-card__img-wrap">
-            <span class="yxs-offer-badge">x12+ $790 c/u</span>
-            <span class="yxs-offer-badge-wholesale">Mayor</span>
-            <img
-              loading="lazy"
-              alt="RIZADOR DE PESTAÑAS"
-              class="yxs-offer-card__img"
-              src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781383687501-pegada-1781383685873.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=dIjZbhGsJRWog%2BdkmV%2F%2FyHiUEIEvfBMCZKzNALcRQUT3u6KXv9W6fXsawj8Rc6MGgcFVJg8pe%2FFuhRUdv3DammwF%2BnGkk%2F7x2fmhrIGwc%2BKU4HGbXgfgBnpz6f3LHqSCs2%2FanVlUIwpnqm465WYSnWckMzUdqqEA4n2fL4BjrVEsVeZ6jLbhx%2FzLW8If9%2BAgv9%2B3DyBBxhScIwMQda6zQ5JY6NFEuoaD11bjgOAyuVxuaZwg0imAmLWMEz5AWo6mqlrOKwcvrukwb1BHKbeC8crKsLoxb27cvlHAn0GiprA9cakluHDb7pyq1IWlX2NFrOFpjho0fgzbSGDAe3x3Xw%3D%3D"
-            >
-          </div>
-          <div class="yxs-offer-card__body">
-            <span class="yxs-offer-card__category">SKU: 1020</span>
-            <p class="yxs-offer-card__name">Rizador de Pestañas</p>
-            <p class="yxs-offer-card__desc">Riza y define tus pestañas de forma duradera. Precio mayorista disponible al comprar 12 o más unidades.</p>
-            <div class="yxs-offer-card__footer">
-              <div class="yxs-offer-card__prices">
-                <span class="yxs-offer-card__price-now">$790 c/u</span>
-                <span class="yxs-offer-card__price-was">$950</span>
-              </div>
-              <span class="yxs-offer-card__cta">
-                Ver oferta
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </span>
-            </div>
-          </div>
-        </a>
-
-      </div><!-- /yxs-offers-grid -->
-
-      <!-- Botón ver todas -->
-      <div style="margin-top: 28px; text-align: center;">
-        <a href="/mayorista" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #db2777; border: 1.5px solid rgba(219,39,119,0.30); border-radius: 999px; padding: 11px 28px; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); text-decoration: none; transition: all 0.25s ease; letter-spacing: 0.04em;" onmouseover="this.style.background='rgba(219,39,119,0.07)';this.style.borderColor='rgba(219,39,119,0.55)'" onmouseout="this.style.background='rgba(255,255,255,0.85)';this.style.borderColor='rgba(219,39,119,0.30)'">
-          Ver todas las ofertas mayoristas
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-      </div>
-
-    </div><!-- /#yaxsell-homepage-offers-carousel -->
+    <div id="yaxsell-homepage-offers-carousel" style="margin-top: 40px; display: flex; flex-direction: column; align-items: center; width: 100%;"></div>
   </div>
 
-  <!-- Smooth feathered blur transition at the bottom to blend with white background -->
-  <div style="position: absolute; bottom: -80px; left: 0; right: 0; height: 80px; background: linear-gradient(to bottom, #ffc9e0 0%, #ffffff 100%); pointer-events: none; z-index: 10;"></div>
+  <!-- Smooth feathered blur transition at the bottom to blend with white background (dentro de la sección para no tapar la siguiente) -->
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 90px; background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, #ffffff 100%); pointer-events: none; z-index: 1;"></div>
   
   <style>
     @keyframes pulseFire {

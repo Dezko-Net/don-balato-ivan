@@ -318,7 +318,7 @@ export default function CarritoPage() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
                   <span style={{ color: '#6b7280' }}>Productos ({totalItems})</span>
-                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal)}</span>
+                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal + aperturaSavings)}</span>
                 </div>
 
                 {aperturaSavings > 0 && (

@@ -114,6 +114,8 @@ export default function WholesaleOffersSection() {
           const discountPercent = hasWholesale
             ? Math.round(((normalDisplayPrice - wholesalePrice) / normalDisplayPrice) * 100)
             : 0;
+          const savingsPerUnit = hasWholesale ? normalDisplayPrice - wholesalePrice : 0;
+          const totalSavings = savingsPerUnit * wholesaleMinQty;
 
           const isAddingSingle = addingId === `${p.$id}-1`;
           const isAddingWholesale = addingId === `${p.$id}-${wholesaleMinQty}`;
@@ -123,34 +125,45 @@ export default function WholesaleOffersSection() {
             <a
               key={`wholesale-offer-${p.$id}`}
               href={productUrl}
-              className="bg-white rounded-3xl border border-gray-100/80 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-500 flex flex-col sm:flex-row overflow-hidden group min-h-[220px]"
+              className="relative bg-white rounded-3xl border border-pink-100/70 shadow-[0_8px_30px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(236,72,153,0.12)] hover:-translate-y-1.5 hover:border-pink-200 transition-all duration-500 flex flex-col overflow-hidden group"
               style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}
             >
               {/* Product Image Column */}
-              <div className="relative w-full sm:w-2/5 aspect-video sm:aspect-square bg-gray-50 overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-gray-100">
+              <div className="relative w-full aspect-[16/10] bg-gradient-to-br from-pink-50 via-white to-rose-50 overflow-hidden shrink-0">
                 {p.IMAGEURL ? (
                   <img
                     src={p.IMAGEURL}
                     alt={p.NAME}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">📦</div>
                 )}
 
+                {/* Subtle gradient overlay for depth */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none" />
+
                 {/* Floating Discount Tag */}
                 {hasWholesale && discountPercent > 0 && (
-                  <div className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-black text-[10px] sm:text-xs px-3 py-1.5 rounded-2xl shadow-md z-10 flex items-center gap-1">
-                    <Tag size={12} />
-                    -{discountPercent}% POR MAYOR
+                  <div className="absolute top-4 left-4 bg-gradient-to-br from-pink-500 to-rose-600 text-white font-black text-[11px] sm:text-sm px-3.5 py-2 rounded-2xl shadow-lg shadow-pink-500/30 z-10 flex items-center gap-1.5 ring-2 ring-white/40">
+                    <Tag size={13} strokeWidth={2.5} />
+                    -{discountPercent}%
+                  </div>
+                )}
+
+                {/* "Mayorista" ribbon bottom */}
+                {hasWholesale && (
+                  <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm text-pink-700 font-black text-[9px] sm:text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md z-10 flex items-center gap-1">
+                    <Percent size={10} strokeWidth={3} />
+                    Precio Mayor
                   </div>
                 )}
               </div>
 
               {/* Product Info Column */}
-              <div className="p-6 sm:p-7 flex flex-col justify-between flex-1 min-w-0 bg-gradient-to-b from-transparent to-gray-50/20">
-                <div className="space-y-2.5">
+              <div className="p-5 sm:p-6 flex flex-col justify-between flex-1 min-w-0">
+                <div className="space-y-2">
                   {p.SKU && (
                     <span className="font-mono text-[10px] font-bold text-gray-400 tracking-wider">
                       SKU: {p.SKU}
@@ -161,55 +174,74 @@ export default function WholesaleOffersSection() {
                   </h3>
 
                   {/* Prices Display */}
-                  <div className="flex flex-col gap-1.5 py-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400 font-bold">Precio Unitario:</span>
-                      <span className="font-bold text-gray-700 text-sm">
-                        {formatPrice(normalDisplayPrice)}
-                      </span>
-                    </div>
-
-                    {hasWholesale && (
-                      <div className="bg-pink-50/50 border border-pink-100/50 rounded-2xl p-3 flex flex-col gap-0.5">
-                        <span className="text-[10px] text-pink-700 font-black uppercase tracking-wider">
-                          Super Oferta Mayorista:
+                  {hasWholesale ? (
+                    <div className="relative bg-gradient-to-br from-pink-50 to-rose-50/60 border border-pink-100 rounded-2xl p-3.5 mt-1 overflow-hidden">
+                      {/* Unit price reference (struck) */}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-xs text-gray-400 font-semibold line-through">
+                          {formatPrice(normalDisplayPrice)}
                         </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl sm:text-2xl font-black text-pink-600 tracking-tight">
-                            {formatPrice(wholesalePrice)}
+                        <span className="text-[10px] text-gray-400 font-medium">precio por unidad</span>
+                      </div>
+
+                      {/* Wholesale hero price */}
+                      <div className="flex items-baseline gap-1.5 flex-wrap">
+                        <span className="text-2xl sm:text-3xl font-black text-pink-600 tracking-tight leading-none">
+                          {formatPrice(wholesalePrice)}
+                        </span>
+                        <span className="text-[11px] sm:text-xs font-bold text-pink-500">
+                          c/u
+                        </span>
+                        <span className="text-[10px] sm:text-[11px] font-semibold text-gray-500">
+                          {isExact
+                            ? `· llevando exactamente ${wholesaleMinQty} un.`
+                            : `· desde ${wholesaleMinQty} unidades`}
+                        </span>
+                      </div>
+
+                      {/* Savings highlight */}
+                      {savingsPerUnit > 0 && (
+                        <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-pink-100">
+                          <span className="bg-green-500 text-white text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full">
+                            Ahorras {formatPrice(savingsPerUnit)} c/u
                           </span>
-                          <span className="text-[10px] sm:text-xs font-bold text-pink-500">
-                            {isExact
-                              ? `llevando exactamente ${wholesaleMinQty} un.`
-                              : `c/u desde ${wholesaleMinQty} unidades`}
+                          <span className="text-[10px] text-green-600 font-bold">
+                            ≈ {formatPrice(totalSavings)} en total
                           </span>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-1.5 py-1">
+                      <span className="text-2xl font-black text-gray-900 tracking-tight">
+                        {formatPrice(normalDisplayPrice)}
+                      </span>
+                      <span className="text-[11px] font-bold text-gray-400">por unidad</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Purchase Action Buttons */}
-                <div className="flex flex-col sm:flex-row items-stretch gap-2.5 mt-5">
+                <div className="flex flex-col sm:flex-row items-stretch gap-2.5 mt-4">
                   {hasWholesale && (
                     <button
                       onClick={(e) => handleAddToCart(e, p, wholesaleMinQty)}
                       disabled={isAddingWholesale}
-                      className={`flex-1 py-3 px-4 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 shadow-sm ${
+                      className={`flex-[1.4] py-3.5 px-4 rounded-2xl font-black text-xs uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
                         isAddingWholesale
-                          ? 'bg-green-500 text-white shadow-green-500/10'
-                          : 'bg-pink-600 text-white hover:bg-pink-700 hover:shadow-md hover:shadow-pink-500/10 active:scale-[0.98]'
+                          ? 'bg-green-500 text-white shadow-lg shadow-green-500/20'
+                          : 'bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/25 hover:shadow-xl hover:shadow-pink-500/35 hover:brightness-105 active:scale-[0.98]'
                       }`}
                     >
                       {isAddingWholesale ? (
                         <>
-                          <Check size={14} strokeWidth={3} />
-                          Añadido al Carrito
+                          <Check size={15} strokeWidth={3} />
+                          ¡Añadido!
                         </>
                       ) : (
                         <>
-                          <ShoppingCart size={14} strokeWidth={2.5} />
-                          Llevar {wholesaleMinQty} un. (Mayorista)
+                          <ShoppingCart size={15} strokeWidth={2.5} />
+                          Llevar {wholesaleMinQty} un.
                         </>
                       )}
                     </button>
@@ -218,18 +250,18 @@ export default function WholesaleOffersSection() {
                   <button
                     onClick={(e) => handleAddToCart(e, p, 1)}
                     disabled={isAddingSingle}
-                    className={`py-3 px-4 rounded-2xl font-extrabold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 border ${
+                    className={`flex-1 py-3.5 px-4 rounded-2xl font-extrabold text-xs uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 border-2 ${
                       isAddingSingle
                         ? 'bg-green-500 border-green-500 text-white'
-                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 active:scale-[0.98]'
-                    } ${!hasWholesale ? 'flex-1' : ''}`}
+                        : 'bg-white border-pink-200 text-pink-600 hover:bg-pink-50 hover:border-pink-300 active:scale-[0.98]'
+                    }`}
                     title="Añadir 1 unidad"
                   >
                     {isAddingSingle ? (
-                      <Check size={14} strokeWidth={3} />
+                      <Check size={15} strokeWidth={3} />
                     ) : (
                       <>
-                        <ShoppingCart size={14} />
+                        <ShoppingCart size={15} />
                         Llevar 1 un.
                       </>
                     )}
