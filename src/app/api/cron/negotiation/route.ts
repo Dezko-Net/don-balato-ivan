@@ -108,8 +108,17 @@ export async function GET(req: NextRequest) {
         const topSuggestions = similar.slice(0, 2);
         if (topSuggestions.length > 0) {
           suggestionsTextList.push(`*Reemplazos sugeridos para ${item.name}:*`);
+          
+          const originalPrice = item.originalPrice;
+          const pricePaid = item.price;
+          const hasDiscount = originalPrice && originalPrice > pricePaid;
+          const discountPct = hasDiscount ? (originalPrice - pricePaid) / originalPrice : 0;
+
           topSuggestions.forEach((p: any) => {
-            const price = p.CURRENTPRICE || p.PRICE || 0;
+            let price = p.CURRENTPRICE || p.PRICE || 0;
+            if (hasDiscount) {
+              price = Math.round(price * (1 - discountPct));
+            }
             const formattedPrice = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(price);
             suggestionsTextList.push(`  • ${p.NAME} (${formattedPrice})`);
           });

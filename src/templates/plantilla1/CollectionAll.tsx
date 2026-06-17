@@ -1758,12 +1758,21 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
         @media (max-width: 480px) {
           .pk-hero-banner {
-            aspect-ratio: 2.8 / 1 !important; min-height: 72px !important; max-height: 108px !important;
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 100% !important;
+            max-height: none !important;
+            aspect-ratio: auto !important;
             display: block !important;
           }
           .pk-hero-banner-img {
-            object-fit: cover !important; object-position: center 40% !important;
-            width: 100% !important; height: 100% !important; max-height: none !important;
+            object-fit: cover !important;
+            object-position: center 50% !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: none !important;
           }
         }
 

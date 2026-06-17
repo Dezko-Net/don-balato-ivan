@@ -251,10 +251,13 @@ export default function PedidoPage() {
         return stock > 0 || stock === 99999;
       });
 
-      // Sort by price similarity
+      // Sort by price similarity (compare retail prices if originalPrice is available)
+      const targetComparePrice = item.originalPrice || item.price;
       const sorted = filtered.sort((a, b) => {
-        const diffA = Math.abs((a.CURRENTPRICE ?? a.PRICE ?? 0) - item.price);
-        const diffB = Math.abs((b.CURRENTPRICE ?? b.PRICE ?? 0) - item.price);
+        const priceA = a.CURRENTPRICE ?? a.PRICE ?? 0;
+        const priceB = b.CURRENTPRICE ?? b.PRICE ?? 0;
+        const diffA = Math.abs(priceA - targetComparePrice);
+        const diffB = Math.abs(priceB - targetComparePrice);
         return diffA - diffB;
       });
 
@@ -318,7 +321,13 @@ export default function PedidoPage() {
       }
 
       // 3. Swap in order ITEMS
-      const newPrice = newProd.CURRENTPRICE ?? newProd.PRICE ?? 0;
+      let newPrice = newProd.CURRENTPRICE ?? newProd.PRICE ?? 0;
+      let newOriginalPrice = null;
+      if (oldItem.originalPrice && oldItem.originalPrice > oldItem.price) {
+        const discountPct = (oldItem.originalPrice - oldItem.price) / oldItem.originalPrice;
+        newOriginalPrice = newPrice;
+        newPrice = Math.round(newPrice * (1 - discountPct));
+      }
       const newSku = newProd.sku || getProductSku(newProd);
 
       parsedItems[customerReplacingIdx] = {
@@ -326,6 +335,7 @@ export default function PedidoPage() {
         id: newProd.$id,
         name: newProd.NAME,
         price: newPrice,
+        originalPrice: newOriginalPrice,
         img: newProd.IMAGEURL || '',
         sku: newSku,
         total: newPrice * oldItem.qty,
@@ -1380,8 +1390,14 @@ export default function PedidoPage() {
                 ) : (
                   <div className="space-y-2">
                     {suggestions.map((p) => {
-                      const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
-                      const origPrice = items[customerReplacingIdx]?.price || 0;
+                      let price = p.CURRENTPRICE ?? p.PRICE ?? 0;
+                      const originalItem = items[customerReplacingIdx!];
+                      const hasDiscount = originalItem?.originalPrice && originalItem.originalPrice > originalItem.price;
+                      if (hasDiscount) {
+                        const discountPct = (originalItem.originalPrice! - originalItem.price) / originalItem.originalPrice!;
+                        price = Math.round(price * (1 - discountPct));
+                      }
+                      const origPrice = originalItem?.price || 0;
                       const diff = price - origPrice;
                       const diffText = diff === 0 
                         ? 'Mismo precio' 
