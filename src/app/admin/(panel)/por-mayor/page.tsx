@@ -13,8 +13,9 @@ import {
   Loader2, 
   Filter, 
   Boxes, 
-  Layers, 
-  Edit3 
+  Layers,
+  AlertCircle,
+  Undo2
 } from 'lucide-react';
 import { 
   getServices, 
@@ -41,9 +42,16 @@ export default function PorMayorPage() {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
   
-  // States for inline editing
+  // States for inline editing (local memory, no network requests while typing)
   const [editPackQty, setEditPackQty] = useState<Record<string, string>>({});
   const [editWholesalePrice, setEditWholesalePrice] = useState<Record<string, string>>({});
+  
+  // Batch saving states
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [bulkErrorLog, setBulkErrorLog] = useState<string[]>([]);
+  
+  // Individual status (for visual feedback)
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<Record<string, 'success' | 'error' | null>>({});
 
@@ -57,7 +65,7 @@ export default function PorMayorPage() {
       const catResp = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
       setCategories(catResp.documents as unknown as Category[]);
 
-      // Load all products (paginating with limit 100)
+      // Load all products
       const all: Product[] = [];
       let cursor: string | undefined;
       while (true) {
@@ -80,12 +88,32 @@ export default function PorMayorPage() {
     loadData();
   }, [loadData]);
 
-  // Handle saving of edited fields
-  const handleSave = async (productId: string) => {
+  // Determine modified product IDs
+  const modifiedIds = Array.from(new Set([
+    ...Object.keys(editPackQty),
+    ...Object.keys(editWholesalePrice)
+  ])).filter(id => {
+    // Only count as modified if it actually differs from current value
+    const prod = products.find(p => p.$id === id);
+    if (!prod) return false;
+    
+    const newQtyStr = editPackQty[id];
+    const newWholesaleStr = editWholesalePrice[id];
+    
+    const qtyChanged = newQtyStr !== undefined && parseInt(newQtyStr, 10) !== (prod.PACKQTY || 0);
+    const wholesaleChanged = newWholesaleStr !== undefined && parseInt(newWholesaleStr, 10) !== (prod.WHOLESALEPRICE || 0);
+    
+    return qtyChanged || wholesaleChanged;
+  });
+
+  // Save changes of a single product
+  const handleSaveSingle = async (productId: string) => {
+    const prod = products.find(p => p.$id === productId);
+    if (!prod) return;
+
     const rawQty = editPackQty[productId];
     const rawWholesale = editWholesalePrice[productId];
 
-    // Build update object
     const updateData: Record<string, any> = {};
     if (rawQty !== undefined) {
       const parsed = parseInt(rawQty, 10);
@@ -107,14 +135,9 @@ export default function PorMayorPage() {
 
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, updateData);
 
-      // Update state locally
-      setProducts(prev => prev.map(p => 
-        p.$id === productId 
-          ? { ...p, ...updateData } 
-          : p
-      ));
-
-      // Clear edit states for this product
+      setProducts(prev => prev.map(p => p.$id === productId ? { ...p, ...updateData } : p));
+      
+      // Clean up edited inputs for this product
       setEditPackQty(prev => { const n = { ...prev }; delete n[productId]; return n; });
       setEditWholesalePrice(prev => { const n = { ...prev }; delete n[productId]; return n; });
       
@@ -130,6 +153,95 @@ export default function PorMayorPage() {
     }
   };
 
+  // Batch Save all changes "de un tirón"
+  const handleSaveAll = async () => {
+    if (modifiedIds.length === 0) return;
+    
+    setIsBulkSaving(true);
+    setBulkProgress({ current: 0, total: modifiedIds.length });
+    setBulkErrorLog([]);
+
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
+    
+    const errors: string[] = [];
+    const successfulUpdates: Record<string, Record<string, any>> = {};
+
+    const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+    for (let i = 0; i < modifiedIds.length; i++) {
+      const id = modifiedIds[i];
+      const prod = products.find(p => p.$id === id);
+      if (!prod) continue;
+
+      const rawQty = editPackQty[id];
+      const rawWholesale = editWholesalePrice[id];
+
+      const updateData: Record<string, any> = {};
+      if (rawQty !== undefined) {
+        const parsed = parseInt(rawQty, 10);
+        updateData.PACKQTY = isNaN(parsed) ? 0 : parsed;
+      }
+      if (rawWholesale !== undefined) {
+        const parsed = parseInt(rawWholesale, 10);
+        updateData.WHOLESALEPRICE = isNaN(parsed) ? 0 : parsed;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        setBulkProgress(prev => ({ ...prev, current: i + 1 }));
+        continue;
+      }
+
+      try {
+        setSavingId(id);
+        await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, id, updateData);
+        successfulUpdates[id] = updateData;
+      } catch (err: any) {
+        console.error(`Error batch updating ${prod.NAME}:`, err);
+        errors.push(`${prod.NAME} (${getSku(prod)}): ${err.message || 'Error desconocido'}`);
+      } finally {
+        setSavingId(null);
+        setBulkProgress(prev => ({ ...prev, current: i + 1 }));
+        // Brief sleep to prevent Appwrite rate limits
+        await delay(100);
+      }
+    }
+
+    // Apply all successful updates to local state
+    setProducts(prev => prev.map(p => {
+      const update = successfulUpdates[p.$id];
+      return update ? { ...p, ...update } : p;
+    }));
+
+    // Clear edit inputs for successfully updated products
+    setEditPackQty(prev => {
+      const n = { ...prev };
+      Object.keys(successfulUpdates).forEach(id => delete n[id]);
+      return n;
+    });
+    setEditWholesalePrice(prev => {
+      const n = { ...prev };
+      Object.keys(successfulUpdates).forEach(id => delete n[id]);
+      return n;
+    });
+
+    setBulkErrorLog(errors);
+    setIsBulkSaving(false);
+
+    if (errors.length === 0) {
+      alert(`¡Éxito! Se guardaron los cambios de ${modifiedIds.length} productos correctamente.`);
+    } else {
+      alert(`Se guardaron algunos cambios, pero ocurrieron ${errors.length} errores. Revisa la consola o la lista de errores.`);
+    }
+  };
+
+  const handleDiscardAll = () => {
+    if (confirm('¿Estás seguro de que deseas descartar todos tus cambios pendientes locales?')) {
+      setEditPackQty({});
+      setEditWholesalePrice({});
+    }
+  };
+
   const getCategoryName = (catId?: string) => {
     if (!catId) return 'Sin categoría';
     const cat = categories.find(c => c.$id === catId);
@@ -140,28 +252,83 @@ export default function PorMayorPage() {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(price || 0);
   };
 
-  // Filtered lists
-  const getFilteredProducts = () => {
-    return products.filter(p => {
-      const q = search.toLowerCase();
-      const nameMatch = p.NAME.toLowerCase().includes(q);
-      const skuMatch = getSku(p).toLowerCase().includes(q);
-      const categoryMatch = !catFilter || p.CATEGORYID === catFilter;
-      return (nameMatch || skuMatch) && categoryMatch;
-    });
-  };
+  const filtered = products.filter(p => {
+    const q = search.toLowerCase();
+    const nameMatch = p.NAME.toLowerCase().includes(q);
+    const skuMatch = getSku(p).toLowerCase().includes(q);
+    const categoryMatch = !catFilter || p.CATEGORYID === catFilter;
+    return (nameMatch || skuMatch) && categoryMatch;
+  });
 
-  const filtered = getFilteredProducts();
+  // Group filtered lists by PACKQTY
+  const withUnitsList = filtered.filter(p => {
+    const editedQty = editPackQty[p.$id];
+    if (editedQty !== undefined) {
+      return parseInt(editedQty, 10) > 0;
+    }
+    return p.PACKQTY && p.PACKQTY > 0;
+  });
 
-  // Split into 2 lists
-  const withUnitsList = filtered.filter(p => p.PACKQTY && p.PACKQTY > 0);
-  const withoutPackagingList = filtered.filter(p => !p.PACKQTY || p.PACKQTY <= 0);
+  const withoutPackagingList = filtered.filter(p => {
+    const editedQty = editPackQty[p.$id];
+    if (editedQty !== undefined) {
+      return !editedQty || parseInt(editedQty, 10) <= 0;
+    }
+    return !p.PACKQTY || p.PACKQTY <= 0;
+  });
 
-  const totalWithUnitsAll = products.filter(p => p.PACKQTY && p.PACKQTY > 0).length;
-  const totalWithoutPackagingAll = products.filter(p => !p.PACKQTY || p.PACKQTY <= 0).length;
+  const totalWithUnitsAll = products.filter(p => {
+    const editedQty = editPackQty[p.$id];
+    if (editedQty !== undefined) return parseInt(editedQty, 10) > 0;
+    return p.PACKQTY && p.PACKQTY > 0;
+  }).length;
+
+  const totalWithoutPackagingAll = products.filter(p => {
+    const editedQty = editPackQty[p.$id];
+    if (editedQty !== undefined) return !editedQty || parseInt(editedQty, 10) <= 0;
+    return !p.PACKQTY || p.PACKQTY <= 0;
+  }).length;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto py-4">
+    <div className="space-y-8 max-w-7xl mx-auto py-4 relative">
+      
+      {/* Floating Bulk Action Bar (fixed at the bottom when there are modifications) */}
+      {modifiedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex flex-col">
+            <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Cambios Pendientes</span>
+            <span className="text-sm font-bold text-indigo-400">{modifiedIds.length} productos modificados en local</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDiscardAll}
+              disabled={isBulkSaving}
+              className="px-4 py-2 hover:bg-gray-800 text-gray-300 text-xs font-semibold rounded-xl border border-gray-700 transition flex items-center gap-1.5"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+              Descartar
+            </button>
+            <button
+              onClick={handleSaveAll}
+              disabled={isBulkSaving}
+              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-2"
+            >
+              {isBulkSaving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Guardando ({bulkProgress.current}/{bulkProgress.total})</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Guardar Todo de un Tirón</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
@@ -178,13 +345,28 @@ export default function PorMayorPage() {
         </div>
         <button
           onClick={loadData}
-          disabled={loading}
+          disabled={loading || isBulkSaving}
           className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition flex items-center gap-2 shadow-sm disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           Recargar Catálogo
         </button>
       </div>
+
+      {/* Bulk Error Log Display */}
+      {bulkErrorLog.length > 0 && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-2">
+          <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
+            <AlertCircle className="w-4 h-4" />
+            <span>Ocurrieron errores al guardar algunos productos:</span>
+          </div>
+          <ul className="text-xs text-rose-700 list-disc pl-5 space-y-1">
+            {bulkErrorLog.map((err, idx) => (
+              <li key={idx}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -260,7 +442,7 @@ export default function PorMayorPage() {
           <p className="text-gray-500 text-sm font-medium">Cargando productos de la base de datos...</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-24">
           
           {/* SECCIÓN 1: PRODUCTOS CON CANTIDAD POR UNIDADES */}
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
@@ -294,16 +476,19 @@ export default function PorMayorPage() {
                   <tbody className="divide-y divide-gray-150">
                     {withUnitsList.map(p => {
                       const isSavingThis = savingId === p.$id;
-                      const hasPackQtyChanged = editPackQty[p.$id] !== undefined;
-                      const hasWholesaleChanged = editWholesalePrice[p.$id] !== undefined;
+                      const newQtyStr = editPackQty[p.$id];
+                      const newWholesaleStr = editWholesalePrice[p.$id];
+                      
+                      const hasPackQtyChanged = newQtyStr !== undefined && parseInt(newQtyStr, 10) !== (p.PACKQTY || 0);
+                      const hasWholesaleChanged = newWholesaleStr !== undefined && parseInt(newWholesaleStr, 10) !== (p.WHOLESALEPRICE || 0);
                       const isDirty = hasPackQtyChanged || hasWholesaleChanged;
                       
-                      const currentPackQty = editPackQty[p.$id] !== undefined 
-                        ? parseInt(editPackQty[p.$id], 10) 
+                      const currentPackQty = newQtyStr !== undefined 
+                        ? parseInt(newQtyStr, 10) 
                         : (p.PACKQTY || 0);
 
-                      const currentWholesale = editWholesalePrice[p.$id] !== undefined 
-                        ? parseInt(editWholesalePrice[p.$id], 10) 
+                      const currentWholesale = newWholesaleStr !== undefined 
+                        ? parseInt(newWholesaleStr, 10) 
                         : (p.WHOLESALEPRICE || 0);
 
                       const computedPackagingPrice = currentPackQty * currentWholesale;
@@ -338,10 +523,10 @@ export default function PorMayorPage() {
                           <td className="px-6 py-4 text-center">
                             <input
                               type="number"
-                              value={editPackQty[p.$id] !== undefined ? editPackQty[p.$id] : (p.PACKQTY || '')}
+                              value={newQtyStr !== undefined ? newQtyStr : (p.PACKQTY || '')}
                               onChange={e => setEditPackQty(prev => ({ ...prev, [p.$id]: e.target.value }))}
                               placeholder="0"
-                              className="w-20 px-2 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                              className={`w-20 px-2 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white ${hasPackQtyChanged ? 'border-indigo-400 bg-indigo-50/30' : 'border-gray-250'}`}
                             />
                           </td>
 
@@ -351,10 +536,10 @@ export default function PorMayorPage() {
                               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-semibold">$</span>
                               <input
                                 type="number"
-                                value={editWholesalePrice[p.$id] !== undefined ? editWholesalePrice[p.$id] : (p.WHOLESALEPRICE || '')}
+                                value={newWholesaleStr !== undefined ? newWholesaleStr : (p.WHOLESALEPRICE || '')}
                                 onChange={e => setEditWholesalePrice(prev => ({ ...prev, [p.$id]: e.target.value }))}
                                 placeholder="0"
-                                className="w-28 pl-6 pr-2 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                                className={`w-28 pl-6 pr-2 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white ${hasWholesaleChanged ? 'border-indigo-400 bg-indigo-50/30' : 'border-gray-250'}`}
                               />
                             </div>
                           </td>
@@ -385,10 +570,10 @@ export default function PorMayorPage() {
                             <div className="flex items-center justify-center gap-1.5">
                               {isDirty ? (
                                 <button
-                                  onClick={() => handleSave(p.$id)}
-                                  disabled={isSavingThis}
+                                  onClick={() => handleSaveSingle(p.$id)}
+                                  disabled={isSavingThis || isBulkSaving}
                                   className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition shadow-sm disabled:opacity-50"
-                                  title="Guardar Cambios"
+                                  title="Guardar este Producto"
                                 >
                                   {isSavingThis ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -446,8 +631,11 @@ export default function PorMayorPage() {
                   <tbody className="divide-y divide-gray-150">
                     {withoutPackagingList.map(p => {
                       const isSavingThis = savingId === p.$id;
-                      const hasPackQtyChanged = editPackQty[p.$id] !== undefined;
-                      const hasWholesaleChanged = editWholesalePrice[p.$id] !== undefined;
+                      const newQtyStr = editPackQty[p.$id];
+                      const newWholesaleStr = editWholesalePrice[p.$id];
+                      
+                      const hasPackQtyChanged = newQtyStr !== undefined && parseInt(newQtyStr, 10) !== (p.PACKQTY || 0);
+                      const hasWholesaleChanged = newWholesaleStr !== undefined && parseInt(newWholesaleStr, 10) !== (p.WHOLESALEPRICE || 0);
                       const isDirty = hasPackQtyChanged || hasWholesaleChanged;
 
                       return (
@@ -480,10 +668,10 @@ export default function PorMayorPage() {
                           <td className="px-6 py-4 text-center">
                             <input
                               type="number"
-                              value={editPackQty[p.$id] !== undefined ? editPackQty[p.$id] : ''}
+                              value={newQtyStr !== undefined ? newQtyStr : ''}
                               onChange={e => setEditPackQty(prev => ({ ...prev, [p.$id]: e.target.value }))}
                               placeholder="Fijar Cant."
-                              className="w-24 px-2 py-1 border border-amber-200 rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 bg-amber-50/30"
+                              className={`w-24 px-2 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 bg-amber-50/10 ${hasPackQtyChanged ? 'border-amber-400 bg-amber-50/40' : 'border-amber-250'}`}
                             />
                           </td>
 
@@ -493,10 +681,10 @@ export default function PorMayorPage() {
                               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-semibold">$</span>
                               <input
                                 type="number"
-                                value={editWholesalePrice[p.$id] !== undefined ? editWholesalePrice[p.$id] : (p.WHOLESALEPRICE || '')}
+                                value={newWholesaleStr !== undefined ? newWholesaleStr : (p.WHOLESALEPRICE || '')}
                                 onChange={e => setEditWholesalePrice(prev => ({ ...prev, [p.$id]: e.target.value }))}
                                 placeholder="Fijar Mayor"
-                                className="w-28 pl-6 pr-2 py-1 border border-amber-200 rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 bg-amber-50/30"
+                                className={`w-28 pl-6 pr-2 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 bg-amber-50/10 ${hasWholesaleChanged ? 'border-amber-400 bg-amber-50/40' : 'border-amber-250'}`}
                               />
                             </div>
                           </td>
@@ -520,10 +708,10 @@ export default function PorMayorPage() {
                             <div className="flex items-center justify-center gap-1.5">
                               {isDirty ? (
                                 <button
-                                  onClick={() => handleSave(p.$id)}
-                                  disabled={isSavingThis}
+                                  onClick={() => handleSaveSingle(p.$id)}
+                                  disabled={isSavingThis || isBulkSaving}
                                   className="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-sm disabled:opacity-50"
-                                  title="Guardar y Mover"
+                                  title="Guardar este Producto"
                                 >
                                   {isSavingThis ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
