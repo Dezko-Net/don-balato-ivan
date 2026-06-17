@@ -84,6 +84,8 @@ const NAV_GROUPS: NavGroup[] = [
       ]},
       { href: '/admin/product-votes', label: 'PRÓXIMAMENTE', icon: Ico.Ofertas }
     ]},
+    { href: '/admin/por-mayor', label: 'Por Mayor', icon: Ico.Mayoristas },
+    { href: '/admin/embalajes', label: 'Embalajes', icon: Ico.Inventario },
     { href: '', label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders', children: [
       { href: '/admin/orders',            label: 'Todos los Pedidos', icon: Ico.Pedidos, badge: 'orders' },
       { href: '/admin/orders/negotiation', label: 'Negociación',       icon: Ico.Pedidos },
