@@ -5,5 +5,11 @@ const getVersion = unstable_cache(async () => { return { version: Date.now().toS
 
 export async function GET() {
   const data = await getVersion();
-  return NextResponse.json(data, { headers: { 'Cache-Control': 'public, s-maxage=86400' } });
+  return NextResponse.json(data, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'CDN-Cache-Control': 'no-store',
+      'Vercel-CDN-Cache-Control': 'no-store'
+    }
+  });
 }

@@ -35,7 +35,7 @@ let memoryCacheLiveProducts: Record<string, { data: any[]; timestamp: number }> 
 const getCachedAllProducts = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 60000)) {
+    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 2000)) {
       return memoryCacheAllProducts;
     }
 
