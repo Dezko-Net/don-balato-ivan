@@ -404,7 +404,8 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e396bf' }}><X size={14} /></button>}
           </div>
 
-          {/* Selector de Categorías en Toolbar */}
+          <div className="pk-toolbar-actions">
+            {/* Selector de Categorías en Toolbar */}
           {!lockCategoryId && (
             <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
               <select
@@ -498,6 +499,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
           <div className="pk-view-toggle" style={{ display: 'flex', background: '#fff', borderRadius: 14, border: '1.5px solid #e5e7eb', overflow: 'hidden' }}>
             <button onClick={() => setView('grid')} style={{ padding: '11px 13px', background: view === 'grid' ? '#f8f9fa' : 'transparent', color: view === 'grid' ? '#e396bf' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Grid3x3 size={16} /></button>
             <button onClick={() => setView('list')} style={{ padding: '11px 13px', background: view === 'list' ? '#f8f9fa' : 'transparent', color: view === 'list' ? '#e396bf' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><List size={16} /></button>
+          </div>
           </div>
         </div>
 
@@ -936,23 +938,40 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
           position: sticky !important;
           top: 86px !important;
           z-index: 20 !important;
-          transition: all 0.3s ease;
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .pk-toolbar.pk-toolbar-scrolled {
-          position: fixed !important;
-          top: 12px !important;
-          left: 16px !important;
-          right: 16px !important;
-          width: auto !important;
+          position: -webkit-sticky !important;
+          position: sticky !important;
+          top: 86px !important;
           z-index: 999 !important;
-          max-width: 1568px;
-          margin: 0 auto;
+          background-color: rgba(255, 255, 255, 0.95) !important;
+          box-shadow: 0 10px 30px rgba(227,150,191,0.18) !important;
+          border-radius: 18px !important;
+          padding: 8px 12px !important;
         }
-        .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-select-wrap,
-        .pk-toolbar.pk-toolbar-scrolled .pk-filters-btn,
-        .pk-toolbar.pk-toolbar-scrolled .pk-sort-wrap,
-        .pk-toolbar.pk-toolbar-scrolled .pk-view-toggle {
-          display: none !important;
+        
+        .pk-toolbar-search {
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .pk-toolbar-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          align-items: center;
+          transition: opacity 0.3s ease, max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
+          max-height: 150px;
+          opacity: 1;
+          transform: translateY(0);
+          overflow: hidden;
+        }
+        
+        .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-actions {
+          opacity: 0;
+          max-height: 0 !important;
+          transform: translateY(-10px);
+          pointer-events: none;
         }
         .pk-desktop-only { display: block; }
         .pk-mobile-only { display: none; }
@@ -1053,10 +1072,9 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             -webkit-backdrop-filter: none !important;
           }
           .pk-toolbar.pk-toolbar-scrolled {
-            position: fixed !important;
+            position: -webkit-sticky !important;
+            position: sticky !important;
             top: 10px !important;
-            left: 12px !important;
-            right: 12px !important;
             z-index: 999 !important;
             backdrop-filter: blur(16px) !important;
             -webkit-backdrop-filter: blur(16px) !important;
