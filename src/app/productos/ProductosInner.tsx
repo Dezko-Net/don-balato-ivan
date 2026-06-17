@@ -870,14 +870,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .pk-toolbar.pk-toolbar-scrolled {
-          position: fixed !important;
-          top: 12px !important;
-          left: 16px !important;
-          right: 16px !important;
-          width: auto !important;
+          position: -webkit-sticky !important;
+          position: sticky !important;
+          top: 86px !important;
           z-index: 999 !important;
-          max-width: 1568px;
-          margin: 0 auto;
           background-color: rgba(255, 255, 255, 0.95) !important;
           box-shadow: 0 10px 30px rgba(227,150,191,0.18) !important;
           border-radius: 18px !important;
@@ -1003,10 +999,9 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             -webkit-backdrop-filter: none !important;
           }
           .pk-toolbar.pk-toolbar-scrolled {
-            position: fixed !important;
+            position: -webkit-sticky !important;
+            position: sticky !important;
             top: 10px !important;
-            left: 12px !important;
-            right: 12px !important;
             z-index: 999 !important;
             backdrop-filter: blur(16px) !important;
             -webkit-backdrop-filter: blur(16px) !important;
