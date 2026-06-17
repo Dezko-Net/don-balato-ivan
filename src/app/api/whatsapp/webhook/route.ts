@@ -22,15 +22,16 @@ const ADMIN_PROMPT = `Eres Yexy IA, el asistente administrativo de Kevin&Coco po
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
 
 ## Capacidades de Admin:
-- Ver pedidos pendientes de pago, en proceso, enviados, entregados, etc.
+- Ver pedidos pendientes de pago, en proceso, en negociación, enviados, entregados, etc.
 - Consultar stock de productos.
 - Ver resumen de ventas.
 - Responder preguntas sobre la tienda y productos.
 - Dar consejos de gestión.
-- Manipular estados de pedidos (ej: cancelar, poner como pagado, en preparación, enviado, entregado, etc.).
+- Manipular estados de pedidos (ej: cancelar, poner como pagado, en negociación, en preparación, enviado, entregado, etc.).
 
 ## Comandos reconocidos (interpreta variaciones naturales):
 - "pedidos pendientes" → muestra los últimos pedidos con estado pendiente de pago
+- "pedidos en negociación" → muestra los pedidos que están en estado "En negociación / mod."
 - "pedidos de hoy" → pedidos del día
 - "stock de [producto]" → consulta stock
 - "resumen del día / ventas" → resumen rápido
@@ -45,6 +46,7 @@ Valores válidos para "status" en la acción JSON:
 - "pending" (Pendiente de pago)
 - "paid" (Pagado)
 - "assembling" (En preparación)
+- "negotiation" (Negociado / En negociación)
 - "preparing_shipping" (Preparando Despacho)
 - "ready_to_ship" (Etiqueta Lista / Listo para retirar)
 - "shipped" (Enviado)
@@ -54,6 +56,13 @@ Valores válidos para "status" en la acción JSON:
 Ejemplo de respuesta si piden cancelar:
 "Entendido. He procedido a cancelar el pedido #ORD-00051.
 [ACTION:UPDATE_ORDER]{\"code\":\"ORD-00051\",\"status\":\"cancelled\"}[/ACTION]"
+
+## Capacidad de Negociación y Faltantes:
+- Si el administrador te dice que un producto no hay en un pedido (ej: "en el pedido ORD-00051 no hay los abanicos"), debes generar:
+[ACTION:MARK_MISSING]{"code":"ORD-00051","products":["abanicos"]}[/ACTION]
+Y preguntar siempre: "¿Deseas que notifique al cliente para que elija reemplazos?"
+- Si el administrador te dice que notifiques al cliente (ej: "sí, avísale al cliente de ese pedido"), debes generar:
+[ACTION:NOTIFY_NEGOTIATION]{"code":"ORD-00051"}[/ACTION]
 
 ## Formato de respuesta:
 - Usa emojis con moderación para mayor claridad.
@@ -509,6 +518,102 @@ ${products.join('\n') || 'Sin productos.'}`;
       } catch (actionErr) {
         console.error('[WhatsApp Webhook] Action parsing/execution error:', actionErr);
         aiReply = `❌ Hubo un error al procesar la acción del pedido. Por favor inténtalo de nuevo.`;
+      }
+    }
+    // ── Action Parsing & Execution (MARK_MISSING) ──────────────────────────────
+    const markMissingRegex = /\[ACTION:MARK_MISSING\]([\s\S]*?)\[\/ACTION\]/;
+    const markMissingMatch = rawText.match(markMissingRegex);
+    if (markMissingMatch && isAdmin) {
+      try {
+        const actionData = JSON.parse(markMissingMatch[1]);
+        const { code, products } = actionData;
+        if (code && Array.isArray(products) && products.length > 0) {
+          const codeUpper = String(code).toUpperCase().trim();
+          let matchedOrder: any = null;
+
+          const qCode = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [codeUpper] });
+          const resCode = await serverListDocuments(ORDERS_COLLECTION_ID, [qCode, JSON.stringify({ method: 'limit', values: [1] })]);
+          
+          if (resCode.documents && resCode.documents.length > 0) {
+            matchedOrder = resCode.documents[0];
+          } else {
+            const resRecent = await serverListDocuments(ORDERS_COLLECTION_ID, [JSON.stringify({ method: 'limit', values: [100] })]);
+            matchedOrder = resRecent.documents.find((o: any) => 
+              String(o.$id || '').toUpperCase().endsWith(codeUpper)
+            );
+          }
+
+          if (matchedOrder) {
+            let items = [];
+            try { items = JSON.parse(matchedOrder.ITEMS || '[]'); } catch (e) {}
+            
+            let changed = false;
+            for (const prodName of products) {
+               const pNameLower = String(prodName).toLowerCase().trim();
+               const itemToMark = items.find((i: any) => i.name.toLowerCase().includes(pNameLower) && !i.missing);
+               if (itemToMark) {
+                 itemToMark.missing = true;
+                 changed = true;
+                 if (itemToMark.id) {
+                    try {
+                       await serverUpdateDocument(PRODUCTS_COLLECTION_ID, itemToMark.id, { STOCK: 0 });
+                    } catch (e) {
+                       console.warn('[WhatsApp] Could not block product stock to 0:', e);
+                    }
+                 }
+               }
+            }
+            if (changed) {
+               await serverUpdateDocument(ORDERS_COLLECTION_ID, matchedOrder.$id, {
+                 ITEMS: JSON.stringify(items),
+                 STATUS: 'negotiation',
+                 UPDATEDAT: Date.now()
+               });
+               console.log(`[WhatsApp Webhook] Order ${matchedOrder.$id} marked missing for ${products.join(',')}`);
+            } else {
+               aiReply += `\n⚠️ (Info interna: No encontré los productos mencionados en el pedido #${codeUpper} que no estuvieran ya marcados).`;
+            }
+          } else {
+            aiReply += `\n❌ (Info interna: No encontré el pedido #${codeUpper} en la base de datos).`;
+          }
+        }
+      } catch (err) {
+         console.error('[WhatsApp Webhook] MARK_MISSING parsing error:', err);
+      }
+    }
+
+    // ── Action Parsing & Execution (NOTIFY_NEGOTIATION) ────────────────────────
+    const notifyRegex = /\[ACTION:NOTIFY_NEGOTIATION\]([\s\S]*?)\[\/ACTION\]/;
+    const notifyMatch = rawText.match(notifyRegex);
+    if (notifyMatch && isAdmin) {
+      try {
+        const actionData = JSON.parse(notifyMatch[1]);
+        const { code } = actionData;
+        if (code) {
+          const codeUpper = String(code).toUpperCase().trim();
+          let matchedOrder: any = null;
+
+          const qCode = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [codeUpper] });
+          const resCode = await serverListDocuments(ORDERS_COLLECTION_ID, [qCode, JSON.stringify({ method: 'limit', values: [1] })]);
+          if (resCode.documents && resCode.documents.length > 0) {
+             matchedOrder = resCode.documents[0];
+          } else {
+             const resRecent = await serverListDocuments(ORDERS_COLLECTION_ID, [JSON.stringify({ method: 'limit', values: [100] })]);
+             matchedOrder = resRecent.documents.find((o: any) => String(o.$id || '').toUpperCase().endsWith(codeUpper));
+          }
+
+          if (matchedOrder) {
+             // Llama al cron de negociación internamente pasando el orderId
+             const cronUrl = `${SITE_URL}/api/cron/negotiation?secret=${process.env.CRON_SECRET || 'negotiation_secret_key_2026'}&orderId=${matchedOrder.$id}`;
+             fetch(cronUrl).catch(e => console.error('[WhatsApp] Cron trigger error:', e));
+             console.log(`[WhatsApp Webhook] Triggered negotiation cron for order ${matchedOrder.$id}`);
+             aiReply += `\n\n✅ Se ha activado la notificación al cliente por WhatsApp para el pedido #${codeUpper}.`;
+          } else {
+             aiReply += `\n❌ No pude encontrar el pedido #${codeUpper} para notificar.`;
+          }
+        }
+      } catch (err) {
+         console.error('[WhatsApp Webhook] NOTIFY_NEGOTIATION parsing error:', err);
       }
     }
 

@@ -14,6 +14,7 @@ import {
   Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload, Search, Download
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:            { label: 'Pendiente',                 bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
@@ -177,6 +178,46 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleSearchBySkuAndReplace = async (skuQuery: string) => {
+    const trimmed = skuQuery.trim();
+    if (!trimmed) return;
+    setSearching(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      let doc = null;
+      const queriesToTry = [
+        trimmed,
+        trimmed.toUpperCase(),
+        trimmed.toLowerCase()
+      ];
+      
+      const uniqueQueries = Array.from(new Set(queriesToTry));
+      
+      for (const q of uniqueQueries) {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.equal('sku', q),
+          Query.limit(1)
+        ]);
+        if (res.documents.length > 0) {
+          doc = res.documents[0];
+          break;
+        }
+      }
+      
+      if (doc) {
+        await replaceItem(doc);
+      } else {
+        alert(`No se encontró ningún producto con el SKU "${trimmed}". Asegúrate de que el SKU sea correcto.`);
+      }
+    } catch (err: any) {
+      alert('Error al buscar por SKU: ' + err.message);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const handleOpenSimilarSearch = async (index: number) => {
     const oldItem = items[index];
     if (!oldItem) return;
@@ -335,7 +376,8 @@ export default function OrderDetailPage() {
         id: newProduct.$id,
         name: newProduct.NAME,
         price: newPrice,
-        img: newProduct.IMAGEURL || '',
+        originalPrice: newProduct.CURRENTPRICE ?? newProduct.PRICE ?? 0,
+        img: resolveStorageImageUrl(newProduct.IMAGEURL),
         sku: newSku,
         qty: newQty,
         total: newPrice * newQty,
@@ -925,6 +967,12 @@ export default function OrderDetailPage() {
                     onChange={e => {
                       setIsSimilarSearch(false);
                       handleSearchProducts(e.target.value);
+                    }}
+                    onKeyDown={async e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        await handleSearchBySkuAndReplace(searchQuery);
+                      }
                     }}
                     placeholder="Buscar por nombre o SKU..."
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1698,11 +1746,27 @@ export default function OrderDetailPage() {
                         )}
                       </div>
                     )}
-                    {isReplaced && origItem && (
-                      <p className="text-[10px] text-gray-500 mt-1 italic">
-                        Originalmente: {origItem.name} ({origItem.sku || 'Sin SKU'})
-                      </p>
-                    )}
+                    {isReplaced && origItem && (() => {
+                      const originalPriceTotal = (origItem.price || 0) * it.qty;
+                      const replacementPriceTotal = it.price * it.qty;
+                      const difference = originalPriceTotal - replacementPriceTotal;
+                      return (
+                        <div className="mt-1 text-[10px] text-gray-500 bg-gray-50 p-2 rounded-lg border border-gray-100 inline-block">
+                          <p className="italic">Originalmente: <span className="font-semibold">{origItem.name}</span> ({origItem.sku || 'Sin SKU'}) a {fmt(origItem.price)} c/u</p>
+                          {difference > 0 ? (
+                            <p className="text-emerald-600 font-bold mt-0.5">
+                              Saldo a favor del cliente por diferencia: {fmt(difference)}
+                            </p>
+                          ) : difference < 0 ? (
+                            <p className="text-blue-600 font-bold mt-0.5">
+                              Valor extra cubierto por la tienda por las molestias de diferencia: {fmt(Math.abs(difference))}
+                            </p>
+                          ) : (
+                            <p className="text-gray-500 font-bold mt-0.5">Sin diferencia de precio</p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-xs sm:text-sm font-bold text-gray-900">{fmt(it.total || it.price * it.qty)}</p>
@@ -1717,6 +1781,33 @@ export default function OrderDetailPage() {
                       className={`text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg transition border ${isMissing ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
                     >
                       {isMissing ? 'Marcar como Disponible' : 'Marcar como Sin Stock (No Hay)'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`¿Eliminar "${it.name}" por completo de este pedido?`)) return;
+                        let parsedItems: any[] = [];
+                        try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+                        parsedItems.splice(i, 1);
+                        
+                        const newSubtotal = parsedItems.reduce((s, x) => s + (x.price * x.qty), 0);
+                        const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
+
+                        try {
+                          const { databases } = getServices();
+                          const { databaseId } = getAppwriteConfig();
+                          await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+                            ITEMS: JSON.stringify(parsedItems),
+                            SUBTOTAL: newSubtotal,
+                            TOTAL: newTotal
+                          });
+                          await load();
+                        } catch (err: any) {
+                          alert('Error al eliminar: ' + err.message);
+                        }
+                      }}
+                      className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition border border-red-200"
+                    >
+                      Eliminar del Pedido
                     </button>
                     {isMissing && (
                       <>
@@ -1749,6 +1840,7 @@ export default function OrderDetailPage() {
                           onClick={() => {
                             setIsSimilarSearch(false);
                             setReplacingIdx(i);
+                            setMissingQty(it.qty || 1);
                           }}
                           className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
                         >

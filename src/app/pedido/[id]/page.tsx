@@ -313,11 +313,15 @@ export default function PedidoPage() {
         } catch {}
       }
 
-      // 2. Delete from products
+      // 2. Block old product stock instead of deleting
       if (oldItem.id) {
         try {
-          await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION, oldItem.id);
-        } catch {}
+          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, oldItem.id, {
+            STOCK: 0
+          });
+        } catch (errStock) {
+          console.warn('No se pudo actualizar stock del producto original', errStock);
+        }
       }
 
       // 3. Swap in order ITEMS
@@ -366,6 +370,20 @@ export default function PedidoPage() {
       setSuggestions([]);
       await load();
       alert('¡Producto reemplazado con éxito!');
+
+      // Notify admin
+      try {
+        const adminMsg = `✅ El cliente del pedido *#${order.ORDERCODE || order.$id}* ha completado un reemplazo en la web.\n• Producto original: ${oldItem.name}\n• Nuevo producto: ${newProd.NAME}`;
+        await fetch('/api/admin/whatsapp-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Usamos el fallback_admin por defecto. Si el endpoint falla no rompe la app.
+          body: JSON.stringify({ phone: '56936599658', message: adminMsg })
+        });
+      } catch (errNotify) {
+        console.warn('Error notificando al admin:', errNotify);
+      }
+
     } catch (e: any) {
       setReplacingError(e.message || 'Error al realizar el reemplazo');
     } finally {
@@ -1135,11 +1153,41 @@ export default function PedidoPage() {
                           <AlertTriangle size={13} /> Producto agotado - requiere reemplazo
                         </div>
                       )}
-                      {isReplaced && (
-                        <div className="text-green-600 text-xs font-bold mt-1 flex items-center gap-1">
-                          <CheckCircle size={13} /> Reemplazado
-                        </div>
-                      )}
+                      {isReplaced && (() => {
+                        const origItem = (item as any).originalItem;
+                        if (!origItem) return (
+                          <div className="text-green-600 text-xs font-bold mt-1 flex items-center gap-1">
+                            <CheckCircle size={13} /> Reemplazado
+                          </div>
+                        );
+                        
+                        const originalPriceTotal = (origItem.price || 0) * item.qty;
+                        const replacementPriceTotal = item.price * item.qty;
+                        const difference = originalPriceTotal - replacementPriceTotal;
+                        
+                        return (
+                          <div className="mt-1 space-y-1">
+                            <div className="text-green-600 text-xs font-bold flex items-center gap-1">
+                              <CheckCircle size={13} /> Reemplazado
+                            </div>
+                            <div className="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100 inline-block">
+                              <p className="font-semibold text-gray-700">Detalles del reemplazo:</p>
+                              <p className="mt-0.5">Producto original: <span className="font-bold text-gray-600">{origItem.name}</span> ({formatPrice(origItem.price)})</p>
+                              {difference > 0 ? (
+                                <p className="text-emerald-600 font-bold mt-0.5">
+                                  Saldo a favor por diferencia: {formatPrice(difference)}
+                                </p>
+                              ) : difference < 0 ? (
+                                <p className="text-blue-600 font-bold mt-0.5">
+                                  Valor extra cubierto por la tienda por las molestias: {formatPrice(Math.abs(difference))}
+                                </p>
+                              ) : (
+                                <p className="text-gray-500 font-bold mt-0.5">Sin diferencia de precio</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {(item as any).note && (
                         <div className="mt-2 text-xs bg-amber-50 text-amber-800 p-2.5 rounded-xl border border-amber-100/60 flex items-start gap-1">
                           <span className="font-bold">💬 Nota:</span>

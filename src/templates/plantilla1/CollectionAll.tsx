@@ -1415,7 +1415,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
-            object-position: center 35% !important;
+            object-position: center bottom !important;
             opacity: 0.75 !important;
           }
 

@@ -100,27 +100,35 @@ export async function GET(req: NextRequest) {
           const stock = p.STOCK ?? 0;
           if (stock <= 0 || stock === 99999) return false; // must have real stock
           const price = p.CURRENTPRICE || p.PRICE || 0;
-          const diffPct = Math.abs(price - itemPrice) / itemPrice;
-          return diffPct <= 0.35; // similar price (within 35%)
+          
+          // Comparar en base al precio original (antes del descuento) o al pagado
+          const referencePrice = item.originalPrice || item.price || itemPrice || 0;
+          if (referencePrice === 0) return true;
+
+          const diffPct = Math.abs(price - referencePrice) / referencePrice;
+          return diffPct <= 0.20; // margen del 20% solicitado
         });
 
         // Take top 2 suggestions
         const topSuggestions = similar.slice(0, 2);
         if (topSuggestions.length > 0) {
-          suggestionsTextList.push(`*Reemplazos sugeridos para ${item.name}:*`);
+          const formattedItemPrice = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(item.price || 0);
+          suggestionsTextList.push(`*Reemplazos sugeridos para ${item.name} (que compraste a ${formattedItemPrice}):*`);
           
           const originalPrice = item.originalPrice;
           const pricePaid = item.price;
           const hasDiscount = originalPrice && originalPrice > pricePaid;
-          const discountPct = hasDiscount ? (originalPrice - pricePaid) / originalPrice : 0;
 
           topSuggestions.forEach((p: any) => {
-            let price = p.CURRENTPRICE || p.PRICE || 0;
+            let basePrice = p.CURRENTPRICE || p.PRICE || 0;
+            const formattedBase = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(basePrice);
+            const formattedPaid = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(pricePaid);
+
             if (hasDiscount) {
-              price = Math.round(price * (1 - discountPct));
+              suggestionsTextList.push(`  • ${p.NAME} (Valor normal: ${formattedBase} ➡️ Te lo respetamos al mismo precio con descuento: ${formattedPaid})`);
+            } else {
+              suggestionsTextList.push(`  • ${p.NAME} (${formattedBase})`);
             }
-            const formattedPrice = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(price);
-            suggestionsTextList.push(`  • ${p.NAME} (${formattedPrice})`);
           });
         }
       }
