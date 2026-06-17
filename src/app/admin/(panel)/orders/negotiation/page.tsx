@@ -421,7 +421,7 @@ export default function NegotiationOrdersPage() {
                 messages.map((msg: any) => {
                   const isAdmin = msg.senderRole === 'admin';
                   const date = new Date(msg.$createdAt);
-                  const isYexy = isAdmin && (msg.message.includes('Yexy') || msg.message.includes('IA') || msg.message.includes('🤖'));
+                  const isKenia = isAdmin && (msg.message.includes('Kenia') || msg.message.includes('IA') || msg.message.includes('🤖'));
 
                   return (
                     <div
@@ -431,11 +431,11 @@ export default function NegotiationOrdersPage() {
                       <div
                         className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
                           isAdmin 
-                            ? isYexy ? 'bg-pink-100 text-pink-700 border border-pink-200' : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                            ? isKenia ? 'bg-pink-100 text-pink-700 border border-pink-200' : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                             : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                         }`}
                       >
-                        {isAdmin ? (isYexy ? '🤖' : '👤') : '💬'}
+                        {isAdmin ? (isKenia ? '🤖' : '👤') : '💬'}
                       </div>
                       <div className="space-y-1 flex-1">
                         <div
@@ -452,7 +452,7 @@ export default function NegotiationOrdersPage() {
                             isAdmin ? 'text-right' : 'text-left'
                           }`}
                         >
-                          {isAdmin ? (isYexy ? 'Yexy (IA)' : 'Admin') : 'Cliente'} •{' '}
+                          {isAdmin ? (isKenia ? 'Kenia (IA)' : 'Admin') : 'Cliente'} •{' '}
                           {date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>

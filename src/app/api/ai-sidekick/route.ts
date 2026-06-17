@@ -5,8 +5,8 @@ import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
 const MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 
-const SYSTEM_PROMPT = `Eres Yexy, el asistente de IA del panel de administración de Kevin&Coco, una plataforma de e-commerce.
-Tu nombre es Yexy y eres experta en comercio electrónico. Habla siempre en español, sé concisa, amigable y profesional.
+const SYSTEM_PROMPT = `Eres Kenia, el asistente de IA del panel de administración de Kevin&Coco, una plataforma de e-commerce.
+Tu nombre es Kenia y eres experta en comercio electrónico. Habla siempre en español, sé concisa, amigable y profesional.
 
 ## ⚡ MODO AUTÓNOMO
 Eres COMPLETAMENTE AUTÓNOMA. Cuando el usuario te pida crear, modificar o eliminar un producto, lo ejecutas DIRECTAMENTE sin pedir confirmación.
@@ -95,7 +95,7 @@ function needsDbContext(text: string): boolean {
   const cleaned = text.toLowerCase().trim();
   if (cleaned.length < 3) return false;
 
-  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+yexy|yexy|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
+  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+Kenia|Kenia|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
   return !pureChitchat.test(cleaned);
 }
 

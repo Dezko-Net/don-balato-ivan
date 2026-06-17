@@ -74,10 +74,10 @@ export default function ProductsPage() {
   const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string } | null>(null);
   const [aiLoading, setAiLoading] = useState<'title' | 'desc' | null>(null);
   const [aiTitles, setAiTitles] = useState<string[]>([]);
-  const [yexyOpen, setYexyOpen] = useState(false);
-  const [yexyMessages, setYexyMessages] = useState<{role: string; content: string}[]>([]);
-  const [yexyInput, setYexyInput] = useState('');
-  const [yexyLoading, setYexyLoading] = useState(false);
+  const [KeniaOpen, setKeniaOpen] = useState(false);
+  const [KeniaMessages, setKeniaMessages] = useState<{role: string; content: string}[]>([]);
+  const [KeniaInput, setKeniaInput] = useState('');
+  const [KeniaLoading, setKeniaLoading] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Record<string, string[]>>({});
   const [brokenOnly, setBrokenOnly] = useState(false);
   const [syncingImages, setSyncingImages] = useState(false);
@@ -619,14 +619,14 @@ export default function ProductsPage() {
     return () => window.removeEventListener('yaxsel-data-change', handler);
   }, [search, catFilter, subCatFilter, stockFilter, load]);
 
-  const sendYexyMessage = async () => {
-    if (!yexyInput.trim() || yexyLoading) return;
-    const userMsg = yexyInput.trim();
-    setYexyInput('');
+  const sendKeniaMessage = async () => {
+    if (!KeniaInput.trim() || KeniaLoading) return;
+    const userMsg = KeniaInput.trim();
+    setKeniaInput('');
     const contextPrefix = modal ? `[Contexto: Estoy editando el producto "${modal.data.NAME}" (ID: ${(modal.data as Product).$id}, Precio: ${modal.data.PRICE}, Stock: ${modal.data.STOCK}, Categoría: ${categories.find(c => c.$id === modal.data.CATEGORYID)?.name || 'Sin categoría'})] ` : '';
-    const newMessages = [...yexyMessages, { role: 'user', content: contextPrefix + userMsg }];
-    setYexyMessages(newMessages);
-    setYexyLoading(true);
+    const newMessages = [...KeniaMessages, { role: 'user', content: contextPrefix + userMsg }];
+    setKeniaMessages(newMessages);
+    setKeniaLoading(true);
     try {
       const res = await fetch('/api/ai-sidekick', {
         method: 'POST',
@@ -635,7 +635,7 @@ export default function ProductsPage() {
       });
       const data = await res.json();
       const assistantMsg = data.text || data.response || data.message || 'No pude procesar la solicitud.';
-      setYexyMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
+      setKeniaMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
       // Execute actions if present
       if (data.actions) {
         for (const action of data.actions) {
@@ -669,10 +669,10 @@ export default function ProductsPage() {
             });
             const result = await res.json();
             if (result.success) {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" creado exitosamente.` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" creado exitosamente.` }]);
               load();
             } else {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al crear: ${result.error}` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al crear: ${result.error}` }]);
             }
           } else if (updateMatch) {
             const actionData = JSON.parse(updateMatch[1]);
@@ -686,9 +686,9 @@ export default function ProductsPage() {
               });
               const result = await res.json();
               if (result.success) {
-                setYexyMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" actualizado.` }]);
+                setKeniaMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" actualizado.` }]);
               } else {
-                setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${result.error}` }]);
+                setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${result.error}` }]);
               }
             }
             load();
@@ -701,10 +701,10 @@ export default function ProductsPage() {
             });
             const result = await res.json();
             if (result.success) {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `🗑️ Producto "${actionData.name}" eliminado.` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `🗑️ Producto "${actionData.name}" eliminado.` }]);
               load();
             } else {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al eliminar: ${result.error}` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al eliminar: ${result.error}` }]);
             }
           }
         } catch (e) {
@@ -712,9 +712,9 @@ export default function ProductsPage() {
         }
       }
     } catch {
-      setYexyMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con Yexy.' }]);
+      setKeniaMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con Kenia.' }]);
     } finally {
-      setYexyLoading(false);
+      setKeniaLoading(false);
     }
   };
 
@@ -1316,7 +1316,7 @@ export default function ProductsPage() {
           {/* Header bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <button onClick={() => { setModal(null); setYexyOpen(false); setYexyMessages([]); }} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition">
+              <button onClick={() => { setModal(null); setKeniaOpen(false); setKeniaMessages([]); }} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
@@ -1349,9 +1349,9 @@ export default function ProductsPage() {
                   <Eye className="w-4 h-4" /> Ver Producto
                 </a>
               )}
-              <button onClick={() => setYexyOpen(!yexyOpen)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${yexyOpen ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'}`}>
-                <MessageSquare className="w-4 h-4" /> Preguntar a Yexy
+              <button onClick={() => setKeniaOpen(!KeniaOpen)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${KeniaOpen ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'}`}>
+                <MessageSquare className="w-4 h-4" /> Preguntar a Kenia
               </button>
               <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
               <button onClick={save} disabled={isSaving} className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2">
@@ -1362,7 +1362,7 @@ export default function ProductsPage() {
 
           <div className="flex gap-6">
             {/* Main editor area */}
-            <div className={`flex-1 space-y-6 ${yexyOpen ? 'max-w-[calc(100%-380px)]' : ''}`}>
+            <div className={`flex-1 space-y-6 ${KeniaOpen ? 'max-w-[calc(100%-380px)]' : ''}`}>
               {/* Product image + basic info */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex gap-6 flex-col lg:flex-row">
@@ -1658,42 +1658,42 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Yexy side panel */}
-            {yexyOpen && (
+            {/* Kenia side panel */}
+            {KeniaOpen && (
               <div className="w-[360px] shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">Y</div>
-                    <span className="text-sm font-semibold text-gray-800">Yexy</span>
+                    <span className="text-sm font-semibold text-gray-800">Kenia</span>
                     <span className="text-[10px] text-gray-400">para este producto</span>
                   </div>
-                  <button onClick={() => setYexyOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
+                  <button onClick={() => setKeniaOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {yexyMessages.length === 0 && (
+                  {KeniaMessages.length === 0 && (
                     <div className="text-center py-8">
                       <div className="w-12 h-12 mx-auto rounded-full bg-violet-50 flex items-center justify-center mb-3">
                         <MessageSquare className="w-6 h-6 text-violet-500" />
                       </div>
                       <p className="text-sm text-gray-500">Pregúntale algo sobre este producto</p>
-                      <p className="text-xs text-gray-400 mt-1">Yexy ya sabe qué producto estás editando</p>
+                      <p className="text-xs text-gray-400 mt-1">Kenia ya sabe qué producto estás editando</p>
                       <div className="mt-4 space-y-2">
                         {['Mejora la descripción', 'Sugiere un precio competitivo', 'Genera tags para SEO'].map(s => (
-                          <button key={s} onClick={() => { setYexyInput(s); }} className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-gray-50 hover:bg-violet-50 text-gray-600 hover:text-violet-700 transition">
+                          <button key={s} onClick={() => { setKeniaInput(s); }} className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-gray-50 hover:bg-violet-50 text-gray-600 hover:text-violet-700 transition">
                             {s}
                           </button>
                         ))}
                       </div>
                     </div>
                   )}
-                  {yexyMessages.map((msg, i) => (
+                  {KeniaMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
                         {msg.content}
                       </div>
                     </div>
                   ))}
-                  {yexyLoading && (
+                  {KeniaLoading && (
                     <div className="flex justify-start">
                       <div className="bg-gray-100 px-3 py-2 rounded-xl text-sm text-gray-500 flex items-center gap-1">
                         <Loader2 className="w-3 h-3 animate-spin" /> Pensando...
@@ -1703,10 +1703,10 @@ export default function ProductsPage() {
                 </div>
                 <div className="p-3 border-t border-gray-100">
                   <div className="flex gap-2">
-                    <input type="file" id="yexy-file-input" accept="image/*" className="hidden" onChange={async (e) => {
+                    <input type="file" id="Kenia-file-input" accept="image/*" className="hidden" onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      setYexyLoading(true);
+                      setKeniaLoading(true);
                       try {
                         const formData = new FormData();
                         formData.append('file', file);
@@ -1715,24 +1715,24 @@ export default function ProductsPage() {
                         const res = await fetch('/api/products/upload-image', { method: 'POST', body: formData });
                         const data = await res.json();
                         if (data.success) {
-                          setYexyMessages(prev => [...prev, { role: 'user', content: '📷 Imagen enviada' }, { role: 'assistant', content: '✅ Imagen subida y asignada al producto.' }]);
+                          setKeniaMessages(prev => [...prev, { role: 'user', content: '📷 Imagen enviada' }, { role: 'assistant', content: '✅ Imagen subida y asignada al producto.' }]);
                           if (modal?.data) setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: data.imageUrl } } : m);
                           load();
                         } else {
-                          setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${data.error}` }]);
+                          setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${data.error}` }]);
                         }
-                      } catch { setYexyMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir imagen.' }]); }
-                      finally { setYexyLoading(false); (e.target as HTMLInputElement).value = ''; }
+                      } catch { setKeniaMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir imagen.' }]); }
+                      finally { setKeniaLoading(false); (e.target as HTMLInputElement).value = ''; }
                     }} />
-                    <button onClick={() => document.getElementById('yexy-file-input')?.click()} disabled={yexyLoading}
+                    <button onClick={() => document.getElementById('Kenia-file-input')?.click()} disabled={KeniaLoading}
                       className="p-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition disabled:opacity-50" title="Subir imagen">
                       <ImagePlus className="w-4 h-4" />
                     </button>
-                    <input value={yexyInput} onChange={e => setYexyInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendYexyMessage(); } }}
+                    <input value={KeniaInput} onChange={e => setKeniaInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendKeniaMessage(); } }}
                       placeholder="Escribe tu pregunta..."
                       className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
-                    <button onClick={sendYexyMessage} disabled={yexyLoading || !yexyInput.trim()}
+                    <button onClick={sendKeniaMessage} disabled={KeniaLoading || !KeniaInput.trim()}
                       className="p-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition disabled:opacity-50">
                       <MessageSquare className="w-4 h-4" />
                     </button>
@@ -1771,7 +1771,7 @@ export default function ProductsPage() {
             <Download className="w-4 h-4" /> Shopify CSV
           </button>
           <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
-            <Sparkles className="w-4 h-4" /> Categorizar con Yexy
+            <Sparkles className="w-4 h-4" /> Categorizar con Kenia
           </button>
           <button onClick={() => load(false)} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -2114,10 +2114,10 @@ export default function ProductsPage() {
                         <button
                           onClick={() => {
                             openEdit(p);
-                            setTimeout(() => setYexyOpen(true), 100);
+                            setTimeout(() => setKeniaOpen(true), 100);
                           }}
                           className="relative shrink-0 group"
-                          title="Preguntar a Yexy AI"
+                          title="Preguntar a Kenia AI"
                         >
                           <div className="w-10 h-10 flex items-center justify-center bg-violet-50 rounded-xl hover:bg-violet-100 transition-colors border border-violet-200 text-violet-600">
                             <Sparkles className="w-5 h-5 animate-pulse" />
@@ -2467,7 +2467,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* AI Categorization Modal (Yexy) */}
+      {/* AI Categorization Modal (Kenia) */}
       {aiCategorizeModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -2478,7 +2478,7 @@ export default function ProductsPage() {
                   <Sparkles className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 text-base">Categorización Inteligente con Yexy</p>
+                  <p className="font-bold text-gray-900 text-base">Categorización Inteligente con Kenia</p>
                   <p className="text-xs text-gray-500 mt-0.5">Organiza tu catálogo de forma automática usando Inteligencia Artificial</p>
                 </div>
               </div>
@@ -2501,7 +2501,7 @@ export default function ProductsPage() {
                     <div>
                       <p className="font-semibold">¿Cómo funciona?</p>
                       <p className="text-violet-700/95 mt-1 leading-relaxed text-xs">
-                        Yexy analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
+                        Kenia analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
                       </p>
                     </div>
                   </div>
@@ -2540,7 +2540,7 @@ export default function ProductsPage() {
                 <div className="flex flex-col items-center justify-center py-16 space-y-6 max-w-md mx-auto">
                   <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-600 animate-spin" />
                   <div className="text-center">
-                    <p className="font-bold text-gray-800 text-lg">Yexy está analizando tu catálogo...</p>
+                    <p className="font-bold text-gray-800 text-lg">Kenia está analizando tu catálogo...</p>
                     <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
                       Este proceso se realiza en lotes eficientes de 10 productos para garantizar la máxima precisión. Por favor, no cierres esta ventana.
                     </p>
@@ -2581,7 +2581,7 @@ export default function ProductsPage() {
                             <th className="p-4">Producto</th>
                             <th className="p-4">Categoría Sugerida</th>
                             <th className="p-4">Subcategoría Sugerida</th>
-                            <th className="p-4">Justificación de Yexy</th>
+                            <th className="p-4">Justificación de Kenia</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">

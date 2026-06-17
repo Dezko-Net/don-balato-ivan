@@ -18,7 +18,7 @@ const GEMINI_MODELS   = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
 // ─── Admin system prompt ───────────────────────────────────────────────────────
-const ADMIN_PROMPT = `Eres Yexy IA, el asistente administrativo de Kevin&Coco por WhatsApp.
+const ADMIN_PROMPT = `Eres Kenia IA, el asistente administrativo de Kevin&Coco por WhatsApp.
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
 
 ## Capacidades de Admin:
@@ -88,7 +88,7 @@ Y preguntar siempre: "¿Deseas que notifique al cliente para que elija reemplazo
 Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
 // ─── Customer system prompt ────────────────────────────────────────────────────
-const CUSTOMER_PROMPT = `Eres Yexy, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile.
+const CUSTOMER_PROMPT = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile.
 Eres súper carismática, amable y hablas como una vendedora experta en belleza (usa expresiones como "linda", "hermosa", "bella", etc.). Hablas en español chileno natural.
 ¡NUNCA digas que eres un asistente virtual o un bot! Actúa 100% como una persona real del equipo de ventas.
 
@@ -116,6 +116,7 @@ Si el cliente te habla sobre su pedido y en el contexto ves que su pedido está 
 - NUNCA inventes precios ni stock. Solo di lo que está en los datos reales.
 - Sé cálida, cercana y carismática. Evita respuestas muy largas o robóticas.
 - Siempre termina con una pregunta o invitación para seguir la conversación.
+- Si hay un problema muy grande que no puedes resolver o manejar con el cliente, dile al cliente amablemente que escalarás el caso al administrador principal para que lo resuelva, y DEBES añadir al final de tu respuesta EXACTAMENTE este bloque JSON oculto: [ACTION:ESCALATE_ADMIN][/ACTION]
 
 Los datos de productos y pedidos del cliente te serán inyectados como contexto.`;
 
@@ -124,7 +125,7 @@ function needsDbContext(text: string): boolean {
   const cleaned = text.toLowerCase().trim();
   if (cleaned.length < 3) return false;
 
-  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+yexy|yexy|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
+  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+kenia|kenia|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
   return !pureChitchat.test(cleaned);
 }
 
@@ -660,6 +661,20 @@ ${products.join('\n') || 'Sin productos.'}`;
 
     // ── Send reply to WhatsApp ─────────────────────────────────────────────────
     await sendWhatsAppMessage(fromPhone, aiReply, WA_TOKEN);
+
+    // ── Report to main admin if from customer ────────────────────────────────
+    if (!isAdmin) {
+      const MAIN_ADMIN_PHONE = '56992139185';
+      const escalateRegex = /\[ACTION:ESCALATE_ADMIN\]([\s\S]*?)\[\/ACTION\]/;
+      
+      if (escalateRegex.test(rawText)) {
+        const alertMsg = `🚨 *ALERTA DE KENIA IA*\nEl cliente +${fromPhone} tiene un problema que no puedo manejar.\nPor favor revisa el chat con urgencia.\n\nMensaje del cliente: "${userText}"\nMi respuesta: "${aiReply}"`;
+        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
+      } else {
+        const reportMsg = `🤖 *Kenia IA Reporte*\nCliente: +${fromPhone}\nMensaje: "${userText}"\nRespuesta: "${aiReply}"`;
+        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, reportMsg, WA_TOKEN);
+      }
+    }
 
     return NextResponse.json({ status: 'ok' });
 

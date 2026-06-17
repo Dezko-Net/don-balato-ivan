@@ -121,7 +121,7 @@ const NAV_GROUPS: NavGroup[] = [
 /* ═══════════════════ IA Top Bar Button ═══════════════════ */
 const IA_PHRASES = [
   '¿Necesitas ayuda?',
-  'Habla con Yexy',
+  'Habla con Kenia',
   'Crear y editar productos',
   'Consultar pedidos',
   'Niveles de inventario',
