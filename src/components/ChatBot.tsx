@@ -94,12 +94,16 @@ export default function ChatBot() {
         }
         @media (max-width: 480px) {
           .kenia-fab {
-            bottom: 80px;
+            bottom: 112px;
             right: 12px;
-            padding: 7px 14px 7px 7px;
+            padding: 6px 12px 6px 6px;
+            max-width: min(250px, calc(100vw - 32px));
+            z-index: 9990;
           }
           .kenia-fab__avatar { width: 34px; height: 34px; }
+          .kenia-fab__name { font-size: 10px; }
           .kenia-fab__action { font-size: 12px; }
+          .kenia-fab__wa-icon { width: 15px; height: 15px; }
         }
       `}</style>
 

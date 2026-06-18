@@ -2692,14 +2692,14 @@
       
 
       
-        <div class="flex lg:hidden justify-start items-center gap-3 w-full" style="transform: translateY(65px) translateX(-20px);">
+        <div class="flex lg:hidden justify-start items-center gap-3 w-full yaxsell-mobile-buy-switch" style="transform: translateY(65px) translateX(-20px);">
 
           <!-- Botones de compra móvil (bajados en móvil con translateY) -->
           <div class="flex flex-col gap-1 flex-1">
             <div style="font-size:11px; font-weight:900; color:#fff; letter-spacing:0.5px; opacity:0.95;">COMPRA DESDE:</div>
             <div class="flex gap-2">
-              <a href="/productos" class="px-3 py-1.5 uppercase hover:opacity-80 transition-opacity text-[12px] font-black text-white rounded" style="letter-spacing:0.5px; background:linear-gradient(135deg, #e396bf, #f472b6); box-shadow:0 2px 8px rgba(227,150,191,0.25);">UNIDAD</a>
-              <a href="/paquetes" class="px-3 py-1.5 uppercase hover:opacity-80 transition-opacity text-[12px] font-black text-white rounded" style="letter-spacing:0.5px; background:linear-gradient(135deg, #e396bf, #f472b6); box-shadow:0 2px 8px rgba(227,150,191,0.25);">PAQUETE</a>
+              <a href="/productos" class="yaxsell-mobile-buy-chip px-3 py-1.5 uppercase hover:opacity-80 transition-opacity text-[12px] font-black text-white rounded" style="letter-spacing:0.5px; background:linear-gradient(135deg, #e396bf, #f472b6); box-shadow:0 2px 8px rgba(227,150,191,0.25);">UNIDAD</a>
+              <a href="/paquetes" class="yaxsell-mobile-buy-chip px-3 py-1.5 uppercase hover:opacity-80 transition-opacity text-[12px] font-black text-white rounded" style="letter-spacing:0.5px; background:linear-gradient(135deg, #e396bf, #f472b6); box-shadow:0 2px 8px rgba(227,150,191,0.25);">PAQUETE</a>
             </div>
           </div>
 
@@ -4982,7 +4982,7 @@
 >
     <parallax-element-section class="relative overflow-hidden block w-full h-auto">
         <div class="hero-no-swiper-container relative overflow-hidden w-full h-auto"
-            data-speed="7000"
+            data-speed="5000"
             data-autoplay="false"
             data-loop="false"
             data-transition="slide"
@@ -5249,7 +5249,7 @@
 <div id="shopify-section-template--KEVIN & COCO CHILE_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10;">
 
   <!-- Fade superior: overlay que sube sobre la base de la imagen del hero y la funde con el rosa -->
-  <div style="position: absolute; top: -140px; left: 0; right: 0; height: 140px; background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, rgba(255,201,224,0.85) 65%, #ffc9e0 100%); pointer-events: none; z-index: 5;"></div>
+  <div class="yaxsell-apertura-fade-top" style="position: absolute; top: -128px; left: 0; right: 0; height: 128px; background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, rgba(255,201,224,0.78) 62%, #ffc9e0 100%); pointer-events: none; z-index: 5;"></div>
 
   <!-- Particle Canvas Wrapper (with overflow hidden) -->
   <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 11;">
@@ -5378,6 +5378,23 @@
         font-size: 18px !important;
         margin-top: -12px !important;
       }
+      .yaxsell-apertura-fade-top {
+        top: -96px !important;
+        height: 96px !important;
+        background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, rgba(255,201,224,0.62) 58%, #ffc9e0 100%) !important;
+      }
+      .yaxsell-apertura-fade-bottom {
+        height: 64px !important;
+        background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, rgba(255,255,255,0.9) 78%, #ffffff 100%) !important;
+      }
+      .yaxsell-apertura-cta {
+        position: relative !important;
+        z-index: 10020 !important;
+      }
+      .yaxsell-mobile-buy-switch {
+        position: relative !important;
+        z-index: 10020 !important;
+      }
     }
   </style>
   <div class="custom-container" style="padding: 48px 24px 72px 24px; text-align: center; font-family: 'Outfit', 'Inter', sans-serif; position: relative; z-index: 20; animation: fadeInUp 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 1;">
@@ -5428,7 +5445,7 @@
       </div>
     </div>
     
-    <div style="font-size: 18px; font-weight: 700; color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
+    <div class="yaxsell-apertura-cta" style="font-size: 18px; font-weight: 700; color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
       <span>Aprovecha antes que termine</span>
       <div id="yaxsell-lottie-hourglass" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px;"></div>
     </div>
@@ -5438,7 +5455,7 @@
   </div>
 
   <!-- Smooth feathered blur transition at the bottom to blend with white background (dentro de la sección para no tapar la siguiente) -->
-  <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 90px; background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, #ffffff 100%); pointer-events: none; z-index: 1;"></div>
+  <div class="yaxsell-apertura-fade-bottom" style="position: absolute; bottom: 0; left: 0; right: 0; height: 78px; background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, #ffffff 100%); pointer-events: none; z-index: 1;"></div>
   
   <style>
     @keyframes pulseFire {
@@ -5536,7 +5553,7 @@
 
 <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/collection-list.js" defer="defer"></script>
 
-<collection-list class="collection-list block animation-section group overflow-hidden relative animation-wrapper color-scheme-1" data-id="template--27304712470809__collection_list_slider_YAxwGw" data-column-type="slideshow" data-collection-type="standard">
+<collection-list class="collection-list block animation-section group overflow-hidden relative animation-wrapper color-scheme-1" data-id="template--27304712470809__collection_list_slider_YAxwGw" data-column-type="slideshow" data-collection-type="standard" style="display:none !important;">
     
     <div class="custom-container relative overflow-hidden">
         <div class="swiper-container relative transition-all duration-300 ease-in-out z-10"

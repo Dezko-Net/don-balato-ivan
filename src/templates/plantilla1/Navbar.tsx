@@ -351,7 +351,7 @@ export default function Navbar1() {
         @keyframes tpl1-bbl-right-out  { 0% { opacity:1; transform: scale(1) translateY(0); } 35% { opacity:1; transform: scale(1.1) translateY(-3px); } 100% { opacity:0; transform: scale(0) translateY(30px); } }
         .tpl1-bottom-nav {
           display: none;
-          position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 10040;
           background: rgba(255,255,255,0.94);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
@@ -437,7 +437,7 @@ export default function Navbar1() {
           right: 0;
           margin: 0 auto;
           width: 320px; height: 160px;
-          pointer-events: none; z-index: 10;
+          pointer-events: none; z-index: 10050;
         }
         .tpl1-fab-bubble {
           position: absolute;
@@ -473,7 +473,7 @@ export default function Navbar1() {
 
         /* FAB overlay */
         .tpl1-fab-overlay {
-          position: fixed; inset: 0; z-index: 9997;
+          position: fixed; inset: 0; z-index: 10039;
           background: rgba(0,0,0,0); transition: background 0.3s ease;
         }
         .tpl1-fab-overlay.open { background: rgba(255,255,255,0.5); }
