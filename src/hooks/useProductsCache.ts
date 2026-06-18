@@ -167,7 +167,7 @@ export function useProductsCache({
       if (catalogMode === 'embalajes') {
         price = p.WHOLESALEPRICE || p.PRICE;
       } else if (catalogMode === 'paquetes') {
-        price = p.PRICE * 0.8;
+        price = p.WHOLESALEPRICE || p.PRICE;
       }
       if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
         price *= p.PACKQTY;
@@ -186,7 +186,7 @@ export function useProductsCache({
         if (catalogMode === 'embalajes') {
           price = p.WHOLESALEPRICE || p.PRICE;
         } else if (catalogMode === 'paquetes') {
-          price = p.PRICE * 0.8;
+          price = p.WHOLESALEPRICE || p.PRICE;
         }
         if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
           price *= p.PACKQTY;
@@ -211,8 +211,8 @@ export function useProductsCache({
           priceA = a.WHOLESALEPRICE || a.PRICE;
           priceB = b.WHOLESALEPRICE || b.PRICE;
         } else if (catalogMode === 'paquetes') {
-          priceA = a.PRICE * 0.8;
-          priceB = b.PRICE * 0.8;
+          priceA = a.WHOLESALEPRICE || a.PRICE;
+          priceB = b.WHOLESALEPRICE || b.PRICE;
         }
         if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && a.PACKQTY) priceA *= a.PACKQTY;
         if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && b.PACKQTY) priceB *= b.PACKQTY;
@@ -226,8 +226,8 @@ export function useProductsCache({
           priceA = a.WHOLESALEPRICE || a.PRICE;
           priceB = b.WHOLESALEPRICE || b.PRICE;
         } else if (catalogMode === 'paquetes') {
-          priceA = a.PRICE * 0.8;
-          priceB = b.PRICE * 0.8;
+          priceA = a.WHOLESALEPRICE || a.PRICE;
+          priceB = b.WHOLESALEPRICE || b.PRICE;
         }
         if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && a.PACKQTY) priceA *= a.PACKQTY;
         if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && b.PACKQTY) priceB *= b.PACKQTY;
@@ -258,6 +258,7 @@ export function useProductsCache({
 
   return {
     products: paginatedProducts,
+    allProducts: processedData.products,
     total: processedData.total,
     priceRange: processedData.priceRange,
     categoryCounts: processedData.categoryCounts,

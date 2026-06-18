@@ -75,14 +75,14 @@ const getCachedAllProducts = unstable_cache(
     return normalized;
   },
   ['all-public-products-cache-v3'],
-  { revalidate: 86400, tags: ['products'] }
+  { revalidate: 3600, tags: ['products'] }
 );
 
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 86400000)) {
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 3600000)) {
       return memoryCacheActiveOffers;
     }
 
@@ -99,7 +99,7 @@ const getCachedActiveOffers = unstable_cache(
     return ids;
   },
   ['active-offers-cache-v3'],
-  { revalidate: 86400, tags: ['offers'] }
+  { revalidate: 3600, tags: ['offers'] }
 );
 
 // Cache apertura settings
@@ -358,7 +358,7 @@ export async function GET(request: NextRequest) {
       allTags
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=86400'
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60'
       }
     });
 

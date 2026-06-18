@@ -18,7 +18,7 @@ const databases = new Databases(client);
 // Module-level in-memory cache (secondary layer)
 let memoryCacheApertura: any = null;
 let memoryCacheAperturaTime = 0;
-const MEMORY_CACHE_TTL = 86400000; // 24 hours
+const MEMORY_CACHE_TTL = 60000; // 60 seconds
 
 const DEFAULT_SETTINGS = {
   isActive: false,
@@ -51,7 +51,7 @@ const getCachedAperturaSettings = unstable_cache(
     return result;
   },
   ['apertura-settings-cache-v1'],
-  { revalidate: 86400, tags: ['apertura_settings'] }
+  { revalidate: 60, tags: ['apertura_settings'] }
 );
 
 export async function GET() {
@@ -59,7 +59,7 @@ export async function GET() {
     const data = await getCachedAperturaSettings();
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600'
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60'
       }
     });
   } catch (error: any) {

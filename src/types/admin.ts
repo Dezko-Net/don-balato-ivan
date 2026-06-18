@@ -54,6 +54,14 @@ export interface Product {
   COST?: number;
   WHOLESALEPRICE?: number;
   WHOLESALEMINQUANTITY?: number;
+  PACKQTY?: number;
+  PACK_MIN_PACKS?: number;
+  PACK_DISCOUNT_PCT?: number;
+  PACK_OFFER_PRICE?: number;
+  PACK_OFFER_EXPIRES_AT?: number;
+  PACK_OFFER_MIN_PACKS?: number;
+  UNIT_OFFER_EXPIRES_AT?: number;
+  PACK_STOCK?: number;
   STOCK: number;
   CATEGORYID?: string;
   SUBCATEGORYID?: string;
@@ -74,7 +82,6 @@ export interface Product {
   ISFEATURED?: boolean;
   ISACTIVE?: boolean;
   GROUPID?: string;
-  PACKQTY?: number;
   RESTOCKTHRESHOLD?: number;
   CUSTOM_PRIMARY_COLOR?: string;
   CUSTOM_SECONDARY_COLOR?: string;

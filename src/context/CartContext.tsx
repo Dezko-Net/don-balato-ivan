@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { CartItem, Product } from '@/types';
 import { useToast } from '@/components/Toast';
-import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, resolvePackUnitPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
@@ -12,7 +12,8 @@ import { Query, ID } from 'appwrite';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, qty?: number, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number) => void;
+  addItem: (product: Product, qty?: number, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number, isPack?: boolean) => void;
+  hasPackItems: boolean;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, qty: number) => void;
   clearCart: () => void;
@@ -75,13 +76,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
     
-    // Explicit wholesalePrice passed in item takes highest priority (e.g. from Embalajes)
+    // Explicit wholesalePrice passed in item takes highest priority (e.g. from Embalajes / isPack)
     if (item.wholesalePrice !== undefined) {
       return item.wholesalePrice;
     }
 
-    const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) 
-      ? item.product.WHOLESALEPRICE 
+    // Si el item fue agregado como paquete, usar precio de paquete (20% o PACK_DISCOUNT_PCT)
+    if (item.isPack) {
+      return resolvePackUnitPrice(item.product);
+    }
+
+    // Si la cantidad alcanza el PACKQTY del producto, aplicar precio de paquete automáticamente
+    const packQty = item.product.PACKQTY;
+    if (packQty && packQty > 1 && item.quantity >= packQty) {
+      return resolvePackUnitPrice(item.product);
+    }
+
+    const effectiveWholesale = (hasConfiguredWholesale && qtyMatches)
+      ? item.product.WHOLESALEPRICE
       : undefined;
 
     if (effectiveWholesale) {
@@ -90,20 +102,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return resolveProductDisplayPrice(item.product, apertura).displayPrice;
   };
 
-  const addItem = (product: Product, qty = 1, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number) => {
+  const addItem = (product: Product, qty = 1, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number, isPack?: boolean) => {
     const existing = items.find(i => i.product.$id === product.$id);
     
     if (existing) {
       const isLimited = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
       const maxStock = isLimited ? product.STOCK : 99999;
       const newQty = (!isLimited && unlimitedStock) ? (existing.quantity + qty) : Math.min(existing.quantity + qty, maxStock);
-      setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice } : i));
+      setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice, isPack: isPack ?? i.isPack } : i));
       showToast(`Cantidad actualizada: ${newQty} unidades`, 'info');
     } else {
-      setItems(prev => [...prev, { product, quantity: qty, timedOfferPrice, timedOfferExpiresAt, wholesalePrice }]);
+      setItems(prev => [...prev, { product, quantity: qty, timedOfferPrice, timedOfferExpiresAt, wholesalePrice, isPack }]);
       showToast(`✓ Agregado al carrito`, 'success');
     }
   };
+
+  const hasPackItems = items.some(i => i.isPack === true);
 
   const removeItem = (productId: string) => {
     const updated = itemsRef.current.filter(i => i.product.$id !== productId);
@@ -163,7 +177,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, updateCartWithLiveProducts, totalItems, subtotal, catalogSubtotal, aperturaSavings, getEffectivePrice }}>
+    <CartContext.Provider value={{ items, addItem, hasPackItems, removeItem, updateQuantity, clearCart, updateCartWithLiveProducts, totalItems, subtotal, catalogSubtotal, aperturaSavings, getEffectivePrice }}>
       {children}
     </CartContext.Provider>
   );

@@ -730,6 +730,7 @@ export default function Navbar1() {
                     </div>
                     <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
                     <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
+                    <Link href="/cuenta/pedidos-mayoristas" onClick={() => setAccountOpen(false)}><Package size={16} /> Pedidos Mayoristas</Link>
                     <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
                     <a href="/cuenta/favoritos" onClick={(e) => { e.preventDefault(); window.location.href = '/cuenta/favoritos'; setAccountOpen(false); }}><Heart size={16} /> Favoritos</a>
                     <div className="tpl1-nav-divider" />
@@ -786,6 +787,7 @@ export default function Navbar1() {
             <>
               <Link href="/cuenta" onClick={() => setMenuOpen(false)}><User size={16} /> Mi cuenta</Link>
               <Link href="/cuenta/pedidos" onClick={() => setMenuOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
+              <Link href="/cuenta/pedidos-mayoristas" onClick={() => setMenuOpen(false)}><Package size={16} /> Pedidos Mayoristas</Link>
               <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
             </>
           ) : (

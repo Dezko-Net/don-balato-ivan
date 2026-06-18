@@ -1437,18 +1437,10 @@ export default function ProductsPage() {
                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> Precios e Inventario
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Precio Normal (CLP)</label>
                     <input type="number" value={modal.data.PRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio Oferta <span className="text-gray-400">(vacío = sin descuento)</span></label>
-                    <input type="number" min="0"
-                      value={modal.data.CURRENTPRICE ?? ''}
-                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CURRENTPRICE: e.target.value === '' ? undefined : Number(e.target.value) } } : m)}
-                      placeholder="Ej: 8990"
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                   </div>
                   <div>
@@ -1456,7 +1448,7 @@ export default function ProductsPage() {
                     <input type="number" value={modal.data.COST ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, COST: Number(e.target.value) } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                     {(() => {
-                      const price = Number(modal.data.CURRENTPRICE || modal.data.PRICE) || 0;
+                      const price = Number(modal.data.PRICE) || 0;
                       const cost = Number(modal.data.COST) || 0;
                       if (!price || !cost) return null;
                       const margin = Math.round(((price - cost) / price) * 100);
@@ -1535,36 +1527,7 @@ export default function ProductsPage() {
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio Mayorista</label>
-                    <input type="number" value={modal.data.WHOLESALEPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Cant. Mínima Mayorista</label>
-                    <input type="number" value={modal.data.WHOLESALEMINQUANTITY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Lógica Mayorista</label>
-                    <div className="relative">
-                      <select value={getExactWholesaleFromFeatures(modal.data.FEATURES) ? 'exact' : 'range'}
-                        onChange={e => {
-                          const isExact = e.target.value === 'exact';
-                          setModal(m => {
-                            if (!m) return m;
-                            const currentFeatures = m.data.FEATURES || [];
-                            const newFeaturesStr = setExactWholesaleInFeatures(currentFeatures, isExact);
-                            return { ...m, data: { ...m.data, FEATURES: newFeaturesStr } };
-                          });
-                        }}
-                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="range">Rango Mínimo (o más)</option>
-                        <option value="exact">Cantidad Exacta</option>
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
+
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Cant. por paquete</label>
                     <input type="number" value={modal.data.PACKQTY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PACKQTY: Number(e.target.value) } } : m)}

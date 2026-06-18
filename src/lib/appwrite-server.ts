@@ -27,7 +27,7 @@ export async function serverListDocuments(
   collectionId: string,
   queries: string[] = []
 ): Promise<{ documents: Record<string, unknown>[]; total: number }> {
-  const q = queries.length ? `?${queries.map((x) => `queries[]=${encodeURIComponent(x)}`).join('&')}` : '';
+  const q = queries.length ? `?${queries.map((x, i) => `queries[${i}]=${encodeURIComponent(x)}`).join('&')}` : '';
   const res = await fetch(
     `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${collectionId}/documents${q}`,
     { headers: headers() }

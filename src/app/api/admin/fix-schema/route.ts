@@ -20,6 +20,7 @@ const FIXES: Record<string, AttrDef[]> = {
     { key: 'IMAGEURL5', type: 'string', size: 2048, required: false, default: null },
     { key: 'TAGS', type: 'string', size: 512, required: false, default: null, array: true },
     { key: 'FEATURES', type: 'string', size: 15000, required: false, default: null, array: true },
+    { key: 'UNIT_OFFER_EXPIRES_AT', type: 'integer', required: false, default: null },
   ],
   points_store_items: [
     { key: 'SORTORDER', type: 'integer', required: false, default: 0 },

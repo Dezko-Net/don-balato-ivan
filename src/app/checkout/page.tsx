@@ -40,7 +40,7 @@ function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
-  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem } = useCart();
+  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem, hasPackItems } = useCart();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
@@ -157,7 +157,7 @@ function CheckoutInner() {
     (async () => {
       try {
         // Fetch all coupons and filter client-side to avoid query syntax issues
-        const res = await serverListDocuments(COUPONS_COLLECTION_ID, ['limit(100)']);
+        const res = await serverListDocuments(COUPONS_COLLECTION_ID, [JSON.stringify({ method: 'limit', values: [100] })]);
         const docs = (res.documents as any[]) || [];
         const active = docs.filter((c: any) => {
           const isActive = c.isActive ?? c.ISACTIVE ?? c.ACTIVE ?? true;
@@ -444,7 +444,72 @@ function CheckoutInner() {
       return;
     }
 
-    createOrder(geoCoords);
+    if (hasPackItems) {
+      createWholesaleRequest(geoCoords);
+    } else {
+      createOrder(geoCoords);
+    }
+  }
+
+  async function createWholesaleRequest(coords: {lat: number, lng: number} | null) {
+    setSubmitting(true); setError('');
+    try {
+      // Validate pack stock for wholesale items
+      for (const item of items) {
+        if (item.isPack && item.product.PACKQTY && item.product.PACKQTY > 1) {
+          const packStock = item.product.PACK_STOCK ?? Math.floor((item.product.STOCK || 0) / item.product.PACKQTY);
+          const requestedPacks = Math.ceil(item.quantity / item.product.PACKQTY);
+          if (packStock < requestedPacks) {
+            setError(`Stock insuficiente para "${item.product.NAME}". Solo hay ${packStock} paquete(s) disponible(s) y solicitaste ${requestedPacks}.`);
+            setSubmitting(false);
+            return;
+          }
+        }
+      }
+
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const now = Date.now();
+      const reqCode = `WR-${String(now).slice(-8)}`;
+      const itemsData = items.map(i => ({
+        id: i.product.$id,
+        name: i.product.NAME,
+        price: i.wholesalePrice || i.product.WHOLESALEPRICE || i.product.PRICE,
+        packQty: i.product.PACKQTY || 1,
+        qty: i.quantity,
+        img: i.product.IMAGEURL || '',
+        total: (i.wholesalePrice || i.product.WHOLESALEPRICE || i.product.PRICE) * i.quantity,
+        isPack: i.isPack || false,
+      }));
+      const finalAddress = (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && !form.address.startsWith('[SUCURSAL]'))
+        ? `[SUCURSAL] ${form.address}` : form.address;
+      const additionalInfoWithGeo = coords
+        ? `${form.additionalInfo ? form.additionalInfo + '\n' : ''}[GEO:${coords.lat},${coords.lng}]`
+        : form.additionalInfo;
+      const docId = await databases.createDocument(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, ID.unique(), {
+        USERID: user?.id || 'guest',
+        ITEMS: JSON.stringify(itemsData),
+        CUSTOMERNAME: form.name,
+        CUSTOMERRUT: form.rut,
+        CUSTOMERPHONE: form.phone,
+        CUSTOMEREMAIL: form.email,
+        REGION: form.region,
+        COMUNA: form.comuna,
+        ADDRESS: finalAddress,
+        ADDITIONALINFO: additionalInfoWithGeo,
+        SHIPPINGAGENCY: agency,
+        SUBTOTAL: subtotal,
+        TOTAL: subtotal,
+        REQCODE: reqCode,
+        STATUS: 'pending_stock',
+        CREATEDAT: now,
+        ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
+      });
+      clearCart();
+      router.push(`/pedido-mayorista-confirmado?id=${docId}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al registrar pedido mayorista');
+    } finally { setSubmitting(false); }
   }
 
   const handleGeolocate = () => {
@@ -1242,11 +1307,25 @@ function CheckoutInner() {
 
                 {error && <p style={{ margin: '0 22px 12px', fontSize: 12, color: '#ef4444', background: '#fef2f2', padding: '8px 12px', borderRadius: 10, border: '1px solid #fecaca', fontFamily: FF }}>⚠ {error}</p>}
 
+                {/* Wholesale notice */}
+                {hasPackItems && (
+                  <div style={{ margin: '0 22px 14px', padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg,#fef9f4,#fff8f0)', border: '1px solid #eed9c4', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 20 }}>📦</span>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#5c3d24', fontFamily: FF }}>Pedido Mayorista</p>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 12, color: '#92400e', fontFamily: FF, lineHeight: 1.5 }}>
+                      Hemos recibido tus productos. Antes del pago, verificaremos la disponibilidad de stock y nos comunicaremos contigo por <strong>WhatsApp</strong> para confirmarte cuáles hay disponibles.
+                    </p>
+                    <p style={{ margin: 0, fontSize: 11, color: '#b45309', fontFamily: FF }}>También podrás ver el estado desde <strong>Mis Pedidos Mayoristas</strong> en tu cuenta.</p>
+                  </div>
+                )}
+
                 {/* Submit button */}
                 <div style={{ padding: '0 22px 20px' }}>
-                  <button type="submit" disabled={submitting || belowMinimum || !agency} className="ck-confirm-btn"
-                    style={{ display: 'block', width: '100%', padding: '16px 0', backgroundImage: submitting ? 'none' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf, #f5a8cf, #fbcfe8)', backgroundColor: submitting ? '#f5a8cf' : 'transparent', color: '#fff', textAlign: 'center', borderRadius: 16, fontSize: 16, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
-                    {!submitting && <>
+                  <button type="submit" disabled={submitting || belowMinimum || !agency} className={hasPackItems ? '' : 'ck-confirm-btn'}
+                    style={{ display: 'block', width: '100%', padding: '16px 0', backgroundImage: submitting ? 'none' : (hasPackItems ? 'none' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf, #f5a8cf, #fbcfe8)'), backgroundColor: submitting ? (hasPackItems ? '#d97706' : '#f5a8cf') : (hasPackItems ? '#c68b59' : 'transparent'), color: '#fff', textAlign: 'center', borderRadius: 16, fontSize: 16, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
+                    {!submitting && !hasPackItems && <>
                       <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                         <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
                         <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
@@ -1255,7 +1334,7 @@ function CheckoutInner() {
                       <span className="ck-shimmer-line" />
                     </>}
                     <span style={{ position: 'relative', zIndex: 2, textShadow: '0 1px 3px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      {submitting ? 'Procesando...' : <><Shield size={16} /> Confirmar pedido</>}
+                      {submitting ? 'Procesando...' : hasPackItems ? <>📦 Solicitar Pedido Mayorista</> : <><Shield size={16} /> Confirmar pedido</>}
                     </span>
                   </button>
                 </div>
