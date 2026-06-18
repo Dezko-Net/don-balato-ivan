@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsAppMessage, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
 import { serverListDocuments, serverUpdateDocument } from '@/lib/appwrite-server';
 import {
+  estimateTokensFromText,
+  getKeniaConfig,
+  getKeniaUsage,
+  hydratePrompt,
+  recordKeniaUsage,
+} from '@/lib/kenia-runtime';
+import {
   PRODUCTS_COLLECTION_ID,
   ORDERS_COLLECTION_ID,
 } from '@/lib/appwrite-admin';
@@ -191,6 +198,7 @@ export async function POST(req: NextRequest) {
     const cleanedFrom = fromPhone.replace(/\D/g, '').trim();
     const isAdmin = ADMIN_PHONES.includes(cleanedFrom);
     console.log(`[WhatsApp Webhook] Msg from: ${fromPhone} (cleaned: ${cleanedFrom}) | isAdmin: ${isAdmin} | Admin list:`, ADMIN_PHONES);
+    const keniaConfig = await getKeniaConfig();
 
     // Mark as read
     await markAsRead(msgId, WA_TOKEN);
@@ -464,7 +472,20 @@ ${products.join('\n') || 'Sin productos.'}`;
 - ${nowChileStr}
 (Usa esta fecha como referencia absoluta de "hoy" para determinar qué pedidos corresponden a "hoy", "ayer", etc.)`;
 
-    const systemPrompt = (isAdmin ? ADMIN_PROMPT : CUSTOMER_PROMPT) + timeBlock + contextBlock;
+    if (!isAdmin) {
+      const usage = await getKeniaUsage(fromPhone);
+      if (usage.blocked) {
+        const blockedReply = 'Hola linda. Por ahora este chat quedó pausado para atención automática y te responderá una persona del equipo en cuanto revise tu caso.';
+        await addToHistory(fromPhone, 'assistant', blockedReply, msgId);
+        await sendWhatsAppMessage(fromPhone, blockedReply, WA_TOKEN);
+        return NextResponse.json({ status: 'blocked' });
+      }
+    }
+
+    const basePrompt = isAdmin
+      ? (keniaConfig.adminPrompt || ADMIN_PROMPT)
+      : hydratePrompt(keniaConfig.customerPrompt || CUSTOMER_PROMPT, SITE_URL);
+    const systemPrompt = basePrompt + timeBlock + contextBlock;
 
     const contents = [
       ...history.map(m => ({
@@ -483,6 +504,7 @@ ${products.join('\n') || 'Sin productos.'}`;
     // ── Call Gemini ────────────────────────────────────────────────────────────
     let aiReply = '❌ Lo siento, no pude procesar tu mensaje en este momento. Intenta de nuevo.';
     let rawText = '';
+    let usageMetadata: any = null;
     for (const model of GEMINI_MODELS) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
       const res = await fetch(url, {
@@ -492,6 +514,7 @@ ${products.join('\n') || 'Sin productos.'}`;
       });
       if (res.ok) {
         const data = await res.json();
+        usageMetadata = data?.usageMetadata || null;
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
           rawText = text;
@@ -659,18 +682,31 @@ ${products.join('\n') || 'Sin productos.'}`;
     // Save assistant reply to history
     await addToHistory(fromPhone, 'assistant', aiReply, msgId);
 
+    if (!isAdmin) {
+      const promptTokens =
+        Number(usageMetadata?.promptTokenCount || 0) ||
+        estimateTokensFromText(systemPrompt, ...history.map((m) => m.content), userText);
+      const responseTokens =
+        Number(usageMetadata?.candidatesTokenCount || 0) ||
+        estimateTokensFromText(aiReply);
+      const totalTokens =
+        Number(usageMetadata?.totalTokenCount || 0) ||
+        promptTokens + responseTokens;
+      await recordKeniaUsage(fromPhone, { promptTokens, responseTokens, totalTokens });
+    }
+
     // ── Send reply to WhatsApp ─────────────────────────────────────────────────
     await sendWhatsAppMessage(fromPhone, aiReply, WA_TOKEN);
 
     // ── Report to main admin if from customer ────────────────────────────────
     if (!isAdmin) {
-      const MAIN_ADMIN_PHONE = '56992139185';
+      const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
       const escalateRegex = /\[ACTION:ESCALATE_ADMIN\]([\s\S]*?)\[\/ACTION\]/;
       
       if (escalateRegex.test(rawText)) {
         const alertMsg = `🚨 *ALERTA DE KENIA IA*\nEl cliente +${fromPhone} tiene un problema que no puedo manejar.\nPor favor revisa el chat con urgencia.\n\nMensaje del cliente: "${userText}"\nMi respuesta: "${aiReply}"`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
-      } else {
+      } else if (keniaConfig.notifyOnEveryCustomerMessage) {
         const reportMsg = `🤖 *Kenia IA Reporte*\nCliente: +${fromPhone}\nMensaje: "${userText}"\nRespuesta: "${aiReply}"`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, reportMsg, WA_TOKEN);
       }

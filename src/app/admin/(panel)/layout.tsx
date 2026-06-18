@@ -211,6 +211,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { unlimitedStock } = useStoreSettings();
   const router   = useRouter();
   const pathname = usePathname();
+  const isFullScreenIAWhatsApp = pathname === '/admin/ia/whatsapp';
 
   const filteredNavGroups = NAV_GROUPS.map(group => {
     if (group.label === 'General') {
@@ -828,7 +829,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       <style>{topbarShineCss}</style>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#1a1a1a', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: isFullScreenIAWhatsApp ? '#efeae2' : '#1a1a1a', overflow: 'hidden' }}>
+      {isFullScreenIAWhatsApp ? (
+        <>
+          <div className="admin-content-wrap" ref={contentWrapRef} style={{
+            flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, height: '100%', background: '#efeae2',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            <main ref={contentRef} className="admin-main-content admin-main-scroll" style={{
+              position: 'relative', zIndex: 1, flex: 1, height: '100%',
+              overflowY: 'auto', overflowX: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              padding: 0, background: '#efeae2',
+              margin: 0,
+            }}>
+              {children}
+            </main>
+          </div>
+          <AISidekick open={sidekickOpen} onClose={() => setSidekickOpen(false)} />
+        </>
+      ) : (
+      <>
       {/* ═══ Top bar — unified with sidebar ═══ */}
       <header style={{
         height: 64,
@@ -866,7 +887,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
 
           {/* IA Sidekick button with typing phrases */}
-          <IATopBarButton isOpen={sidekickOpen} onClick={() => setSidekickOpen(o => !o)} />
+          <IATopBarButton isOpen={sidekickOpen} onClick={() => {
+            setSidekickOpen(true);
+            if (pathname !== '/admin/ia') router.push('/admin/ia');
+          }} />
 
           {/* Limpiar Caché Button */}
           <button 
@@ -1013,6 +1037,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* IA Sidekick panel */}
         <AISidekick open={sidekickOpen} onClose={() => setSidekickOpen(false)} />
       </div>
+      </>
+      )}
     </div>
     </>
   );
