@@ -198,13 +198,7 @@ export default function AdminIAWhatsAppPage() {
     if (selectedPhone) loadThread(selectedPhone);
   }, [selectedPhone, loadThread]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      loadThreads(true);
-      if (selectedPhone) loadThread(selectedPhone);
-    }, 15000);
-    return () => clearInterval(timer);
-  }, [loadThreads, loadThread, selectedPhone]);
+
 
   function showToast(type: 'success' | 'error', text: string) {
     setMessage({ type, text });

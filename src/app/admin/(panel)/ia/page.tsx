@@ -92,12 +92,7 @@ export default function AdminIAPage() {
     loadThreads();
   }, [loadConfig, loadThreads]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      loadThreads();
-    }, 15000);
-    return () => clearInterval(timer);
-  }, [loadThreads]);
+
 
   function showToast(type: 'success' | 'error', text: string) {
     setMessage({ type, text });
