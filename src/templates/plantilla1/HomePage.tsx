@@ -304,6 +304,7 @@ export default function HomePage1() {
   isLoggedInRef.current = isLoggedIn;
   const containerRef = useRef<HTMLDivElement>(null);
   const couponRootRef = useRef<Root | null>(null);
+  const keniaBannerRootRef = useRef<Root | null>(null);
   const countdownMobileRootRef = useRef<Root | null>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -6831,31 +6832,129 @@ export default function HomePage1() {
       const heroEl = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
       if (heroEl) {
         const hs = heroSec.settings || {};
-        const slides = hs.heroSlides;
+
+        // Define Kenia's promotional slide as herobanner 2
+        const KENIA_PHONE = '56936599658';
+        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
+        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D';
+        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D';
+
+        const keniaSlide = {
+          imageUrl: KENIA_IMG_PC,
+          mobileImageUrl: KENIA_IMG_MOBILE,
+          title: '',
+          subtitle: '',
+          description: '',
+          btnPrimaryText: '',
+          btnPrimaryLink: '',
+          btnSecondaryText: '',
+          btnSecondaryLink: '',
+          alignment: 'center' as const,
+          buttonLink: KENIA_WA_URL,
+        };
+
+        const slides = [...(hs.heroSlides || [])];
+        if (slides.length < 2) {
+          slides.push(keniaSlide);
+        } else {
+          slides[1] = {
+            ...slides[1],
+            imageUrl: KENIA_IMG_PC,
+            mobileImageUrl: KENIA_IMG_MOBILE,
+            buttonLink: KENIA_WA_URL,
+            title: '',
+            subtitle: '',
+            description: '',
+            btnPrimaryText: '',
+            btnPrimaryLink: '',
+            btnSecondaryText: '',
+            btnSecondaryLink: '',
+          };
+        }
+
         const swiperSlides = heroEl.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
 
         // Apply autoplay/delay/speed via swiper options
-        const sliderEl = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement;
-        if (sliderEl && (hs.heroAutoplay !== undefined || hs.heroDelay !== undefined || hs.heroTransitionSpeed !== undefined)) {
+        const originalSliderEl = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement;
+        if (originalSliderEl && (window as any).Swiper) {
           try {
-            const opts = JSON.parse(sliderEl.dataset.swiperOptions!.replace(/&quot;/g, '"'));
-            if (hs.heroAutoplay !== undefined) {
-              opts.autoplay = hs.heroAutoplay ? { delay: hs.heroDelay || 5000, disableOnInteraction: false } : false;
+            // Destroy the old Swiper instance FIRST so it cleans up duplicates and styles
+            const oldSw = (originalSliderEl as any).slider || (originalSliderEl as any).swiper || (originalSliderEl.querySelector('.swiper') as any)?.swiper;
+            if (oldSw && typeof oldSw.destroy === 'function') {
+              try { oldSw.destroy(true, true); } catch (e) { }
             }
-            if (hs.heroTransitionSpeed !== undefined) {
-              opts.speed = hs.heroTransitionSpeed;
+
+            // Bypass the buggy Fuzion custom element entirely by converting it to a div
+            let sliderEl = originalSliderEl;
+            if (originalSliderEl.tagName.toLowerCase() === 'fuzion-hero-banner-slider') {
+              const newDiv = document.createElement('div');
+              newDiv.className = originalSliderEl.className;
+              if (!newDiv.classList.contains('swiper')) newDiv.classList.add('swiper');
+              // Remove the fade class to ensure it can slide normally
+              newDiv.classList.remove('swiper-fade', 'swiper-effect-fade');
+              
+              // Move all children directly to preserve existing DOM node references!
+              while (originalSliderEl.firstChild) {
+                newDiv.appendChild(originalSliderEl.firstChild);
+              }
+              
+              originalSliderEl.replaceWith(newDiv);
+              sliderEl = newDiv;
             }
-            if (window.matchMedia('(max-width: 768px)').matches) {
-              opts.loop = false;
-              opts.autoplay = false;
-              opts.allowTouchMove = false;
-              opts.simulateTouch = false;
-              opts.noSwiping = true;
-              opts.watchOverflow = true;
+
+            // Force loop, autoplay, and touch settings globally when multiple slides exist
+            const shouldAutoplay = hs.heroAutoplay !== false;
+            const hasMultiple = slides.length > 1;
+
+            const swiperConfig: any = {
+              slidesPerView: 1,
+              spaceBetween: 0,
+              loop: hasMultiple,
+              speed: hs.heroTransitionSpeed || 1000,
+              effect: 'slide', // Slide effect globally for proper swiping
+              allowTouchMove: true,
+              simulateTouch: true,
+              followFinger: true,
+              touchEventsTarget: 'wrapper',
+              watchOverflow: !hasMultiple,
+              navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev'
+              },
+              pagination: false
+            };
+
+            if (hasMultiple && shouldAutoplay) {
+              swiperConfig.autoplay = {
+                delay: hs.heroDelay || 5000,
+                disableOnInteraction: false
+              };
+            } else {
+              swiperConfig.autoplay = false;
             }
-            sliderEl.dataset.swiperOptions = JSON.stringify(opts);
-          } catch { }
+
+            // Initialize a fresh, pure Swiper instance
+            const newSwiper = new (window as any).Swiper(sliderEl, swiperConfig);
+            (sliderEl as any).swiper = newSwiper;
+
+            // Aggressive watchdog: keep swiping if it gets stuck
+            const watchdog = () => {
+              if (newSwiper && hasMultiple) {
+                newSwiper.params.allowTouchMove = true;
+                newSwiper.allowTouchMove = true;
+                if (shouldAutoplay && (!newSwiper.autoplay || !newSwiper.autoplay.running)) {
+                  try { newSwiper.autoplay.start(); } catch {}
+                }
+              }
+            };
+            setTimeout(watchdog, 1000);
+            setTimeout(watchdog, 3000);
+
+          } catch (err) {
+            console.error('[TPL1] Nuclear Swiper init failed:', err);
+          }
         }
+
 
         // Apply slide content
         const overlayOpacity = hs.heroOverlayOpacity ?? 0.3;
@@ -7274,6 +7373,21 @@ export default function HomePage1() {
               slide.classList.remove('center-content', 'left-content', 'right-content');
               slide.classList.add(`${sl.alignment}-content`);
             }
+
+            // Whole-slide click handler (e.g. for Kenia banner)
+            if (sl.buttonLink) {
+              slide.style.cursor = 'pointer';
+              slide.onclick = (e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest('a') && target.closest('a') !== slide) {
+                  return;
+                }
+                window.open(sl.buttonLink, '_blank');
+              };
+            } else {
+              slide.style.cursor = '';
+              slide.onclick = null;
+            }
           });
 
           // Hide extra slides if fewer than original
@@ -7288,7 +7402,7 @@ export default function HomePage1() {
           const applyHeroMobileLock = () => {
             const isMobile = window.matchMedia('(max-width: 768px)').matches;
             if (!heroEl) return;
-            if (isMobile) {
+            if (isMobile && slides.length <= 1) {
               heroEl.classList.add('tpl1-hero-mobile-locked');
               swiperSlides.forEach((slide, i) => {
                 slide.style.display = i === 0 ? '' : 'none';
@@ -7310,7 +7424,28 @@ export default function HomePage1() {
               sliderEl?.addEventListener?.('swiper:ready', lockSwiper as EventListener);
             } else {
               heroEl.classList.remove('tpl1-hero-mobile-locked');
-              swiperSlides.forEach(slide => { slide.style.display = ''; });
+              swiperSlides.forEach((slide, i) => {
+                if (i < slides.length) {
+                  slide.style.display = '';
+                } else {
+                  slide.style.display = 'none';
+                }
+              });
+              const unlockSwiper = () => {
+                const slider = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement & { swiper?: { allowTouchMove: boolean; autoplay?: { start?: () => void }; enable?: () => void; touchRatio?: number } };
+                const sw = slider?.swiper || (heroEl.querySelector('.swiper') as HTMLElement & { swiper?: typeof slider.swiper })?.swiper || (slider as any)?.slider;
+                if (sw) {
+                  sw.allowTouchMove = true;
+                  sw.touchRatio = 1;
+                  try { sw.enable?.(); } catch { /* ignore */ }
+                  const shouldAutoplay = hs.heroAutoplay !== false;
+                  if (shouldAutoplay && slides.length > 1) {
+                    try { sw.autoplay?.start?.(); } catch { /* ignore */ }
+                  }
+                }
+              };
+              unlockSwiper();
+              [400, 900, 1200, 2200, 3500].forEach((ms) => setTimeout(unlockSwiper, ms));
             }
           };
           applyHeroMobileLock();
@@ -8095,7 +8230,11 @@ export default function HomePage1() {
     );
   }, [bodyHtml, sectionCfg, countdownOffer, countdownProduct]);
 
+  // Removed redundant static Kenia banner injection as it is now integrated as Slide 2 (herobanner 2)
+
   /* ── Inject TPL1 coupon banner before Colecciones ── */
+
+
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0 || !containerRef.current) return;
     const enabled = isSectionEnabled(sectionCfg, 'tpl1_coupon_banner');

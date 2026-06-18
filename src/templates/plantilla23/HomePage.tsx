@@ -2024,6 +2024,188 @@ export default function HomePage23() {
     containerRef.current.dataset.htmlSet = '1';
     setHtmlInjected(true);
 
+    // 🎞️ Segundo Hero Banner (Kenia) — carrusel overlay con crossfade sobre la banner
+    // original, con flechas, puntos, autoplay (5s) y responsive (PC ≥993px / móvil <993px).
+    try {
+      const heroSec = containerRef.current.querySelector('[data-id="template--27304712470809__slideshow_FBfKC8"]') as HTMLElement | null;
+      if (heroSec && !heroSec.dataset.keniaBound) {
+        heroSec.dataset.keniaBound = '1';
+
+        const KENIA_PHONE = '56936599658';
+        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
+        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D';
+        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D';
+
+        const heroBg = heroSec.querySelector('.slideshow__background') as HTMLElement | null;
+        if (heroBg) {
+          heroBg.style.position = heroBg.style.position || 'relative';
+
+          // CSS: imagen responsive (móvil <993px / PC ≥993px) + estilos de flechas y puntos.
+          const kStyle = document.createElement('style');
+          kStyle.textContent = `
+            .tpl23-kenia-slide { background-image:url('${KENIA_IMG_MOBILE}'); }
+            @media (min-width:993px){ .tpl23-kenia-slide { background-image:url('${KENIA_IMG_PC}'); } }
+            .tpl23-hero-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:30;width:42px;height:42px;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);color:#be185d;box-shadow:0 4px 14px rgba(0,0,0,.18);transition:background .2s,transform .2s;}
+            .tpl23-hero-nav:hover{background:#fff;transform:translateY(-50%) scale(1.08);}
+            .tpl23-hero-prev{left:14px;} .tpl23-hero-next{right:14px;}
+            .tpl23-hero-dots{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:9px;}
+            .tpl23-hero-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.6);cursor:pointer;transition:width .25s,background .25s;border:none;padding:0;}
+            .tpl23-hero-dot.active{width:26px;border-radius:6px;background:#fff;}
+            @media (max-width:768px){.tpl23-hero-nav{width:34px;height:34px;} .tpl23-hero-prev{left:8px;} .tpl23-hero-next{right:8px;} .tpl23-hero-dots{bottom:14px;}}
+          `;
+          heroBg.appendChild(kStyle);
+
+          // Slide 2 (Kenia): overlay con crossfade sobre la banner original; clic → WhatsApp.
+          const kenia = document.createElement('a');
+          kenia.href = KENIA_WA_URL;
+          kenia.target = '_blank';
+          kenia.rel = 'noopener';
+          kenia.className = 'tpl23-kenia-slide';
+          kenia.style.cssText = 'position:absolute;inset:0;z-index:6;opacity:0;transition:opacity .7s ease;background-size:cover;background-position:center top;background-repeat:no-repeat;display:block;';
+          heroBg.appendChild(kenia);
+
+          // Puntos
+          const dotsWrap = document.createElement('div');
+          dotsWrap.className = 'tpl23-hero-dots';
+          const dots: HTMLButtonElement[] = [];
+
+          let idx = 0; // 0 = banner original, 1 = Kenia
+          let timer = 0;
+          const setSlide = (i: number) => {
+            idx = ((i % 2) + 2) % 2;
+            kenia.style.opacity = idx === 1 ? '1' : '0';
+            dots.forEach((d, di) => d.classList.toggle('active', di === idx));
+          };
+          const restart = () => { window.clearInterval(timer); timer = window.setInterval(() => setSlide(idx + 1), 5000); };
+
+          [0, 1].forEach(i => {
+            const d = document.createElement('button');
+            d.type = 'button';
+            d.className = 'tpl23-hero-dot' + (i === 0 ? ' active' : '');
+            d.setAttribute('aria-label', 'Banner ' + (i + 1));
+            d.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(i); restart(); };
+            dots.push(d);
+            dotsWrap.appendChild(d);
+          });
+          heroBg.appendChild(dotsWrap);
+
+          // Flechas
+          const prev = document.createElement('button');
+          prev.type = 'button';
+          prev.className = 'tpl23-hero-nav tpl23-hero-prev';
+          prev.setAttribute('aria-label', 'Anterior');
+          prev.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+          prev.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(idx - 1); restart(); };
+
+          const next = document.createElement('button');
+          next.type = 'button';
+          next.className = 'tpl23-hero-nav tpl23-hero-next';
+          next.setAttribute('aria-label', 'Siguiente');
+          next.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+          next.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(idx + 1); restart(); };
+
+          heroBg.appendChild(prev);
+          heroBg.appendChild(next);
+
+          restart(); // arranca autoplay (cambia cada 5s)
+        }
+      }
+    } catch (e) { console.error('[TPL23] Kenia hero banner error', e); }
+
+    // 🧭 Header/drawer móvil: (1) eliminar "COMPRA DESDE: UNIDAD/PAQUETE" del header,
+    // (2) subir lupa + carrito a la fila de la hamburguesa, y (3) en el drawer izquierdo
+    // reemplazar "TIENDA" por UNIDAD (/productos) y PAQUETE (/paquetes).
+    // El header y el menú del drawer se terminan de poblar (categorías con contador)
+    // DESPUÉS de inyectar el HTML, así que aplicamos los cambios con un polling
+    // idempotente hasta que el contenido esté listo (o se agote el tiempo).
+    const applyMobileHeaderDrawer = (): boolean => {
+      const root = containerRef.current;
+      if (!root) return true;
+      let done = true;
+      try {
+        // (1) Eliminar SOLO la columna "COMPRA DESDE" (texto que EMPIEZA con ella y sin
+        //     hamburguesa dentro, para no borrar el header completo). Idempotente.
+        root.querySelectorAll('.flex.flex-col').forEach(c => {
+          const el = c as HTMLElement;
+          if (/^COMPRA\s*DESDE/i.test((el.textContent || '').trim())
+            && !el.querySelector('.menu-hamburger-button, #button-mobile-menu-drawer')) {
+            el.remove();
+          }
+        });
+
+        // (2) Subir lupa + carrito a la fila de la hamburguesa.
+        const burger = root.querySelector('#button-mobile-menu-drawer') as HTMLElement | null;
+        if (burger) {
+          const burgerWrap = burger.parentElement as HTMLElement | null;
+          if (burgerWrap && !burgerWrap.dataset.iconsMoved) {
+            const headerRow = burger.closest('.flex.justify-between') as HTMLElement | null;
+            const iconsBar = headerRow
+              ? ([...headerRow.children].find(c => c.classList.contains('w-full') && c.classList.contains('lg:hidden')) as HTMLElement | undefined)
+              : undefined;
+            const search = iconsBar?.querySelector('.search-icon') as HTMLElement | null;
+            const cart = iconsBar?.querySelector('.cart-icon') as HTMLElement | null;
+            if (iconsBar && search && cart) {
+              burgerWrap.dataset.iconsMoved = '1';
+              burgerWrap.style.width = '100%';
+              burgerWrap.style.display = 'flex';
+              burgerWrap.style.alignItems = 'center';
+              burgerWrap.style.justifyContent = 'space-between';
+              const grp = document.createElement('div');
+              grp.style.cssText = 'display:flex;align-items:center;gap:8px;';
+              grp.appendChild(search);
+              grp.appendChild(cart);
+              burgerWrap.appendChild(grp);
+              iconsBar.style.display = 'none';
+            } else {
+              done = false; // aún no están los iconos
+            }
+          }
+        } else {
+          done = false; // aún no está la hamburguesa
+        }
+
+        // (3) Drawer: TIENDA → UNIDAD + PAQUETE. Guard por presencia (re-aplica si se
+        //     re-renderiza el menú). Solo marca hecho cuando UNIDAD ya existe.
+        const drawerUl = root.querySelector('#mobile-menu-drawer ul.menu--drawer') as HTMLElement | null;
+        if (drawerUl) {
+          const hasUnidad = [...drawerUl.children].some(li => /^\s*UNIDAD\b/i.test((li.textContent || '').trim()));
+          if (!hasUnidad) {
+            const tiendaLi = ([...drawerUl.children].find(li => /^\s*TIENDA\b/i.test((li.textContent || '').trim())) as HTMLElement | undefined);
+            if (tiendaLi) {
+              const makeLi = (label: string, href: string) => {
+                const li = tiendaLi.cloneNode(true) as HTMLElement;
+                li.querySelectorAll('a').forEach(a => a.setAttribute('href', href));
+                const w = document.createTreeWalker(li, NodeFilter.SHOW_TEXT);
+                let node: Node | null;
+                while ((node = w.nextNode())) {
+                  if (node.nodeValue && /\S/.test(node.nodeValue)) {
+                    node.nodeValue = node.nodeValue.replace(/TIENDA/ig, label);
+                  }
+                }
+                return li;
+              };
+              tiendaLi.insertAdjacentElement('beforebegin', makeLi('UNIDAD', '/productos'));
+              tiendaLi.insertAdjacentElement('beforebegin', makeLi('PAQUETE', '/paquetes'));
+              tiendaLi.remove();
+            } else {
+              done = false; // TIENDA aún no está en el menú
+            }
+          }
+        } else {
+          done = false; // drawer aún no listo
+        }
+      } catch (e) { console.error('[TPL23] header/drawer móvil error', e); }
+      return done;
+    };
+    {
+      let hdTries = 0;
+      const hdTimer = window.setInterval(() => {
+        hdTries++;
+        if (applyMobileHeaderDrawer() || hdTries > 25) window.clearInterval(hdTimer);
+      }, 400);
+      applyMobileHeaderDrawer();
+    }
+
     // ✨ Hero Banner — Premium Particle System (lag-free via pre-rendered textures)
     const heroParticlesCanvas = containerRef.current.querySelector('#yaxsell-hero-particles') as HTMLCanvasElement;
     if (heroParticlesCanvas && !heroParticlesCanvas.dataset.particlesBound) {

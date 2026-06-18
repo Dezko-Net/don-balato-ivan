@@ -459,6 +459,7 @@ export interface HeroSlide {
   btnSecondaryText?: string;
   btnSecondaryLink?: string;
   alignment?: 'center' | 'left' | 'right';
+  buttonLink?: string;
 }
 
 export interface SectionConfig {

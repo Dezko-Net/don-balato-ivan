@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import ChatBot from './ChatBot';
-import WhatsAppButton from './WhatsAppButton';
 
 export default function HomeOnlyWidgets() {
   const pathname = usePathname();
@@ -10,7 +9,6 @@ export default function HomeOnlyWidgets() {
   return (
     <>
       <ChatBot />
-      <WhatsAppButton />
     </>
   );
 }
