@@ -313,6 +313,18 @@ export default function HomePage1() {
   const [featuredProduct, setFeaturedProduct] = useState<Product | null>(null);
   const [countdownOffer, setCountdownOffer] = useState<TimedOffer | null>(null);
   const [countdownProduct, setCountdownProduct] = useState<Product | null>(null);
+  const [keniaEnabled, setKeniaEnabled] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/public-data/kenia-status')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.isEnabled === 'boolean') {
+          setKeniaEnabled(data.isEnabled);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   /* ── Mark template attribute on document for CSS scoping ── */
   useEffect(() => {
@@ -6854,25 +6866,36 @@ export default function HomePage1() {
         };
 
         const slides = [...(hs.heroSlides || [])];
-        if (slides.length < 2) {
-          slides.push(keniaSlide);
+        if (keniaEnabled) {
+          if (slides.length < 2) {
+            slides.push(keniaSlide);
+          } else {
+            slides[1] = {
+              ...slides[1],
+              imageUrl: KENIA_IMG_PC,
+              mobileImageUrl: KENIA_IMG_MOBILE,
+              buttonLink: KENIA_WA_URL,
+              title: '',
+              subtitle: '',
+              description: '',
+              btnPrimaryText: '',
+              btnPrimaryLink: '',
+              btnSecondaryText: '',
+              btnSecondaryLink: '',
+            };
+          }
         } else {
-          slides[1] = {
-            ...slides[1],
-            imageUrl: KENIA_IMG_PC,
-            mobileImageUrl: KENIA_IMG_MOBILE,
-            buttonLink: KENIA_WA_URL,
-            title: '',
-            subtitle: '',
-            description: '',
-            btnPrimaryText: '',
-            btnPrimaryLink: '',
-            btnSecondaryText: '',
-            btnSecondaryLink: '',
-          };
+          if (slides.length > 1) {
+            slides.splice(1);
+          }
         }
 
         const swiperSlides = heroEl.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
+        if (!keniaEnabled) {
+          swiperSlides.forEach((slide, idx) => {
+            if (idx > 0) slide.remove();
+          });
+        }
 
         // Apply autoplay/delay/speed via swiper options
         const originalSliderEl = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement;
@@ -7943,7 +7966,7 @@ export default function HomePage1() {
       main.insertBefore(el, anchor);
       anchor = el.nextSibling;
     });
-  }, [bodyHtml, sectionCfg]);
+  }, [bodyHtml, sectionCfg, keniaEnabled]);
 
   /* ── Heading split-text scroll animation (#enlarge_heading + #enlarge_subheading).
         GSAP + ScrollTrigger. Espera a que Swiper termine antes de inicializar. ── */
@@ -8299,7 +8322,7 @@ export default function HomePage1() {
     }
 
     // Inject Chatbot button
-    if (chatbotEnabled) {
+    if (chatbotEnabled && keniaEnabled) {
       const cbBtn = document.createElement('button');
       cbBtn.id = 'tpl1-chatbot-button';
       cbBtn.dataset.sectionId = 'tpl1_chatbot_button';
@@ -8315,7 +8338,7 @@ export default function HomePage1() {
       if (wa) wa.remove();
       if (cb) cb.remove();
     };
-  }, [bodyHtml, sectionCfg]);
+  }, [bodyHtml, sectionCfg, keniaEnabled]);
 
   /* ── Loading state ── */
   if (loadError) {

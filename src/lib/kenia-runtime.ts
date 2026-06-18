@@ -104,6 +104,7 @@ export interface KeniaConfig {
   tokenLimitPerCustomer: number;
   notifyOnEveryCustomerMessage: boolean;
   updatedAt: string;
+  isEnabled: boolean;
 }
 
 export interface KeniaUsageEntry {
@@ -114,6 +115,7 @@ export interface KeniaUsageEntry {
   messageCount: number;
   blocked: boolean;
   updatedAt: string;
+  maintenanceNotified?: boolean;
 }
 
 interface KeniaAppwriteConfigData extends KeniaConfig {
@@ -133,6 +135,7 @@ function getDefaultConfig(): KeniaConfig {
     tokenLimitPerCustomer: 15000,
     notifyOnEveryCustomerMessage: true,
     updatedAt: new Date().toISOString(),
+    isEnabled: true,
   };
 }
 
@@ -148,6 +151,7 @@ async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
         tokenLimitPerCustomer: parsed.tokenLimitPerCustomer || 15000,
         notifyOnEveryCustomerMessage: parsed.notifyOnEveryCustomerMessage !== false,
         updatedAt: parsed.updatedAt || new Date().toISOString(),
+        isEnabled: parsed.isEnabled !== false,
         blockedPhones: Array.isArray(parsed.blockedPhones) ? parsed.blockedPhones : [],
       };
     }
@@ -223,6 +227,7 @@ export async function getKeniaConfig(): Promise<KeniaConfig> {
     tokenLimitPerCustomer: dbConfig.tokenLimitPerCustomer,
     notifyOnEveryCustomerMessage: dbConfig.notifyOnEveryCustomerMessage,
     updatedAt: dbConfig.updatedAt,
+    isEnabled: dbConfig.isEnabled,
   };
 }
 
@@ -235,6 +240,7 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
     adminAlertPhone: normalizePhone(partial.adminAlertPhone ?? dbConfig.adminAlertPhone),
     tokenLimitPerCustomer: Math.max(1000, Number(partial.tokenLimitPerCustomer ?? dbConfig.tokenLimitPerCustomer) || dbConfig.tokenLimitPerCustomer),
     notifyOnEveryCustomerMessage: partial.notifyOnEveryCustomerMessage ?? dbConfig.notifyOnEveryCustomerMessage,
+    isEnabled: partial.isEnabled ?? dbConfig.isEnabled,
     updatedAt: new Date().toISOString(),
   };
   await saveConfigToAppwrite(nextConfig);
@@ -244,6 +250,7 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
     adminAlertPhone: nextConfig.adminAlertPhone,
     tokenLimitPerCustomer: nextConfig.tokenLimitPerCustomer,
     notifyOnEveryCustomerMessage: nextConfig.notifyOnEveryCustomerMessage,
+    isEnabled: nextConfig.isEnabled,
     updatedAt: nextConfig.updatedAt,
   };
 }
@@ -253,14 +260,16 @@ export async function getKeniaUsage(phone: string): Promise<KeniaUsageEntry> {
   const usageMap = await readUsageFromFile();
   const dbConfig = await fetchConfigFromAppwrite();
   const isBlocked = dbConfig.blockedPhones.includes(cleaned);
-  return usageMap[cleaned] || {
+  const entry = usageMap[cleaned];
+  return {
     phone: cleaned,
-    totalTokens: 0,
-    promptTokens: 0,
-    responseTokens: 0,
-    messageCount: 0,
+    totalTokens: entry?.totalTokens || 0,
+    promptTokens: entry?.promptTokens || 0,
+    responseTokens: entry?.responseTokens || 0,
+    messageCount: entry?.messageCount || 0,
     blocked: isBlocked,
-    updatedAt: '',
+    updatedAt: entry?.updatedAt || '',
+    maintenanceNotified: entry?.maintenanceNotified || false,
   };
 }
 
@@ -299,7 +308,7 @@ export async function setKeniaBlocked(phone: string, blocked: boolean): Promise<
 
 export async function recordKeniaUsage(
   phone: string,
-  usage: { promptTokens?: number; responseTokens?: number; totalTokens?: number }
+  usage: { promptTokens?: number; responseTokens?: number; totalTokens?: number; maintenanceNotified?: boolean }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
   const usageMap = await readUsageFromFile();
@@ -327,6 +336,7 @@ export async function recordKeniaUsage(
     responseTokens: prev.responseTokens + responseTokens,
     totalTokens: prev.totalTokens + totalTokens,
     messageCount: prev.messageCount + 1,
+    maintenanceNotified: usage.maintenanceNotified ?? prev.maintenanceNotified ?? false,
     updatedAt: new Date().toISOString(),
   };
   await writeUsageToFile(usageMap);
@@ -351,6 +361,7 @@ export async function getKeniaRuntimeSnapshot(): Promise<{ config: KeniaConfig; 
       tokenLimitPerCustomer: dbConfig.tokenLimitPerCustomer,
       notifyOnEveryCustomerMessage: dbConfig.notifyOnEveryCustomerMessage,
       updatedAt: dbConfig.updatedAt,
+      isEnabled: dbConfig.isEnabled,
     },
     usage: hydratedUsage,
   };

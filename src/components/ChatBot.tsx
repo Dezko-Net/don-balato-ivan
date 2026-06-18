@@ -11,6 +11,7 @@ export default function ChatBot() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [hideFab, setHideFab] = useState(false);
+  const [enabled, setEnabled] = useState(true);
 
   const isHiddenRoute =
     pathname.startsWith('/admin') ||
@@ -19,6 +20,14 @@ export default function ChatBot() {
 
   useEffect(() => {
     setMounted(true);
+    fetch('/api/public-data/kenia-status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.isEnabled === 'boolean') {
+          setEnabled(data.isEnabled);
+        }
+      })
+      .catch((err) => console.error('Error fetching Kenia status:', err));
   }, []);
 
   useEffect(() => {
@@ -29,7 +38,7 @@ export default function ChatBot() {
     return () => obs.disconnect();
   }, [pathname]);
 
-  if (isHiddenRoute || !mounted || hideFab) return null;
+  if (isHiddenRoute || !mounted || hideFab || !enabled) return null;
 
   return (
     <>

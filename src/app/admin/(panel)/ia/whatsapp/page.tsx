@@ -52,6 +52,7 @@ type KeniaConfig = {
   tokenLimitPerCustomer: number;
   notifyOnEveryCustomerMessage: boolean;
   updatedAt: string;
+  isEnabled?: boolean;
 };
 
 type ThreadDetail = {
@@ -77,6 +78,7 @@ const emptyConfig: KeniaConfig = {
   tokenLimitPerCustomer: 15000,
   notifyOnEveryCustomerMessage: true,
   updatedAt: '',
+  isEnabled: true,
 };
 
 function formatDate(value: string) {
@@ -222,6 +224,26 @@ export default function AdminIAWhatsAppPage() {
       showToast('error', error?.message || 'No se pudo guardar la configuración');
     } finally {
       setSavingConfig(false);
+    }
+  }
+
+  async function saveKeniaStatusDirectly(newValue: boolean) {
+    const next = { ...config, isEnabled: newValue };
+    try {
+      const res = await fetch('/api/admin/ia/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setConfig(data.config);
+        showToast('success', newValue ? 'Kenia ha sido activada 🟢' : 'Kenia ha sido desactivada 🔴');
+      } else {
+        showToast('error', 'No se pudo cambiar el estado de Kenia');
+      }
+    } catch {
+      showToast('error', 'Error al cambiar el estado de Kenia');
     }
   }
 
@@ -492,6 +514,33 @@ export default function AdminIAWhatsAppPage() {
             </div>
 
             <div className="max-h-[calc(100dvh-240px)] space-y-4 overflow-y-auto px-4 py-4 lg:max-h-none lg:h-full">
+              <div className="rounded-[22px] border border-[#d9dbd7] bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#667781]">Gobierno de Kenia</p>
+                    <p className="mt-1 text-sm font-bold text-[#111b21]">
+                      {config.isEnabled !== false ? '🟢 Activa' : '🔴 Apagada'}
+                    </p>
+                  </div>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={config.isEnabled !== false}
+                      onChange={(e) => {
+                        saveKeniaStatusDirectly(e.target.checked);
+                      }}
+                      className="peer sr-only"
+                    />
+                    <div className="peer h-6 w-11 rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#25d366] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
+                  </label>
+                </div>
+                {config.isEnabled === false && (
+                  <p className="mt-2 text-xs text-[#d93025] leading-normal font-semibold">
+                    ⚠️ Kenia está en modo mantenimiento. Responderá con aviso de mantenimiento solo una vez por cliente.
+                  </p>
+                )}
+              </div>
+
               <div className="rounded-[22px] border border-[#d9dbd7] bg-white p-4">
                 <div className="flex items-center justify-between">
                   <div>

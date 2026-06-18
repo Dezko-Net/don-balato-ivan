@@ -14,3 +14,4 @@ public/shopify/plantilla23.rar
 src/templates/plantilla23.rar
 plantilla23.rar
 *.rar
+.env*

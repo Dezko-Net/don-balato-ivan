@@ -23,6 +23,7 @@ type KeniaConfig = {
   tokenLimitPerCustomer: number;
   notifyOnEveryCustomerMessage: boolean;
   updatedAt: string;
+  isEnabled: boolean;
 };
 
 const emptyConfig: KeniaConfig = {
@@ -32,6 +33,7 @@ const emptyConfig: KeniaConfig = {
   tokenLimitPerCustomer: 15000,
   notifyOnEveryCustomerMessage: true,
   updatedAt: '',
+  isEnabled: true,
 };
 
 function formatDate(value: string) {
@@ -119,6 +121,26 @@ export default function AdminIAPage() {
     }
   }
 
+  async function saveKeniaStatusDirectly(newValue: boolean) {
+    const next = { ...config, isEnabled: newValue };
+    try {
+      const res = await fetch('/api/admin/ia/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setConfig(data.config);
+        showToast('success', newValue ? 'Kenia ha sido activada 🟢' : 'Kenia ha sido desactivada 🔴');
+      } else {
+        showToast('error', 'No se pudo cambiar el estado de Kenia');
+      }
+    } catch {
+      showToast('error', 'Error al cambiar el estado de Kenia');
+    }
+  }
+
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top_left,_rgba(129,140,248,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(236,72,153,0.10),_transparent_26%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_44%,_#f8fafc_100%)] px-1 py-2 sm:px-3">
       <div className="mx-auto max-w-[1700px] space-y-5">
@@ -201,7 +223,21 @@ export default function AdminIAPage() {
                 </Link>
 
                 <div className="rounded-[26px] border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-white p-5 shadow-sm">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">Gobierno IA</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">Gobierno IA</p>
+                    <label className="relative inline-flex cursor-pointer items-center">
+                      <input
+                        type="checkbox"
+                        checked={config.isEnabled}
+                        onChange={(e) => {
+                          saveKeniaStatusDirectly(e.target.checked);
+                        }}
+                        className="peer sr-only"
+                      />
+                      <div className="peer h-6 w-11 rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-violet-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
+                      <span className="ml-3 text-sm font-bold text-slate-700">{config.isEnabled ? 'Kenia Activa' : 'Kenia Inactiva'}</span>
+                    </label>
+                  </div>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <div className="rounded-2xl border border-violet-100 bg-white px-4 py-3">
                       <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">WhatsApp admin</p>

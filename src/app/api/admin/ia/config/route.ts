@@ -19,6 +19,7 @@ export async function PUT(req: NextRequest) {
       adminAlertPhone: typeof body.adminAlertPhone === 'string' ? body.adminAlertPhone : undefined,
       tokenLimitPerCustomer: typeof body.tokenLimitPerCustomer === 'number' ? body.tokenLimitPerCustomer : undefined,
       notifyOnEveryCustomerMessage: typeof body.notifyOnEveryCustomerMessage === 'boolean' ? body.notifyOnEveryCustomerMessage : undefined,
+      isEnabled: typeof body.isEnabled === 'boolean' ? body.isEnabled : undefined,
     });
     return NextResponse.json({ success: true, config });
   } catch (error: any) {

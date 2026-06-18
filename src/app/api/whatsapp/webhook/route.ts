@@ -203,6 +203,20 @@ export async function POST(req: NextRequest) {
     // Mark as read
     await markAsRead(msgId, WA_TOKEN);
 
+    // Check if Kenia is globally disabled
+    if (keniaConfig.isEnabled === false) {
+      if (!isAdmin) {
+        const usage = await getKeniaUsage(fromPhone);
+        if (!usage.maintenanceNotified) {
+          const maintenanceReply = 'Hola linda. Por el momento nuestro asistente virtual de WhatsApp se encuentra desactivado. Responderemos tu consulta de forma manual a la brevedad. ¡Muchas gracias por tu paciencia! 🌸';
+          await addToHistory(fromPhone, 'assistant', maintenanceReply, msgId);
+          await sendWhatsAppMessage(fromPhone, maintenanceReply, WA_TOKEN);
+          await recordKeniaUsage(fromPhone, { maintenanceNotified: true });
+        }
+      }
+      return NextResponse.json({ status: 'maintenance' });
+    }
+
     // Handle "limpiar historial" command
     if (userText.toLowerCase().includes('limpiar historial')) {
       await clearHistory(fromPhone);
