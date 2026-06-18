@@ -165,6 +165,18 @@ export default function HomePage23() {
   const [htmlInjected, setHtmlInjected] = useState(false);
   const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
+  const [keniaEnabled, setKeniaEnabled] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/public-data/kenia-status')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.isEnabled === 'boolean') {
+          setKeniaEnabled(data.isEnabled);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Override/disable FocusTrap to prevent screen lock bugs when opening/closing drawers
@@ -2033,8 +2045,8 @@ export default function HomePage23() {
 
         const KENIA_PHONE = '56936599658';
         const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
-        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D';
-        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D';
+        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758588825-pegada-1781758586654.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XuK0ff%2FaOBtzwSnfof24jryXdgHqvpnnFpt41fhV7HXSqq%2FsLtXBdxn1EeoICl6hOqGuAI8p2OEjm1v%2BItCsAfedWAJL9DdZAOgD9ax0YS7GUFnwGi%2Blugbq%2F52eS4Xf3M0PY9il9TikeU6BMNgqRoOVc5wsYcgUHLHI5bHkn3vMSaZty9kBmi%2BZlhXir7eM%2F5RGBD9yBJWDQsw19lA3qp8fEo5p8Wn%2FbrGMv9NXIELdqG2%2Bv0HvURo1zJsNcD%2B0TCsoLGVkuK7ojYLl6f8hB6yCLdAFH2LgICS%2B800QecmCHs3kJQeOG%2FlXlpvF9T11vamgc24ZptjcwlmmVzwyTw%3D%3D';
+        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758310444-pegada-1781758308350.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=GjfIQEBUtw%2F4U6GjdNN4ECU4wcqITqFei2LBBSdASIQyNI%2FRs2M0%2BH%2Fd8OTLaGhjmG%2B6eWQfFTXBoCdmhkyo%2Fd1H9kvIeAlzmDkUY%2BPzS35yTsjelnVXlTvt77zKpsUQfYYR9u5eYIDN%2FfdSEFY98Wb5rlPJOFt2FXneYQqnqfyJA8OhSGnHYKmfxfymlsZakUv6GmiiZGewHQ%2FbTABTHHz4cSgI5rlEISwoPGnDzEsait9CHZoszRscjCeocczr34Vbnd15CJsxrDl%2BaDIijdHSC7JPvAdt14rW6kxp6q1QAbNfxxdUmeIawwAP4tPI2a7EAg8Vna5RIr171OqYtg%3D%3D';
 
         const heroBg = heroSec.querySelector('.slideshow__background') as HTMLElement | null;
         if (heroBg) {
@@ -2055,11 +2067,18 @@ export default function HomePage23() {
           `;
           heroBg.appendChild(kStyle);
 
-          // Slide 2 (Kenia): overlay con crossfade sobre la banner original; clic → WhatsApp.
-          const kenia = document.createElement('a');
-          kenia.href = KENIA_WA_URL;
-          kenia.target = '_blank';
-          kenia.rel = 'noopener';
+          // Slide 2 (Kenia): overlay con crossfade sobre la banner original.
+          // Si keniaEnabled → <a> clickeable a WhatsApp; si no → <div> solo visual.
+          let kenia: HTMLElement;
+          if (keniaEnabled) {
+            const a = document.createElement('a');
+            a.href = KENIA_WA_URL;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            kenia = a;
+          } else {
+            kenia = document.createElement('div');
+          }
           kenia.className = 'tpl23-kenia-slide';
           kenia.style.cssText = 'position:absolute;inset:0;z-index:6;opacity:0;transition:opacity .7s ease;background-size:cover;background-position:center top;background-repeat:no-repeat;display:block;';
           heroBg.appendChild(kenia);
@@ -2740,7 +2759,7 @@ export default function HomePage23() {
     setTimeout(injectMobileHeroButtons, 800);
     setTimeout(injectMobileHeroButtons, 2000);
 
-  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers]);
+  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers, keniaEnabled]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
   useEffect(() => {
@@ -4585,6 +4604,18 @@ export default function HomePage23() {
     }
 
   }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products]);
+
+  /* ── Anular enlaces de WhatsApp de Kenia si está desactivada ── */
+  useEffect(() => {
+    if (!keniaEnabled) {
+      const keniaLinks = document.querySelectorAll('a[href*="56936599658"]');
+      keniaLinks.forEach((link) => {
+        link.removeAttribute('href');
+        link.addEventListener('click', (e) => e.preventDefault());
+        (link as HTMLElement).style.cursor = 'default';
+      });
+    }
+  }, [keniaEnabled, bodyHtml]);
 
   /* ── Loading/error states ── */
   if (loadError) {

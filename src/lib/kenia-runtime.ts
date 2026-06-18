@@ -116,6 +116,7 @@ export interface KeniaUsageEntry {
   blocked: boolean;
   updatedAt: string;
   maintenanceNotified?: boolean;
+  testAsClient?: boolean;
 }
 
 interface KeniaAppwriteConfigData extends KeniaConfig {
@@ -270,6 +271,7 @@ export async function getKeniaUsage(phone: string): Promise<KeniaUsageEntry> {
     blocked: isBlocked,
     updatedAt: entry?.updatedAt || '',
     maintenanceNotified: entry?.maintenanceNotified || false,
+    testAsClient: entry?.testAsClient || false,
   };
 }
 
@@ -308,7 +310,7 @@ export async function setKeniaBlocked(phone: string, blocked: boolean): Promise<
 
 export async function recordKeniaUsage(
   phone: string,
-  usage: { promptTokens?: number; responseTokens?: number; totalTokens?: number; maintenanceNotified?: boolean }
+  usage: { promptTokens?: number; responseTokens?: number; totalTokens?: number; maintenanceNotified?: boolean; testAsClient?: boolean }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
   const usageMap = await readUsageFromFile();
@@ -337,6 +339,7 @@ export async function recordKeniaUsage(
     totalTokens: prev.totalTokens + totalTokens,
     messageCount: prev.messageCount + 1,
     maintenanceNotified: usage.maintenanceNotified ?? prev.maintenanceNotified ?? false,
+    testAsClient: usage.testAsClient ?? prev.testAsClient ?? false,
     updatedAt: new Date().toISOString(),
   };
   await writeUsageToFile(usageMap);

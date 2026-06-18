@@ -196,8 +196,35 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanedFrom = fromPhone.replace(/\D/g, '').trim();
-    const isAdmin = ADMIN_PHONES.includes(cleanedFrom);
+    let isAdmin = ADMIN_PHONES.includes(cleanedFrom);
     console.log(`[WhatsApp Webhook] Msg from: ${fromPhone} (cleaned: ${cleanedFrom}) | isAdmin: ${isAdmin} | Admin list:`, ADMIN_PHONES);
+
+    // Obtener uso actual del remitente
+    const usage = await getKeniaUsage(fromPhone);
+    const testAsClient = usage.testAsClient === true;
+
+    // Procesar comandos de modo cliente
+    if (isAdmin && userText.toUpperCase() === 'MODO CLIENTE') {
+      await recordKeniaUsage(fromPhone, { testAsClient: true });
+      const reply = 'Kenia: Modo cliente activado para ti. Te trataré como a un cliente a partir de ahora, incluso si la IA está desactivada. Escribe "MODO ADMIN" para volver al modo administrador. 🌸';
+      await sendWhatsAppMessage(fromPhone, reply, WA_TOKEN);
+      await addToHistory(fromPhone, 'assistant', reply, msgId);
+      return NextResponse.json({ status: 'mode_client_activated' });
+    }
+
+    if (isAdmin && userText.toUpperCase() === 'MODO ADMIN') {
+      await recordKeniaUsage(fromPhone, { testAsClient: false });
+      const reply = 'Kenia: Modo administrador reactivado. Volverás a recibir los reportes y poder ejecutar comandos de administración. 🛡️';
+      await sendWhatsAppMessage(fromPhone, reply, WA_TOKEN);
+      await addToHistory(fromPhone, 'assistant', reply, msgId);
+      return NextResponse.json({ status: 'mode_admin_activated' });
+    }
+
+    // Si está en modo cliente, tratamos a este administrador como un cliente normal
+    if (testAsClient) {
+      isAdmin = false;
+    }
+
     const keniaConfig = await getKeniaConfig();
 
     // Mark as read
@@ -205,16 +232,22 @@ export async function POST(req: NextRequest) {
 
     // Check if Kenia is globally disabled
     if (keniaConfig.isEnabled === false) {
-      if (!isAdmin) {
-        const usage = await getKeniaUsage(fromPhone);
-        if (!usage.maintenanceNotified) {
-          const maintenanceReply = 'Hola linda. Por el momento nuestro asistente virtual de WhatsApp se encuentra desactivado. Responderemos tu consulta de forma manual a la brevedad. ¡Muchas gracias por tu paciencia! 🌸';
-          await addToHistory(fromPhone, 'assistant', maintenanceReply, msgId);
-          await sendWhatsAppMessage(fromPhone, maintenanceReply, WA_TOKEN);
-          await recordKeniaUsage(fromPhone, { maintenanceNotified: true });
+      // Si el admin está en modo cliente, permite bypass del mantenimiento
+      if (!testAsClient) {
+        if (!isAdmin) {
+          // Cliente real: enviar aviso de mantenimiento una sola vez
+          const usageMaint = await getKeniaUsage(fromPhone);
+          if (!usageMaint.maintenanceNotified) {
+            const maintenanceReply = 'Hola linda. Por el momento nuestro asistente virtual de WhatsApp se encuentra desactivado. Responderemos tu consulta de forma manual a la brevedad. ¡Muchas gracias por tu paciencia! 🌸';
+            await addToHistory(fromPhone, 'assistant', maintenanceReply, msgId);
+            await sendWhatsAppMessage(fromPhone, maintenanceReply, WA_TOKEN);
+            await recordKeniaUsage(fromPhone, { maintenanceNotified: true });
+          }
+          return NextResponse.json({ status: 'maintenance' });
         }
+        // Admin normal (sin modo cliente): pasa libremente, no se bloquea
       }
-      return NextResponse.json({ status: 'maintenance' });
+      // testAsClient === true: bypass total del mantenimiento
     }
 
     // Handle "limpiar historial" command
