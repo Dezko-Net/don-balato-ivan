@@ -2,6 +2,8 @@ import 'server-only';
 
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
+import { serverGetDocument, serverUpdateDocument, serverCreateDocument } from './appwrite-server';
 
 export const DEFAULT_ADMIN_PROMPT = `Eres Kenia IA, el asistente administrativo de Kevin&Coco por WhatsApp.
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
@@ -114,13 +116,14 @@ export interface KeniaUsageEntry {
   updatedAt: string;
 }
 
-interface KeniaRuntimeFile {
-  config: KeniaConfig;
-  usage: Record<string, KeniaUsageEntry>;
+interface KeniaAppwriteConfigData extends KeniaConfig {
+  blockedPhones: string[];
 }
 
-const runtimeDir = path.join(process.cwd(), 'data');
-const runtimeFile = path.join(runtimeDir, 'kenia-runtime.json');
+const THEME_CONFIG_COLLECTION_ID = 'theme_config';
+const DOCUMENT_ID = 'kenia_config';
+
+const usageFile = path.join(os.tmpdir(), 'kenia-usage.json');
 
 function getDefaultConfig(): KeniaConfig {
   return {
@@ -133,41 +136,69 @@ function getDefaultConfig(): KeniaConfig {
   };
 }
 
-function getDefaultRuntime(): KeniaRuntimeFile {
-  return {
-    config: getDefaultConfig(),
-    usage: {},
-  };
+async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
+  try {
+    const doc = await serverGetDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID);
+    if (doc && doc.config) {
+      const parsed = JSON.parse(doc.config as string);
+      return {
+        adminPrompt: parsed.adminPrompt || DEFAULT_ADMIN_PROMPT,
+        customerPrompt: parsed.customerPrompt || DEFAULT_CUSTOMER_PROMPT,
+        adminAlertPhone: parsed.adminAlertPhone || '',
+        tokenLimitPerCustomer: parsed.tokenLimitPerCustomer || 15000,
+        notifyOnEveryCustomerMessage: parsed.notifyOnEveryCustomerMessage !== false,
+        updatedAt: parsed.updatedAt || new Date().toISOString(),
+        blockedPhones: Array.isArray(parsed.blockedPhones) ? parsed.blockedPhones : [],
+      };
+    }
+  } catch (e: any) {
+    if (String(e?.message || e).includes('not found') || e?.code === 404) {
+      try {
+        const defaultConfig = getDefaultConfig();
+        const data: KeniaAppwriteConfigData = {
+          ...defaultConfig,
+          blockedPhones: [],
+        };
+        await serverCreateDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID, {
+          NAME: 'kenia_config',
+          config: JSON.stringify(data),
+        });
+        return data;
+      } catch (err) {
+        console.error('[KeniaConfig] Failed to auto-create config document in Appwrite:', err);
+      }
+    } else {
+      console.error('[KeniaConfig] Failed to fetch config from Appwrite:', e);
+    }
+  }
+  return { ...getDefaultConfig(), blockedPhones: [] };
 }
 
-async function ensureRuntimeFile() {
-  await fs.mkdir(runtimeDir, { recursive: true });
+async function saveConfigToAppwrite(config: KeniaAppwriteConfigData) {
   try {
-    await fs.access(runtimeFile);
-  } catch {
-    await fs.writeFile(runtimeFile, JSON.stringify(getDefaultRuntime(), null, 2), 'utf8');
+    await serverUpdateDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID, {
+      config: JSON.stringify(config),
+    });
+  } catch (e) {
+    console.error('[KeniaConfig] Failed to save config to Appwrite:', e);
   }
 }
 
-async function readRuntime(): Promise<KeniaRuntimeFile> {
-  await ensureRuntimeFile();
+async function readUsageFromFile(): Promise<Record<string, KeniaUsageEntry>> {
   try {
-    const raw = await fs.readFile(runtimeFile, 'utf8');
-    const parsed = JSON.parse(raw) as Partial<KeniaRuntimeFile>;
-    return {
-      config: { ...getDefaultConfig(), ...(parsed.config || {}) },
-      usage: parsed.usage || {},
-    };
+    const raw = await fs.readFile(usageFile, 'utf8');
+    return JSON.parse(raw) || {};
   } catch {
-    const fallback = getDefaultRuntime();
-    await fs.writeFile(runtimeFile, JSON.stringify(fallback, null, 2), 'utf8');
-    return fallback;
+    return {};
   }
 }
 
-async function writeRuntime(runtime: KeniaRuntimeFile) {
-  await ensureRuntimeFile();
-  await fs.writeFile(runtimeFile, JSON.stringify(runtime, null, 2), 'utf8');
+async function writeUsageToFile(usage: Record<string, KeniaUsageEntry>) {
+  try {
+    await fs.writeFile(usageFile, JSON.stringify(usage, null, 2), 'utf8');
+  } catch (e) {
+    console.error('[KeniaUsage] Failed to write usage to tmp file:', e);
+  }
 }
 
 export function normalizePhone(value: string) {
@@ -183,28 +214,72 @@ export function estimateTokensFromText(...parts: Array<string | undefined | null
   return Math.max(1, Math.ceil(chars / 4));
 }
 
-export async function getKeniaConfig() {
-  const runtime = await readRuntime();
-  return runtime.config;
+export async function getKeniaConfig(): Promise<KeniaConfig> {
+  const dbConfig = await fetchConfigFromAppwrite();
+  return {
+    adminPrompt: dbConfig.adminPrompt,
+    customerPrompt: dbConfig.customerPrompt,
+    adminAlertPhone: dbConfig.adminAlertPhone,
+    tokenLimitPerCustomer: dbConfig.tokenLimitPerCustomer,
+    notifyOnEveryCustomerMessage: dbConfig.notifyOnEveryCustomerMessage,
+    updatedAt: dbConfig.updatedAt,
+  };
 }
 
-export async function saveKeniaConfig(partial: Partial<KeniaConfig>) {
-  const runtime = await readRuntime();
-  runtime.config = {
-    ...runtime.config,
-    ...partial,
-    adminAlertPhone: normalizePhone(partial.adminAlertPhone ?? runtime.config.adminAlertPhone),
-    tokenLimitPerCustomer: Math.max(1000, Number(partial.tokenLimitPerCustomer ?? runtime.config.tokenLimitPerCustomer) || runtime.config.tokenLimitPerCustomer),
+export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<KeniaConfig> {
+  const dbConfig = await fetchConfigFromAppwrite();
+  const nextConfig: KeniaAppwriteConfigData = {
+    ...dbConfig,
+    adminPrompt: partial.adminPrompt ?? dbConfig.adminPrompt,
+    customerPrompt: partial.customerPrompt ?? dbConfig.customerPrompt,
+    adminAlertPhone: normalizePhone(partial.adminAlertPhone ?? dbConfig.adminAlertPhone),
+    tokenLimitPerCustomer: Math.max(1000, Number(partial.tokenLimitPerCustomer ?? dbConfig.tokenLimitPerCustomer) || dbConfig.tokenLimitPerCustomer),
+    notifyOnEveryCustomerMessage: partial.notifyOnEveryCustomerMessage ?? dbConfig.notifyOnEveryCustomerMessage,
     updatedAt: new Date().toISOString(),
   };
-  await writeRuntime(runtime);
-  return runtime.config;
+  await saveConfigToAppwrite(nextConfig);
+  return {
+    adminPrompt: nextConfig.adminPrompt,
+    customerPrompt: nextConfig.customerPrompt,
+    adminAlertPhone: nextConfig.adminAlertPhone,
+    tokenLimitPerCustomer: nextConfig.tokenLimitPerCustomer,
+    notifyOnEveryCustomerMessage: nextConfig.notifyOnEveryCustomerMessage,
+    updatedAt: nextConfig.updatedAt,
+  };
 }
 
-export async function getKeniaUsage(phone: string) {
+export async function getKeniaUsage(phone: string): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
-  const runtime = await readRuntime();
-  return runtime.usage[cleaned] || {
+  const usageMap = await readUsageFromFile();
+  const dbConfig = await fetchConfigFromAppwrite();
+  const isBlocked = dbConfig.blockedPhones.includes(cleaned);
+  return usageMap[cleaned] || {
+    phone: cleaned,
+    totalTokens: 0,
+    promptTokens: 0,
+    responseTokens: 0,
+    messageCount: 0,
+    blocked: isBlocked,
+    updatedAt: '',
+  };
+}
+
+export async function setKeniaBlocked(phone: string, blocked: boolean): Promise<KeniaUsageEntry> {
+  const cleaned = normalizePhone(phone);
+  const dbConfig = await fetchConfigFromAppwrite();
+  let blockedPhones = dbConfig.blockedPhones;
+  if (blocked) {
+    if (!blockedPhones.includes(cleaned)) {
+      blockedPhones.push(cleaned);
+    }
+  } else {
+    blockedPhones = blockedPhones.filter(p => p !== cleaned);
+  }
+  dbConfig.blockedPhones = blockedPhones;
+  await saveConfigToAppwrite(dbConfig);
+  
+  const usageMap = await readUsageFromFile();
+  const prev = usageMap[cleaned] || {
     phone: cleaned,
     totalTokens: 0,
     promptTokens: 0,
@@ -213,42 +288,30 @@ export async function getKeniaUsage(phone: string) {
     blocked: false,
     updatedAt: '',
   };
-}
-
-export async function setKeniaBlocked(phone: string, blocked: boolean) {
-  const cleaned = normalizePhone(phone);
-  const runtime = await readRuntime();
-  const prev = runtime.usage[cleaned] || {
-    phone: cleaned,
-    totalTokens: 0,
-    promptTokens: 0,
-    responseTokens: 0,
-    messageCount: 0,
-    blocked: false,
-    updatedAt: '',
-  };
-  runtime.usage[cleaned] = {
+  usageMap[cleaned] = {
     ...prev,
     blocked,
     updatedAt: new Date().toISOString(),
   };
-  await writeRuntime(runtime);
-  return runtime.usage[cleaned];
+  await writeUsageToFile(usageMap);
+  return usageMap[cleaned];
 }
 
 export async function recordKeniaUsage(
   phone: string,
   usage: { promptTokens?: number; responseTokens?: number; totalTokens?: number }
-) {
+): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
-  const runtime = await readRuntime();
-  const prev = runtime.usage[cleaned] || {
+  const usageMap = await readUsageFromFile();
+  const dbConfig = await fetchConfigFromAppwrite();
+  const isBlocked = dbConfig.blockedPhones.includes(cleaned);
+  const prev = usageMap[cleaned] || {
     phone: cleaned,
     totalTokens: 0,
     promptTokens: 0,
     responseTokens: 0,
     messageCount: 0,
-    blocked: false,
+    blocked: isBlocked,
     updatedAt: '',
   };
   const promptTokens = Math.max(0, Number(usage.promptTokens || 0));
@@ -258,7 +321,7 @@ export async function recordKeniaUsage(
     Number(usage.totalTokens || 0),
     0
   );
-  runtime.usage[cleaned] = {
+  usageMap[cleaned] = {
     ...prev,
     promptTokens: prev.promptTokens + promptTokens,
     responseTokens: prev.responseTokens + responseTokens,
@@ -266,10 +329,29 @@ export async function recordKeniaUsage(
     messageCount: prev.messageCount + 1,
     updatedAt: new Date().toISOString(),
   };
-  await writeRuntime(runtime);
-  return runtime.usage[cleaned];
+  await writeUsageToFile(usageMap);
+  return usageMap[cleaned];
 }
 
-export async function getKeniaRuntimeSnapshot() {
-  return readRuntime();
+export async function getKeniaRuntimeSnapshot(): Promise<{ config: KeniaConfig; usage: Record<string, KeniaUsageEntry> }> {
+  const dbConfig = await fetchConfigFromAppwrite();
+  const usageMap = await readUsageFromFile();
+  const hydratedUsage: Record<string, KeniaUsageEntry> = {};
+  Object.keys(usageMap).forEach(key => {
+    hydratedUsage[key] = {
+      ...usageMap[key],
+      blocked: dbConfig.blockedPhones.includes(key),
+    };
+  });
+  return {
+    config: {
+      adminPrompt: dbConfig.adminPrompt,
+      customerPrompt: dbConfig.customerPrompt,
+      adminAlertPhone: dbConfig.adminAlertPhone,
+      tokenLimitPerCustomer: dbConfig.tokenLimitPerCustomer,
+      notifyOnEveryCustomerMessage: dbConfig.notifyOnEveryCustomerMessage,
+      updatedAt: dbConfig.updatedAt,
+    },
+    usage: hydratedUsage,
+  };
 }
