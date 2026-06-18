@@ -18,7 +18,8 @@ export async function PUT(req: NextRequest) {
       customerPrompt: typeof body.customerPrompt === 'string' ? body.customerPrompt : undefined,
       adminAlertPhone: typeof body.adminAlertPhone === 'string' ? body.adminAlertPhone : undefined,
       tokenLimitPerCustomer: typeof body.tokenLimitPerCustomer === 'number' ? body.tokenLimitPerCustomer : undefined,
-      notifyOnEveryCustomerMessage: typeof body.notifyOnEveryCustomerMessage === 'boolean' ? body.notifyOnEveryCustomerMessage : undefined,
+      smartNotifications: typeof body.smartNotifications === 'boolean' ? body.smartNotifications : undefined,
+      messageThresholdForPause: typeof body.messageThresholdForPause === 'number' ? body.messageThresholdForPause : undefined,
       isEnabled: typeof body.isEnabled === 'boolean' ? body.isEnabled : undefined,
     });
     return NextResponse.json({ success: true, config });

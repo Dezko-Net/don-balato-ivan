@@ -66,6 +66,9 @@ export async function GET(req: NextRequest) {
         return {
           ...thread,
           blocked: usage?.blocked || false,
+          adminTakeover: usage?.adminTakeover || false,
+          escalated: usage?.escalated || false,
+          spamBlocked: usage?.spamBlocked || false,
           tokenLimit,
           totalTokens,
           promptTokens: usage?.promptTokens || 0,

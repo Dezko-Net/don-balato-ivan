@@ -1,12 +1,21 @@
-'use client';
-
+﻿'use client';
+/* Kenia WhatsApp Business Admin - Full-screen WhatsApp Web clone
+   100dvh, no margins, responsive mobile with view switching */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  AlertTriangle,
   ArrowLeft,
+  Ban,
+  Bot,
+  CheckCheck,
+  ChevronDown,
+  ChevronRight,
   Loader2,
   Lock,
   MessageCircle,
+  MoreVertical,
+  Package,
   Phone,
   RefreshCw,
   Save,
@@ -14,8 +23,35 @@ import {
   Send,
   Settings2,
   Shield,
+  ShoppingBag,
+  Trash2,
+  TrendingUp,
   Unlock,
+  User,
+  UserCheck,
+  X,
+  Zap,
+  Filter,
 } from 'lucide-react';
+
+type OrderDetail = {
+  id: string;
+  code: string;
+  status: string;
+  total: number;
+  date: string;
+  items: string;
+};
+
+type CustomerInfo = {
+  name: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  orderCount: number;
+  totalSpent: number;
+  registered: boolean;
+  orders?: OrderDetail[];
+};
 
 type ThreadSummary = {
   phone: string;
@@ -28,6 +64,9 @@ type ThreadSummary = {
   adminMessages: number;
   segment: 'customer' | 'admin';
   blocked: boolean;
+  adminTakeover?: boolean;
+  escalated?: boolean;
+  spamBlocked?: boolean;
   tokenLimit: number;
   totalTokens: number;
   promptTokens: number;
@@ -45,12 +84,15 @@ type ThreadMessage = {
   readByUser: boolean;
 };
 
+type FilterTab = 'all' | 'unread' | 'blocked' | 'escalated';
+
 type KeniaConfig = {
   adminPrompt: string;
   customerPrompt: string;
   adminAlertPhone: string;
   tokenLimitPerCustomer: number;
-  notifyOnEveryCustomerMessage: boolean;
+  smartNotifications: boolean;
+  messageThresholdForPause: number;
   updatedAt: string;
   isEnabled?: boolean;
 };
@@ -65,6 +107,9 @@ type ThreadDetail = {
     responseTokens: number;
     messageCount: number;
     blocked: boolean;
+    adminTakeover?: boolean;
+    escalated?: boolean;
+    spamBlocked?: boolean;
     updatedAt: string;
     overLimit: boolean;
     tokenLimit: number;
@@ -76,7 +121,8 @@ const emptyConfig: KeniaConfig = {
   customerPrompt: '',
   adminAlertPhone: '',
   tokenLimitPerCustomer: 15000,
-  notifyOnEveryCustomerMessage: true,
+  smartNotifications: true,
+  messageThresholdForPause: 10,
   updatedAt: '',
   isEnabled: true,
 };
@@ -90,6 +136,27 @@ function formatDate(value: string) {
   }
 }
 
+function formatRelativeDate(value: string) {
+  if (!value) return '';
+  try {
+    const d = new Date(value);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays === 0) return d.toLocaleString('es-CL', { timeStyle: 'short' });
+    if (diffDays === 1) return 'ayer';
+    if (diffDays < 7) return d.toLocaleString('es-CL', { weekday: 'short' });
+    return d.toLocaleString('es-CL', { day: '2-digit', month: '2-digit' });
+  } catch {
+    return value;
+  }
+}
+
+function getInitials(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+  return digits.slice(-2);
+}
+
 function compactNumber(value: number) {
   return new Intl.NumberFormat('es-CL', { notation: 'compact', maximumFractionDigits: 1 }).format(value || 0);
 }
@@ -97,6 +164,16 @@ function compactNumber(value: number) {
 function progressPct(value: number, max: number) {
   if (!max) return 0;
   return Math.min(100, Math.round((value / max) * 100));
+}
+
+/* --- Avatar color palette --- */
+const AVATAR_COLORS = [
+  ['#dff6e7','#128c7e'],['#e8f4fd','#0078d4'],['#fef3e2','#d97706'],
+  ['#fce7f3','#be185d'],['#ede9fe','#7c3aed'],['#fef9c3','#854d0e'],
+];
+function getAvatarColors(phone: string) {
+  const n = phone.replace(/\D/g,'').split('').reduce((a,c)=>a+parseInt(c),0);
+  return AVATAR_COLORS[n % AVATAR_COLORS.length];
 }
 
 export default function AdminIAWhatsAppPage() {
@@ -121,6 +198,13 @@ export default function AdminIAWhatsAppPage() {
   const [sending, setSending] = useState(false);
   const [savingBlock, setSavingBlock] = useState(false);
   const [promptTab, setPromptTab] = useState<'customer' | 'admin'>('customer');
+  const [filterTab, setFilterTab] = useState<FilterTab>('all');
+  const [showRightPanel, setShowRightPanel] = useState(false);
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+  const [customerMap, setCustomerMap] = useState<Record<string, CustomerInfo>>({});
+  const [showOrdersPanel, setShowOrdersPanel] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | { type: 'clear' | 'delete'; phone: string }>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const selectedPhoneRef = useRef('');
   const threadRequestRef = useRef(0);
@@ -130,6 +214,23 @@ export default function AdminIAWhatsAppPage() {
     () => threads.find((item) => item.phone === selectedPhone) || null,
     [threads, selectedPhone]
   );
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  useEffect(() => {
+    if (!loadingThread && thread?.messages.length) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [thread, loadingThread]);
+
+  function handleChatScroll() {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBtn(distFromBottom > 160);
+  }
 
   useEffect(() => {
     selectedPhoneRef.current = selectedPhone;
@@ -164,6 +265,19 @@ export default function AdminIAWhatsAppPage() {
         } else if (currentSelected && !nextThreads.some((item) => item.phone === currentSelected)) {
           setSelectedPhone(nextThreads[0]?.phone || '');
         }
+        // Enrich threads with customer data from DB
+        if (nextThreads.length > 0) {
+          const phones = nextThreads
+            .filter(t => t.segment === 'customer')
+            .map(t => t.phone)
+            .join(',');
+          if (phones) {
+            fetch(`/api/admin/ia/customer-lookup?phones=${encodeURIComponent(phones)}`, { cache: 'no-store' })
+              .then(r => r.json())
+              .then(d => { if (d?.customers) setCustomerMap(prev => ({ ...prev, ...d.customers })); })
+              .catch(() => {});
+          }
+        }
       }
     } finally {
       if (requestId === threadsRequestRef.current) setLoadingThreads(false);
@@ -197,6 +311,7 @@ export default function AdminIAWhatsAppPage() {
 
   useEffect(() => {
     setDraft('');
+    setShowOrdersPanel(false);
     if (selectedPhone) loadThread(selectedPhone);
   }, [selectedPhone, loadThread]);
 
@@ -206,6 +321,34 @@ export default function AdminIAWhatsAppPage() {
     setMessage({ type, text });
     window.clearTimeout((showToast as any)._timer);
     (showToast as any)._timer = window.setTimeout(() => setMessage(null), 2800);
+  }
+
+  async function handleSetBlock(blocked: boolean, reason?: 'admin_takeover' | 'spam' | 'manual') {
+    if (!selectedPhone) return;
+    setSavingBlock(true);
+    try {
+      const res = await fetch('/api/admin/ia/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: selectedPhone, blocked, reason }),
+      });
+      const data = await res.json();
+      if (!data?.success) throw new Error(data?.error || 'No se pudo actualizar');
+      await loadThread(selectedPhone);
+      await loadThreads(true);
+      
+      let msgText = 'Cliente reactivado para IA';
+      if (blocked) {
+        if (reason === 'admin_takeover') msgText = 'Has tomado el control del chat';
+        else if (reason === 'spam') msgText = 'Cliente bloqueado por spam';
+        else msgText = 'Cliente bloqueado para IA';
+      }
+      showToast('success', msgText);
+    } catch (error: any) {
+      showToast('error', error?.message || 'No se pudo actualizar el estado del chat');
+    } finally {
+      setSavingBlock(false);
+    }
   }
 
   async function handleSaveConfig() {
@@ -238,7 +381,7 @@ export default function AdminIAWhatsAppPage() {
       const data = await res.json();
       if (data?.success) {
         setConfig(data.config);
-        showToast('success', newValue ? 'Kenia ha sido activada 🟢' : 'Kenia ha sido desactivada 🔴');
+        showToast('success', newValue ? 'Kenia activada' : 'Kenia desactivada');
       } else {
         showToast('error', 'No se pudo cambiar el estado de Kenia');
       }
@@ -269,440 +412,888 @@ export default function AdminIAWhatsAppPage() {
     }
   }
 
-  async function handleToggleBlock() {
-    if (!selectedPhone) return;
-    setSavingBlock(true);
+  async function handleClearHistory(phone: string) {
+    setConfirmAction(null);
     try {
-      const res = await fetch('/api/admin/ia/block', {
+      const res = await fetch('/api/admin/ia/clear-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: selectedPhone, blocked: !thread?.usage.blocked }),
+        body: JSON.stringify({ phone, deleteUsage: false }),
       });
       const data = await res.json();
-      if (!data?.success) throw new Error(data?.error || 'No se pudo actualizar');
-      await loadThread(selectedPhone);
-      await loadThreads(true);
-      showToast('success', data.usage?.blocked ? 'Cliente bloqueado para IA' : 'Cliente reactivado para IA');
-    } catch (error: any) {
-      showToast('error', error?.message || 'No se pudo actualizar el bloqueo');
-    } finally {
-      setSavingBlock(false);
+      if (!data?.success) throw new Error(data?.error || 'Error');
+      await loadThread(phone);
+      showToast('success', 'Historial borrado');
+    } catch (e: any) {
+      showToast('error', e?.message || 'No se pudo borrar el historial');
+    }
+  }
+
+  async function handleDeleteThread(phone: string) {
+    setConfirmAction(null);
+    try {
+      const res = await fetch('/api/admin/ia/delete-thread', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!data?.success) throw new Error(data?.error || 'Error');
+      setCustomerMap(prev => { const n = { ...prev }; delete n[phone]; return n; });
+      setSelectedPhone('');
+      setThread(null);
+      setShowOrdersPanel(false);
+      await loadThreads(false);
+      showToast('success', 'Conversación eliminada completamente');
+    } catch (e: any) {
+      showToast('error', e?.message || 'No se pudo eliminar');
+    }
+  }
+
+  async function handleLoadOrders(phone: string) {
+    const existing = customerMap[phone];
+    if (existing?.orders) { setShowOrdersPanel(true); return; }
+    setLoadingOrders(true);
+    setShowOrdersPanel(true);
+    try {
+      const res = await fetch(`/api/admin/ia/customer-lookup?phones=${encodeURIComponent(phone)}&detail=true`, { cache: 'no-store' });
+      const data = await res.json();
+      if (data?.customers?.[phone]) {
+        setCustomerMap(prev => ({ ...prev, [phone]: { ...(prev[phone] || data.customers[phone]), ...data.customers[phone] } }));
+      }
+    } catch { /* ignore */ } finally {
+      setLoadingOrders(false);
     }
   }
 
   const usagePct = progressPct(thread?.usage.totalTokens || 0, thread?.usage.tokenLimit || config.tokenLimitPerCustomer);
+  const usageColor = usagePct >= 100 ? '#ef4444' : usagePct >= 75 ? '#f59e0b' : '#25d366';
+
+  const filteredThreads = useMemo(() => {
+    return threads.filter((t) => {
+      if (filterTab === 'unread') return t.unreadCount > 0;
+      if (filterTab === 'blocked') return t.blocked;
+      if (filterTab === 'escalated') return t.escalated;
+      return true;
+    });
+  }, [threads, filterTab]);
+
+  const WA_BG = "url('/wa-bg.png')";
 
   return (
-    <div className="min-h-full bg-[#efeae2] px-0 py-0">
-      <div className="mx-auto flex min-h-[calc(100dvh-96px)] max-w-[1700px] flex-col overflow-hidden rounded-[26px] border border-[#d9dbd7] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.08)] lg:min-h-[calc(100dvh-120px)]">
-        <div className="border-b border-[#d9dbd7] bg-[#f0f2f5] px-4 py-3 sm:px-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Link
-                href="/admin/ia"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#54656f] transition hover:bg-[#e9edef]"
-              >
+    <div style={{ display: 'flex', height: '100dvh', background: '#111b21', overflow: 'hidden' }}>
+      <style>{`
+        .wa-app { display:flex; width:100%; height:100dvh; overflow:hidden; }
+        .wa-sidebar { width:400px; min-width:320px; max-width:400px; flex-shrink:0; background:#111b21; border-right:1px solid #222e35; display:flex; flex-direction:column; overflow:hidden; }
+        .wa-chat { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#0b141a; }
+        .wa-rpanel { width:380px; min-width:300px; flex-shrink:0; background:#111b21; border-left:1px solid #222e35; display:flex; flex-direction:column; overflow:hidden; transition:all .3s; }
+        .wa-rpanel.hidden { width:0; min-width:0; overflow:hidden; }
+        .wa-thread-item { padding:13px 16px; cursor:pointer; transition:background .15s; display:flex; gap:12px; align-items:center; border-bottom:1px solid rgba(255,255,255,0.03); }
+        .wa-thread-item:hover { background:rgba(255,255,255,0.05); }
+        .wa-thread-item.active { background:#2a3942; }
+        .wa-scrollbar::-webkit-scrollbar { width:6px; } .wa-scrollbar::-webkit-scrollbar-track { background:transparent; } .wa-scrollbar::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:3px; }
+        .wa-msg-bubble { max-width:65%; position:relative; border-radius:8px; padding:8px 60px 22px 12px; font-size:14.2px; line-height:1.55; min-width:72px; }
+        .wa-msg-out { background:#005c4b; color:#e9edef; border-bottom-right-radius:2px; margin-left:auto; }
+        .wa-msg-in  { background:#202c33; color:#e9edef; border-bottom-left-radius:2px; margin-right:auto; }
+        .wa-msg-time { position:absolute; bottom:5px; right:10px; font-size:11px; color:rgba(255,255,255,0.5); display:flex; align-items:center; gap:3px; }
+        .wa-msg-in .wa-msg-time { right:10px; }
+        .admin-content-wrap,
+        .admin-main-content { border-radius: 0 !important; border: none !important; padding: 0 !important; }
+        .wa-filter-tab { padding:5px 14px; border-radius:20px; font-size:12.5px; font-weight:600; cursor:pointer; border:1px solid transparent; transition:all .15s; white-space:nowrap; }
+        .wa-filter-tab.active { background:#2a3942; color:#00a884; border-color:#374045; }
+        .wa-filter-tab:not(.active) { color:#8696a0; }
+        .wa-filter-tab:hover:not(.active) { background:rgba(255,255,255,0.05); color:#d1d7db; }
+        .wa-input-area { background:#202c33; padding:10px 16px; display:flex; align-items:flex-end; gap:12px; border-top:1px solid #222e35; flex-shrink:0; }
+        .wa-input-box { flex:1; background:#2a3942; border:none; border-radius:10px; padding:9px 14px; color:#d1d7db; font-size:15px; outline:none; resize:none; min-height:42px; max-height:160px; }
+        .wa-input-box::placeholder { color:#8696a0; }
+        .wa-send-btn { width:46px; height:46px; border-radius:50%; background:#00a884; border:none; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s; }
+        .wa-send-btn:hover { background:#02c999; }
+        .wa-send-btn:disabled { background:#374045; cursor:not-allowed; }
+        .wa-action-btn { width:100%; display:flex; align-items:center; justify-between; gap:10px; padding:11px 14px; border-radius:10px; border:1px solid #2a3942; background:transparent; color:#d1d7db; font-size:13.5px; font-weight:500; cursor:pointer; text-align:left; transition:all .15s; }
+        .wa-action-btn:hover:not(:disabled) { background:#2a3942; }
+        .wa-action-btn:disabled { opacity:0.4; cursor:not-allowed; }
+        .wa-action-btn.active-blue { background:rgba(0,114,212,0.12); border-color:rgba(0,114,212,0.3); color:#7ebfff; }
+        .wa-action-btn.active-red { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.3); color:#fca5a5; }
+        .wa-action-btn.active-green { background:rgba(0,168,132,0.15); border-color:rgba(0,168,132,0.3); color:#34d399; }
+        .wa-action-btn.active-slate { background:rgba(100,116,139,0.12); border-color:rgba(100,116,139,0.3); color:#94a3b8; }
+        .wa-rp-section { padding:16px; border-bottom:1px solid #222e35; }
+        .wa-rp-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:#8696a0; margin-bottom:10px; }
+        .wa-toggle { position:relative; width:48px; height:26px; flex-shrink:0; }
+        .wa-toggle input { opacity:0; width:0; height:0; }
+        .wa-toggle-slider { position:absolute; cursor:pointer; inset:0; background:#374045; border-radius:26px; transition:.3s; }
+        .wa-toggle-slider:before { content:''; position:absolute; width:20px; height:20px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.3s; }
+        .wa-toggle input:checked + .wa-toggle-slider { background:#00a884; }
+        .wa-toggle input:checked + .wa-toggle-slider:before { transform:translateX(22px); }
+        @media (max-width: 768px) {
+          .wa-sidebar { width:100%; max-width:100%; }
+          .wa-chat { width:100%; }
+          .wa-rpanel { display:none !important; }
+          .wa-mobile-hidden { display:none !important; }
+          .wa-mobile-show { display:flex !important; }
+        }
+        @media (min-width: 769px) {
+          .wa-sidebar { display:flex !important; }
+          .wa-chat { display:flex !important; }
+        }
+        @keyframes wa-slide-up { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+        @keyframes wa-pulse-dot { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+      `}</style>
+
+      <div className="wa-app">
+
+        {/* â•â•â•â•â•â•â•â•â•â•â• LEFT SIDEBAR â•â•â•â•â•â•â•â•â•â•â• */}
+        <aside className={`wa-sidebar${mobileView === 'chat' ? ' wa-mobile-hidden' : ''}`}>
+          {/* Sidebar Header */}
+          <div style={{ background:'#202c33', padding:'10px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:'1px solid #222e35' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <img src="/kenia-avatar.png" alt="Kenia" style={{ width:40, height:40, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid rgba(0,168,132,0.3)' }} />
+              <div>
+                <p style={{ fontSize:15, fontWeight:700, color:'#e9edef', lineHeight:1.2 }}>Kenia IA</p>
+                <p style={{ fontSize:12, color:'#00a884', display:'flex', alignItems:'center', gap:4 }}>
+                  <span style={{ width:7, height:7, background:'#00a884', borderRadius:'50%', display:'inline-block', animation:'wa-pulse-dot 2s infinite' }} />
+                  {config.isEnabled !== false ? 'Activa' : 'En mantenimiento'}
+                </p>
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:4 }}>
+              <button onClick={loadThreads as any} title="Actualizar" style={{ width:36, height:36, borderRadius:'50%', background:'transparent', border:'none', color:'#8696a0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background .15s' }}
+                onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.08)')}
+                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                <RefreshCw className={`h-5 w-5 ${loadingThreads ? 'animate-spin' : ''}`} />
+              </button>
+              <Link href="/admin/ia" style={{ width:36, height:36, borderRadius:'50%', background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', color:'#8696a0', textDecoration:'none', transition:'background .15s' }}
+                onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.08)')}
+                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
                 <ArrowLeft className="h-5 w-5" />
               </Link>
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#25d366] text-white shadow-sm">
-                <Phone className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#667781]">Canal activo</p>
-                <h1 className="text-xl font-black tracking-[-0.03em] text-[#111b21]">WhatsApp Business</h1>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { label: 'Chats', value: stats.totalThreads },
-                { label: 'Sin leer', value: stats.unreadThreads },
-                { label: 'Bloqueados', value: stats.blockedThreads },
-                { label: 'Tokens', value: compactNumber(stats.totalTokens) },
-              ].map((item) => (
-                <div key={item.label} className="rounded-full border border-[#d9dbd7] bg-white px-3 py-1.5 text-xs text-[#54656f]">
-                  <span className="font-bold text-[#111b21]">{item.value}</span> {item.label}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  loadThreads(true);
-                  if (selectedPhone) loadThread(selectedPhone);
-                  loadConfig();
-                }}
-                className="inline-flex items-center gap-2 rounded-full bg-[#25d366] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#20bd5a]"
-              >
-                <RefreshCw className={`h-4 w-4 ${loadingThreads || loadingThread || loadingConfig ? 'animate-spin' : ''}`} />
-                Actualizar
-              </button>
             </div>
           </div>
-        </div>
 
-        <div className="grid min-h-0 flex-1 lg:grid-cols-[360px,minmax(0,1fr),380px]">
-          <aside className="min-h-0 border-r border-[#d9dbd7] bg-white">
-            <div className="border-b border-[#d9dbd7] bg-[#f0f2f5] px-4 py-3">
-              <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2">
-                <Search className="h-4 w-4 text-[#667781]" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') loadThreads(false);
-                  }}
-                  className="w-full bg-transparent text-sm text-[#111b21] outline-none placeholder:text-[#667781]"
-                  placeholder="Buscar por número o mensaje..."
-                />
+          {/* Stats strip */}
+          <div style={{ background:'#1a2630', padding:'8px 16px', display:'flex', gap:8, overflowX:'auto', flexShrink:0, borderBottom:'1px solid #222e35' }}>
+            {[
+              { label:'Hilos', value: compactNumber(stats.totalThreads), color:'#8696a0' },
+              { label:'Sin leer', value: stats.unreadThreads, color: stats.unreadThreads > 0 ? '#fbbf24' : '#8696a0' },
+              { label:'Bloqueados', value: stats.blockedThreads, color: stats.blockedThreads > 0 ? '#f87171' : '#8696a0' },
+              { label:'Tokens', value: compactNumber(stats.totalTokens), color:'#34d399' },
+            ].map(s => (
+              <div key={s.label} style={{ background:'rgba(255,255,255,0.04)', borderRadius:8, padding:'5px 12px', textAlign:'center', flexShrink:0 }}>
+                <p style={{ fontSize:15, fontWeight:800, color:s.color }}>{s.value}</p>
+                <p style={{ fontSize:10, color:'#8696a0', fontWeight:600, textTransform:'uppercase', letterSpacing:'.1em' }}>{s.label}</p>
               </div>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div style={{ padding:'8px 12px', background:'#111b21', flexShrink:0 }}>
+            <div style={{ background:'#202c33', borderRadius:10, display:'flex', alignItems:'center', gap:8, padding:'6px 12px' }}>
+              <Search className="h-4 w-4 shrink-0" style={{ color:'#8696a0' }} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar o empezar chat"
+                style={{ background:'transparent', border:'none', outline:'none', color:'#d1d7db', fontSize:14, flex:1 }}
+              />
+              {search && <button onClick={() => setSearch('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#8696a0' }}><X className="h-4 w-4" /></button>}
             </div>
+          </div>
 
-            <div className="max-h-[calc(100dvh-240px)] overflow-y-auto lg:max-h-none lg:h-full">
-              {loadingThreads ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#25d366]" />
-                </div>
-              ) : threads.length === 0 ? (
-                <div className="px-6 py-16 text-center text-[#667781]">
-                  <MessageCircle className="mx-auto h-10 w-10 text-[#c7d0d6]" />
-                  <p className="mt-3 text-sm font-semibold">No encontré conversaciones</p>
-                </div>
-              ) : (
-                threads.map((item) => {
-                  const active = item.phone === selectedPhone;
-                  return (
-                    <button
-                      key={item.phone}
-                      type="button"
-                      onClick={() => setSelectedPhone(item.phone)}
-                      className={`w-full border-b border-[#eef1f3] px-4 py-3 text-left transition ${active ? 'bg-[#f0f2f5]' : 'bg-white hover:bg-[#f5f6f6]'}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-black ${item.segment === 'admin' ? 'bg-[#111b21] text-white' : 'bg-[#dff6e7] text-[#128c7e]'}`}>
-                          {item.segment === 'admin' ? 'AD' : item.phone.slice(-2)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="truncate text-sm font-semibold text-[#111b21]">{item.displayName}</p>
-                            <p className="shrink-0 text-[11px] text-[#667781]">{formatDate(item.lastAt)}</p>
-                          </div>
-                          <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-[#667781]">{item.preview || 'Sin mensaje'}</p>
-                          <div className="mt-2 flex items-center justify-between gap-2">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.segment === 'admin' ? 'bg-[#e9edef] text-[#54656f]' : 'bg-[#dff6e7] text-[#128c7e]'}`}>
-                                {item.segment === 'admin' ? 'Admin' : 'Cliente'}
-                              </span>
-                              {item.blocked && (
-                                <span className="rounded-full bg-[#ffe1e1] px-2 py-0.5 text-[10px] font-bold text-[#d93025]">
-                                  Bloqueado
-                                </span>
-                              )}
-                            </div>
-                            {item.unreadCount > 0 && (
-                              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#25d366] px-2 py-0.5 text-[11px] font-bold text-white">
-                                {item.unreadCount}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </aside>
+          {/* Filter tabs */}
+          <div style={{ padding:'4px 12px 8px', display:'flex', gap:6, overflowX:'auto', flexShrink:0 }}>
+            {([['all','Todos'],['unread','Sin leer'],['escalated','Escalados'],['blocked','Bloqueados']] as [FilterTab, string][]).map(([key, label]) => (
+              <button key={key} onClick={() => setFilterTab(key)} className={`wa-filter-tab ${filterTab === key ? 'active' : ''}`}>
+                {label}
+                {key === 'unread' && stats.unreadThreads > 0 && <span style={{ marginLeft:5, background:'#00a884', color:'white', borderRadius:10, padding:'1px 6px', fontSize:10, fontWeight:700 }}>{stats.unreadThreads}</span>}
+                {key === 'blocked' && stats.blockedThreads > 0 && <span style={{ marginLeft:5, background:'#ef4444', color:'white', borderRadius:10, padding:'1px 6px', fontSize:10, fontWeight:700 }}>{stats.blockedThreads}</span>}
+              </button>
+            ))}
+          </div>
 
-          <section className="min-h-0 bg-[#efeae2] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23d4d5d4%22 fill-opacity=%220.32%22%3E%3Cpath d=%22M36 34h-4v-4h4v4zm0-30h-4v4h4V4zM6 34H2v-4h4v4zm0-30H2v4h4V4zm30 56h-4v-4h4v4zM6 60H2v-4h4v4zm54-26h-4v-4h4v4zm0-30h-4v4h4V4zM30 34h-4v-4h4v4zm0-30h-4v4h4V4zm0 56h-4v-4h4v4zM60 60h-4v-4h4v4zm-30 0h-4v-4h4v4zm0-26h-4v-4h4v4z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]">
-            <div className="flex h-full min-h-[520px] flex-col">
-              <div className="border-b border-[#d9dbd7] bg-[#f0f2f5] px-5 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-bold text-[#111b21]">
-                      {selectedSummary ? `+${selectedSummary.phone}` : 'Selecciona una conversación'}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[#667781]">
-                      {selectedSummary
-                        ? `${selectedSummary.totalMessages} mensajes · ${selectedSummary.totalTokens.toLocaleString('es-CL')} tokens`
-                        : 'Abre un chat desde la columna izquierda'}
-                    </p>
-                  </div>
-                  {selectedSummary?.blocked && (
-                    <span className="rounded-full bg-[#ffe1e1] px-3 py-1 text-xs font-bold text-[#d93025]">
-                      IA bloqueada
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-4 py-5">
-                {!selectedPhone ? (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="rounded-3xl bg-white/70 px-8 py-10 text-center shadow-sm backdrop-blur-sm">
-                      <MessageCircle className="mx-auto h-10 w-10 text-[#bcc5ca]" />
-                      <p className="mt-4 text-sm font-semibold text-[#54656f]">Elige una conversación para abrir el canal de Kenia</p>
+          {/* Thread list */}
+          <div className="wa-scrollbar" style={{ flex:1, overflowY:'auto' }}>
+            {loadingThreads ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+                {[...Array(6)].map((_,i) => (
+                  <div key={i} style={{ padding:'13px 16px', display:'flex', gap:12, alignItems:'center', borderBottom:'1px solid rgba(255,255,255,0.03)' }}>
+                    <div style={{ width:49, height:49, borderRadius:'50%', background:'#202c33', flexShrink:0 }} />
+                    <div style={{ flex:1 }}>
+                      <div style={{ height:14, background:'#202c33', borderRadius:4, width:'60%', marginBottom:7 }} />
+                      <div style={{ height:12, background:'#202c33', borderRadius:4, width:'85%' }} />
                     </div>
                   </div>
-                ) : loadingThread ? (
-                  <div className="flex h-full items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-[#25d366]" />
+                ))}
+              </div>
+            ) : filteredThreads.length === 0 ? (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'60%', gap:12, color:'#8696a0' }}>
+                <MessageCircle className="h-12 w-12" style={{ opacity:.3 }} />
+                <p style={{ fontSize:14 }}>Sin resultados</p>
+              </div>
+            ) : filteredThreads.map(t => {
+              const [bg, fg] = getAvatarColors(t.phone);
+              const active = t.phone === selectedPhone;
+              const initials = getInitials(t.phone);
+              const statusDot = t.spamBlocked ? '#ef4444' : t.adminTakeover ? '#3b82f6' : t.escalated ? '#f59e0b' : t.blocked ? '#6b7280' : null;
+              const cinfo = customerMap[t.phone];
+              const displayName = cinfo?.name || `+${t.phone}`;
+              const hasAvatar = !!cinfo?.avatarUrl;
+              return (
+                <div
+                  key={t.phone}
+                  className={`wa-thread-item ${active ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedPhone(t.phone);
+                    setMobileView('chat');
+                  }}
+                  style={{ background: active ? '#2a3942' : undefined }}
+                >
+                  {/* Avatar */}
+                  <div style={{ position:'relative', flexShrink:0 }}>
+                    {hasAvatar ? (
+                      <img
+                        src={cinfo!.avatarUrl!}
+                        alt={displayName}
+                        style={{ width:49, height:49, borderRadius:'50%', objectFit:'cover', border:'2px solid rgba(0,168,132,0.25)' }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div style={{ width:49, height:49, borderRadius:'50%', background:bg, color:fg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800 }}>
+                        {cinfo?.name ? cinfo.name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase() : initials}
+                      </div>
+                    )}
+                    {statusDot && <div style={{ position:'absolute', bottom:1, right:1, width:12, height:12, borderRadius:'50%', background:statusDot, border:'2px solid #111b21' }} />}
+                    {t.unreadCount > 0 && !active && (
+                      <div style={{ position:'absolute', top:-2, right:-2, minWidth:18, height:18, borderRadius:9, background:'#00a884', color:'white', fontSize:10, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px', border:'2px solid #111b21' }}>
+                        {t.unreadCount > 99 ? '99+' : t.unreadCount}
+                      </div>
+                    )}
                   </div>
-                ) : thread?.messages.length ? (
-                  <div className="space-y-2.5">
-                    {thread.messages.map((msg) => {
-                      const mine = msg.role === 'assistant';
+
+                  {/* Content */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:3 }}>
+                      <p style={{ fontSize:15, fontWeight:600, color:'#e9edef', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:'65%' }}>
+                        {displayName}
+                      </p>
+                      <span style={{ fontSize:11.5, color: t.unreadCount > 0 ? '#00a884' : '#8696a0', flexShrink:0 }}>
+                        {formatRelativeDate(t.lastAt)}
+                      </span>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <p style={{ fontSize:13, color:'#8696a0', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}>
+                        {cinfo?.registered && cinfo.name
+                          ? (t.preview || 'Sin mensajes')
+                          : `+${t.phone} · ${t.preview || 'Sin mensajes'}`}
+                      </p>
+                      {cinfo?.orderCount != null && cinfo.orderCount > 0 && (
+                        <span style={{ fontSize:9, background:'rgba(0,168,132,0.15)', color:'#00a884', borderRadius:4, padding:'1px 5px', fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>
+                          {cinfo.orderCount} ped
+                        </span>
+                      )}
+                      {t.escalated && <span style={{ fontSize:9, background:'rgba(245,158,11,0.2)', color:'#fbbf24', borderRadius:4, padding:'1px 5px', fontWeight:700, flexShrink:0 }}>ESC</span>}
+                      {t.spamBlocked && <span style={{ fontSize:9, background:'rgba(239,68,68,0.2)', color:'#f87171', borderRadius:4, padding:'1px 5px', fontWeight:700, flexShrink:0 }}>SPAM</span>}
+                    </div>
+                    {cinfo?.registered && (
+                      <p style={{ fontSize:10.5, color:'#4aab87', marginTop:1 }}>
+                        {cinfo.totalSpent > 0 ? `$${cinfo.totalSpent.toLocaleString('es-CL')} en compras` : 'Cliente registrado'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Acciones de conversacion */}
+            {selectedPhone && (
+              <div className="wa-rp-section">
+                <p className="wa-rp-label">Conversacion</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  <button className="wa-action-btn"
+                    onClick={() => { if (selectedPhone) handleLoadOrders(selectedPhone); }}
+                    disabled={!customerMap[selectedPhone]?.orderCount && customerMap[selectedPhone]?.orderCount !== undefined && customerMap[selectedPhone]?.orderCount === 0}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <ShoppingBag className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Ver pedidos del cliente</span>
+                    </div>
+                    {customerMap[selectedPhone]?.orderCount != null && customerMap[selectedPhone].orderCount > 0 && (
+                      <span style={{ fontSize:10, background:'rgba(0,168,132,0.2)', color:'#34d399', padding:'2px 7px', borderRadius:5, fontWeight:700 }}>
+                        {customerMap[selectedPhone].orderCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button className="wa-action-btn"
+                    onClick={() => setConfirmAction({ type: 'clear', phone: selectedPhone })}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <RefreshCw className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Borrar historial de chat</span>
+                    </div>
+                  </button>
+
+                  <button className="wa-action-btn active-red"
+                    onClick={() => setConfirmAction({ type: 'delete', phone: selectedPhone })}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <Trash2 className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Eliminar este numero</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Orders panel */}
+            {showOrdersPanel && selectedPhone && (
+              <div className="wa-rp-section">
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                  <p className="wa-rp-label" style={{ margin:0 }}>Pedidos del cliente</p>
+                  <button onClick={() => setShowOrdersPanel(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#8696a0' }}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {loadingOrders ? (
+                  <div style={{ display:'flex', justifyContent:'center', padding:'20px 0' }}>
+                    <Loader2 className="h-5 w-5 animate-spin" style={{ color:'#8696a0' }} />
+                  </div>
+                ) : !customerMap[selectedPhone]?.orders?.length ? (
+                  <p style={{ fontSize:13, color:'#8696a0', textAlign:'center', padding:'12px 0' }}>Sin pedidos registrados</p>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {customerMap[selectedPhone]!.orders!.map(o => (
+                      <div key={o.id} style={{ background:'#202c33', borderRadius:10, padding:'10px 12px', border:'1px solid #374045' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                          <span style={{ fontSize:12, fontWeight:700, color:'#e9edef' }}>#{o.code}</span>
+                          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:5,
+                            background: o.status === 'Entregado' ? 'rgba(52,211,153,0.15)' : o.status === 'Cancelado' ? 'rgba(239,68,68,0.15)' : o.status.includes('Pendiente') ? 'rgba(245,158,11,0.15)' : 'rgba(0,168,132,0.15)',
+                            color: o.status === 'Entregado' ? '#34d399' : o.status === 'Cancelado' ? '#f87171' : o.status.includes('Pendiente') ? '#fbbf24' : '#00a884'
+                          }}>{o.status}</span>
+                        </div>
+                        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'#8696a0', marginBottom: o.items ? 4 : 0 }}>
+                          <span>{o.date}</span>
+                          <span style={{ fontWeight:700, color:'#d1d7db' }}>${o.total.toLocaleString('es-CL')}</span>
+                        </div>
+                        {o.items && <p style={{ fontSize:11, color:'#8696a0', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.items}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+        </aside>
+
+        {/* â•â•â•â•â•â•â•â•â•â•â• CHAT AREA â•â•â•â•â•â•â•â•â•â•â• */}
+        <section className={`wa-chat${mobileView === 'list' ? ' wa-mobile-hidden' : ''}`}>
+          {!selectedPhone ? (
+            /* Empty state */
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, background:'#0b141a', backgroundImage: WA_BG, backgroundRepeat:'repeat', backgroundPosition:'center' }}>
+              <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(0,168,132,0.12)', border:'2px solid rgba(0,168,132,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <MessageCircle className="h-10 w-10" style={{ color:'#00a884' }} />
+              </div>
+              <div style={{ textAlign:'center' }}>
+                <p style={{ fontSize:22, fontWeight:300, color:'#d1d7db', marginBottom:8 }}>Kenia Business Admin</p>
+                <p style={{ fontSize:14, color:'#8696a0', maxWidth:340 }}>Selecciona un chat para ver los mensajes y gestionar a tus clientes con IA.</p>
+              </div>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
+                {[`${stats.totalThreads} chats`, `${compactNumber(stats.totalTokens)} tokens`, `${stats.unreadThreads} sin leer`].map(s => (
+                  <span key={s} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:20, padding:'5px 14px', fontSize:13, color:'#8696a0' }}>{s}</span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Chat header */}
+              <div style={{ background:'#202c33', padding:'10px 16px', display:'flex', alignItems:'center', gap:12, flexShrink:0, borderBottom:'1px solid #222e35' }}>
+                {/* Back button mobile */}
+                <button className="wa-mobile-show" onClick={() => setMobileView('list')}
+                  style={{ display:'none', width:36, height:36, borderRadius:'50%', background:'transparent', border:'none', color:'#8696a0', cursor:'pointer', alignItems:'center', justifyContent:'center' }}>
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+
+                {selectedSummary && (() => {
+                  const [bg, fg] = getAvatarColors(selectedSummary.phone);
+                  const cinfo = customerMap[selectedSummary.phone];
+                  return (
+                    cinfo?.avatarUrl ? (
+                      <img
+                        src={cinfo.avatarUrl}
+                        alt={cinfo.name || selectedSummary.phone}
+                        style={{ width:40, height:40, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid rgba(0,168,132,0.3)' }}
+                        onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
+                      />
+                    ) : (
+                      <div style={{ width:40, height:40, borderRadius:'50%', background:bg, color:fg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, flexShrink:0 }}>
+                        {cinfo?.name ? cinfo.name.split(' ').map((w: string) => w[0]).slice(0,2).join('').toUpperCase() : getInitials(selectedSummary.phone)}
+                      </div>
+                    )
+                  );
+                })()}
+
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                    <p style={{ fontSize:15, fontWeight:700, color:'#e9edef' }}>
+                      {customerMap[selectedPhone]?.name || `+${selectedPhone}`}
+                    </p>
+                    {customerMap[selectedPhone]?.registered && (
+                      <span style={{ fontSize:10, background:'rgba(0,168,132,0.15)', color:'#00a884', borderRadius:4, padding:'1px 5px', fontWeight:700 }}>
+                        {customerMap[selectedPhone].orderCount > 0 ? `${customerMap[selectedPhone].orderCount} pedidos` : 'Registrado'}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontSize:12.5, color:'#8696a0' }}>
+                    {loadingThread ? 'Cargando...' :
+                     thread?.usage.adminTakeover ? '👤 Bajo control manual' :
+                     thread?.usage.escalated ? '⚠️ Conversación escalada' :
+                     thread?.usage.spamBlocked ? '🚫 Bloqueado por spam' :
+                     thread?.usage.blocked ? '🔒 IA bloqueada' :
+                     thread?.usage.overLimit ? '⚡ Límite de tokens alcanzado' :
+                     '🤖 Kenia activa'}
+                  </p>
+                </div>
+
+                <div style={{ display:'flex', gap:4 }}>
+                  <button onClick={() => setShowRightPanel(p => !p)} title="Panel de control"
+                    style={{ width:36, height:36, borderRadius:'50%', background: showRightPanel ? 'rgba(0,168,132,0.15)' : 'transparent', border:'none', color: showRightPanel ? '#00a884' : '#8696a0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all .15s' }}>
+                    <Settings2 className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Status banners */}
+              {thread?.usage.adminTakeover && (
+                <div style={{ background:'rgba(59,130,246,0.12)', borderBottom:'1px solid rgba(59,130,246,0.2)', padding:'8px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexShrink:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, color:'#93c5fd', fontSize:13, fontWeight:600 }}>
+                    <UserCheck className="h-4 w-4" />
+                    <span>Control manual activo — Kenia está pausada</span>
+                  </div>
+                  <button onClick={() => handleSetBlock(false)} disabled={savingBlock}
+                    style={{ background:'rgba(59,130,246,0.2)', border:'1px solid rgba(59,130,246,0.3)', color:'#93c5fd', borderRadius:8, padding:'4px 12px', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                    Devolver a Kenia
+                  </button>
+                </div>
+              )}
+              {thread?.usage.escalated && !thread?.usage.adminTakeover && (
+                <div style={{ background:'rgba(245,158,11,0.1)', borderBottom:'1px solid rgba(245,158,11,0.2)', padding:'8px 16px', display:'flex', alignItems:'center', gap:8, flexShrink:0, color:'#fbbf24', fontSize:13, fontWeight:600 }}>
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Conversación escalada — Se necesita atención humana</span>
+                </div>
+              )}
+              {thread?.usage.spamBlocked && (
+                <div style={{ background:'rgba(239,68,68,0.1)', borderBottom:'1px solid rgba(239,68,68,0.2)', padding:'8px 16px', display:'flex', alignItems:'center', gap:8, flexShrink:0, color:'#f87171', fontSize:13, fontWeight:600 }}>
+                  <Ban className="h-4 w-4" />
+                  <span>Número bloqueado por spam — Kenia ignora todos los mensajes</span>
+                </div>
+              )}
+
+              {/* Messages */}
+              <div ref={chatScrollRef} onScroll={handleChatScroll}
+                className="wa-scrollbar"
+                style={{ flex:1, overflowY:'auto', padding:'12px 4%', display:'flex', flexDirection:'column', gap:2, backgroundImage: WA_BG, backgroundColor:'#0b141a', backgroundRepeat:'repeat', backgroundPosition:'center' }}>
+                {loadingThread ? (
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, gap:10, color:'#8696a0' }}>
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color:'#00a884' }} />
+                    <span style={{ fontSize:13 }}>Cargando mensajes...</span>
+                  </div>
+                ) : thread && thread.messages.length > 0 ? (
+                  <>
+                    {thread.messages.map((msg, idx) => {
+                      const isOut = msg.role === 'assistant';
+                      const prev = thread.messages[idx - 1];
+                      const showDateDiv = !prev || new Date(msg.createdAt).toDateString() !== new Date(prev.createdAt).toDateString();
+                      const msgDate = new Date(msg.createdAt);
+                      const timeStr = msgDate.toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' });
                       return (
-                        <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div
-                            className={`max-w-[88%] rounded-lg px-3.5 py-2.5 shadow-sm sm:max-w-[76%] ${
-                              mine
-                                ? 'bg-[#d9fdd3] text-[#111b21]'
-                                : 'bg-white text-[#111b21]'
-                            }`}
-                          >
-                            <p className="whitespace-pre-wrap text-[14px] leading-6">{msg.text}</p>
-                            <div className="mt-1.5 text-right text-[10px] text-[#667781]">
-                              {formatDate(msg.createdAt)}
+                        <div key={msg.id}>
+                          {showDateDiv && (
+                            <div style={{ display:'flex', justifyContent:'center', margin:'10px 0 6px' }}>
+                              <span style={{ background:'#182229', color:'#8696a0', fontSize:12, padding:'4px 12px', borderRadius:8 }}>
+                                {msgDate.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' })}
+                              </span>
+                            </div>
+                          )}
+                          <div style={{ display:'flex', justifyContent: isOut ? 'flex-end' : 'flex-start', marginBottom:2 }}>
+                            <div className={`wa-msg-bubble ${isOut ? 'wa-msg-out' : 'wa-msg-in'}`}>
+                              {!isOut && (
+                                <p style={{ fontSize:11, fontWeight:700, color:'#00a884', marginBottom:3 }}>Cliente</p>
+                              )}
+                              <span style={{ whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{msg.text}</span>
+                              <div className="wa-msg-time">
+                                <span>{timeStr}</span>
+                                {isOut && <CheckCheck className="h-3.5 w-3.5" style={{ color: msg.readByUser ? '#53bdeb' : 'rgba(255,255,255,0.5)' }} />}
+                              </div>
                             </div>
                           </div>
                         </div>
                       );
                     })}
-                  </div>
+                    <div ref={messagesEndRef} />
+                  </>
                 ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="rounded-3xl bg-white/70 px-8 py-10 text-center shadow-sm backdrop-blur-sm">
-                      <MessageCircle className="mx-auto h-10 w-10 text-[#bcc5ca]" />
-                      <p className="mt-4 text-sm font-semibold text-[#54656f]">Esta conversación todavía no tiene historial</p>
-                    </div>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, gap:10, color:'#8696a0' }}>
+                    <MessageCircle className="h-10 w-10" style={{ opacity:.3 }} />
+                    <p style={{ fontSize:14 }}>Sin mensajes en este chat</p>
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-[#d9dbd7] bg-[#f0f2f5] px-4 py-3">
-                <div className="flex items-end gap-3 rounded-2xl bg-white p-3 shadow-sm">
-                  <textarea
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    rows={2}
-                    placeholder="Escribe como Kenia y envía por WhatsApp..."
-                    className="min-h-[48px] flex-1 resize-none bg-transparent text-sm leading-6 text-[#111b21] outline-none placeholder:text-[#8696a0]"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={!selectedPhone || !draft.trim() || sending}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#25d366] text-white transition hover:bg-[#20bd5a] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {/* Scroll-to-bottom button */}
+              {showScrollBtn && (
+                <button onClick={() => messagesEndRef.current?.scrollIntoView({ behavior:'smooth' })}
+                  style={{ position:'absolute', bottom:80, right: showRightPanel ? 396 : 16, width:42, height:42, borderRadius:'50%', background:'#202c33', border:'1px solid #374045', color:'#8696a0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(0,0,0,0.4)', zIndex:10, transition:'all .2s', animation:'wa-slide-up .25s ease' }}>
+                  <ChevronDown className="h-5 w-5" />
+                </button>
+              )}
+
+              {/* Input area */}
+              <div className="wa-input-area">
+                <textarea
+                  className="wa-input-box wa-scrollbar"
+                  value={draft}
+                  onChange={e => setDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  placeholder="Escribe un mensaje..."
+                  rows={1}
+                  style={{ lineHeight:'1.5' }}
+                />
+                <button className="wa-send-btn" onClick={handleSend} disabled={!draft.trim() || sending}>
+                  {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+
+        {/* â•â•â•â•â•â•â•â•â•â•â• RIGHT PANEL â•â•â•â•â•â•â•â•â•â•â• */}
+        <aside className={`wa-rpanel${showRightPanel ? '' : ' hidden'}`}>
+          <div style={{ background:'#202c33', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, borderBottom:'1px solid #222e35' }}>
+            <p style={{ fontSize:14, fontWeight:700, color:'#e9edef', display:'flex', alignItems:'center', gap:8 }}>
+              <Settings2 className="h-4 w-4" style={{ color:'#8696a0' }} />
+              Panel Kenia
+              <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:10, background: config.isEnabled !== false ? 'rgba(52,211,153,0.15)' : 'rgba(239,68,68,0.15)', color: config.isEnabled !== false ? '#34d399' : '#f87171' }}>
+                {config.isEnabled !== false ? 'ON' : 'OFF'}
+              </span>
+            </p>
+            <button onClick={() => setShowRightPanel(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#8696a0', display:'flex' }}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="wa-scrollbar" style={{ flex:1, overflowY:'auto' }}>
+            {/* Selected client */}
+            {selectedPhone && (
+              <div className="wa-rp-section">
+                <p className="wa-rp-label">Cliente seleccionado</p>
+                {selectedSummary && (() => {
+                  const [bg, fg] = getAvatarColors(selectedSummary.phone);
+                  const cinfo = customerMap[selectedSummary.phone];
+                  return (
+                    <div>
+                      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom: cinfo?.registered ? 10 : 12 }}>
+                        {cinfo?.avatarUrl ? (
+                          <img
+                            src={cinfo.avatarUrl}
+                            alt={cinfo.name || selectedPhone}
+                            style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid rgba(0,168,132,0.3)' }}
+                            onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
+                          />
+                        ) : (
+                          <div style={{ width:44, height:44, borderRadius:'50%', background:bg, color:fg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, flexShrink:0 }}>
+                            {cinfo?.name ? cinfo.name.split(' ').map((w: string) => w[0]).slice(0,2).join('').toUpperCase() : getInitials(selectedSummary.phone)}
+                          </div>
+                        )}
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <p style={{ fontSize:14, fontWeight:700, color:'#e9edef', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            {cinfo?.name || `+${selectedPhone}`}
+                          </p>
+                          <p style={{ fontSize:12, color:'#8696a0' }}>
+                            {cinfo?.name ? `+${selectedPhone} · ` : ''}{selectedSummary.totalMessages} mensajes
+                          </p>
+                        </div>
+                        {thread?.usage && (
+                          thread.usage.spamBlocked ? <span style={{ fontSize:10, background:'rgba(239,68,68,0.2)', color:'#f87171', borderRadius:6, padding:'3px 8px', fontWeight:700 }}>SPAM</span> :
+                          thread.usage.adminTakeover ? <span style={{ fontSize:10, background:'rgba(59,130,246,0.2)', color:'#93c5fd', borderRadius:6, padding:'3px 8px', fontWeight:700 }}>ADMIN</span> :
+                          thread.usage.escalated ? <span style={{ fontSize:10, background:'rgba(245,158,11,0.2)', color:'#fbbf24', borderRadius:6, padding:'3px 8px', fontWeight:700 }}>ESC</span> :
+                          thread.usage.blocked ? <span style={{ fontSize:10, background:'rgba(100,116,139,0.2)', color:'#94a3b8', borderRadius:6, padding:'3px 8px', fontWeight:700 }}>OFF</span> :
+                          <span style={{ fontSize:10, background:'rgba(0,168,132,0.2)', color:'#34d399', borderRadius:6, padding:'3px 8px', fontWeight:700 }}>OK</span>
+                        )}
+                      </div>
+                      {cinfo?.registered && (
+                        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+                          {cinfo.email && (
+                            <span style={{ fontSize:11, color:'#8696a0', background:'#202c33', borderRadius:6, padding:'3px 8px', overflow:'hidden', textOverflow:'ellipsis', maxWidth:'100%' }}>{cinfo.email}</span>
+                          )}
+                          {cinfo.orderCount > 0 && (
+                            <span style={{ fontSize:11, color:'#00a884', background:'rgba(0,168,132,0.1)', borderRadius:6, padding:'3px 8px', fontWeight:600 }}>
+                              {cinfo.orderCount} pedido{cinfo.orderCount !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {cinfo.totalSpent > 0 && (
+                            <span style={{ fontSize:11, color:'#34d399', background:'rgba(52,211,153,0.08)', borderRadius:6, padding:'3px 8px', fontWeight:600 }}>
+                              ${cinfo.totalSpent.toLocaleString('es-CL')} comprado
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Token bar */}
+                <div style={{ background:'#2a3942', borderRadius:12, padding:'12px 14px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                    <span style={{ fontSize:12, color:'#8696a0', display:'flex', alignItems:'center', gap:5 }}>
+                      <Zap className="h-3.5 w-3.5" /> Tokens
+                    </span>
+                    <span style={{ fontSize:12, fontWeight:800, color: usageColor }}>{usagePct}%</span>
+                  </div>
+                  <div style={{ height:6, background:'#374045', borderRadius:3, overflow:'hidden' }}>
+                    <div style={{ height:'100%', width:`${usagePct}%`, background: usagePct >= 100 ? '#ef4444' : usagePct >= 75 ? '#f59e0b' : 'linear-gradient(90deg,#00a884,#34d399)', borderRadius:3, transition:'width .6s' }} />
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, fontSize:11, color:'#8696a0' }}>
+                    <span>{thread?.usage.totalTokens.toLocaleString('es-CL') || 0} usados</span>
+                    <span>lím. {thread?.usage.tokenLimit?.toLocaleString('es-CL') || config.tokenLimitPerCustomer.toLocaleString('es-CL')}</span>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginTop:8 }}>
+                    {[['Prompt', thread?.usage.promptTokens || 0],['Respuesta', thread?.usage.responseTokens || 0]].map(([l,v]) => (
+                      <div key={l as string} style={{ background:'#202c33', borderRadius:8, padding:'7px 10px', textAlign:'center' }}>
+                        <p style={{ fontSize:10, color:'#8696a0', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:3 }}>{l}</p>
+                        <p style={{ fontSize:14, fontWeight:800, color:'#d1d7db' }}>{(v as number).toLocaleString('es-CL')}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Control buttons */}
+            {selectedPhone && (
+              <div className="wa-rp-section">
+                <p className="wa-rp-label">Control de IA</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  <button className={`wa-action-btn${thread?.usage.adminTakeover ? ' active-blue' : ''}`}
+                    onClick={() => handleSetBlock(true, 'admin_takeover')}
+                    disabled={!selectedPhone || savingBlock || !!thread?.usage.adminTakeover}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <User className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Tomar control manual</span>
+                    </div>
+                    {thread?.usage.adminTakeover && <span style={{ fontSize:10, background:'rgba(59,130,246,0.3)', padding:'2px 7px', borderRadius:5, fontWeight:700 }}>ACTIVO</span>}
+                  </button>
+
+                  <button className={`wa-action-btn${(!thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked) ? ' active-green' : ''}`}
+                    onClick={() => handleSetBlock(false)}
+                    disabled={!selectedPhone || savingBlock || (!thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked)}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <Bot className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Devolver a Kenia</span>
+                    </div>
+                    {(!thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked) && <span style={{ fontSize:10, background:'rgba(0,168,132,0.3)', padding:'2px 7px', borderRadius:5, fontWeight:700 }}>ACTIVO</span>}
+                  </button>
+
+                  <button className={`wa-action-btn${thread?.usage.spamBlocked ? ' active-red' : ''}`}
+                    onClick={() => handleSetBlock(true, 'spam')}
+                    disabled={!selectedPhone || savingBlock || !!thread?.usage.spamBlocked}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <Ban className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Bloquear por spam</span>
+                    </div>
+                    {thread?.usage.spamBlocked && <span style={{ fontSize:10, background:'rgba(239,68,68,0.3)', padding:'2px 7px', borderRadius:5, fontWeight:700 }}>SPAM</span>}
+                  </button>
+
+                  <button className={`wa-action-btn${(thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked) ? ' active-slate' : ''}`}
+                    onClick={() => handleSetBlock(true, 'manual')}
+                    disabled={!selectedPhone || savingBlock || !!(thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked)}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <Lock className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Bloquear IA (general)</span>
+                    </div>
+                    {(thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked) && <span style={{ fontSize:10, background:'rgba(100,116,139,0.3)', padding:'2px 7px', borderRadius:5, fontWeight:700 }}>BLOQ</span>}
                   </button>
                 </div>
-                <p className="mt-2 px-1 text-xs text-[#667781]">Enter para enviar, Shift + Enter para salto de línea</p>
               </div>
-            </div>
-          </section>
+            )}
 
-          <aside className="min-h-0 border-l border-[#d9dbd7] bg-[#f7f8fa]">
-            <div className="flex items-center gap-2 border-b border-[#d9dbd7] bg-[#f0f2f5] px-5 py-4">
-              <Settings2 className="h-4 w-4 text-[#667781]" />
-              <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-[#54656f]">Panel Kenia</h2>
-            </div>
-
-            <div className="max-h-[calc(100dvh-240px)] space-y-4 overflow-y-auto px-4 py-4 lg:max-h-none lg:h-full">
-              <div className="rounded-[22px] border border-[#d9dbd7] bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#667781]">Gobierno de Kenia</p>
-                    <p className="mt-1 text-sm font-bold text-[#111b21]">
-                      {config.isEnabled !== false ? '🟢 Activa' : '🔴 Apagada'}
-                    </p>
-                  </div>
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input
-                      type="checkbox"
-                      checked={config.isEnabled !== false}
-                      onChange={(e) => {
-                        saveKeniaStatusDirectly(e.target.checked);
-                      }}
-                      className="peer sr-only"
-                    />
-                    <div className="peer h-6 w-11 rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#25d366] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
-                  </label>
-                </div>
-                {config.isEnabled === false && (
-                  <p className="mt-2 text-xs text-[#d93025] leading-normal font-semibold">
-                    ⚠️ Kenia está en modo mantenimiento. Responderá con aviso de mantenimiento solo una vez por cliente.
+            {/* Estado inteligente */}
+            {selectedPhone && thread && (
+              <div className="wa-rp-section">
+                <p className="wa-rp-label">Estado inteligente</p>
+                <div style={{
+                  background: thread.usage.overLimit ? 'rgba(239,68,68,0.08)' : thread.usage.escalated ? 'rgba(245,158,11,0.08)' : 'rgba(0,168,132,0.08)',
+                  border: `1px solid ${thread.usage.overLimit ? 'rgba(239,68,68,0.2)' : thread.usage.escalated ? 'rgba(245,158,11,0.2)' : 'rgba(0,168,132,0.2)'}`,
+                  borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:10
+                }}>
+                  {thread.usage.overLimit ? <TrendingUp className="h-4 w-4 mt-0.5" style={{ color:'#f87171', flexShrink:0 }} /> :
+                   thread.usage.escalated ? <AlertTriangle className="h-4 w-4 mt-0.5" style={{ color:'#fbbf24', flexShrink:0 }} /> :
+                   <Shield className="h-4 w-4 mt-0.5" style={{ color:'#34d399', flexShrink:0 }} />}
+                  <p style={{ fontSize:13, lineHeight:1.55, color: thread.usage.overLimit ? '#f87171' : thread.usage.escalated ? '#fbbf24' : '#34d399' }}>
+                    {thread.usage.overLimit ? 'Límite de tokens superado. Sube el límite o bloquea al cliente para detener el consumo.' :
+                     thread.usage.escalated ? 'Conversación escalada. El cliente necesita atención humana urgente.' :
+                     'Kenia está respondiendo con normalidad. Todo en orden.'}
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Configuracion por cliente */}
+            <div className="wa-rp-section">
+              <p className="wa-rp-label">Configuracion del cliente</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <div>
+                  <p style={{ fontSize:12, color:'#8696a0', marginBottom:5 }}>Limite de tokens por cliente</p>
+                  <input type="number" min={1000} step={500} value={config.tokenLimitPerCustomer}
+                    onChange={e => setConfig(p => ({ ...p, tokenLimitPerCustomer: Number(e.target.value || 0) }))}
+                    style={{ background:'#202c33', border:'1px solid #374045', borderRadius:10, padding:'9px 12px', color:'#d1d7db', fontSize:13, outline:'none', width:'100%', boxSizing:'border-box' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize:12, color:'#8696a0', marginBottom:5 }}>Pausar tras N mensajes sin respuesta</p>
+                  <input type="number" min={1} step={1} value={config.messageThresholdForPause}
+                    onChange={e => setConfig(p => ({ ...p, messageThresholdForPause: Number(e.target.value || 10) }))}
+                    style={{ background:'#202c33', border:'1px solid #374045', borderRadius:10, padding:'9px 12px', color:'#d1d7db', fontSize:13, outline:'none', width:'100%', boxSizing:'border-box' }} />
+                </div>
+                <label style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#202c33', border:'1px solid #374045', borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>
+                  <div>
+                    <span style={{ fontSize:13, color:'#d1d7db', display:'block' }}>Notificacion inteligente</span>
+                    <span style={{ fontSize:11, color:'#8696a0' }}>Avisa al iniciar, al pausar y cada ~10 mensajes</span>
+                  </div>
+                  <label className="wa-toggle">
+                    <input type="checkbox" checked={config.smartNotifications} onChange={e => setConfig(p => ({ ...p, smartNotifications: e.target.checked }))} />
+                    <span className="wa-toggle-slider" />
+                  </label>
+                </label>
+              </div>
+              <button onClick={handleSaveConfig} disabled={savingConfig || loadingConfig}
+                style={{ marginTop:10, width:'100%', background:'#00a884', border:'none', borderRadius:10, padding:'10px', color:'white', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: savingConfig || loadingConfig ? 0.5 : 1 }}>
+                {savingConfig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Guardar
+              </button>
+            </div>
+
+            {/* Acciones de conversacion */}
+            {selectedPhone && (
+              <div className="wa-rp-section">
+                <p className="wa-rp-label">Conversacion</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  <button className="wa-action-btn"
+                    onClick={() => { if (selectedPhone) handleLoadOrders(selectedPhone); }}
+                    disabled={!customerMap[selectedPhone]?.orderCount && customerMap[selectedPhone]?.orderCount !== undefined && customerMap[selectedPhone]?.orderCount === 0}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <ShoppingBag className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Ver pedidos del cliente</span>
+                    </div>
+                    {customerMap[selectedPhone]?.orderCount != null && customerMap[selectedPhone].orderCount > 0 && (
+                      <span style={{ fontSize:10, background:'rgba(0,168,132,0.2)', color:'#34d399', padding:'2px 7px', borderRadius:5, fontWeight:700 }}>
+                        {customerMap[selectedPhone].orderCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button className="wa-action-btn"
+                    onClick={() => setConfirmAction({ type: 'clear', phone: selectedPhone })}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <RefreshCw className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Borrar historial de chat</span>
+                    </div>
+                  </button>
+
+                  <button className="wa-action-btn active-red"
+                    onClick={() => setConfirmAction({ type: 'delete', phone: selectedPhone })}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <Trash2 className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Eliminar este numero</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Orders panel */}
+            {showOrdersPanel && selectedPhone && (
+              <div className="wa-rp-section">
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                  <p className="wa-rp-label" style={{ margin:0 }}>Pedidos del cliente</p>
+                  <button onClick={() => setShowOrdersPanel(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#8696a0' }}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {loadingOrders ? (
+                  <div style={{ display:'flex', justifyContent:'center', padding:'20px 0' }}>
+                    <Loader2 className="h-5 w-5 animate-spin" style={{ color:'#8696a0' }} />
+                  </div>
+                ) : !customerMap[selectedPhone]?.orders?.length ? (
+                  <p style={{ fontSize:13, color:'#8696a0', textAlign:'center', padding:'12px 0' }}>Sin pedidos registrados</p>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {customerMap[selectedPhone]!.orders!.map(o => (
+                      <div key={o.id} style={{ background:'#202c33', borderRadius:10, padding:'10px 12px', border:'1px solid #374045' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                          <span style={{ fontSize:12, fontWeight:700, color:'#e9edef' }}>#{o.code}</span>
+                          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:5,
+                            background: o.status === 'Entregado' ? 'rgba(52,211,153,0.15)' : o.status === 'Cancelado' ? 'rgba(239,68,68,0.15)' : o.status.includes('Pendiente') ? 'rgba(245,158,11,0.15)' : 'rgba(0,168,132,0.15)',
+                            color: o.status === 'Entregado' ? '#34d399' : o.status === 'Cancelado' ? '#f87171' : o.status.includes('Pendiente') ? '#fbbf24' : '#00a884'
+                          }}>{o.status}</span>
+                        </div>
+                        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'#8696a0', marginBottom: o.items ? 4 : 0 }}>
+                          <span>{o.date}</span>
+                          <span style={{ fontWeight:700, color:'#d1d7db' }}>${o.total.toLocaleString('es-CL')}</span>
+                        </div>
+                        {o.items && <p style={{ fontSize:11, color:'#8696a0', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.items}</p>}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
+            )}
 
-              <div className="rounded-[22px] border border-[#d9dbd7] bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#667781]">Cliente</p>
-                    <p className="mt-1 text-base font-bold text-[#111b21]">{selectedSummary ? `+${selectedSummary.phone}` : 'Sin selección'}</p>
-                  </div>
-                  <div className={`rounded-full px-3 py-1 text-xs font-bold ${thread?.usage.blocked ? 'bg-[#ffe1e1] text-[#d93025]' : 'bg-[#dff6e7] text-[#128c7e]'}`}>
-                    {thread?.usage.blocked ? 'Bloqueado' : 'Activo'}
-                  </div>
-                </div>
+          </div>
+        </aside>
 
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#54656f]">Uso actual</span>
-                    <span className="font-bold text-[#111b21]">
-                      {thread ? `${thread.usage.totalTokens.toLocaleString('es-CL')} / ${thread.usage.tokenLimit.toLocaleString('es-CL')}` : '0 / 0'}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#d9dbd7]">
-                    <div
-                      className={`h-full rounded-full ${usagePct >= 100 ? 'bg-[#ff6b6b]' : 'bg-[#25d366]'}`}
-                      style={{ width: `${usagePct}%` }}
-                    />
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-2xl bg-[#f7f8fa] px-3 py-2 text-[#54656f]">
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8696a0]">Prompt</span>
-                      <span className="mt-1 block font-semibold text-[#111b21]">{thread?.usage.promptTokens.toLocaleString('es-CL') || 0}</span>
-                    </div>
-                    <div className="rounded-2xl bg-[#f7f8fa] px-3 py-2 text-[#54656f]">
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8696a0]">Respuesta</span>
-                      <span className="mt-1 block font-semibold text-[#111b21]">{thread?.usage.responseTokens.toLocaleString('es-CL') || 0}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleToggleBlock}
-                  disabled={!selectedPhone || savingBlock}
-                  className={`mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                    thread?.usage.blocked
-                      ? 'bg-[#25d366] text-white hover:bg-[#20bd5a]'
-                      : 'bg-[#ff6b6b] text-white hover:bg-[#ef5b5b]'
-                  }`}
-                >
-                  {savingBlock ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : thread?.usage.blocked ? (
-                    <Unlock className="h-4 w-4" />
-                  ) : (
-                    <Lock className="h-4 w-4" />
-                  )}
-                  {thread?.usage.blocked ? 'Reactivar IA' : 'Bloquear IA'}
-                </button>
-              </div>
-
-              <div className="rounded-[22px] border border-[#d9dbd7] bg-white p-4">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#667781]">Prompt</p>
-                    <h3 className="mt-1 text-base font-bold text-[#111b21]">Editor de Kenia</h3>
-                  </div>
-                  <div className="inline-flex rounded-full bg-[#f0f2f5] p-1">
-                    <button
-                      type="button"
-                      onClick={() => setPromptTab('customer')}
-                      className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${promptTab === 'customer' ? 'bg-white text-[#111b21] shadow-sm' : 'text-[#667781]'}`}
-                    >
-                      Cliente
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPromptTab('admin')}
-                      className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${promptTab === 'admin' ? 'bg-white text-[#111b21] shadow-sm' : 'text-[#667781]'}`}
-                    >
-                      Admin
-                    </button>
-                  </div>
-                </div>
-
-                <textarea
-                  value={promptTab === 'customer' ? config.customerPrompt : config.adminPrompt}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      [promptTab === 'customer' ? 'customerPrompt' : 'adminPrompt']: e.target.value,
-                    }))
-                  }
-                  rows={8}
-                  className="w-full rounded-[18px] border border-[#d9dbd7] bg-[#f7f8fa] px-4 py-3 text-sm leading-6 text-[#111b21] outline-none transition focus:border-[#25d366] focus:bg-white"
-                />
-
-                <div className="mt-4 grid gap-3">
-                  <div>
-                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-[#8696a0]">WhatsApp tuyo</label>
-                    <input
-                      value={config.adminAlertPhone}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, adminAlertPhone: e.target.value }))}
-                      className="w-full rounded-2xl border border-[#d9dbd7] bg-[#f7f8fa] px-4 py-3 text-sm outline-none transition focus:border-[#25d366] focus:bg-white"
-                      placeholder="569..."
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-[#8696a0]">Límite tokens por cliente</label>
-                    <input
-                      type="number"
-                      min={1000}
-                      step={500}
-                      value={config.tokenLimitPerCustomer}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, tokenLimitPerCustomer: Number(e.target.value || 0) }))}
-                      className="w-full rounded-2xl border border-[#d9dbd7] bg-[#f7f8fa] px-4 py-3 text-sm outline-none transition focus:border-[#25d366] focus:bg-white"
-                    />
-                  </div>
-                  <label className="flex items-center justify-between gap-3 rounded-2xl border border-[#d9dbd7] bg-[#f7f8fa] px-4 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-[#111b21]">Reportarme cada mensaje</p>
-                      <p className="text-xs text-[#667781]">Deja activo el aviso al WhatsApp administrador.</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={config.notifyOnEveryCustomerMessage}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, notifyOnEveryCustomerMessage: e.target.checked }))}
-                      className="h-5 w-5 rounded border-[#bcc5ca] text-[#25d366] focus:ring-[#25d366]"
-                    />
-                  </label>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleSaveConfig}
-                  disabled={savingConfig || loadingConfig}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#25d366] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#20bd5a] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {savingConfig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Guardar configuración
-                </button>
-
-                <div className="mt-4 rounded-2xl bg-[#e7fce9] px-4 py-3 text-xs leading-5 text-[#128c7e]">
-                  Usa <code>{'{{SITE_URL}}'}</code> dentro del prompt si quieres que Kenia inserte automáticamente la URL pública de la tienda.
-                </div>
-              </div>
-
-              <div className="rounded-[22px] border border-[#d9dbd7] bg-white p-4">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-[#128c7e]" />
-                  <p className="text-sm font-bold text-[#111b21]">Estado inteligente</p>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-[#54656f]">
-                  {thread?.usage.overLimit
-                    ? 'Este cliente ya superó el límite global de tokens. Puedes bloquearlo o subir el límite.'
-                    : 'Kenia sigue respondiendo con normalidad en este hilo.'}
-                </p>
-              </div>
-            </div>
-          </aside>
-        </div>
       </div>
 
+      {/* Confirm modal */}
+      {confirmAction && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+          onClick={() => setConfirmAction(null)}>
+          <div style={{ background:'#202c33', borderRadius:16, padding:'24px 20px', maxWidth:340, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.6)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
+              {confirmAction.type === 'delete'
+                ? <Trash2 className="h-5 w-5" style={{ color:'#f87171', flexShrink:0 }} />
+                : <RefreshCw className="h-5 w-5" style={{ color:'#fbbf24', flexShrink:0 }} />}
+              <p style={{ fontSize:15, fontWeight:700, color:'#e9edef' }}>
+                {confirmAction.type === 'delete' ? 'Eliminar numero' : 'Borrar historial'}
+              </p>
+            </div>
+            <p style={{ fontSize:13, color:'#8696a0', lineHeight:1.55, marginBottom:20 }}>
+              {confirmAction.type === 'delete'
+                ? 'Se eliminaran todos los mensajes y el registro de este numero. Esta accion no se puede deshacer.'
+                : 'Se borraran todos los mensajes del historial de este chat. El estado de IA se mantiene.'}
+            </p>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={() => setConfirmAction(null)}
+                style={{ flex:1, background:'#2a3942', border:'none', borderRadius:10, padding:'10px', color:'#d1d7db', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => confirmAction.type === 'delete'
+                  ? handleDeleteThread(confirmAction.phone)
+                  : handleClearHistory(confirmAction.phone)}
+                style={{ flex:1, background: confirmAction.type === 'delete' ? '#ef4444' : '#f59e0b', border:'none', borderRadius:10, padding:'10px', color:'white', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                {confirmAction.type === 'delete' ? 'Eliminar' : 'Borrar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
       {message && (
-        <div className="fixed bottom-5 right-5 z-50">
-          <div className={`rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl ${message.type === 'success' ? 'bg-[#25d366] text-white' : 'bg-[#ff6b6b] text-white'}`}>
+        <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', zIndex:9999, animation:'wa-slide-up .3s ease' }}>
+          <div style={{
+            display:'flex', alignItems:'center', gap:10, borderRadius:12, padding:'12px 20px',
+            fontSize:14, fontWeight:700, boxShadow:'0 8px 30px rgba(0,0,0,0.5)',
+            background: message.type === 'success' ? '#00a884' : '#ef4444',
+            color:'white', whiteSpace:'nowrap',
+          }}>
+            {message.type === 'success' ? <CheckCheck className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
             {message.text}
           </div>
         </div>
@@ -710,3 +1301,4 @@ export default function AdminIAWhatsAppPage() {
     </div>
   );
 }
+

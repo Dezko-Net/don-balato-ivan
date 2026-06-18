@@ -89,11 +89,16 @@ Si el cliente te habla sobre su pedido y en el contexto ves que su pedido está 
 - Sitio web: {{SITE_URL}}
 - País: Chile
 
-## Reglas:
-- NUNCA inventes precios ni stock. Solo di lo que está en los datos reales.
-- Sé cálida, cercana y carismática. Evita respuestas muy largas o robóticas.
-- Siempre termina con una pregunta o invitación para seguir la conversación.
-- Si hay un problema muy grande que no puedes resolver o manejar con el cliente, dile al cliente amablemente que escalarás el caso al administrador principal para que lo resuelva, y DEBES añadir al final de tu respuesta EXACTAMENTE este bloque JSON oculto: [ACTION:ESCALATE_ADMIN][/ACTION]
+## ⛔ REGLAS ABSOLUTAS (PROHIBIDO ROMPER):
+1. NUNCA inventes nombres de productos. Solo menciona productos que aparezcan EXACTAMENTE en el catálogo que se te inyecta como contexto. Si no hay productos en el contexto, di que puedes mostrarle el catálogo en la web.
+2. NUNCA inventes URLs. Solo usa {{SITE_URL}} y las rutas reales del sitio (como {{SITE_URL}}/productos o {{SITE_URL}}/pedido/ID).
+3. NUNCA inventes precios, stock, políticas de envío ni métodos de pago que no estén en tu contexto.
+4. Si NO tienes la información que el cliente pide (ej: precios por mayor, catálogo completo, info que no está en tu contexto), ADMÍTELO HONESTAMENTE y di algo como: "Esa información la maneja directamente nuestro equipo, déjame conectarte con la persona indicada para que te ayude personalmente 🌸" y añade al final: [ACTION:ESCALATE_ADMIN][/ACTION]
+5. NUNCA des vueltas ni digas "dame un minutito" o "ya casi lo tengo" si no puedes obtener la información. Si no la tienes, escala inmediatamente.
+6. Si el cliente te pide algo por segunda vez y no puedes responderlo, ESCALA INMEDIATAMENTE al admin.
+7. Sé cálida, cercana y carismática. Evita respuestas muy largas o robóticas.
+8. Siempre termina con una pregunta o invitación para seguir la conversación.
+- Si hay un problema muy grande que no puedes resolver o manejar con el cliente, dile al cliente amablemente que lo conectarás con una persona del equipo para que lo ayude mejor, y DEBES añadir al final de tu respuesta EXACTAMENTE este bloque oculto: [ACTION:ESCALATE_ADMIN][/ACTION]
 
 Los datos de productos y pedidos del cliente te serán inyectados como contexto.`;
 
@@ -102,7 +107,8 @@ export interface KeniaConfig {
   customerPrompt: string;
   adminAlertPhone: string;
   tokenLimitPerCustomer: number;
-  notifyOnEveryCustomerMessage: boolean;
+  smartNotifications: boolean;
+  messageThresholdForPause: number;
   updatedAt: string;
   isEnabled: boolean;
 }
@@ -117,6 +123,10 @@ export interface KeniaUsageEntry {
   updatedAt: string;
   maintenanceNotified?: boolean;
   testAsClient?: boolean;
+  adminTakeover?: boolean;
+  escalated?: boolean;
+  spamBlocked?: boolean;
+  lastMessageTimestamps?: number[];
 }
 
 interface KeniaAppwriteConfigData extends KeniaConfig {
@@ -134,7 +144,8 @@ function getDefaultConfig(): KeniaConfig {
     customerPrompt: DEFAULT_CUSTOMER_PROMPT,
     adminAlertPhone: process.env.ADMIN_WHATSAPP_NUMBER || '56992139185',
     tokenLimitPerCustomer: 15000,
-    notifyOnEveryCustomerMessage: true,
+    smartNotifications: true,
+    messageThresholdForPause: 10,
     updatedAt: new Date().toISOString(),
     isEnabled: true,
   };
@@ -150,7 +161,8 @@ async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
         customerPrompt: parsed.customerPrompt || DEFAULT_CUSTOMER_PROMPT,
         adminAlertPhone: parsed.adminAlertPhone || '',
         tokenLimitPerCustomer: parsed.tokenLimitPerCustomer || 15000,
-        notifyOnEveryCustomerMessage: parsed.notifyOnEveryCustomerMessage !== false,
+        smartNotifications: parsed.smartNotifications !== false,
+        messageThresholdForPause: parsed.messageThresholdForPause || 10,
         updatedAt: parsed.updatedAt || new Date().toISOString(),
         isEnabled: parsed.isEnabled !== false,
         blockedPhones: Array.isArray(parsed.blockedPhones) ? parsed.blockedPhones : [],
@@ -226,7 +238,8 @@ export async function getKeniaConfig(): Promise<KeniaConfig> {
     customerPrompt: dbConfig.customerPrompt,
     adminAlertPhone: dbConfig.adminAlertPhone,
     tokenLimitPerCustomer: dbConfig.tokenLimitPerCustomer,
-    notifyOnEveryCustomerMessage: dbConfig.notifyOnEveryCustomerMessage,
+    smartNotifications: dbConfig.smartNotifications,
+    messageThresholdForPause: dbConfig.messageThresholdForPause,
     updatedAt: dbConfig.updatedAt,
     isEnabled: dbConfig.isEnabled,
   };
@@ -240,7 +253,8 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
     customerPrompt: partial.customerPrompt ?? dbConfig.customerPrompt,
     adminAlertPhone: normalizePhone(partial.adminAlertPhone ?? dbConfig.adminAlertPhone),
     tokenLimitPerCustomer: Math.max(1000, Number(partial.tokenLimitPerCustomer ?? dbConfig.tokenLimitPerCustomer) || dbConfig.tokenLimitPerCustomer),
-    notifyOnEveryCustomerMessage: partial.notifyOnEveryCustomerMessage ?? dbConfig.notifyOnEveryCustomerMessage,
+    smartNotifications: partial.smartNotifications ?? dbConfig.smartNotifications,
+    messageThresholdForPause: Math.max(1, Number(partial.messageThresholdForPause ?? dbConfig.messageThresholdForPause) || dbConfig.messageThresholdForPause),
     isEnabled: partial.isEnabled ?? dbConfig.isEnabled,
     updatedAt: new Date().toISOString(),
   };
@@ -250,7 +264,8 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
     customerPrompt: nextConfig.customerPrompt,
     adminAlertPhone: nextConfig.adminAlertPhone,
     tokenLimitPerCustomer: nextConfig.tokenLimitPerCustomer,
-    notifyOnEveryCustomerMessage: nextConfig.notifyOnEveryCustomerMessage,
+    smartNotifications: nextConfig.smartNotifications,
+    messageThresholdForPause: nextConfig.messageThresholdForPause,
     isEnabled: nextConfig.isEnabled,
     updatedAt: nextConfig.updatedAt,
   };
@@ -272,10 +287,18 @@ export async function getKeniaUsage(phone: string): Promise<KeniaUsageEntry> {
     updatedAt: entry?.updatedAt || '',
     maintenanceNotified: entry?.maintenanceNotified || false,
     testAsClient: entry?.testAsClient || false,
+    adminTakeover: entry?.adminTakeover || false,
+    escalated: entry?.escalated || false,
+    spamBlocked: entry?.spamBlocked || false,
+    lastMessageTimestamps: entry?.lastMessageTimestamps || [],
   };
 }
 
-export async function setKeniaBlocked(phone: string, blocked: boolean): Promise<KeniaUsageEntry> {
+export async function setKeniaBlocked(
+  phone: string,
+  blocked: boolean,
+  reason?: 'admin_takeover' | 'spam' | 'manual'
+): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
   const dbConfig = await fetchConfigFromAppwrite();
   let blockedPhones = dbConfig.blockedPhones;
@@ -302,6 +325,9 @@ export async function setKeniaBlocked(phone: string, blocked: boolean): Promise<
   usageMap[cleaned] = {
     ...prev,
     blocked,
+    adminTakeover: blocked && reason === 'admin_takeover' ? true : (!blocked ? false : prev.adminTakeover),
+    spamBlocked: blocked && reason === 'spam' ? true : (!blocked ? false : prev.spamBlocked),
+    escalated: !blocked ? false : prev.escalated,
     updatedAt: new Date().toISOString(),
   };
   await writeUsageToFile(usageMap);
@@ -310,7 +336,17 @@ export async function setKeniaBlocked(phone: string, blocked: boolean): Promise<
 
 export async function recordKeniaUsage(
   phone: string,
-  usage: { promptTokens?: number; responseTokens?: number; totalTokens?: number; maintenanceNotified?: boolean; testAsClient?: boolean }
+  usage: {
+    promptTokens?: number;
+    responseTokens?: number;
+    totalTokens?: number;
+    maintenanceNotified?: boolean;
+    testAsClient?: boolean;
+    adminTakeover?: boolean;
+    escalated?: boolean;
+    spamBlocked?: boolean;
+    lastMessageTimestamps?: number[];
+  }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
   const usageMap = await readUsageFromFile();
@@ -340,6 +376,10 @@ export async function recordKeniaUsage(
     messageCount: prev.messageCount + 1,
     maintenanceNotified: usage.maintenanceNotified ?? prev.maintenanceNotified ?? false,
     testAsClient: usage.testAsClient ?? prev.testAsClient ?? false,
+    adminTakeover: usage.adminTakeover ?? prev.adminTakeover ?? false,
+    escalated: usage.escalated ?? prev.escalated ?? false,
+    spamBlocked: usage.spamBlocked ?? prev.spamBlocked ?? false,
+    lastMessageTimestamps: usage.lastMessageTimestamps ?? prev.lastMessageTimestamps ?? [],
     updatedAt: new Date().toISOString(),
   };
   await writeUsageToFile(usageMap);
@@ -362,10 +402,28 @@ export async function getKeniaRuntimeSnapshot(): Promise<{ config: KeniaConfig; 
       customerPrompt: dbConfig.customerPrompt,
       adminAlertPhone: dbConfig.adminAlertPhone,
       tokenLimitPerCustomer: dbConfig.tokenLimitPerCustomer,
-      notifyOnEveryCustomerMessage: dbConfig.notifyOnEveryCustomerMessage,
+      smartNotifications: dbConfig.smartNotifications,
+      messageThresholdForPause: dbConfig.messageThresholdForPause,
       updatedAt: dbConfig.updatedAt,
       isEnabled: dbConfig.isEnabled,
     },
     usage: hydratedUsage,
   };
+}
+
+export async function resetKeniaUsage(phone: string): Promise<void> {
+  const cleaned = normalizePhone(phone);
+  const usageMap = await readUsageFromFile();
+  delete usageMap[cleaned];
+  await writeUsageToFile(usageMap);
+}
+
+export async function deleteKeniaPhone(phone: string): Promise<void> {
+  const cleaned = normalizePhone(phone);
+  const dbConfig = await fetchConfigFromAppwrite();
+  dbConfig.blockedPhones = dbConfig.blockedPhones.filter(p => p !== cleaned);
+  await saveConfigToAppwrite(dbConfig);
+  const usageMap = await readUsageFromFile();
+  delete usageMap[cleaned];
+  await writeUsageToFile(usageMap);
 }

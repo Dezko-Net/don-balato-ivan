@@ -103,6 +103,11 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
     ]},
     { href: '/admin/wholesale', label: 'Mayoristas',   icon: Ico.Mayoristas, badge: 'wholesale' },
+    { href: '/admin/ia', label: 'Kenia IA', icon: Ico.Sparkles, children: [
+      { href: '/admin/ia',           label: 'Centro de control', icon: Ico.Sparkles },
+      { href: '/admin/ia/whatsapp',  label: 'WhatsApp',          icon: Ico.Soporte },
+      { href: '/admin/ia/appwrite',  label: 'Appwrite Monitor',  icon: Ico.Server },
+    ]},
   ]},
   { label: 'Configuración', defaultOpen: false, items: [
     { href: '/admin/engagement/plantillas', label: 'Plantillas',       icon: Ico.Plantillas },
@@ -829,18 +834,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       <style>{topbarShineCss}</style>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: isFullScreenIAWhatsApp ? '#efeae2' : '#1a1a1a', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: isFullScreenIAWhatsApp ? '#111b21' : '#1a1a1a', overflow: 'hidden' }}>
       {isFullScreenIAWhatsApp ? (
         <>
           <div className="admin-content-wrap" ref={contentWrapRef} style={{
-            flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, height: '100%', background: '#efeae2',
+            flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, height: '100%', background: '#111b21',
             display: 'flex', flexDirection: 'column',
           }}>
-            <main ref={contentRef} className="admin-main-content admin-main-scroll" style={{
+            <main ref={contentRef} className="admin-main-content" style={{
               position: 'relative', zIndex: 1, flex: 1, height: '100%',
-              overflowY: 'auto', overflowX: 'hidden',
-              WebkitOverflowScrolling: 'touch',
-              padding: 0, background: '#efeae2',
+              overflow: 'hidden',
+              padding: 0, background: '#111b21',
               margin: 0,
             }}>
               {children}
@@ -892,29 +896,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             if (pathname !== '/admin/ia') router.push('/admin/ia');
           }} />
 
-          {/* Limpiar Caché Button */}
-          <button 
-            onClick={async () => {
-              try {
-                await fetch('/api/revalidate?tag=products');
-                alert('¡Caché limpiado con éxito! La tienda está actualizada para todos.');
-              } catch (e) {
-                alert('Error al limpiar caché');
-              }
-            }}
-            title="Limpiar Caché de Tienda"
-            style={{
-              height: 32, padding: '0 12px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', 
-              cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all .2s'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-          >
-            <RefreshCw size={14} />
-            <span className="hidden sm:inline">Limpiar Caché</span>
-          </button>
-
           {/* Notifications */}
           <Link href="/admin/notifications" style={{
             width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -937,11 +918,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               transition: 'background .15s',
             }}>
               <div style={{
-                width: 28, height: 28, borderRadius: '50%', background: '#059669',
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 700, fontSize: 11, flexShrink: 0,
+                color: '#fff', fontWeight: 800, fontSize: 10, flexShrink: 0,
+                boxShadow: '0 0 0 2px rgba(139,92,246,0.4)',
               }}>
-                {user?.name?.charAt(0).toUpperCase() || 'A'}
+                {user?.name?.split(' ').slice(0,2).map((w: string) => w[0]).join('').toUpperCase() || 'JE'}
               </div>
               <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user?.name || 'Admin'}
@@ -977,8 +960,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Header */}
                 <div className="um-item" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                      {user?.name?.charAt(0).toUpperCase() || 'A'}
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 11, flexShrink: 0, boxShadow: '0 0 0 2px rgba(139,92,246,0.3)' }}>
+                      {user?.name?.split(' ').slice(0,2).map((w: string) => w[0]).join('').toUpperCase() || 'JE'}
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ margin: 0, color: '#fff', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || 'Admin'}</p>

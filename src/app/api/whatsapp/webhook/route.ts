@@ -7,6 +7,7 @@ import {
   getKeniaUsage,
   hydratePrompt,
   recordKeniaUsage,
+  setKeniaBlocked,
 } from '@/lib/kenia-runtime';
 import {
   PRODUCTS_COLLECTION_ID,
@@ -520,8 +521,42 @@ ${products.join('\n') || 'Sin productos.'}`;
 (Usa esta fecha como referencia absoluta de "hoy" para determinar qué pedidos corresponden a "hoy", "ayer", etc.)`;
 
     if (!isAdmin) {
-      const usage = await getKeniaUsage(fromPhone);
-      if (usage.blocked) {
+      const usageCheck = await getKeniaUsage(fromPhone);
+
+      // ── Anti-spam: detectar más de 8 mensajes en 2 minutos ──
+      const now = Date.now();
+      const recentTimestamps = (usageCheck.lastMessageTimestamps || []).filter(
+        (ts: number) => now - ts < 120_000
+      );
+      recentTimestamps.push(now);
+      await recordKeniaUsage(fromPhone, { lastMessageTimestamps: recentTimestamps });
+
+      if (!usageCheck.spamBlocked && recentTimestamps.length > 8) {
+        // Auto-bloquear por spam
+        await setKeniaBlocked(fromPhone, true, 'spam');
+        const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+        const spamAlert = `🚫 *ALERTA ANTI-SPAM*\nEl número +${fromPhone} fue bloqueado automáticamente por enviar ${recentTimestamps.length} mensajes en menos de 2 minutos.\n\nÚltimo mensaje: "${userText}"\n\n🔗 Revisa en el panel: ${SITE_URL}/admin/ia/whatsapp`;
+        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, spamAlert, WA_TOKEN);
+        return NextResponse.json({ status: 'spam_blocked' });
+      }
+
+      if (usageCheck.blocked) {
+        if (usageCheck.spamBlocked) {
+          // Spam: silencio total, no responder nada
+          return NextResponse.json({ status: 'spam_blocked' });
+        }
+        if (usageCheck.adminTakeover || usageCheck.escalated) {
+          // Admin tomó control o Kenia escaló: aviso amable (solo una vez)
+          const takeoverReply = 'Hola linda, en este momento te está atendiendo personalmente alguien de nuestro equipo. ¡Pronto recibirás respuesta! 🌸';
+          await addToHistory(fromPhone, 'assistant', takeoverReply, msgId);
+          await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
+          // Notificar al admin que el cliente escribió
+          const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+          const adminNotif = `📩 *Cliente esperando respuesta*\n+${fromPhone} escribió: "${userText}"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+          await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotif, WA_TOKEN);
+          return NextResponse.json({ status: 'admin_takeover' });
+        }
+        // Bloqueo normal (por tokens u otro)
         const blockedReply = 'Hola linda. Por ahora este chat quedó pausado para atención automática y te responderá una persona del equipo en cuanto revise tu caso.';
         await addToHistory(fromPhone, 'assistant', blockedReply, msgId);
         await sendWhatsAppMessage(fromPhone, blockedReply, WA_TOKEN);
@@ -751,11 +786,32 @@ ${products.join('\n') || 'Sin productos.'}`;
       const escalateRegex = /\[ACTION:ESCALATE_ADMIN\]([\s\S]*?)\[\/ACTION\]/;
       
       if (escalateRegex.test(rawText)) {
-        const alertMsg = `🚨 *ALERTA DE KENIA IA*\nEl cliente +${fromPhone} tiene un problema que no puedo manejar.\nPor favor revisa el chat con urgencia.\n\nMensaje del cliente: "${userText}"\nMi respuesta: "${aiReply}"`;
+        // Auto-bloquear Kenia para este cliente y marcar como escalado
+        await setKeniaBlocked(fromPhone, true, 'admin_takeover');
+        await recordKeniaUsage(fromPhone, { escalated: true });
+
+        // Enviar alerta rica al admin con contexto y link al panel
+        const lastMsgs = (await getHistory(fromPhone)).slice(-4).map(m =>
+          `${m.role === 'user' ? '👤' : '🤖'} ${m.content.slice(0, 120)}`
+        ).join('\n');
+        const alertMsg = `🚨 *KENIA NECESITA AYUDA*\n\nEl cliente +${fromPhone} tiene un caso que no puedo resolver.\n\n📋 *Últimos mensajes:*\n${lastMsgs}\n\n💬 *Mi última respuesta:*\n"${aiReply.slice(0, 200)}"\n\n⚡ Kenia se desactivó para este cliente. Responde desde el panel:\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
-      } else if (keniaConfig.notifyOnEveryCustomerMessage) {
-        const reportMsg = `🤖 *Kenia IA Reporte*\nCliente: +${fromPhone}\nMensaje: "${userText}"\nRespuesta: "${aiReply}"`;
-        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, reportMsg, WA_TOKEN);
+      } else if (keniaConfig.smartNotifications) {
+        // Smart notifications: only notify on key events, not every message
+        const usageAfter = await getKeniaUsage(fromPhone);
+        const msgCount = usageAfter.messageCount;
+        const threshold = keniaConfig.messageThresholdForPause || 10;
+
+        if (msgCount === 1) {
+          // New conversation started
+          const notifyMsg = `🆕 *Nueva conversación iniciada*\nCliente: +${fromPhone}\nMensaje: "${userText.slice(0, 150)}"\n\n🤖 Kenia está atendiendo. Te avisaré si necesito ayuda.\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+          await sendWhatsAppMessage(MAIN_ADMIN_PHONE, notifyMsg, WA_TOKEN);
+        } else if (msgCount >= threshold && !usageAfter.adminTakeover) {
+          // Threshold reached — pause Kenia and ask admin what to do
+          await setKeniaBlocked(fromPhone, true, 'admin_takeover');
+          const pauseMsg = `⏸️ *Conversación larga detectada*\n\nCliente: +${fromPhone}\nMensajes intercambiados: ${msgCount}\n\nHe estado conversando con esta persona por un tiempo. ¿Qué quieres que haga?\n\n✅ *Devolver a Kenia* → responde "continuar"\n🚫 *Bloquear* → responde "bloquear"\n👤 *Tomar control* → responde "tomar"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+          await sendWhatsAppMessage(MAIN_ADMIN_PHONE, pauseMsg, WA_TOKEN);
+        }
       }
     }
 
