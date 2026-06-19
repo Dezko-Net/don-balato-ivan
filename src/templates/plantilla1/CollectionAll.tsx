@@ -69,6 +69,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const [selectedSubcat, setSelectedSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [showLiveHistory, setShowLiveHistory] = useState(false);
+  const [liveHistoryDates, setLiveHistoryDates] = useState<string[]>([]);
+  const [liveHistoryProducts, setLiveHistoryProducts] = useState<Product[]>([]);
+  const [liveHistoryLoading, setLiveHistoryLoading] = useState(false);
+  const [liveHistorySelectedDate, setLiveHistorySelectedDate] = useState<string | null>(null);
 
   const [catalogCover, setCatalogCover] = useState<{ image: string; title: string; subtitle: string; overlayEnabled: boolean; overlayOpacity: number; overlayColor: string }>({
     image: '', title: '', subtitle: '', overlayEnabled: true, overlayOpacity: 40, overlayColor: '#000000'
@@ -293,6 +298,37 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       setZoomImage({ src: imgSrc, alt: p.NAME });
     }
   };
+
+  // Load live shopping history dates (derived from allActiveProducts)
+  const liveDatesAvailable = useMemo(() => {
+    if (isPaquetes || isEmbalajes) return [];
+    const dates = new Set<string>();
+    allActiveProducts.forEach(p => {
+      if (!isLiveShoppingProduct(p)) return;
+      const d = new Date(p.imported_at!);
+      // Format as YYYY-MM-DD
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      dates.add(dateStr);
+    });
+    return Array.from(dates).sort((a, b) => b.localeCompare(a));
+  }, [isPaquetes, isEmbalajes, allActiveProducts]);
+
+  // Load products for a specific live date
+  const loadLiveHistoryForDate = useCallback(async (dateStr: string) => {
+    setLiveHistoryLoading(true);
+    setLiveHistorySelectedDate(dateStr);
+    try {
+      const res = await fetch(`/api/public-data/products?live=true&date=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLiveHistoryProducts(data.products || []);
+      }
+    } catch (e) {
+      console.error('Error loading live history:', e);
+    } finally {
+      setLiveHistoryLoading(false);
+    }
+  }, []);
 
   // Load catalog categories & offers once on mount
   useEffect(() => {
@@ -687,7 +723,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           const hasLiveNow = liveShoppingProducts.length > 0;
           const hasYesterday = yesterdayLiveProducts.length > 0;
           const productsToShow = hasLiveNow ? liveShoppingProducts : yesterdayLiveProducts;
-          if (productsToShow.length === 0) return null;
+          if (productsToShow.length === 0 && liveDatesAvailable.length === 0) return null;
 
           return (
             <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: '#fff', border: '1.5px solid #fecdd3', boxShadow: '0 10px 40px rgba(233,69,96,0.08)' }}>
@@ -703,6 +739,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   <span style={{ fontSize: 10, color: '#aaa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{hasLiveNow ? 'Próximo live en' : 'Live inicia en'}</span>
                   <CountdownTimer expiresAt={nextLiveSec} compact />
                 </div>
+                {liveDatesAvailable.length > 0 && (
+                  <button onClick={() => { setShowLiveHistory(true); setLiveHistoryDates(liveDatesAvailable); }}
+                    style={{ padding: '8px 14px', borderRadius: 12, border: '1.5px solid #fecdd3', background: '#fff', color: '#e94560', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: FF, whiteSpace: 'nowrap' }}>
+                    📅 Ver historial ({liveDatesAvailable.length})
+                  </button>
+                )}
               </div>
               <div className="pk-carousel-no-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 24px', overflowX: 'auto', scrollbarWidth: 'none' }}>
                 {productsToShow.map(p => {
@@ -1024,9 +1066,16 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     price = p.WHOLESALEPRICE || p.PRICE;
                     origPrice = p.PRICE;
                   } else if (catalogMode === 'paquetes') {
-                    // Usa resolvePackUnitPrice para respetar WHOLESALEPRICE o PACK_DISCOUNT_PCT
-                    price = resolvePackUnitPrice(p);
-                    origPrice = p.PRICE;
+                    // Si es producto de live shopping, usar el precio con descuento de live para paquete también
+                    if (isLiveShoppingProduct(p)) {
+                      const liveDiscount = getLiveShoppingDiscountPercent(p.imported_at!);
+                      price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
+                      origPrice = p.PRICE;
+                    } else {
+                      // Usa resolvePackUnitPrice para respetar WHOLESALEPRICE o PACK_DISCOUNT_PCT
+                      price = resolvePackUnitPrice(p);
+                      origPrice = p.PRICE;
+                    }
                   } else if (!activeOffer && p.PACKQTY && p.PACKQTY > 1) {
                     // En /productos, si tiene PACKQTY mostrar también el precio de paquete como referencia
                     // (el precio normal sigue siendo el individual con apertura)
@@ -1159,8 +1208,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     price = p.WHOLESALEPRICE || p.PRICE;
                     origPrice = p.PRICE;
                   } else if (catalogMode === 'paquetes') {
-                    price = resolvePackUnitPrice(p);
-                    origPrice = p.PRICE;
+                    if (isLiveShoppingProduct(p)) {
+                      const liveDiscount = getLiveShoppingDiscountPercent(p.imported_at!);
+                      price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
+                      origPrice = p.PRICE;
+                    } else {
+                      price = resolvePackUnitPrice(p);
+                      origPrice = p.PRICE;
+                    }
                   }
 
                   if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
@@ -1379,6 +1434,75 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
       {/* Image Zoom Modal */}
       {zoomImage && <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />}
+
+      {/* Live Shopping History Modal */}
+      {showLiveHistory && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowLiveHistory(false)}>
+          <div style={{ background: '#fff', borderRadius: 24, maxWidth: 900, width: '100%', maxHeight: '85vh', overflow: 'auto', padding: 0 }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', margin: 0, fontFamily: FF }}>📅 Historial de Live Shopping</h3>
+                <p style={{ fontSize: 12, color: '#9ca3af', margin: '4px 0 0' }}>Selecciona una fecha para ver los productos de ese live</p>
+              </div>
+              <button onClick={() => setShowLiveHistory(false)} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: '#f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#6b7280' }}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px' }}>
+              {/* Date chips */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                {liveHistoryDates.map(dateStr => {
+                  const isSelected = liveHistorySelectedDate === dateStr;
+                  const [y, m, d] = dateStr.split('-').map(Number);
+                  const dateObj = new Date(y, m - 1, d);
+                  const dayName = dateObj.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+                  return (
+                    <button key={dateStr} onClick={() => loadLiveHistoryForDate(dateStr)}
+                      style={{ padding: '8px 14px', borderRadius: 12, border: `1.5px solid ${isSelected ? '#e94560' : '#fecdd3'}`, background: isSelected ? '#e94560' : '#fff', color: isSelected ? '#fff' : '#e94560', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: FF, whiteSpace: 'nowrap' }}>
+                      {dayName}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Products for selected date */}
+              {liveHistoryLoading ? (
+                <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>Cargando productos...</div>
+              ) : liveHistorySelectedDate && liveHistoryProducts.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+                  {liveHistoryProducts.map(p => {
+                    const pricing = resolveProductDisplayPrice(p, apertura);
+                    const stock = p.STOCK || 0;
+                    const discountPct = isLiveShoppingProduct(p) ? getLiveShoppingDiscountPercent(p.imported_at!) : 20;
+                    return (
+                      <div key={p.$id} style={{ background: '#fff', borderRadius: 16, border: '1px solid #f3f4f6', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8fafc', cursor: 'pointer' }} onClick={() => handleCardImageClick(p)}>
+                          {getProductImageUrl(p) ? (
+                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="160px" unoptimized />
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 32 }}>📦</div>
+                          )}
+                          <div style={{ position: 'absolute', top: 6, left: 6, background: 'linear-gradient(135deg,#e94560,#ff6b6b)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 900, padding: '3px 8px' }}>-{discountPct}%</div>
+                        </div>
+                        <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 32 }}>{p.NAME}</p>
+                          </Link>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: '#e94560', fontFamily: FF }}>{formatPrice(pricing.displayPrice)}</span>
+                            {pricing.originalPrice != null && <span style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : liveHistorySelectedDate ? (
+                <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>No hay productos para esta fecha</div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>Selecciona una fecha arriba para ver los productos</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         :root {

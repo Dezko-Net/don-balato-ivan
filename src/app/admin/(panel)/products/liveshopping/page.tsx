@@ -30,8 +30,8 @@ type LiveSession = {
 
 const getLiveShoppingThreshold = (): Date => {
   const now = new Date();
-  const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
-  return now >= today7Am ? today7Am : new Date(today7Am.getTime() - 86400000);
+  const today5Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+  return now >= today5Pm ? today5Pm : new Date(today5Pm.getTime() - 86400000);
 };
 
 const fmt = (n: number) =>

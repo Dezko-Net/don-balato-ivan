@@ -119,6 +119,7 @@ function OrdersContent() {
   const filterUserId = searchParams.get('userId') || '';
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [timelineOrderId, setTimelineOrderId] = useState<string | null>(null);
+  const [drawerOrderId, setDrawerOrderId] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
@@ -1138,6 +1139,196 @@ function OrdersContent() {
         );
       })()}
 
+      {/* Quick Drawer (Cortina lateral) */}
+      {drawerOrderId && (() => {
+        const order = orders.find(o => o.$id === drawerOrderId);
+        if (!order) return null;
+        
+        const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
+        const ageMs = Date.now() - date.getTime();
+        const ageH = Math.floor(ageMs / 3600000);
+        const ageD = Math.floor(ageH / 24);
+        const ageStr = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+        
+        const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+        const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
+        const statusBg = isRetiro ? '#fdf4ff' : (STATUS_COLORS[order.STATUS]?.bg || '#f3f4f6');
+        const statusLabel = isRetiro ? 'Listo para Retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS);
+        
+        const phoneClean = order.CUSTOMERPHONE ? order.CUSTOMERPHONE.replace(/\D/g, '') : '';
+        const waPhone = phoneClean.length === 9 ? '56' + phoneClean : phoneClean;
+        const waMsg = encodeURIComponent(`Hola ${order.CUSTOMERNAME}, te escribimos de Yaxsel por tu pedido ${order.ORDERCODE || ''}.`);
+        const waUrl = `https://wa.me/${waPhone}?text=${waMsg}`;
+        
+        const isUpdating = updatingId === order.$id;
+        const agencyDetails = order.SHIPPINGAGENCY ? getAgencyDetails(order.SHIPPINGAGENCY) : null;
+        
+        return (
+          <div className="fixed inset-0 z-50 flex justify-end animate-fade-in" style={{ background: 'rgba(0,0,0,0.3)', animation: 'kcFadeIn 0.2s ease-out' }} onClick={() => setDrawerOrderId(null)}>
+            <div className="bg-white h-full w-full max-w-md shadow-2xl flex flex-col relative border-l border-gray-200"
+              style={{ animation: 'kcSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
+              onClick={e => e.stopPropagation()}>
+              
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-gray-150 flex items-center justify-between bg-gray-50/50">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    Pedido <span className="font-mono text-indigo-600 font-extrabold">{order.ORDERCODE || '—'}</span>
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Creado hace {ageStr} ({date.toLocaleString('es-CL', { timeZone: 'America/Santiago' })})</p>
+                </div>
+                <button onClick={() => setDrawerOrderId(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl font-bold leading-none transition">×</button>
+              </div>
+              
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
+                {/* Total & Current Status card */}
+                <div className="bg-indigo-50/40 rounded-2xl p-4 border border-indigo-100/40 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider block">Monto Total</span>
+                    <span className="text-2xl font-black text-gray-900">{fmt(order.TOTAL)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider block mb-1">Estado Actual</span>
+                    <span className="text-xs font-bold px-3 py-1 rounded-full inline-block shadow-sm" style={{ background: statusBg, color: statusColor }}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Quick Actions Title */}
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Acciones Rápidas</h4>
+                  <div className="space-y-3">
+                    {/* WhatsApp button */}
+                    <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-center">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.45L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 1.977 14.07 .953 11.996.953c-5.44 0-9.866 4.372-9.87 9.802-.001 1.77.463 3.5 1.34 5.016l-.995 3.633 3.731-.977zm11.367-7.79c-.273-.136-1.62-.8-1.87-.89-.25-.09-.432-.136-.613.136-.18.272-.7.89-.858 1.072-.158.18-.317.2-.59.064-1.286-.64-2.138-1.053-2.996-2.525-.227-.39.227-.362.649-1.201.07-.14.035-.262-.017-.37-.053-.107-.432-1.04-.593-1.43-.157-.38-.344-.326-.473-.326-.122 0-.262-.01-.403-.01-.14 0-.37.052-.563.262-.193.21-.738.722-.738 1.762s.755 2.04 1.884 2.19c1.129.15 2.2 1.59 3.56 2.09.4.15.78.16 1.07.12.33-.05 1.02-.42 1.16-.83.14-.41.14-.77.1-.84-.04-.07-.16-.11-.43-.24z"/>
+                      </svg>
+                      Hablar por WhatsApp
+                    </a>
+                    
+                    {/* Status dropdown */}
+                    <div className="bg-gray-50 border border-gray-150 rounded-xl p-3">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Cambiar Estado Rápido</label>
+                      <div className="relative">
+                        <select
+                          value={order.STATUS}
+                          disabled={isUpdating}
+                          onChange={(e) => updateStatus(order.$id, e.target.value)}
+                          className="w-full pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer disabled:opacity-50"
+                        >
+                          {STATUS_FLOW.map(status => (
+                            <option key={status} value={status}>
+                              {STATUS_CONFIG[status]?.label || status}
+                            </option>
+                          ))}
+                          <option value="cancelled">Cancelado</option>
+                        </select>
+                        {isUpdating && (
+                          <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                            <RefreshCw size={14} className="animate-spin text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Client info */}
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Datos del Cliente</h4>
+                  <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50 overflow-hidden">
+                    <div className="p-3 flex items-center justify-between text-sm">
+                      <span className="text-gray-400 font-semibold">Nombre</span>
+                      <span className="font-bold text-gray-800">{order.CUSTOMERNAME}</span>
+                    </div>
+                    {order.CUSTOMERRUT && (
+                      <div className="p-3 flex items-center justify-between text-sm">
+                        <span className="text-gray-400 font-semibold">RUT</span>
+                        <span className="font-bold text-gray-800">{order.CUSTOMERRUT}</span>
+                      </div>
+                    )}
+                    <div className="p-3 flex items-center justify-between text-sm">
+                      <span className="text-gray-400 font-semibold">Teléfono</span>
+                      <span className="font-mono font-bold text-indigo-600">{order.CUSTOMERPHONE || '—'}</span>
+                    </div>
+                    <div className="p-3 flex items-center justify-between text-sm">
+                      <span className="text-gray-400 font-semibold">Email</span>
+                      <span className="font-bold text-gray-700 truncate max-w-[200px]" title={order.CUSTOMEREMAIL}>{order.CUSTOMEREMAIL || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Shipping info */}
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Despacho y Pago</h4>
+                  <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50 overflow-hidden">
+                    {agencyDetails && (
+                      <div className="p-3 flex items-center justify-between text-sm">
+                        <span className="text-gray-400 font-semibold">Agencia de Envío</span>
+                        <span style={{ color: agencyDetails.color, backgroundColor: agencyDetails.bg, borderColor: agencyDetails.color + '20' }}
+                          className="text-xs font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1">
+                          {agencyDetails.logo && <img src={agencyDetails.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />}
+                          {agencyDetails.name}
+                        </span>
+                      </div>
+                    )}
+                    <div className="p-3 flex items-center justify-between text-sm">
+                      <span className="text-gray-400 font-semibold">Método de Pago</span>
+                      <span className="font-bold text-gray-700">{order.PAYMENTMETHOD || '—'}</span>
+                    </div>
+                    <div className="p-3 flex flex-col gap-1 text-sm">
+                      <span className="text-gray-400 font-semibold">Comuna y Región</span>
+                      <span className="font-bold text-gray-800">{order.COMUNA || '—'}{order.REGION ? `, ${order.REGION}` : ''}</span>
+                    </div>
+                    {order.CUSTOMERADDRESS && (
+                      <div className="p-3 flex flex-col gap-1 text-sm">
+                        <span className="text-gray-400 font-semibold">Dirección de despacho</span>
+                        <span className="text-xs text-gray-700 leading-relaxed font-medium">{order.CUSTOMERADDRESS}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Customer Notes */}
+                {(order as any).CUSTOMERNOTE && (
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Notas del Cliente</h4>
+                    <div className="bg-amber-50/50 border border-amber-100 text-amber-900 rounded-xl p-3 text-xs leading-relaxed font-medium">
+                      {(order as any).CUSTOMERNOTE}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Footer action button */}
+              <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => window.location.href = `/admin/orders/${order.$id}`}
+                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/10 hover:scale-[1.01] active:scale-95"
+                >
+                  <Eye size={16} />
+                  Ver Detalle Completo
+                </button>
+              </div>
+            </div>
+            
+            <style>{`
+              @keyframes kcSlideIn {
+                0% { transform: translateX(100%); }
+                100% { transform: translateX(0); }
+              }
+              @keyframes kcFadeIn {
+                0% { opacity: 0; }
+                100% { opacity: 1; }
+              }
+            `}</style>
+          </div>
+        );
+      })()}
+
       {/* Search */}
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -1202,7 +1393,7 @@ function OrdersContent() {
               return (
                 <div key={order.$id}
                   className={`relative p-4 hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70' : isOverdue ? 'bg-red-50/50' : ''}`}
-                  onClick={() => window.location.href = `/admin/orders/${order.$id}`}>
+                  onClick={() => setDrawerOrderId(order.$id)}>
                   {/* Status left border */}
                   <div className="absolute left-0 top-0 bottom-0 w-1 rounded-r" style={{ background: statusColor }} />
 
@@ -1327,7 +1518,7 @@ function OrdersContent() {
                   return (
                     <React.Fragment key={order.$id}>
                     <tr className={`hover:bg-gray-50/80 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70 hover:bg-amber-100/70' : isOverdue ? 'bg-red-50/50' : ''}`}
-                      onClick={() => window.location.href = `/admin/orders/${order.$id}`}>
+                      onClick={() => setDrawerOrderId(order.$id)}>
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={selected.has(order.$id)}
                           onChange={() => toggleSelect(order.$id)}
@@ -1405,7 +1596,7 @@ function OrdersContent() {
                           {pendingAgeStr && <span className={`block font-bold ${ageD >= 3 ? 'text-red-600' : 'text-orange-500'}`}>{pendingAgeStr}</span>}
                         </p>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <button onClick={async () => {
                           const newId = expandedOrderId === order.$id ? null : order.$id;
                           setExpandedOrderId(newId);
