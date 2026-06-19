@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -196,7 +196,7 @@ export default function AdminIAPage() {
               <span style={{ fontSize: 12, fontWeight: 700, color: '#4f46e5' }}>Centro de control</span>
             </div>
             <h1 style={{ fontSize: 28, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-              Kenia IA
+              Yexy IA
             </h1>
             <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>
               Configuracion global, prompts y vision del sistema

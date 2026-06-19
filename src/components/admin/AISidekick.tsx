@@ -86,7 +86,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('yaxsel-data-change'));
   }, [onProductChange]);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: '¡Hola! Soy **Kenia**, tu asistente de IA. Puedo ayudarte a crear productos, gestionar pedidos, analizar ventas, crear descuentos y mucho más. ¿En qué te ayudo hoy?', typed: true },
+    { role: 'assistant', content: '¡Hola! Soy **Yexy**, tu asistente de IA. Puedo ayudarte a crear productos, gestionar pedidos, analizar ventas, crear descuentos y mucho más. ¿En qué te ayudo hoy?', typed: true },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -415,13 +415,13 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
             marginTop: 4,
           }}>
             <img
-              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843768241-pegada-1781843766443.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=BxsIux4NEKcPVhJNtdkN8xS0reObQ9R6%2B1LooADeMa0KNvP5JHCFlNboss9Ceev3p%2BNMfRSHC4YxayWfJViQuS2gGhTQJZWKXgb18Z08xlpvtrLhSLblNDcHpZcZUqwdgWlPnixuRKjkyUDbTCJ4Le7GAMiqtKM2dhKMBidhguDXtp1LtP3shtF5Yr0How1UYN%2BiJ1mvScxkTT%2FYGn5Wi82nmwuLhgByOWHk%2F2BhPmIneNbKtXZHvCd1jBkyGfRqPNeuGzGY%2BAIWJl%2FYCHAwPTgmdpj3Orm6%2FwhR851aCanxNu7sQXsOxYQUkqJAHsBSE7kSRf1j%2Bdqhi3OLqEiStg%3D%3D"
-              alt="Kenia"
+              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781844152550-pegada-1781844145289.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=SfrE7ZUCdWW0i%2FYWztIYRhbwTcByM7bthoiQc%2FjPQJEXV1fT4J3jmJCJlDsf01pffNwLLUfmmc6XeKYBIPqcXPVTVsdSPvigAxDkEEJgz4Lc9jEs0t9YOpd5BagWiOrWXG1yDBfozFypuodOyeO%2FJKDoPY3QKhP9t8yWGEd2NprwzaEbAd%2BclP90ZkGhmEuWdeDwJbW07QNIiC2NLo4wlAegxL2%2FDMIYBd2DGMAgP5Zo8EjA17BT690P%2BBGBJOuTYpsynxXe7KvdlBt7JVVoJoLHP525kpVVu8O5Wp0rEKpPaRUx0dCx%2BC7H1tTOKes0UDrp%2BW7T7HeRnMoDXvFWWA%3D%3D"
+              alt="Yexy"
               style={{ width:88, height:88, borderRadius:21, objectFit:'cover', objectPosition: 'center 20%' }}
             />
           </div>
           <div>
-            <p style={{ margin:0, color:'#fff', fontSize:18, fontWeight:700 }}>Kenia IA</p>
+            <p style={{ margin:0, color:'#fff', fontSize:18, fontWeight:700 }}>Yexy IA</p>
             <p style={{ margin:0, color:'rgba(255,255,255,0.9)', fontSize:11, letterSpacing:'0.3px' }}>Asistente inteligente</p>
           </div>
           <button onClick={onClose} style={{
@@ -450,11 +450,11 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
                 {!isUser && (
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
                     <img
-                      src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843768241-pegada-1781843766443.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=BxsIux4NEKcPVhJNtdkN8xS0reObQ9R6%2B1LooADeMa0KNvP5JHCFlNboss9Ceev3p%2BNMfRSHC4YxayWfJViQuS2gGhTQJZWKXgb18Z08xlpvtrLhSLblNDcHpZcZUqwdgWlPnixuRKjkyUDbTCJ4Le7GAMiqtKM2dhKMBidhguDXtp1LtP3shtF5Yr0How1UYN%2BiJ1mvScxkTT%2FYGn5Wi82nmwuLhgByOWHk%2F2BhPmIneNbKtXZHvCd1jBkyGfRqPNeuGzGY%2BAIWJl%2FYCHAwPTgmdpj3Orm6%2FwhR851aCanxNu7sQXsOxYQUkqJAHsBSE7kSRf1j%2Bdqhi3OLqEiStg%3D%3D"
-                      alt="Kenia"
+                      src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781844152550-pegada-1781844145289.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=SfrE7ZUCdWW0i%2FYWztIYRhbwTcByM7bthoiQc%2FjPQJEXV1fT4J3jmJCJlDsf01pffNwLLUfmmc6XeKYBIPqcXPVTVsdSPvigAxDkEEJgz4Lc9jEs0t9YOpd5BagWiOrWXG1yDBfozFypuodOyeO%2FJKDoPY3QKhP9t8yWGEd2NprwzaEbAd%2BclP90ZkGhmEuWdeDwJbW07QNIiC2NLo4wlAegxL2%2FDMIYBd2DGMAgP5Zo8EjA17BT690P%2BBGBJOuTYpsynxXe7KvdlBt7JVVoJoLHP525kpVVu8O5Wp0rEKpPaRUx0dCx%2BC7H1tTOKes0UDrp%2BW7T7HeRnMoDXvFWWA%3D%3D"
+                      alt="Yexy"
                       style={{ width:30, height:30, borderRadius:7, objectFit:'cover', flexShrink:0 }}
                     />
-                    <span style={{ fontSize:10, color:'rgba(167,139,250,0.6)', fontWeight:500 }}>Kenia</span>
+                    <span style={{ fontSize:10, color:'rgba(167,139,250,0.6)', fontWeight:500 }}>Yexy</span>
                   </div>
                 )}
                 <div className={isUser ? '' : 'sk-bubble-ai'} style={{
@@ -513,7 +513,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
                 <div style={{ width:18, height:18, borderRadius:5, background:'linear-gradient(135deg,#7c3aed,#a78bfa)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <Sparkles size={9} style={{ color:'#fff' }}/>
                 </div>
-                <span style={{ fontSize:10, color:'rgba(167,139,250,0.6)', fontWeight:500 }}>Kenia está pensando...</span>
+                <span style={{ fontSize:10, color:'rgba(167,139,250,0.6)', fontWeight:500 }}>Yexy está pensando...</span>
               </div>
               <div style={{
                 padding:'12px 16px', borderRadius:'4px 14px 14px 14px',

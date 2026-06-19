@@ -1687,7 +1687,7 @@ export default function DashboardPage() {
           <h1 className="db-greeting" style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {greeting}, {userName}
             <img 
-              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843768241-pegada-1781843766443.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=BxsIux4NEKcPVhJNtdkN8xS0reObQ9R6%2B1LooADeMa0KNvP5JHCFlNboss9Ceev3p%2BNMfRSHC4YxayWfJViQuS2gGhTQJZWKXgb18Z08xlpvtrLhSLblNDcHpZcZUqwdgWlPnixuRKjkyUDbTCJ4Le7GAMiqtKM2dhKMBidhguDXtp1LtP3shtF5Yr0How1UYN%2BiJ1mvScxkTT%2FYGn5Wi82nmwuLhgByOWHk%2F2BhPmIneNbKtXZHvCd1jBkyGfRqPNeuGzGY%2BAIWJl%2FYCHAwPTgmdpj3Orm6%2FwhR851aCanxNu7sQXsOxYQUkqJAHsBSE7kSRf1j%2Bdqhi3OLqEiStg%3D%3D" 
+              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781844152550-pegada-1781844145289.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=SfrE7ZUCdWW0i%2FYWztIYRhbwTcByM7bthoiQc%2FjPQJEXV1fT4J3jmJCJlDsf01pffNwLLUfmmc6XeKYBIPqcXPVTVsdSPvigAxDkEEJgz4Lc9jEs0t9YOpd5BagWiOrWXG1yDBfozFypuodOyeO%2FJKDoPY3QKhP9t8yWGEd2NprwzaEbAd%2BclP90ZkGhmEuWdeDwJbW07QNIiC2NLo4wlAegxL2%2FDMIYBd2DGMAgP5Zo8EjA17BT690P%2BBGBJOuTYpsynxXe7KvdlBt7JVVoJoLHP525kpVVu8O5Wp0rEKpPaRUx0dCx%2BC7H1tTOKes0UDrp%2BW7T7HeRnMoDXvFWWA%3D%3D" 
               alt="Kenia Alert" 
               style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', objectFit: 'cover' }} 
               className={`db-icon db-icon-${dashStatus}`} 
