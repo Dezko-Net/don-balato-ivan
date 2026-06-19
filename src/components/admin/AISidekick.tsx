@@ -415,7 +415,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
             marginTop: 4,
           }}>
             <img
-              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781844152550-pegada-1781844145289.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=SfrE7ZUCdWW0i%2FYWztIYRhbwTcByM7bthoiQc%2FjPQJEXV1fT4J3jmJCJlDsf01pffNwLLUfmmc6XeKYBIPqcXPVTVsdSPvigAxDkEEJgz4Lc9jEs0t9YOpd5BagWiOrWXG1yDBfozFypuodOyeO%2FJKDoPY3QKhP9t8yWGEd2NprwzaEbAd%2BclP90ZkGhmEuWdeDwJbW07QNIiC2NLo4wlAegxL2%2FDMIYBd2DGMAgP5Zo8EjA17BT690P%2BBGBJOuTYpsynxXe7KvdlBt7JVVoJoLHP525kpVVu8O5Wp0rEKpPaRUx0dCx%2BC7H1tTOKes0UDrp%2BW7T7HeRnMoDXvFWWA%3D%3D"
+              src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Fimage-20.png?alt=media&token=0facabd7-7fb4-4cfd-9f35-a6bfd1fd66ab"
               alt="Yexy"
               style={{ width:88, height:88, borderRadius:21, objectFit:'cover', objectPosition: 'center 20%' }}
             />
