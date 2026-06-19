@@ -6,7 +6,7 @@ import { Query } from 'appwrite';
 import {
   ArrowLeft, Search, Package, Save, CheckCircle2, XCircle, Loader2,
   Filter, Tag, Layers, AlertCircle, Undo2, RefreshCw, Database, Zap,
-  Flame, AlertTriangle, TrendingDown, Users, Clock,
+  Flame, AlertTriangle, TrendingDown, Users, Clock, ExternalLink, Check,
 } from 'lucide-react';
 import {
   getServices,
@@ -755,7 +755,7 @@ export default function PorUnidadPage() {
                 <table className="text-left border-collapse" style={{ minWidth: 1100 }}>
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                      <th className="px-4 py-3 w-52">Producto</th>
+                      <th className="px-4 py-3 w-56">Producto</th>
                       <th className="px-3 py-3 text-right w-28">Precio Base</th>
                       <th className="px-3 py-3 text-center w-24">% Desc.<br/><span className="text-[9px] font-normal text-pink-400 normal-case">auto-calcula</span></th>
                       <th className="px-3 py-3 text-center w-28 bg-pink-50/60">$ Oferta</th>
@@ -777,14 +777,18 @@ export default function PorUnidadPage() {
                                 ? <img src={p.IMAGEURL} alt={p.NAME} className="w-8 h-8 object-cover rounded-lg border shrink-0" />
                                 : <div className="w-8 h-8 rounded-lg border bg-gray-100 flex items-center justify-center shrink-0"><Package className="w-4 h-4 text-gray-300" /></div>}
                               <div className="min-w-0">
-                                <p className="font-semibold text-gray-900 truncate text-[12px] max-w-[150px]">{p.NAME}</p>
-                                <div className="flex items-center gap-1 flex-wrap">
+                                <p className="font-semibold text-gray-900 truncate text-[12px] max-w-[170px]">{p.NAME}</p>
+                                <div className="flex items-center gap-1 flex-wrap mt-0.5">
                                   <span className="text-[9px] bg-gray-100 text-gray-500 px-1 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span>
+                                  {getSku(p) && <span className="text-[9px] text-gray-400 font-mono">SKU: {getSku(p)}</span>}
                                   {!isActive && <span className="text-[9px] bg-red-100 text-red-600 px-1 rounded font-bold">INACTIVO</span>}
                                   {hasOffer && <span className="text-[9px] bg-pink-100 text-pink-600 px-1 rounded font-bold">OFERTA</span>}
                                   {hasVolPrice && <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">VOL</span>}
                                 </div>
                               </div>
+                              <a href={`/productos/${p.$id}`} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition" title="Ver en tienda">
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
                             </div>
                           </td>
                           {/* Precio base */}
@@ -797,10 +801,17 @@ export default function PorUnidadPage() {
                           </td>
                           {/* % desc */}
                           <td className="px-3 py-3 text-center">
-                            <div className="relative inline-block">
-                              <input type="number" min="0" max="99" value={nD ?? (discPct > 0 ? String(discPct) : '')} onChange={e => handleDiscPctChange(e.target.value)} placeholder="—"
-                                className={`w-16 pl-2 pr-5 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-pink-500 bg-white ${nD !== undefined ? 'border-pink-400 bg-pink-50' : 'border-gray-200'}`} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-pink-400 text-xs">%</span>
+                            <div className="flex items-center justify-center gap-1">
+                              <div className="relative inline-block">
+                                <input type="text" inputMode="numeric" pattern="[0-9]*" value={nD ?? (discPct > 0 ? String(discPct) : '')} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); if (v === '' || (parseInt(v, 10) >= 0 && parseInt(v, 10) <= 99)) handleDiscPctChange(v); }} placeholder="—"
+                                  className={`w-14 pl-2 pr-4 py-1 border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-pink-500 bg-white ${nD !== undefined ? 'border-pink-400 bg-pink-50' : 'border-gray-200'}`} />
+                                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-pink-400 text-xs">%</span>
+                              </div>
+                              {nD !== undefined && nD !== '' && (
+                                <button onClick={() => handleDiscPctChange(nD)} disabled={sv || isBulkSaving} className="p-1 bg-pink-600 hover:bg-pink-700 text-white rounded-md transition disabled:opacity-30" title="Confirmar descuento">
+                                  <Check className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           </td>
                           {/* $ Oferta */}
@@ -834,7 +845,14 @@ export default function PorUnidadPage() {
                               </div>
                             </div>
                             {hasVolPrice && !hWP && !hWQ && (
-                              <p className="text-[9px] font-bold text-indigo-600 mt-0.5 text-center">-{volDiscPct}% desde {p.WHOLESALEMINQUANTITY} uds</p>
+                              <div className="flex flex-col items-center gap-1 mt-1">
+                                <p className="text-[9px] font-bold text-indigo-600">-{volDiscPct}% desde {p.WHOLESALEMINQUANTITY} uds</p>
+                                <button onClick={() => { setEditWholesalePrice(v => ({ ...v, [p.$id]: '0' })); setEditWholesaleMinQty(v => ({ ...v, [p.$id]: '0' })); }}
+                                  disabled={sv || isBulkSaving}
+                                  className="text-[10px] text-white bg-red-500 hover:bg-red-600 font-bold px-2 py-1 rounded-md transition disabled:opacity-30">
+                                  ✕ Quitar VOL
+                                </button>
+                              </div>
                             )}
                           </td>
                           {/* Stock */}
@@ -852,6 +870,9 @@ export default function PorUnidadPage() {
                           {/* Acciones */}
                           <td className="px-3 py-3 text-center">
                             <div className="flex items-center justify-center gap-1">
+                              <a href={`/productos/${p.$id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition" title="Ver en tienda">
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
                               {dirty
                                 ? <button onClick={() => handleSaveSingle(p.$id)} disabled={sv || isBulkSaving} className="p-1.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition disabled:opacity-50">
                                     {sv ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -886,12 +907,16 @@ export default function PorUnidadPage() {
                         <p className="font-bold text-gray-900 text-sm truncate">{p.NAME}</p>
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span>
+                          {getSku(p) && <span className="text-[10px] text-gray-400 font-mono">SKU: {getSku(p)}</span>}
                           {hasOffer && <span className="text-[10px] bg-pink-100 text-pink-600 px-1.5 py-0.5 rounded font-bold">-{discPct}% OFERTA</span>}
                           {hasVolPrice && <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded font-bold">VOL -{volDiscPct}%</span>}
                           {!isActive && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">INACTIVO</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        <a href={`/productos/${p.$id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition" title="Ver en tienda">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
                         <button onClick={() => setEditIsActive(v => ({ ...v, [p.$id]: !isActive }))}
                           className={`w-10 h-6 rounded-full relative transition-colors ${isActive ? 'bg-emerald-500' : 'bg-gray-300'} ${hA ? 'ring-2 ring-pink-400' : ''}`}>
                           <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isActive ? 'left-4' : 'left-0.5'}`} />
@@ -918,9 +943,16 @@ export default function PorUnidadPage() {
                           </div>
                           <div>
                             <p className="text-[10px] text-gray-400 mb-1">% descuento</p>
-                            <div className="relative">
-                              <input type="number" min="0" max="99" value={nD ?? (discPct > 0 ? String(discPct) : '')} onChange={e => handleDiscPctChange(e.target.value)} placeholder="—" className={`w-full pl-2 pr-5 py-1.5 border rounded-lg text-sm font-semibold focus:outline-none focus:border-pink-500 bg-white ${nD !== undefined ? 'border-pink-400 bg-pink-50' : 'border-gray-200'}`} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-pink-400 text-xs">%</span>
+                            <div className="flex items-center gap-1">
+                              <div className="relative flex-1">
+                                <input type="text" inputMode="numeric" pattern="[0-9]*" value={nD ?? (discPct > 0 ? String(discPct) : '')} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); if (v === '' || (parseInt(v, 10) >= 0 && parseInt(v, 10) <= 99)) handleDiscPctChange(v); }} placeholder="—" className={`w-full pl-2 pr-5 py-1.5 border rounded-lg text-sm font-semibold focus:outline-none focus:border-pink-500 bg-white ${nD !== undefined ? 'border-pink-400 bg-pink-50' : 'border-gray-200'}`} />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-pink-400 text-xs">%</span>
+                              </div>
+                              {nD !== undefined && nD !== '' && (
+                                <button onClick={() => handleDiscPctChange(nD)} disabled={sv || isBulkSaving} className="p-1.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition disabled:opacity-30" title="Confirmar descuento">
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div>
@@ -957,7 +989,16 @@ export default function PorUnidadPage() {
                             </div>
                           </div>
                         </div>
-                        <p className="text-[9px] text-gray-400 mt-1.5">Al comprar {nWQ ?? (p.WHOLESALEMINQUANTITY || 'X')}+ unidades, el precio baja automáticamente a este valor.</p>
+                        <div className="flex items-center justify-between mt-1.5">
+                          <p className="text-[9px] text-gray-400">Al comprar {nWQ ?? (p.WHOLESALEMINQUANTITY || 'X')}+ unidades, el precio baja automáticamente a este valor.</p>
+                          {hasVolPrice && (
+                            <button onClick={() => { setEditWholesalePrice(v => ({ ...v, [p.$id]: '0' })); setEditWholesaleMinQty(v => ({ ...v, [p.$id]: '0' })); }}
+                              disabled={sv || isBulkSaving}
+                              className="text-[10px] text-red-500 hover:text-red-600 font-bold px-2 py-1 border border-red-200 rounded-lg transition disabled:opacity-30 shrink-0">
+                              Quitar VOL
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {/* Stock */}
                       <div>

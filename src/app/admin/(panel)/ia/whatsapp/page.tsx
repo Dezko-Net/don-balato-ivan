@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 /* Kenia WhatsApp Business Admin - Full-screen WhatsApp Web clone
    100dvh, no margins, responsive mobile with view switching */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -478,7 +478,7 @@ export default function AdminIAWhatsAppPage() {
     });
   }, [threads, filterTab]);
 
-  const WA_BG = "url('/wa-bg.png')";
+  const WA_BG = "url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843000006-pegada-1781842998078.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XFBDxX96Z95hepuXzq%2FZQJZFzGUT8SjVk6wcFYRsLh%2BFKQ8Z%2BVSHZKfrluVcHpTBPL5D6ZNh%2FLiO8MYLnTmoA%2Be2pMj4qN9hQ8XOEl9hlpXA76konX4H3Xds4M1QGU6WBRQmjtCsBE63OZ7nuolcpLLipFfoVZ%2B4%2Byh49Ujp5M7%2Bl2IOgR97Fj5nLkqzCN3J%2Bo9sAHJSCza45FQWWMU8sur6IdTacH8oZPtVeXrDQR4TzLHqGhhgNNpAc6TNSuX21MAnscz82odTav4TSiZyWeDO3dYOLhETS%2B7cTs3JZblEr36Bb562wciaK0Pgf0cyjG5p8c%2BbMtyQ2%2FK1h8FTgQ%3D%3D')";
 
   return (
     <div style={{ display: 'flex', height: '100dvh', background: '#111b21', overflow: 'hidden' }}>

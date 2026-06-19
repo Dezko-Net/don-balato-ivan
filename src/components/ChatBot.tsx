@@ -124,7 +124,7 @@ export default function ChatBot() {
         aria-label="Registrate con Kenia por WhatsApp"
       >
         <img
-          src="/keniaavatar.jpg"
+          src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843768241-pegada-1781843766443.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=BxsIux4NEKcPVhJNtdkN8xS0reObQ9R6%2B1LooADeMa0KNvP5JHCFlNboss9Ceev3p%2BNMfRSHC4YxayWfJViQuS2gGhTQJZWKXgb18Z08xlpvtrLhSLblNDcHpZcZUqwdgWlPnixuRKjkyUDbTCJ4Le7GAMiqtKM2dhKMBidhguDXtp1LtP3shtF5Yr0How1UYN%2BiJ1mvScxkTT%2FYGn5Wi82nmwuLhgByOWHk%2F2BhPmIneNbKtXZHvCd1jBkyGfRqPNeuGzGY%2BAIWJl%2FYCHAwPTgmdpj3Orm6%2FwhR851aCanxNu7sQXsOxYQUkqJAHsBSE7kSRf1j%2Bdqhi3OLqEiStg%3D%3D"
           alt="Kenia"
           className="kenia-fab__avatar"
         />

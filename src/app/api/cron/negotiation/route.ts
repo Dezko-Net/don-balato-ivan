@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { sendWhatsAppMessage, formatWhatsAppPhone, addToHistory } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, sendWhatsAppTemplate, formatWhatsAppPhone, addToHistory } from '@/lib/whatsapp';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'negotiation_secret_key_2026';
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
@@ -144,21 +144,34 @@ export async function GET(req: NextRequest) {
 
       if (formattedPhone && WA_TOKEN) {
         try {
-          // If manually triggered (targetOrderId is present), send order details first
-          if (targetOrderId) {
-            const formattedTotal = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(order.TOTAL || 0);
-            const detailsMsg = `📄 *Detalles de tu pedido #${orderCode}:*\n• *Cliente:* ${order.CUSTOMERNAME}\n• *Teléfono:* ${order.CUSTOMERPHONE || 'No especificado'}\n• *Dirección:* ${order.ADDRESS || 'No especificada'}${order.COMUNA ? `, ${order.COMUNA}` : ''}${order.REGION ? `, ${order.REGION}` : ''}\n• *Envío:* ${order.SHIPPINGAGENCY || 'No especificado'}\n• *Total:* ${formattedTotal}`;
-            
-            await sendWhatsAppMessage(formattedPhone, detailsMsg, WA_TOKEN);
-            await addToHistory(formattedPhone, 'assistant', detailsMsg);
-            
-            // Wait 1 second before sending the second message to ensure correct ordering on WhatsApp
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+          // Send the approved template first
+          await sendWhatsAppTemplate(
+            formattedPhone,
+            'saludo_kenia',
+            'es_MX',
+            [
+              {
+                type: 'body',
+                parameters: [
+                  {
+                    type: 'text',
+                    text: firstName
+                  }
+                ]
+              }
+            ],
+            WA_TOKEN
+          );
+          
+          const historyMsg = `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Kevin&Coco. ¿Cómo estás?`;
+          await addToHistory(formattedPhone, 'assistant', historyMsg);
 
-          await sendWhatsAppMessage(formattedPhone, messageText, WA_TOKEN);
-          await addToHistory(formattedPhone, 'assistant', messageText);
-          console.log(`[Cron Negotiation] WhatsApp sent successfully to ${formattedPhone} for order ${orderCode}`);
+          // If manually triggered (targetOrderId is present), log that details cannot be sent until reply
+          if (targetOrderId) {
+            console.log(`[Cron Negotiation] Manual trigger: Template sent to ${formattedPhone} for order ${orderCode}. Details will be sent when customer replies.`);
+          } else {
+            console.log(`[Cron Negotiation] WhatsApp template sent successfully to ${formattedPhone} for order ${orderCode}`);
+          }
           
           // 5. Update order notes to mark as notified
           const timestamp = new Date().toISOString().slice(0, 10);

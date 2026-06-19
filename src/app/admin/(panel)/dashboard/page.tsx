@@ -1687,7 +1687,7 @@ export default function DashboardPage() {
           <h1 className="db-greeting" style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {greeting}, {userName}
             <img 
-              src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2FKeniaface.png?alt=media&token=11559be5-9d69-442f-b42b-25fb8dd663e9" 
+              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843768241-pegada-1781843766443.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=BxsIux4NEKcPVhJNtdkN8xS0reObQ9R6%2B1LooADeMa0KNvP5JHCFlNboss9Ceev3p%2BNMfRSHC4YxayWfJViQuS2gGhTQJZWKXgb18Z08xlpvtrLhSLblNDcHpZcZUqwdgWlPnixuRKjkyUDbTCJ4Le7GAMiqtKM2dhKMBidhguDXtp1LtP3shtF5Yr0How1UYN%2BiJ1mvScxkTT%2FYGn5Wi82nmwuLhgByOWHk%2F2BhPmIneNbKtXZHvCd1jBkyGfRqPNeuGzGY%2BAIWJl%2FYCHAwPTgmdpj3Orm6%2FwhR851aCanxNu7sQXsOxYQUkqJAHsBSE7kSRf1j%2Bdqhi3OLqEiStg%3D%3D" 
               alt="Kenia Alert" 
               style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', objectFit: 'cover' }} 
               className={`db-icon db-icon-${dashStatus}`} 

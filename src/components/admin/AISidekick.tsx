@@ -415,7 +415,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
             marginTop: 4,
           }}>
             <img
-              src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Fimage-20.png?alt=media&token=0facabd7-7fb4-4cfd-9f35-a6bfd1fd66ab"
+              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843768241-pegada-1781843766443.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=BxsIux4NEKcPVhJNtdkN8xS0reObQ9R6%2B1LooADeMa0KNvP5JHCFlNboss9Ceev3p%2BNMfRSHC4YxayWfJViQuS2gGhTQJZWKXgb18Z08xlpvtrLhSLblNDcHpZcZUqwdgWlPnixuRKjkyUDbTCJ4Le7GAMiqtKM2dhKMBidhguDXtp1LtP3shtF5Yr0How1UYN%2BiJ1mvScxkTT%2FYGn5Wi82nmwuLhgByOWHk%2F2BhPmIneNbKtXZHvCd1jBkyGfRqPNeuGzGY%2BAIWJl%2FYCHAwPTgmdpj3Orm6%2FwhR851aCanxNu7sQXsOxYQUkqJAHsBSE7kSRf1j%2Bdqhi3OLqEiStg%3D%3D"
               alt="Kenia"
               style={{ width:88, height:88, borderRadius:21, objectFit:'cover', objectPosition: 'center 20%' }}
             />
@@ -450,7 +450,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
                 {!isUser && (
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
                     <img
-                      src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2FKeniaface.png?alt=media&token=11559be5-9d69-442f-b42b-25fb8dd663e9"
+                      src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843768241-pegada-1781843766443.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=BxsIux4NEKcPVhJNtdkN8xS0reObQ9R6%2B1LooADeMa0KNvP5JHCFlNboss9Ceev3p%2BNMfRSHC4YxayWfJViQuS2gGhTQJZWKXgb18Z08xlpvtrLhSLblNDcHpZcZUqwdgWlPnixuRKjkyUDbTCJ4Le7GAMiqtKM2dhKMBidhguDXtp1LtP3shtF5Yr0How1UYN%2BiJ1mvScxkTT%2FYGn5Wi82nmwuLhgByOWHk%2F2BhPmIneNbKtXZHvCd1jBkyGfRqPNeuGzGY%2BAIWJl%2FYCHAwPTgmdpj3Orm6%2FwhR851aCanxNu7sQXsOxYQUkqJAHsBSE7kSRf1j%2Bdqhi3OLqEiStg%3D%3D"
                       alt="Kenia"
                       style={{ width:30, height:30, borderRadius:7, objectFit:'cover', flexShrink:0 }}
                     />

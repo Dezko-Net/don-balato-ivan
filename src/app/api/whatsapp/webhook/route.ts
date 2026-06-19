@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsAppMessage, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
-import { serverListDocuments, serverUpdateDocument } from '@/lib/appwrite-server';
+import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
 import {
   estimateTokensFromText,
   getKeniaConfig,
@@ -105,14 +105,14 @@ Eres súper carismática, amable y hablas como una vendedora experta en belleza 
 - Buscar productos por categoría o nombre
 - Estado de pedidos
 - Información de la tienda (horarios, envíos, pagos)
-- *Reemplazo de productos sin stock (Negociación)*
+- Reemplazo de productos sin stock (Negociación)
 
 ## Negociación de productos faltantes:
-Si el cliente te habla sobre su pedido y en el contexto ves que su pedido está en estado "negotiation" (En negociación / mod.) y tiene productos faltantes:
+Si en el contexto ves que el cliente tiene un pedido en estado "negotiation" (En negociación / mod.) con productos faltantes, debes iniciar o continuar la negociación inmediatamente en tu respuesta (incluso si el cliente solo te saluda, te da una respuesta corta, o pregunta qué pasa):
 1. Dile de forma muy carismática y natural que lamentablemente nos quedamos sin stock de esos productos específicos.
 2. Explícale que puede reemplazarlos ella misma entrando a los detalles de su pedido desde la página web, o si lo prefiere, tú misma puedes ayudarla a elegir y hacer los cambios por aquí en el chat.
 3. Pregúntale qué prefiere.
-4. **SOLO SI** ella te dice explícitamente que prefiere hacerlo ella misma por la web, le envías su enlace: ${SITE_URL}/pedido/ID_DEL_PEDIDO (reemplaza ID_DEL_PEDIDO con el ID real del pedido del contexto). NO le envíes el link antes de que ella lo pida o elija esa opción.
+4. Solo si ella te dice explícitamente que prefiere hacerlo ella misma por la web, le envías su enlace: ${SITE_URL}/pedido/ID_DEL_PEDIDO (usa el ID del pedido del contexto).
 5. Si ella te dice que la ayudes tú, muéstrale alternativas disponibles del catálogo y ayúdala a decidir.
 
 ## Información de la tienda:
@@ -120,11 +120,16 @@ Si el cliente te habla sobre su pedido y en el contexto ves que su pedido está 
 - Sitio web: ${SITE_URL}
 - País: Chile
 
-## Reglas:
-- NUNCA inventes precios ni stock. Solo di lo que está en los datos reales.
-- Sé cálida, cercana y carismática. Evita respuestas muy largas o robóticas.
-- Siempre termina con una pregunta o invitación para seguir la conversación.
-- Si hay un problema muy grande que no puedes resolver o manejar con el cliente, dile al cliente amablemente que escalarás el caso al administrador principal para que lo resuelva, y DEBES añadir al final de tu respuesta EXACTAMENTE este bloque JSON oculto: [ACTION:ESCALATE_ADMIN][/ACTION]
+## ⛔ REGLAS ABSOLUTAS (PROHIBIDO ROMPER):
+1. NUNCA inventes nombres de productos. Solo menciona productos que aparezcan EXACTAMENTE en el catálogo que se te inyecta como contexto. Si no hay productos en el contexto, di que puedes mostrarle el catálogo en la web.
+2. NUNCA inventes URLs. Solo usa ${SITE_URL} y las rutas reales del sitio (como ${SITE_URL}/productos o ${SITE_URL}/pedido/ID).
+3. NUNCA inventes precios, stock, políticas de envío ni métodos de pago que no estén en tu contexto.
+4. Si NO tienes la información que el cliente pide (ej: precios por mayor, catálogo completo, info que no está en tu contexto), ADMÍTELO HONESTAMENTE y di algo como: "Esa información la maneja directamente nuestro equipo, déjame conectarte con la persona indicada para que te ayude personalmente 🌸" y añade al final: [ACTION:ESCALATE_ADMIN][/ACTION]
+5. NUNCA des vueltas ni digas "dame un minutito" o "ya casi lo tengo" si no puedes obtener la información. Si no la tienes, escala inmediatamente.
+6. Si el cliente te pide algo por segunda vez y no puedes responderlo, ESCALA INMEDIATAMENTE al admin.
+7. Sé cálida, cercana y carismática. Evita respuestas muy largas o robóticas.
+8. Siempre termina con una pregunta o invitación para seguir la conversación.
+- Si hay un problema muy grande que no puedes resolver o manejar con el cliente, dile al cliente amablemente que lo conectarás con una persona del equipo para que lo ayude mejor, y DEBES añadir al final de tu respuesta EXACTAMENTE este bloque oculto: [ACTION:ESCALATE_ADMIN][/ACTION]
 
 Los datos de productos y pedidos del cliente te serán inyectados como contexto.`;
 
@@ -260,7 +265,7 @@ export async function POST(req: NextRequest) {
 
     // ── Fetch context from DB ──────────────────────────────────────────────────
     let contextBlock = '';
-    if (needsDbContext(userText)) {
+    if (isAdmin ? needsDbContext(userText) : true) {
       try {
         if (isAdmin) {
           // Admin: get recent orders (up to 100) + products
@@ -439,6 +444,7 @@ ${products.join('\n') || 'Sin productos.'}`;
 
         // Fetch customer's active orders based on fromPhone
         let customerOrdersText = '';
+        let myOrders: any[] = [];
         try {
           // Some basic normalizations to find the phone in DB
           let normalizedPhone = cleanedFrom;
@@ -449,7 +455,7 @@ ${products.join('\n') || 'Sin productos.'}`;
           const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
           const qLimit5 = JSON.stringify({ method: 'limit', values: [5] });
           const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qPhone, qOrderDesc, qLimit5]);
-          const myOrders = resOrders.documents || [];
+          myOrders = resOrders.documents || [];
           
           if (myOrders.length > 0) {
             const ordersFormatted = myOrders.map((o: any) => {
@@ -472,30 +478,105 @@ ${products.join('\n') || 'Sin productos.'}`;
           console.warn('[WhatsApp] Error fetching customer orders:', e);
         }
 
-        const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
-        const productsRes = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit50]);
-        const allProducts = productsRes.documents || [];
-
-        // Try to find relevant products
-        let relevant = allProducts;
-        if (keywords.length > 0) {
-          const matched = allProducts.filter((p: any) => {
-            const name = (p.NAME || '').toLowerCase();
-            const desc = (p.DESCRIPTION || '').toLowerCase();
-            const tags = (p.TAGS || '').toLowerCase();
-            return keywords.some(k => name.includes(k) || desc.includes(k) || tags.includes(k));
-          });
-          if (matched.length > 0) relevant = matched;
+        // 1. If customer has a negotiation order, fetch similar products for their missing items
+        let suggestedProducts: any[] = [];
+        const hasNegotiationOrder = myOrders.some((o: any) => o.STATUS === 'negotiation');
+        if (hasNegotiationOrder) {
+          for (const o of myOrders) {
+            if (o.STATUS !== 'negotiation') continue;
+            try {
+              const items = JSON.parse(o.ITEMS || '[]');
+              const missingItems = items.filter((it: any) => it.missing === true);
+              for (const item of missingItems) {
+                if (item.id) {
+                  try {
+                    const prod = await serverGetDocument(PRODUCTS_COLLECTION_ID, item.id);
+                    const categoryId = (prod as any).CATEGORYID || '';
+                    if (categoryId) {
+                      const resSimilar = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+                        `equal("CATEGORYID", ["${categoryId}"])`,
+                        `limit(8)`
+                      ]);
+                      if (resSimilar.documents && resSimilar.documents.length > 0) {
+                        suggestedProducts = [...suggestedProducts, ...resSimilar.documents];
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('[WhatsApp Webhook] Could not load similar products for missing item:', e);
+                  }
+                }
+              }
+            } catch (e) {}
+          }
         }
 
-        const productList = relevant.slice(0, 15).map((p: any) => {
-          const price      = p.CURRENTPRICE || p.PRICE || 0;
-          const stock      = p.STOCK ?? 0;
-          const stockLabel = stock > 0 ? `✅ Disponible (${stock} uds)` : '❌ Sin stock';
-          return `• *${p.NAME}* — $${Number(price).toLocaleString('es-CL')} | ${stockLabel}`;
+        // 2. Fetch/search catalog products
+        let relevantProducts: any[] = [];
+        let searched = false;
+        if (keywords.length > 0) {
+          try {
+            const stopwords = ['precios', 'precio', 'mayor', 'catalogo', 'completo', 'todos', 'quiero', 'saber', 'imagen', 'imagenes', 'fotos', 'costos', 'costo', 'hola', 'como', 'estas', 'bien', 'gracias'];
+            const searchKeywords = keywords.filter(k => !stopwords.includes(k));
+            if (searchKeywords.length > 0) {
+              const searchQuery = searchKeywords.join(' ');
+              const resSearch = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+                `search("NAME", ["${searchQuery}"])`,
+                `limit(25)`
+              ]);
+              if (resSearch.documents && resSearch.documents.length > 0) {
+                relevantProducts = resSearch.documents;
+                searched = true;
+              } else {
+                // Fallback to tags search
+                const resTags = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+                  `search("TAGS", ["${searchQuery}"])`,
+                  `limit(25)`
+                ]);
+                if (resTags.documents && resTags.documents.length > 0) {
+                  relevantProducts = resTags.documents;
+                  searched = true;
+                }
+              }
+            }
+          } catch (searchErr) {
+            console.warn('[WhatsApp Webhook] Direct search failed:', searchErr);
+          }
+        }
+
+        // Default products fallback if search yielded no results or was not run
+        if (relevantProducts.length === 0) {
+          try {
+            const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+            const productsRes = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit50]);
+            relevantProducts = productsRes.documents || [];
+          } catch (e) {
+            console.error('[WhatsApp Webhook] Fallback products query failed:', e);
+          }
+        }
+
+        // Merge keeping suggested products at the top and avoiding duplicates
+        const finalProducts: any[] = [...suggestedProducts];
+        relevantProducts.forEach((p: any) => {
+          if (!finalProducts.some(fp => fp.$id === p.$id)) {
+            finalProducts.push(p);
+          }
         });
 
-        contextBlock = `${customerOrdersText}\n\n## 🛍️ CATÁLOGO DISPONIBLE (${relevant.length} productos):\n${productList.join('\n') || 'No encontré productos relacionados.'}\n\nSitio web: ${SITE_URL}`;
+        // Format products with WHOLESALEPRICE if available
+        const productList = finalProducts.slice(0, 20).map((p: any) => {
+          const price = p.CURRENTPRICE || p.PRICE || 0;
+          const wholesalePrice = p.WHOLESALEPRICE || 0;
+          const stock = p.STOCK ?? 0;
+          const stockLabel = stock > 0 ? `✅ Disponible (${stock} uds)` : '❌ Sin stock';
+          
+          let priceText = `$${Number(price).toLocaleString('es-CL')}`;
+          if (wholesalePrice > 0) {
+            priceText += ` (Precio por mayor: $${Number(wholesalePrice).toLocaleString('es-CL')})`;
+          }
+          return `• *${p.NAME}* — ${priceText} | ${stockLabel}`;
+        });
+
+        contextBlock = `${customerOrdersText}\n\n## 🛍️ CATÁLOGO DISPONIBLE (${finalProducts.length} productos en contexto):\n${productList.join('\n') || 'No se encontraron productos en el catálogo.'}\n\nSitio web: ${SITE_URL}`;
       }
     } catch (dbErr) {
       console.warn('[WhatsApp] DB context error:', dbErr);

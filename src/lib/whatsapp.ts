@@ -114,6 +114,50 @@ export async function sendWhatsAppMessage(to: string, text: string, token: strin
   }
 }
 
+// ─── Send a Template message ───────────────────────────────────────────────────
+export async function sendWhatsAppTemplate(
+  to: string,
+  templateName: string,
+  languageCode: string,
+  components: any[],
+  token: string
+): Promise<void> {
+  if (!token || !WA_PHONE_NUMBER_ID) {
+    console.error('[WhatsApp] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
+    return;
+  }
+
+  const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;
+  const body = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: {
+        code: languageCode,
+      },
+      components,
+    },
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('[WhatsApp] sendTemplate error:', err);
+    throw new Error(`WhatsApp API Error: ${err}`);
+  }
+}
+
 // ─── Mark message as read ──────────────────────────────────────────────────────
 export async function markAsRead(messageId: string, token: string): Promise<void> {
   if (!token || !WA_PHONE_NUMBER_ID) return;
