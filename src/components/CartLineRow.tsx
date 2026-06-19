@@ -87,7 +87,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
           {/* Qty + Line total */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', background: '#fafafa', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity - (p.PACKQTY && p.PACKQTY > 0 && item.quantity % p.PACKQTY === 0 ? p.PACKQTY : 1))} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+              <button type="button" onClick={() => onUpdateQty(p.$id, Math.max(1, item.quantity - 1))} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
                 <Minus size={12} />
               </button>
               <span style={{ minWidth: 24, textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#1a1a1a', padding: '0 4px', whiteSpace: 'nowrap' }}>
@@ -96,7 +96,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
                   <span style={{ fontSize: 10, color: '#db2777', marginLeft: 4 }}>({item.quantity / p.PACKQTY} pqts)</span>
                 )}
               </span>
-              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity + (p.PACKQTY && p.PACKQTY > 0 && item.quantity % p.PACKQTY === 0 ? p.PACKQTY : 1))} disabled={item.quantity >= p.STOCK} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: item.quantity >= p.STOCK ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity >= p.STOCK ? '#d1d5db' : '#6b7280' }}>
+              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity + 1)} disabled={item.quantity >= p.STOCK} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: item.quantity >= p.STOCK ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity >= p.STOCK ? '#d1d5db' : '#6b7280' }}>
                 <Plus size={12} />
               </button>
             </div>
