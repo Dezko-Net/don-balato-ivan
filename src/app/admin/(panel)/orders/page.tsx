@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, OrderStatus } from '@/types/admin';
-import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package, Copy } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures } from '@/lib/product-features';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
@@ -120,6 +120,7 @@ function OrdersContent() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [timelineOrderId, setTimelineOrderId] = useState<string | null>(null);
   const [drawerOrderId, setDrawerOrderId] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
@@ -1157,14 +1158,30 @@ function OrdersContent() {
         
         const phoneClean = order.CUSTOMERPHONE ? order.CUSTOMERPHONE.replace(/\D/g, '') : '';
         const waPhone = phoneClean.length === 9 ? '56' + phoneClean : phoneClean;
-        const waMsg = encodeURIComponent(`Hola ${order.CUSTOMERNAME}, te escribimos de Yaxsel por tu pedido ${order.ORDERCODE || ''}.`);
-        const waUrl = `https://wa.me/${waPhone}?text=${waMsg}`;
         
-        const isUpdating = updatingId === order.$id;
+        const msg1 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido ${order.ORDERCODE || ''}. Queríamos confirmar si tuviste algún problema para realizar tu pago o si tienes alguna duda con el envío. ¡Avísanos y te ayudamos a completarlo!`;
+        const msg2 = `Hola ${order.CUSTOMERNAME || ''}, espero que estés muy bien. Aún tenemos reservado tu pedido ${order.ORDERCODE || ''} en Kevin&Coco Chile. Como queremos que disfrutes tus productos, si realizas tu pago hoy te regalamos un 5% de descuento adicional en esta compra con el cupón PAGO5. ¿Te gustaría que te envíe los datos de transferencia?`;
+        const msg3 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile. Para poder liberar el stock a otros clientes, te comentamos que tu pedido ${order.ORDERCODE || ''} se cancelará automáticamente en unas horas. Si aún deseas tus productos, puedes enviarnos el comprobante de transferencia hoy mismo para procesarlo de inmediato. ¡Quedamos atentos!`;
+        
+        const waUrl1 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg1)}`;
+        const waUrl2 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg2)}`;
+        const waUrl3 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg3)}`;
+        
         const agencyDetails = order.SHIPPINGAGENCY ? getAgencyDetails(order.SHIPPINGAGENCY) : null;
+
+        const copyToClipboard = (key: string, text: string) => {
+          navigator.clipboard.writeText(text);
+          setCopiedField(key);
+          setTimeout(() => setCopiedField(null), 1500);
+        };
+
+        const copyAllShipping = () => {
+          const text = `Destinatario: ${order.CUSTOMERNAME || ''}\nRUT: ${order.CUSTOMERRUT || ''}\nTeléfono: ${order.CUSTOMERPHONE || ''}\nEmail: ${order.CUSTOMEREMAIL || ''}\nDirección: ${order.ADDRESS || ''}\nComuna: ${order.COMUNA || ''}\nRegión: ${order.REGION || ''}\nAgencia: ${order.SHIPPINGAGENCY || ''}`;
+          copyToClipboard('all_shipping', text);
+        };
         
         return (
-          <div className="fixed inset-0 z-50 flex justify-end animate-fade-in" style={{ background: 'rgba(0,0,0,0.3)', animation: 'kcFadeIn 0.2s ease-out' }} onClick={() => setDrawerOrderId(null)}>
+          <div className="fixed inset-0 z-50 flex justify-end" style={{ background: 'rgba(0,0,0,0.3)', animation: 'kcFadeIn 0.2s ease-out' }} onClick={() => setDrawerOrderId(null)}>
             <div className="bg-white h-full w-full max-w-md shadow-2xl flex flex-col relative border-l border-gray-200"
               style={{ animation: 'kcSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
               onClick={e => e.stopPropagation()}>
@@ -1195,107 +1212,156 @@ function OrdersContent() {
                     </span>
                   </div>
                 </div>
-                
-                {/* Quick Actions Title */}
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Acciones Rápidas</h4>
-                  <div className="space-y-3">
-                    {/* WhatsApp button */}
-                    <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-center">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
-                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.45L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 1.977 14.07 .953 11.996.953c-5.44 0-9.866 4.372-9.87 9.802-.001 1.77.463 3.5 1.34 5.016l-.995 3.633 3.731-.977zm11.367-7.79c-.273-.136-1.62-.8-1.87-.89-.25-.09-.432-.136-.613.136-.18.272-.7.89-.858 1.072-.158.18-.317.2-.59.064-1.286-.64-2.138-1.053-2.996-2.525-.227-.39.227-.362.649-1.201.07-.14.035-.262-.017-.37-.053-.107-.432-1.04-.593-1.43-.157-.38-.344-.326-.473-.326-.122 0-.262-.01-.403-.01-.14 0-.37.052-.563.262-.193.21-.738.722-.738 1.762s.755 2.04 1.884 2.19c1.129.15 2.2 1.59 3.56 2.09.4.15.78.16 1.07.12.33-.05 1.02-.42 1.16-.83.14-.41.14-.77.1-.84-.04-.07-.16-.11-.43-.24z"/>
-                      </svg>
-                      Hablar por WhatsApp
+
+                {/* WhatsApp Messages section */}
+                <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981" className="shrink-0">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.45L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 1.977 14.07 .953 11.996.953c-5.44 0-9.866 4.372-9.87 9.802-.001 1.77.463 3.5 1.34 5.016l-.995 3.633 3.731-.977zm11.367-7.79c-.273-.136-1.62-.8-1.87-.89-.25-.09-.432-.136-.613.136-.18.272-.7.89-.858 1.072-.158.18-.317.2-.59.064-1.286-.64-2.138-1.053-2.996-2.525-.227-.39.227-.362.649-1.201.07-.14.035-.262-.017-.37-.053-.107-.432-1.04-.593-1.43-.157-.38-.344-.326-.473-.326-.122 0-.262-.01-.403-.01-.14 0-.37.052-.563.262-.193.21-.738.722-.738 1.762s.755 2.04 1.884 2.19c1.129.15 2.2 1.59 3.56 2.09.4.15.78.16 1.07.12.33-.05 1.02-.42 1.16-.83.14-.41.14-.77.1-.84-.04-.07-.16-.11-.43-.24z"/>
+                    </svg>
+                    <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Mensajes de WhatsApp (Kevin&Coco)</h4>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <a href={waUrl1} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between px-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal">
+                      <span>1. Recordatorio Amistoso (24h)</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
                     </a>
-                    
-                    {/* Status dropdown */}
-                    <div className="bg-gray-50 border border-gray-150 rounded-xl p-3">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Cambiar Estado Rápido</label>
-                      <div className="relative">
-                        <select
-                          value={order.STATUS}
-                          disabled={isUpdating}
-                          onChange={(e) => updateStatus(order.$id, e.target.value)}
-                          className="w-full pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer disabled:opacity-50"
-                        >
-                          {STATUS_FLOW.map(status => (
-                            <option key={status} value={status}>
-                              {STATUS_CONFIG[status]?.label || status}
-                            </option>
-                          ))}
-                          <option value="cancelled">Cancelado</option>
-                        </select>
-                        {isUpdating && (
-                          <div className="absolute right-8 top-1/2 -translate-y-1/2">
-                            <RefreshCw size={14} className="animate-spin text-gray-400" />
-                          </div>
-                        )}
+                    <a href={waUrl2} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal">
+                      <span>2. Incentivo Pago 5% Descuento (2-3d)</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
+                    <a href={waUrl3} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between px-3 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal">
+                      <span>3. Último Aviso / Liberar Stock (3d+)</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
+                  </div>
+                </div>
+                
+                {/* Shipping Details card (Bluexpress/Starken) */}
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/60 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Datos para Despacho</h4>
+                    <button
+                      onClick={copyAllShipping}
+                      className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${copiedField === 'all_shipping' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                    >
+                      <Copy size={11} />
+                      {copiedField === 'all_shipping' ? '✓ Todo Copiado' : 'Copiar todo'}
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2.5">
+                    {/* Destinatario */}
+                    <div className="flex items-start justify-between text-xs gap-3">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">Nombre Destinatario</span>
+                        <span className="font-bold text-gray-800 truncate block">{order.CUSTOMERNAME || '—'}</span>
+                      </div>
+                      <button onClick={() => copyToClipboard('name', order.CUSTOMERNAME || '')}
+                        className={`p-1.5 rounded-md border text-gray-400 hover:text-indigo-600 hover:bg-white transition shrink-0 ${copiedField === 'name' ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-150'}`} title="Copiar nombre">
+                        {copiedField === 'name' ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                      </button>
+                    </div>
+
+                    {/* RUT */}
+                    <div className="flex items-start justify-between text-xs gap-3">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">RUT</span>
+                        <span className="font-bold text-gray-800 block">{order.CUSTOMERRUT || '—'}</span>
+                      </div>
+                      <button onClick={() => copyToClipboard('rut', order.CUSTOMERRUT || '')}
+                        disabled={!order.CUSTOMERRUT}
+                        className={`p-1.5 rounded-md border text-gray-400 hover:text-indigo-600 hover:bg-white transition shrink-0 ${copiedField === 'rut' ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-150'}`} title="Copiar RUT">
+                        {copiedField === 'rut' ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                      </button>
+                    </div>
+
+                    {/* Telefono */}
+                    <div className="flex items-start justify-between text-xs gap-3">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">Teléfono</span>
+                        <span className="font-bold text-indigo-600 font-mono block">{order.CUSTOMERPHONE || '—'}</span>
+                      </div>
+                      <button onClick={() => copyToClipboard('phone', order.CUSTOMERPHONE || '')}
+                        className={`p-1.5 rounded-md border text-gray-400 hover:text-indigo-600 hover:bg-white transition shrink-0 ${copiedField === 'phone' ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-150'}`} title="Copiar teléfono">
+                        {copiedField === 'phone' ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                      </button>
+                    </div>
+
+                    {/* Email */}
+                    <div className="flex items-start justify-between text-xs gap-3">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">Email</span>
+                        <span className="font-bold text-gray-700 block truncate max-w-[220px]" title={order.CUSTOMEREMAIL}>{order.CUSTOMEREMAIL || '—'}</span>
+                      </div>
+                      <button onClick={() => copyToClipboard('email', order.CUSTOMEREMAIL || '')}
+                        className={`p-1.5 rounded-md border text-gray-400 hover:text-indigo-600 hover:bg-white transition shrink-0 ${copiedField === 'email' ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-150'}`} title="Copiar email">
+                        {copiedField === 'email' ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                      </button>
+                    </div>
+
+                    {/* Direccion */}
+                    <div className="flex items-start justify-between text-xs gap-3">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">Dirección de despacho</span>
+                        <span className="text-xs text-gray-700 leading-normal font-bold block">{order.ADDRESS || '—'}</span>
+                      </div>
+                      <button onClick={() => copyToClipboard('address', order.ADDRESS || '')}
+                        className={`p-1.5 rounded-md border text-gray-400 hover:text-indigo-600 hover:bg-white transition shrink-0 ${copiedField === 'address' ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-150'}`} title="Copiar dirección">
+                        {copiedField === 'address' ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                      </button>
+                    </div>
+
+                    {/* Comuna */}
+                    <div className="flex items-start justify-between text-xs gap-3">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">Comuna</span>
+                        <span className="font-bold text-gray-800 block">{order.COMUNA || '—'}</span>
+                      </div>
+                      <button onClick={() => copyToClipboard('comune', order.COMUNA || '')}
+                        className={`p-1.5 rounded-md border text-gray-400 hover:text-indigo-600 hover:bg-white transition shrink-0 ${copiedField === 'comune' ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-150'}`} title="Copiar comuna">
+                        {copiedField === 'comune' ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                      </button>
+                    </div>
+
+                    {/* Region */}
+                    <div className="flex items-start justify-between text-xs gap-3">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">Región</span>
+                        <span className="font-bold text-gray-800 block">{order.REGION || '—'}</span>
+                      </div>
+                      <button onClick={() => copyToClipboard('region', order.REGION || '')}
+                        className={`p-1.5 rounded-md border text-gray-400 hover:text-indigo-600 hover:bg-white transition shrink-0 ${copiedField === 'region' ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-150'}`} title="Copiar región">
+                        {copiedField === 'region' ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                      </button>
+                    </div>
+
+                    {/* Agencia y Metodo de Pago */}
+                    <div className="flex items-start justify-between text-xs gap-3 border-t border-gray-200/50 pt-2.5">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-gray-400 font-semibold block uppercase">Agencia y Pago</span>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          {agencyDetails && (
+                            <span style={{ color: agencyDetails.color, backgroundColor: agencyDetails.bg, borderColor: agencyDetails.color + '20' }}
+                              className="text-[10px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1">
+                              {agencyDetails.logo && <img src={agencyDetails.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />}
+                              {agencyDetails.name}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg border border-gray-200">{order.PAYMENTMETHOD || '—'}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                {/* Client info */}
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Datos del Cliente</h4>
-                  <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50 overflow-hidden">
-                    <div className="p-3 flex items-center justify-between text-sm">
-                      <span className="text-gray-400 font-semibold">Nombre</span>
-                      <span className="font-bold text-gray-800">{order.CUSTOMERNAME}</span>
-                    </div>
-                    {order.CUSTOMERRUT && (
-                      <div className="p-3 flex items-center justify-between text-sm">
-                        <span className="text-gray-400 font-semibold">RUT</span>
-                        <span className="font-bold text-gray-800">{order.CUSTOMERRUT}</span>
-                      </div>
-                    )}
-                    <div className="p-3 flex items-center justify-between text-sm">
-                      <span className="text-gray-400 font-semibold">Teléfono</span>
-                      <span className="font-mono font-bold text-indigo-600">{order.CUSTOMERPHONE || '—'}</span>
-                    </div>
-                    <div className="p-3 flex items-center justify-between text-sm">
-                      <span className="text-gray-400 font-semibold">Email</span>
-                      <span className="font-bold text-gray-700 truncate max-w-[200px]" title={order.CUSTOMEREMAIL}>{order.CUSTOMEREMAIL || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Shipping info */}
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Despacho y Pago</h4>
-                  <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50 overflow-hidden">
-                    {agencyDetails && (
-                      <div className="p-3 flex items-center justify-between text-sm">
-                        <span className="text-gray-400 font-semibold">Agencia de Envío</span>
-                        <span style={{ color: agencyDetails.color, backgroundColor: agencyDetails.bg, borderColor: agencyDetails.color + '20' }}
-                          className="text-xs font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1">
-                          {agencyDetails.logo && <img src={agencyDetails.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />}
-                          {agencyDetails.name}
-                        </span>
-                      </div>
-                    )}
-                    <div className="p-3 flex items-center justify-between text-sm">
-                      <span className="text-gray-400 font-semibold">Método de Pago</span>
-                      <span className="font-bold text-gray-700">{order.PAYMENTMETHOD || '—'}</span>
-                    </div>
-                    <div className="p-3 flex flex-col gap-1 text-sm">
-                      <span className="text-gray-400 font-semibold">Comuna y Región</span>
-                      <span className="font-bold text-gray-800">{order.COMUNA || '—'}{order.REGION ? `, ${order.REGION}` : ''}</span>
-                    </div>
-                    {order.CUSTOMERADDRESS && (
-                      <div className="p-3 flex flex-col gap-1 text-sm">
-                        <span className="text-gray-400 font-semibold">Dirección de despacho</span>
-                        <span className="text-xs text-gray-700 leading-relaxed font-medium">{order.CUSTOMERADDRESS}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
+
                 {/* Customer Notes */}
                 {(order as any).CUSTOMERNOTE && (
                   <div>
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">Notas del Cliente</h4>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Notas del Cliente</h4>
                     <div className="bg-amber-50/50 border border-amber-100 text-amber-900 rounded-xl p-3 text-xs leading-relaxed font-medium">
                       {(order as any).CUSTOMERNOTE}
                     </div>
