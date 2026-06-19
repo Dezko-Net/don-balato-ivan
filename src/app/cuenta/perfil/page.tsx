@@ -43,7 +43,7 @@ export default function PerfilPage() {
 
   function getFilePreviewUrl(fileId: string): string {
     const { endpoint, projectId } = getAppwriteConfig();
-    const path = MEDIA_PREFIXES.thumbnails + fileId;
+    const path = fileId;
     return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
   }
 
