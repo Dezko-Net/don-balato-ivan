@@ -1212,8 +1212,8 @@ export default function PedidoPage() {
                                   Saldo a favor por diferencia: {formatPrice(difference)}
                                 </p>
                               ) : difference < 0 ? (
-                                <p className="text-blue-600 font-bold mt-0.5">
-                                  Valor extra cubierto por la tienda por las molestias: {formatPrice(Math.abs(difference))}
+                                <p className="text-indigo-600 font-bold mt-0.5">
+                                  Diferencia a pagar: {formatPrice(Math.abs(difference))}
                                 </p>
                               ) : (
                                 <p className="text-gray-500 font-bold mt-0.5">Sin diferencia de precio</p>
