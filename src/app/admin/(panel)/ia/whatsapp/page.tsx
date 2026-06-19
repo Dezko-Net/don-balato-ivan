@@ -481,40 +481,120 @@ export default function AdminIAWhatsAppPage() {
   return (
     <div style={{ display: 'flex', height: '100dvh', background: '#111b21', overflow: 'hidden' }}>
       <style>{`
-        @keyframes darkDrift {
+        @keyframes meshShift {
           0% { transform: translate(0%, 0%) scale(1); }
-          50% { transform: translate(5%, 5%) scale(1.1); }
+          33% { transform: translate(3%, -2%) scale(1.08); }
+          66% { transform: translate(-2%, 3%) scale(1.05); }
           100% { transform: translate(0%, 0%) scale(1); }
         }
+        @keyframes orbA {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+          25% { transform: translate(50px, -40px) scale(1.2); opacity: 0.8; }
+          50% { transform: translate(-30px, 30px) scale(0.85); opacity: 0.4; }
+          75% { transform: translate(20px, 50px) scale(1.1); opacity: 0.6; }
+        }
+        @keyframes orbB {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.35; }
+          50% { transform: translate(-60px, 50px) scale(1.3); opacity: 0.55; }
+        }
+        @keyframes orbC {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+          40% { transform: translate(40px, 60px) scale(1.15); opacity: 0.45; }
+          80% { transform: translate(-50px, -30px) scale(0.9); opacity: 0.25; }
+        }
+        @keyframes orbD {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+          50% { transform: translate(70px, -50px) scale(1.25); opacity: 0.35; }
+        }
+        @keyframes orbE {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.25; }
+          33% { transform: translate(-40px, 40px) scale(1.1); opacity: 0.4; }
+          66% { transform: translate(30px, -20px) scale(0.95); opacity: 0.2; }
+        }
+        @keyframes shimmer {
+          0% { opacity: 0; }
+          50% { opacity: 0.03; }
+          100% { opacity: 0; }
+        }
         .wa-animated-bg {
-          background-color: #030303;
+          background-color: #080d12;
           position: relative;
           overflow: hidden;
         }
+        /* Layer 1: Deep gradient mesh — 7 color points */
         .wa-animated-bg::before {
           content: "";
           position: absolute;
-          inset: -20%;
-          background: radial-gradient(circle at 30% 30%, #151515 0%, transparent 50%),
-                      radial-gradient(circle at 70% 70%, #111111 0%, transparent 50%),
-                      radial-gradient(circle at 80% 20%, #1a1a1a 0%, transparent 50%),
-                      radial-gradient(circle at 20% 80%, #0a0a0a 0%, transparent 50%);
-          animation: darkDrift 20s ease-in-out infinite alternate;
+          inset: -30%;
+          background:
+            radial-gradient(ellipse 60% 50% at 15% 15%, rgba(0, 168, 132, 0.10) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 60% at 85% 75%, rgba(0, 114, 177, 0.08) 0%, transparent 50%),
+            radial-gradient(ellipse 40% 40% at 50% 40%, rgba(20, 30, 40, 0.5) 0%, transparent 60%),
+            radial-gradient(ellipse 35% 35% at 92% 8%, rgba(0, 168, 132, 0.05) 0%, transparent 45%),
+            radial-gradient(ellipse 45% 35% at 8% 92%, rgba(25, 35, 50, 0.45) 0%, transparent 55%),
+            radial-gradient(ellipse 30% 30% at 60% 20%, rgba(0, 100, 80, 0.04) 0%, transparent 50%),
+            radial-gradient(ellipse 35% 45% at 30% 70%, rgba(15, 25, 45, 0.4) 0%, transparent 55%);
+          animation: meshShift 30s ease-in-out infinite;
           z-index: 0;
           pointer-events: none;
         }
+        /* Layer 2: Detailed SVG doodle pattern — WhatsApp-style icons */
         .wa-animated-bg::after {
           content: "";
           position: absolute;
           inset: 0;
-          background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-          background-size: 40px 40px;
-          mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
-          -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
+          background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.7' opacity='0.022'%3E%3C!-- Chat bubble --%3E%3Cpath d='M20 20c8 0 14 5 14 13 0 7-6 13-14 13-2 0-4 0-6-1l-6 2 2-6c-1-2-2-5-2-8 0-8 6-13 12-13z'/%3E%3C!-- Phone --%3E%3Crect x='45' y='12' width='12' height='20' rx='3'/%3E%3Ccircle cx='51' cy='28' r='1.5'/%3E%3C!-- Heart --%3E%3Cpath d='M80 18c2-3 7-3 9 0 2 3 0 7-4 10-4-3-7-7-5-10z'/%3E%3C!-- Camera --%3E%3Crect x='105' y='15' width='18' height='14' rx='2'/%3E%3Ccircle cx='114' cy='22' r='4'/%3E%3Cpath d='M108 15l2-3h8l2 3'/%3E%3C!-- Check double --%3E%3Cpath d='M140 22l4 4 8-8' stroke-linecap='round'/%3E%3Cpath d='M148 22l4 4 8-8' stroke-linecap='round'/%3E%3C!-- Star --%3E%3Cpath d='M175 14l2 5 5 0-4 3 2 5-5-3-5 3 2-5-4-3 5 0z'/%3E%3C!-- Smile --%3E%3Ccircle cx='20' cy='55' r='8'/%3E%3Cpath d='M16 53c1-1 2-1 3 0'/%3E%3Cpath d='M22 53c1-1 2-1 3 0'/%3E%3Cpath d='M15 58c2 2 5 3 8 1' stroke-linecap='round'/%3E%3C!-- Paperclip --%3E%3Cpath d='M48 48c3-3 7-3 10 0l5 5c2 2 2 5 0 7s-5 2-7 0l-5-5c-1-1-1-3 0-4s3-1 4 0l4 4' stroke-linecap='round'/%3E%3C!-- Mic --%3E%3Crect x='78' y='48' width='6' height='12' rx='3'/%3E%3Cpath d='M75 56c0 4 3 7 6 7s6-3 6-7'/%3E%3Cpath d='M81 63v3'/%3E%3C!-- Send arrow --%3E%3Cpath d='M110 50l10-5-5 10-2-4z'/%3E%3C!-- Bell --%3E%3Cpath d='M140 45c4 0 7 3 7 7v3l2 3h-18l2-3v-3c0-4 3-7 7-7z'/%3E%3Cpath d='M137 60c0 2 3 2 3 0'/%3E%3C!-- Lock --%3E%3Crect x='170' y='50' width='10' height='8' rx='1'/%3E%3Cpath d='M172 50v-2c0-2 2-4 4-4s4 2 4 4v2'/%3E%3C!-- Globe --%3E%3Ccircle cx='20' cy='90' r='8'/%3E%3Cpath d='M12 90h16'/%3E%3Cpath d='M20 82c4 3 4 13 0 16'/%3E%3Cpath d='M20 82c-4 3-4 13 0 16'/%3E%3C!-- Mail --%3E%3Crect x='42' y='85' width='16' height='11' rx='1'/%3E%3Cpath d='M42 86l8 6 8-6'/%3E%3C!-- Calendar --%3E%3Crect x='72' y='82' width='14' height='12' rx='1'/%3E%3Cpath d='M72 86h14'/%3E%3Cpath d='M76 82v-2'/%3E%3Cpath d='M82 82v-2'/%3E%3C!-- Clock --%3E%3Ccircle cx='108' cy='90' r='7'/%3E%3Cpath d='M108 86v4l3 2' stroke-linecap='round'/%3E%3C!-- Location pin --%3E%3Cpath d='M135 82c4 0 7 3 7 7 0 5-7 12-7 12s-7-7-7-12c0-4 3-7 7-7z'/%3E%3Ccircle cx='135' cy='89' r='2.5'/%3E%3C!-- Settings gear --%3E%3Ccircle cx='165' cy='90' r='5'/%3E%3Cpath d='M165 82v3M165 95v3M158 90h3M169 90h3M161 84l2 2M169 96l-2-2M169 84l-2 2M161 96l2-2'/%3E%3C!-- Search --%3E%3Ccircle cx='188' cy='88' r='5'/%3E%3Cpath d='M192 92l4 4' stroke-linecap='round'/%3E%3C!-- Lightning --%3E%3Cpath d='M15 125l5-8 3 5 4-3-5 8-3-5z'/%3E%3C!-- Shield --%3E%3Cpath d='M45 118l8-3 8 3v6c0 5-4 8-8 10-4-2-8-5-8-10z'/%3E%3Cpath d='M49 124l3 3 5-5' stroke-linecap='round'/%3E%3C!-- Shopping bag --%3E%3Cpath d='M78 115h10l2 12h-14z'/%3E%3Cpath d='M80 115v-3c0-2 2-4 4-4s4 2 4 4v3'/%3E%3C!-- Tag --%3E%3Cpath d='M110 112l8-3 3 8-8 8-8-8z'/%3E%3Ccircle cx='113' cy='115' r='1.5'/%3E%3C!-- Gift --%3E%3Crect x='138' y='118' width='14' height='10' rx='1'/%3E%3Cpath d='M138 119c0-3 3-5 7-5s7 2 7 5'/%3E%3Cpath d='M145 114v14'/%3E%3C!-- Eye --%3E%3Cpath d='M172 118c5 0 9 4 9 7s-4 7-9 7-9-4-9-7 4-7 9-7z'/%3E%3Ccircle cx='172' cy='125' r='3'/%3E%3C!-- Thumb up --%3E%3Cpath d='M18 155c2 0 3 1 3 3v5c0 2-1 3-3 3h-3v-11z'/%3E%3Cpath d='M15 155v11h-3v-11z'/%3E%3C!-- Chat dots --%3E%3Ccircle cx='45' cy='155' r='2'/%3E%3Ccircle cx='52' cy='155' r='2'/%3E%3Ccircle cx='59' cy='155' r='2'/%3E%3C!-- Plus circle --%3E%3Ccircle cx='85' cy='155' r='7'/%3E%3Cpath d='M85 151v8M81 155h8'/%3E%3C!-- Bookmark --%3E%3Cpath d='M115 148v12l5-4 5 4v-12z'/%3E%3C!-- Flag --%3E%3Cpath d='M140 148v14'/%3E%3Cpath d='M140 149h10l-2 3 2 3h-10'/%3E%3C!-- Cloud --%3E%3Cpath d='M168 158c4 0 7-3 7-6 0-4-3-6-6-6-1-3-4-5-7-5-4 0-7 3-7 7-3 0-5 2-5 5s2 5 5 5z'/%3E%3C!-- Wifi --%3E%3Cpath d='M15 185c5-5 13-5 18 0'/%3E%3Cpath d='M18 188c3-3 9-3 12 0'/%3E%3Ccircle cx='24' cy='192' r='1.5'/%3E%3C!-- Battery --%3E%3Crect x='48' y='180' width='14' height='8' rx='1'/%3E%3Crect x='62' y='182' width='2' height='4'/%3E%3Cpath d='M51 184h8'/%3E%3C!-- Key --%3E%3Ccircle cx='80' cy='185' r='4'/%3E%3Cpath d='M84 185h10M90 185v3M93 185v3'/%3E%3C!-- Crown --%3E%3Cpath d='M110 180l3 8h10l3-8-5 4-3-6-3 6z'/%3E%3C!-- Fire --%3E%3Cpath d='M140 175c3 3 5 6 5 10 0 4-3 7-6 7s-5-3-5-6c0-2 1-4 3-5-1 3 1 4 3 4 0-3-1-6 0-10z'/%3E%3C!-- Rocket --%3E%3Cpath d='M170 175c3-3 8-3 11 0 3 3 3 8 0 11l-5 5-6-6z'/%3E%3Ccircle cx='176' cy='180' r='2'/%3E%3C!-- Coffee --%3E%3Cpath d='M18 215v8c0 3 2 5 5 5h6c3 0 5-2 5-5v-8z'/%3E%3Cpath d='M34 218h3v4h-3z'/%3E%3Cpath d='M22 210c0 2 2 3 2 5'/%3E%3Cpath d='M27 210c0 2 2 3 2 5'/%3E%3C!-- Music note --%3E%3Ccircle cx='55' cy='218' r='3'/%3E%3Cpath d='M58 218v-8l5-1v8'/%3E%3C!-- Camera --%3E%3Ccircle cx='85' cy='215' r='6'/%3E%3Ccircle cx='85' cy='215' r='3'/%3E%3C!-- Link --%3E%3Cpath d='M112 212l4-4c2-2 5-2 7 0s2 5 0 7l-4 4'/%3E%3Cpath d='M120 220l-4 4c-2 2-5 2-7 0s-2-5 0-7l4-4'/%3E%3C!-- Sun --%3E%3Ccircle cx='150' cy='215' r='4'/%3E%3Cpath d='M150 207v3M150 220v3M143 215h3M154 215h3M145 210l2 2M155 220l-2-2M155 210l-2 2M145 220l2-2'/%3E%3C!-- Moon --%3E%3Cpath d='M175 210c5 0 9 4 9 9s-4 9-9 9c3-2 5-5 5-9s-2-7-5-9z'/%3E%3C!-- Users --%3E%3Ccircle cx='20' cy='245' r='4'/%3E%3Cpath d='M14 255c0-4 3-7 6-7s6 3 6 7'/%3E%3Ccircle cx='32' cy='248' r='3'/%3E%3Cpath d='M30 255c0-3 2-5 4-5'/%3E%3C!-- Message --%3E%3Cpath d='M50 240h14c2 0 3 1 3 3v6c0 2-1 3-3 3h-8l-4 3v-3h-2c-2 0-3-1-3-3v-6c0-2 1-3 3-3z'/%3E%3C!-- Phone call --%3E%3Cpath d='M82 240c2 0 4 2 4 4l-3 3c1 3 3 5 6 6l3-3c2 0 4 2 4 4v4c-8 0-18-10-18-18z'/%3E%3C!-- Video --%3E%3Crect x='110' y='240' width='12' height='10' rx='1'/%3E%3Cpath d='M122 243l5-3v10l-5-3z'/%3E%3C!-- Image --%3E%3Crect x='140' y='238' width='14' height='12' rx='1'/%3E%3Ccircle cx='145' cy='243' r='1.5'/%3E%3Cpath d='M140 248l4-3 4 3 3-2 3 4z'/%3E%3C!-- File --%3E%3Cpath d='M172 238h7l4 4v10h-11z'/%3E%3Cpath d='M179 238v4h4'/%3E%3C!-- Trophy --%3E%3Cpath d='M18 275h8v4h-8z'/%3E%3Cpath d='M16 275v-4h12v4c0 3-3 5-6 5s-6-2-6-5z'/%3E%3Cpath d='M14 273h-3v-2h3M28 273h3v-2h-3'/%3E%3C!-- Target --%3E%3Ccircle cx='50' cy='278' r='7'/%3E%3Ccircle cx='50' cy='278' r='4'/%3E%3Ccircle cx='50' cy='278' r='1.5'/%3E%3C!-- Compass --%3E%3Ccircle cx='80' cy='278' r='7'/%3E%3Cpath d='M80 273l3 5-3 5-3-5z'/%3E%3C!-- Puzzle --%3E%3Cpath d='M108 273h6c1 0 2 1 2 2v3c0 1 1 2 2 2s2-1 2-2v-3c0-1 1-2 2-2h6v6c0 1 1 2 2 2s2-1 2-2 2-2c1 0 2 1 2 2v6h-6c-1 0-2-1-2-2v-3c0-1-1-2-2-2s-2 1-2 2v3c0 1-1 2-2 2h-6z'/%3E%3C!-- Lightbulb --%3E%3Cpath d='M148 272c4 0 7 3 7 7 0 3-2 5-3 6v2h-8v-2c-1-1-3-3-3-6 0-4 3-7 7-7z'/%3E%3Cpath d='M146 290h4'/%3E%3C!-- Wrench --%3E%3Cpath d='M175 272c3 0 5 2 5 5 0 2-1 3-2 4l4 4-3 3-4-4c-1 1-2 2-4 2-3 0-5-2-5-5l3 3 3-3-3-3z'/%3E%3C/g%3E%3C/svg%3E");
+          background-size: 200px 200px;
+          background-repeat: repeat;
           z-index: 0;
           pointer-events: none;
+          opacity: 1;
+        }
+        /* Floating orbs — 5 layers for rich depth */
+        .wa-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(70px);
+          pointer-events: none;
+          z-index: 0;
+        }
+        .wa-orb-1 {
+          width: 350px; height: 350px;
+          background: radial-gradient(circle, rgba(0, 168, 132, 0.15) 0%, transparent 65%);
+          top: 8%; left: 12%;
+          animation: orbA 20s ease-in-out infinite;
+        }
+        .wa-orb-2 {
+          width: 450px; height: 450px;
+          background: radial-gradient(circle, rgba(0, 114, 177, 0.10) 0%, transparent 65%);
+          bottom: 5%; right: 8%;
+          animation: orbB 25s ease-in-out infinite;
+        }
+        .wa-orb-3 {
+          width: 280px; height: 280px;
+          background: radial-gradient(circle, rgba(100, 116, 139, 0.08) 0%, transparent 65%);
+          top: 45%; left: 55%;
+          animation: orbC 22s ease-in-out infinite;
+        }
+        .wa-orb-4 {
+          width: 200px; height: 200px;
+          background: radial-gradient(circle, rgba(0, 168, 132, 0.06) 0%, transparent 65%);
+          bottom: 30%; left: 25%;
+          animation: orbD 18s ease-in-out infinite;
+        }
+        .wa-orb-5 {
+          width: 320px; height: 320px;
+          background: radial-gradient(circle, rgba(30, 64, 120, 0.07) 0%, transparent 65%);
+          top: 20%; right: 30%;
+          animation: orbE 24s ease-in-out infinite;
+        }
+        /* Vignette overlay for depth */
+        .wa-vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%);
+          pointer-events: none;
+          z-index: 0;
         }
         .wa-animated-bg > * {
           position: relative;
@@ -823,6 +903,9 @@ export default function AdminIAWhatsAppPage() {
           {!selectedPhone ? (
             /* Empty state */
             <div className="wa-animated-bg" style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
+              <div className="wa-orb wa-orb-1" />
+              <div className="wa-orb wa-orb-2" />
+              <div className="wa-orb wa-orb-3" />
               <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(0,168,132,0.12)', border:'2px solid rgba(0,168,132,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <MessageCircle className="h-10 w-10" style={{ color:'#00a884' }} />
               </div>
@@ -925,6 +1008,9 @@ export default function AdminIAWhatsAppPage() {
               <div ref={chatScrollRef} onScroll={handleChatScroll}
                 className="wa-scrollbar wa-animated-bg"
                 style={{ flex:1, overflowY:'auto', padding:'12px 4%', display:'flex', flexDirection:'column', gap:2 }}>
+                <div className="wa-orb wa-orb-1" />
+                <div className="wa-orb wa-orb-2" />
+                <div className="wa-orb wa-orb-3" />
                 {loadingThread ? (
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, gap:10, color:'#8696a0' }}>
                     <Loader2 className="h-8 w-8 animate-spin" style={{ color:'#00a884' }} />

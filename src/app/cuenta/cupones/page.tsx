@@ -95,7 +95,7 @@ export default function CuponesPage() {
         });
 
         const filtered = docs.filter((c: any) => {
-          if (!c.userRestriction) return true;
+          if (!c.userRestriction || c.userRestriction.trim() === '' || c.userRestriction.trim().toLowerCase() === 'null') return true;
           const val = c.userRestriction.trim().toLowerCase();
           return (
             (user.id && user.id.toLowerCase() === val) ||

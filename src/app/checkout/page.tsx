@@ -187,7 +187,7 @@ function CheckoutInner() {
   }, []);
 
   useEffect(() => {
-    if (couponApplied && couponUserRestriction) {
+    if (couponApplied && couponUserRestriction && couponUserRestriction.trim().toLowerCase() !== 'null') {
       const restrictedVal = couponUserRestriction.trim().toLowerCase();
       const userEmail = user?.email?.trim().toLowerCase();
       const userId = user?.id?.trim().toLowerCase();
@@ -388,7 +388,8 @@ function CheckoutInner() {
 
       // Validate user/email restriction
       const userRestriction = coupon.userRestriction || coupon.USERRESTRICTION || null;
-      if (userRestriction) {
+      const hasRestriction = userRestriction && userRestriction.trim() !== '' && userRestriction.trim().toLowerCase() !== 'null';
+      if (hasRestriction) {
         const restrictedVal = userRestriction.trim().toLowerCase();
         const userEmail = user?.email?.trim().toLowerCase();
         const userId = user?.id?.trim().toLowerCase();
@@ -399,7 +400,7 @@ function CheckoutInner() {
                           (checkoutEmail && checkoutEmail === restrictedVal);
 
         if (!matchUser) {
-          setCouponError('Este cupón está reservado para otro usuario o correo');
+          setCouponError('Este cupón está restringido a otro usuario');
           setCouponLoading(false);
           return;
         }
@@ -1309,7 +1310,7 @@ function CheckoutInner() {
                     {(() => {
                       const filtered = publicCoupons.filter((c: any) => {
                         const userRestriction = c.userRestriction || c.USERRESTRICTION || null;
-                        if (!userRestriction) return true;
+                        if (!userRestriction || userRestriction.trim() === '' || userRestriction.trim().toLowerCase() === 'null') return true;
                         const val = userRestriction.trim().toLowerCase();
                         return (
                           (user?.id && user.id.toLowerCase() === val) ||

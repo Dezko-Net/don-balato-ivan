@@ -74,6 +74,10 @@ export default function PorMayorPage() {
   // Publish-to-paquetes status per product
   const [publishStatus, setPublishStatus] = useState<Record<string, 'loading' | 'success' | 'error' | null>>({});
 
+  // Yollgo import state
+  const [yollgoLoading, setYollgoLoading] = useState(false);
+  const [yollgoResult, setYollgoResult] = useState<{ matched: number; updated: number; newProducts: number; notFound: number; details: { sku: string; name: string; oldQty: number; newQty: number; status: 'new' | 'updated' }[] } | null>(null);
+
   const [activeTab, setActiveTab] = useState<'packed' | 'unpacked'>('packed');
   const [tick, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
@@ -482,6 +486,58 @@ export default function PorMayorPage() {
     }
   };
 
+  // Import PACKQTY from Yollgo scraped data
+  const handleYollgoImport = async () => {
+    setYollgoLoading(true);
+    setYollgoResult(null);
+    try {
+      const resp = await fetch('/api/yollgo/pack-qty');
+      if (!resp.ok) {
+        const err = await resp.json();
+        alert(err.error || 'Error al cargar datos de Yollgo');
+        setYollgoLoading(false);
+        return;
+      }
+      const data = await resp.json();
+      const mapping: Record<string, { packQty: number; boxQty: number; name: string }> = data.mapping;
+
+      const details: { sku: string; name: string; oldQty: number; newQty: number; status: 'new' | 'updated' }[] = [];
+      let matched = 0, updated = 0, newProducts = 0, notFound = 0;
+      const newEdits: Record<string, string> = {};
+
+      for (const p of products) {
+        const sku = getSku(p).trim().toUpperCase();
+        if (!sku) { notFound++; continue; }
+
+        const yollgoData = mapping[sku];
+        if (!yollgoData) { notFound++; continue; }
+
+        matched++;
+        const oldQty = p.PACKQTY || 0;
+        const newQty = yollgoData.packQty;
+
+        if (oldQty !== newQty) {
+          newEdits[p.$id] = String(newQty);
+          if (oldQty > 0) {
+            updated++;
+            details.push({ sku, name: p.NAME, oldQty, newQty, status: 'updated' });
+          } else {
+            newProducts++;
+            details.push({ sku, name: p.NAME, oldQty, newQty, status: 'new' });
+          }
+        }
+      }
+
+      setEditPackQty(prev => ({ ...prev, ...newEdits }));
+      setYollgoResult({ matched, updated, newProducts, notFound, details: details.slice(0, 50) });
+    } catch (err: any) {
+      console.error('Error importing from Yollgo:', err);
+      alert('Error: ' + err.message);
+    } finally {
+      setYollgoLoading(false);
+    }
+  };
+
   const handleDiscardAll = () => {
     if (confirm('¿Estás seguro de que deseas descartar todos tus cambios pendientes locales?')) {
       setEditPackQty({});
@@ -593,6 +649,11 @@ export default function PorMayorPage() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Sincronizar</span>
           </button>
+          <button onClick={handleYollgoImport} disabled={yollgoLoading || loading || isBulkSaving}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm disabled:opacity-50">
+            {yollgoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            <span className="hidden sm:inline">Importar Yollgo</span>
+          </button>
         </div>
       </div>
 
@@ -601,6 +662,59 @@ export default function PorMayorPage() {
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4">
           <div className="flex items-center gap-2 text-rose-800 font-bold text-sm mb-2"><AlertCircle className="w-4 h-4" />Errores al guardar:</div>
           <ul className="text-xs text-rose-700 list-disc pl-5 space-y-1">{bulkErrorLog.map((err, idx) => <li key={idx}>{err}</li>)}</ul>
+        </div>
+      )}
+
+      {/* Yollgo import result */}
+      {yollgoResult && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              Importación desde Yollgo
+            </div>
+            <button onClick={() => setYollgoResult(null)} className="text-emerald-600 hover:text-emerald-800 text-xs font-semibold">Cerrar</button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+            <div className="bg-white rounded-xl p-3 border border-emerald-100">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">Coincidencias</p>
+              <p className="text-xl font-bold text-emerald-600">{yollgoResult.matched}</p>
+            </div>
+            <div className="bg-white rounded-xl p-3 border border-emerald-100">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">Nuevos</p>
+              <p className="text-xl font-bold text-blue-600">{yollgoResult.newProducts}</p>
+            </div>
+            <div className="bg-white rounded-xl p-3 border border-emerald-100">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">Corregidos</p>
+              <p className="text-xl font-bold text-amber-600">{yollgoResult.updated}</p>
+            </div>
+            <div className="bg-white rounded-xl p-3 border border-emerald-100">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">Sin match</p>
+              <p className="text-xl font-bold text-gray-400">{yollgoResult.notFound}</p>
+            </div>
+          </div>
+          {yollgoResult.details.length > 0 && (
+            <div className="bg-white rounded-xl border border-emerald-100 overflow-hidden">
+              <div className="px-3 py-2 bg-emerald-50 border-b border-emerald-100 text-xs font-bold text-emerald-800">
+                Cambios aplicados ({yollgoResult.details.length}{yollgoResult.details.length === 50 ? '+' : ''})
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {yollgoResult.details.map((d, i) => (
+                  <div key={i} className="px-3 py-2 border-b border-gray-50 flex items-center gap-3 text-xs">
+                    <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${d.status === 'new' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {d.status === 'new' ? 'NUEVO' : 'CORREGIDO'}
+                    </span>
+                    <span className="font-mono text-gray-500 shrink-0">{d.sku}</span>
+                    <span className="text-gray-700 truncate flex-1">{d.name}</span>
+                    <span className="text-gray-400 shrink-0">{d.oldQty || 0} → <span className="font-bold text-emerald-600">{d.newQty}</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-emerald-700 mt-2">
+            Los cambios están pendientes. Revisa y presiona <strong>Guardar Todo</strong> para aplicarlos a Appwrite.
+          </p>
         </div>
       )}
 

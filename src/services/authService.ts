@@ -52,12 +52,17 @@ export class AuthService {
     } catch (error) {
       console.log('No sessions to clear or error clearing sessions:', error);
     } finally {
-      // Limpiar siempre localStorage de tokens Appwrite
+      // Limpiar siempre localStorage de tokens Appwrite y cachés de sesión
       if (typeof window !== 'undefined') {
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key && (key.includes('cookieFallback') || key.includes('a_session') || key.includes('appwrite'))) {
+          if (key && (
+            key.includes('cookieFallback') || 
+            key.includes('a_session') || 
+            key.includes('appwrite') || 
+            key.includes('yaxsel_auth_')
+          )) {
             keysToRemove.push(key);
           }
         }

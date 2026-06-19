@@ -94,6 +94,12 @@ export default function OfertasPage() {
           const expiresAt = c.EXPIRESAT || c.EXPIRYDATE || (c.ENDAT ? new Date(c.ENDAT * 1000).toISOString() : null);
           if (expiresAt && new Date(expiresAt) < new Date()) return false;
           if (c.MAXUSES && (c.USEDCOUNT || 0) >= c.MAXUSES) return false;
+          
+          // Filter out coupons with a valid user restriction
+          const userRestriction = c.userRestriction || c.USERRESTRICTION || null;
+          if (userRestriction && userRestriction.trim() !== '' && userRestriction.trim().toLowerCase() !== 'null') {
+            return false;
+          }
           return true;
         });
         setPublicCoupons(active);
