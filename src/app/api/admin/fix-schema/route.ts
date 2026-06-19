@@ -40,6 +40,7 @@ const FIXES: Record<string, AttrDef[]> = {
   orders: [
     // size >= 16384 => almacenado como TEXT (fuera de fila), evita el límite de bytes de la fila
     { key: 'BOXPHOTOS', type: 'string', size: 20000, required: false },
+    { key: 'adminNotes', type: 'string', size: 10000, required: false },
   ],
   cart_snapshots: [
     { key: 'userId', type: 'string', size: 128, required: true },

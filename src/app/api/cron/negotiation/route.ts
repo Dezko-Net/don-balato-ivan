@@ -203,10 +203,14 @@ export async function GET(req: NextRequest) {
               ? `${adminNotes}\n[negot_wa_notified: ${timestamp}]`
               : `[negot_wa_notified: ${timestamp}]`;
 
-            await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-              adminNotes: updatedNotes,
-              UPDATEDAT: Date.now()
-            });
+            try {
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+                adminNotes: updatedNotes,
+                UPDATEDAT: Date.now()
+              });
+            } catch (noteErr: any) {
+              console.warn(`[Cron Negotiation] Could not update adminNotes for ${orderCode} (attribute may not exist):`, noteErr.message);
+            }
 
             processedOrders.push(orderCode);
           } catch (postErr: any) {
