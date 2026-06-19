@@ -50,12 +50,60 @@ export default function CuponesPage() {
         const { client, account } = getServices();
         const { databaseId } = getAppwriteConfig();
         const db = new Databases(client);
-        const res = await db.listDocuments(databaseId, COUPONS_COLLECTION, [
-          Query.equal('ISACTIVE', true),
-          Query.orderDesc('$createdAt'),
-          Query.limit(50),
-        ]);
-        setCoupons(res.documents as unknown as Coupon[]);
+        let res;
+        try {
+          res = await db.listDocuments(databaseId, COUPONS_COLLECTION, [
+            Query.equal('isActive', true),
+            Query.orderDesc('$createdAt'),
+            Query.limit(100),
+          ]);
+        } catch {
+          res = await db.listDocuments(databaseId, COUPONS_COLLECTION, [
+            Query.equal('ISACTIVE', true),
+            Query.orderDesc('$createdAt'),
+            Query.limit(100),
+          ]);
+        }
+
+        const docs = res.documents.map((doc: any) => {
+          const type = doc.type ?? doc.DISCOUNTTYPE ?? 'percent';
+          const value = doc.value ?? doc.DISCOUNTVALUE ?? 0;
+          const code = (doc.code ?? doc.CODE ?? '').toUpperCase();
+          const isActive = doc.isActive ?? doc.ISACTIVE ?? true;
+          const minPurchase = doc.minPurchase ?? doc.MINORDERVALUE ?? 0;
+          const maxUses = doc.maxUses ?? doc.MAXUSES ?? 0;
+          const usedCount = doc.usedCount ?? doc.USEDCOUNT ?? 0;
+          
+          let expiryDate = doc.EXPIRYDATE || null;
+          if (!expiryDate && doc.expiresAt) {
+            expiryDate = new Date(doc.expiresAt * 1000).toISOString();
+          }
+
+          return {
+            $id: doc.$id,
+            CODE: code,
+            DISCOUNTTYPE: type,
+            DISCOUNTVALUE: value,
+            MINORDERVALUE: minPurchase,
+            MAXUSES: maxUses,
+            USEDCOUNT: usedCount,
+            EXPIRYDATE: expiryDate,
+            ISACTIVE: isActive,
+            DESCRIPTION: doc.description ?? doc.DESCRIPTION ?? '',
+            userRestriction: doc.userRestriction ?? doc.USERRESTRICTION ?? null,
+          };
+        });
+
+        const filtered = docs.filter((c: any) => {
+          if (!c.userRestriction) return true;
+          const val = c.userRestriction.trim().toLowerCase();
+          return (
+            (user.id && user.id.toLowerCase() === val) ||
+            (user.email && user.email.toLowerCase() === val)
+          );
+        });
+
+        setCoupons(filtered);
         try {
           const acc = await account.get();
           const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};

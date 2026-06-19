@@ -111,6 +111,7 @@ function CheckoutInner() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState('');
   const [couponDocId, setCouponDocId] = useState('');
+  const [couponUserRestriction, setCouponUserRestriction] = useState<string | null>(null);
   const [publicCoupons, setPublicCoupons] = useState<any[]>([]);
 
   // Agency dropdown state
@@ -184,6 +185,24 @@ function CheckoutInner() {
       } catch (e) { console.error('Failed to fetch public coupons:', e); }
     })();
   }, []);
+
+  useEffect(() => {
+    if (couponApplied && couponUserRestriction) {
+      const restrictedVal = couponUserRestriction.trim().toLowerCase();
+      const userEmail = user?.email?.trim().toLowerCase();
+      const userId = user?.id?.trim().toLowerCase();
+      const checkoutEmail = form.email?.trim().toLowerCase();
+
+      const matchUser = (userId && userId === restrictedVal) || 
+                        (userEmail && userEmail === restrictedVal) ||
+                        (checkoutEmail && checkoutEmail === restrictedVal);
+
+      if (!matchUser) {
+        removeCoupon();
+        setError('El cupón aplicado se removió porque no coincide con el correo o usuario ingresado');
+      }
+    }
+  }, [form.email, user, couponApplied, couponUserRestriction]);
 
   useEffect(() => {
     // Load saved addresses from DB first, fallback to localStorage
@@ -360,11 +379,30 @@ function CheckoutInner() {
         return;
       }
       // Validate min purchase
-      const minOrderAmount = coupon.minOrderAmount ?? coupon.MINORDERAMOUNT ?? 0;
+      const minOrderAmount = coupon.minPurchase ?? coupon.minOrderAmount ?? coupon.MINORDERAMOUNT ?? 0;
       if (minOrderAmount && subtotal < minOrderAmount) {
         setCouponError(`Compra mínima: ${formatPrice(minOrderAmount)}`);
         setCouponLoading(false);
         return;
+      }
+
+      // Validate user/email restriction
+      const userRestriction = coupon.userRestriction || coupon.USERRESTRICTION || null;
+      if (userRestriction) {
+        const restrictedVal = userRestriction.trim().toLowerCase();
+        const userEmail = user?.email?.trim().toLowerCase();
+        const userId = user?.id?.trim().toLowerCase();
+        const checkoutEmail = form.email?.trim().toLowerCase();
+
+        const matchUser = (userId && userId === restrictedVal) || 
+                          (userEmail && userEmail === restrictedVal) ||
+                          (checkoutEmail && checkoutEmail === restrictedVal);
+
+        if (!matchUser) {
+          setCouponError('Este cupón está reservado para otro usuario o correo');
+          setCouponLoading(false);
+          return;
+        }
       }
 
       // Calculate eligible subtotal for coupon (excluding active timed offer products)
@@ -402,6 +440,7 @@ function CheckoutInner() {
       setCouponDiscount(discount);
       setCouponApplied(code);
       setCouponDocId(coupon.$id);
+      setCouponUserRestriction(userRestriction || null);
     } catch (err: any) {
       setCouponError('Error al validar cupón');
     } finally {
@@ -415,6 +454,7 @@ function CheckoutInner() {
     setCouponDocId('');
     setCouponCode('');
     setCouponError('');
+    setCouponUserRestriction(null);
   }
 
   async function getNextOrderIndex(): Promise<number> {
@@ -1266,28 +1306,41 @@ function CheckoutInner() {
                       </button>
                     </div>
                     {couponError && <p style={{ margin: '4px 0 0', fontSize: 11, color: '#ef4444', fontFamily: FF }}>⚠ {couponError}</p>}
-                    {publicCoupons.length > 0 && (
-                      <div style={{ marginTop: 8 }}>
-                        <p style={{ margin: '0 0 6px', fontSize: 10, fontWeight: 700, color: '#9ca3af', fontFamily: FF, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cupones disponibles</p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {publicCoupons.map((c: any) => {
-                            const code = (c.code || c.CODE || '').toUpperCase();
-                            if (!code) return null;
-                            const discType = c.type ?? c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
-                            const discVal = c.value ?? c.DISCOUNTVALUE ?? c.VALUE ?? 0;
-                            const label = discType === 'percent' || discType === 'percentage' ? `${discVal}% OFF` : formatPrice(discVal);
-                            return (
-                              <button key={c.$id} type="button" onClick={() => { setCouponCode(code); setCouponError(''); }}
-                                style={{ padding: '5px 10px', borderRadius: 999, border: `1.5px solid ${couponCode === code ? PINK : '#fce7f3'}`, background: couponCode === code ? PINK_BG : '#fff', color: couponCode === code ? PINK : '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all .15s', letterSpacing: 0.5 }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
-                                onMouseLeave={e => { if (couponCode !== code) { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.color = '#6b7280'; } }}>
-                                🎟 {code} <span style={{ fontWeight: 800, color: '#00a650' }}>{label}</span>
-                              </button>
-                            );
-                          })}
+                    {(() => {
+                      const filtered = publicCoupons.filter((c: any) => {
+                        const userRestriction = c.userRestriction || c.USERRESTRICTION || null;
+                        if (!userRestriction) return true;
+                        const val = userRestriction.trim().toLowerCase();
+                        return (
+                          (user?.id && user.id.toLowerCase() === val) ||
+                          (user?.email && user.email.toLowerCase() === val) ||
+                          (form.email && form.email.toLowerCase() === val)
+                        );
+                      });
+                      if (filtered.length === 0) return null;
+                      return (
+                        <div style={{ marginTop: 8 }}>
+                          <p style={{ margin: '0 0 6px', fontSize: 10, fontWeight: 700, color: '#9ca3af', fontFamily: FF, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cupones disponibles</p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {filtered.map((c: any) => {
+                              const code = (c.code || c.CODE || '').toUpperCase();
+                              if (!code) return null;
+                              const discType = c.type ?? c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
+                              const discVal = c.value ?? c.DISCOUNTVALUE ?? c.VALUE ?? 0;
+                              const label = discType === 'percent' || discType === 'percentage' ? `${discVal}% OFF` : formatPrice(discVal);
+                              return (
+                                <button key={c.$id} type="button" onClick={() => { setCouponCode(code); setCouponError(''); }}
+                                  style={{ padding: '5px 10px', borderRadius: 999, border: `1.5px solid ${couponCode === code ? PINK : '#fce7f3'}`, background: couponCode === code ? PINK_BG : '#fff', color: couponCode === code ? PINK : '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all .15s', letterSpacing: 0.5 }}
+                                  onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                                  onMouseLeave={e => { if (couponCode !== code) { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.color = '#6b7280'; } }}>
+                                  🎟 {code} <span style={{ fontWeight: 800, color: '#00a650' }}>{label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
 

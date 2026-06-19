@@ -109,16 +109,19 @@ export default function CouponsPage() {
         type: d.discountType || 'percent',
         value: Number(d.discountValue),
         isActive: d.isActive ?? true,
+        userRestriction: d.userRestriction?.trim() || null,
+        description: d.description?.trim() || null,
+        minPurchase: d.minOrderAmount ? Number(d.minOrderAmount) : null,
       };
       if (d.maxUses) payload.maxUses = Number(d.maxUses);
       if (d.expiresAt) payload.expiresAt = Math.floor(new Date(d.expiresAt).getTime() / 1000);
       if (modal.mode === 'add') {
         const doc = await databases.createDocument(databaseId, COUPONS_COLLECTION_ID, ID.unique(), payload);
-        const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined };
+        const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, minOrderAmount: doc.minPurchase, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined, userRestriction: doc.userRestriction, description: doc.description };
         setCoupons(prev => [normalized as unknown as Coupon, ...prev]);
       } else {
         const doc = await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, (d as Coupon).$id, payload);
-        const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined };
+        const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, minOrderAmount: doc.minPurchase, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined, userRestriction: doc.userRestriction, description: doc.description };
         setCoupons(prev => prev.map(c => c.$id === (d as Coupon).$id ? normalized as unknown as Coupon : c));
       }
       setModal(null);
@@ -156,12 +159,12 @@ export default function CouponsPage() {
         value: c.discountValue,
         isActive: false,
       };
-      if (c.minOrderAmount) payload.minOrderAmount = c.minOrderAmount;
-      if (c.maxDiscount) payload.maxDiscount = c.maxDiscount;
-      if (c.maxUses) payload.maxUses = c.maxUses;
+      if (c.minOrderAmount) payload.minPurchase = Number(c.minOrderAmount);
+      if (c.maxUses) payload.maxUses = Number(c.maxUses);
       if (c.description) payload.description = c.description + ' (Copia)';
+      if (c.userRestriction) payload.userRestriction = c.userRestriction;
       const doc = await databases.createDocument(databaseId, COUPONS_COLLECTION_ID, ID.unique(), payload);
-      const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, minOrderAmount: doc.minOrderAmount, maxUses: doc.maxUses, usedCount: doc.usedCount || 0, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined };
+      const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, minOrderAmount: doc.minPurchase, maxUses: doc.maxUses, usedCount: doc.usedCount || 0, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined, userRestriction: doc.userRestriction, description: doc.description };
       setCoupons(prev => [normalized as unknown as Coupon, ...prev]);
     } catch (e: any) { alert('Error: ' + e.message); }
   };
