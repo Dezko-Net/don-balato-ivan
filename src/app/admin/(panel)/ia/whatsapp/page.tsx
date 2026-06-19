@@ -478,11 +478,28 @@ export default function AdminIAWhatsAppPage() {
     });
   }, [threads, filterTab]);
 
-  const WA_BG = "url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781843000006-pegada-1781842998078.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XFBDxX96Z95hepuXzq%2FZQJZFzGUT8SjVk6wcFYRsLh%2BFKQ8Z%2BVSHZKfrluVcHpTBPL5D6ZNh%2FLiO8MYLnTmoA%2Be2pMj4qN9hQ8XOEl9hlpXA76konX4H3Xds4M1QGU6WBRQmjtCsBE63OZ7nuolcpLLipFfoVZ%2B4%2Byh49Ujp5M7%2Bl2IOgR97Fj5nLkqzCN3J%2Bo9sAHJSCza45FQWWMU8sur6IdTacH8oZPtVeXrDQR4TzLHqGhhgNNpAc6TNSuX21MAnscz82odTav4TSiZyWeDO3dYOLhETS%2B7cTs3JZblEr36Bb562wciaK0Pgf0cyjG5p8c%2BbMtyQ2%2FK1h8FTgQ%3D%3D')";
-
   return (
     <div style={{ display: 'flex', height: '100dvh', background: '#111b21', overflow: 'hidden' }}>
       <style>{`
+        @keyframes complexBgAnim {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .wa-animated-bg {
+          background: linear-gradient(-45deg, #0b141a, #111b21, #0f172a, #1e1b4b, #312e81, #3b0764);
+          background-size: 400% 400%;
+          animation: complexBgAnim 20s ease infinite;
+          position: relative;
+        }
+        .wa-animated-bg::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 1px, transparent 1px);
+          background-size: 30px 30px;
+          pointer-events: none;
+        }
         .wa-app { display:flex; width:100%; height:100dvh; overflow:hidden; }
         .wa-sidebar { width:400px; min-width:320px; max-width:400px; flex-shrink:0; background:#111b21; border-right:1px solid #222e35; display:flex; flex-direction:column; overflow:hidden; }
         .wa-chat { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#0b141a; }
@@ -785,7 +802,7 @@ export default function AdminIAWhatsAppPage() {
         <section className={`wa-chat${mobileView === 'list' ? ' wa-mobile-hidden' : ''}`}>
           {!selectedPhone ? (
             /* Empty state */
-            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, background:'#0b141a', backgroundImage: WA_BG, backgroundRepeat:'repeat', backgroundPosition:'center' }}>
+            <div className="wa-animated-bg" style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
               <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(0,168,132,0.12)', border:'2px solid rgba(0,168,132,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <MessageCircle className="h-10 w-10" style={{ color:'#00a884' }} />
               </div>
@@ -886,8 +903,8 @@ export default function AdminIAWhatsAppPage() {
 
               {/* Messages */}
               <div ref={chatScrollRef} onScroll={handleChatScroll}
-                className="wa-scrollbar"
-                style={{ flex:1, overflowY:'auto', padding:'12px 4%', display:'flex', flexDirection:'column', gap:2, backgroundImage: WA_BG, backgroundColor:'#0b141a', backgroundRepeat:'repeat', backgroundPosition:'center' }}>
+                className="wa-scrollbar wa-animated-bg"
+                style={{ flex:1, overflowY:'auto', padding:'12px 4%', display:'flex', flexDirection:'column', gap:2 }}>
                 {loadingThread ? (
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, gap:10, color:'#8696a0' }}>
                     <Loader2 className="h-8 w-8 animate-spin" style={{ color:'#00a884' }} />

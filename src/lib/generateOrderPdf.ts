@@ -60,6 +60,8 @@ export function generateOrderPdf(
   `;
   }).join('');
 
+  const customerNote = (order as any).CUSTOMERNOTE || '';
+
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -78,19 +80,19 @@ export function generateOrderPdf(
 </head>
 <body>
   <!-- Header -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #3483fa;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #db2777;">
     <div>
-      <h1 style="font-size:24px;font-weight:700;color:#3483fa;margin-bottom:4px;">Comprobante de Pedido</h1>
+      <h1 style="font-size:24px;font-weight:700;color:#db2777;margin-bottom:4px;">Comprobante de Pedido</h1>
       <p style="font-size:13px;color:#999;">${date}</p>
     </div>
     <div style="text-align:right;">
       <p style="font-size:20px;font-weight:700;color:#333;">${order.ORDERCODE}</p>
-      <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:#f0f0f0;font-size:12px;font-weight:600;color:#666;">${statusLabel}</span>
+      <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:#fdf2f8;font-size:12px;font-weight:600;color:#db2777;border:1px solid #fbcfe8;">${statusLabel}</span>
     </div>
   </div>
 
   <!-- Customer info -->
-  <div style="display:flex;gap:40px;margin-bottom:28px;">
+  <div style="display:flex;gap:40px;margin-bottom:${customerNote ? '16px' : '28px'};">
     <div style="flex:1;">
       <p style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:6px;">Cliente</p>
       <p style="font-size:14px;font-weight:600;color:#333;margin-bottom:2px;">${order.CUSTOMERNAME || '-'}</p>
@@ -105,6 +107,13 @@ export function generateOrderPdf(
       <p style="font-size:13px;color:#666;">${[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</p>
     </div>
   </div>
+
+  ${customerNote ? `
+  <div style="margin-bottom:28px;background:#fffbeb;border:1px solid #fef3c7;padding:12px;border-radius:8px;">
+    <p style="font-size:11px;font-weight:700;color:#d97706;text-transform:uppercase;margin-bottom:4px;">Nota del Cliente</p>
+    <p style="font-size:13px;color:#92400e;">${customerNote}</p>
+  </div>
+  ` : ''}
 
   <!-- Items table -->
   <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
@@ -152,7 +161,7 @@ export function generateOrderPdf(
 
   <!-- Print button (non-print) -->
   <div class="no-print" style="text-align:center;margin-top:24px;">
-    <button onclick="window.print()" style="padding:12px 32px;background:#3483fa;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">
+    <button onclick="window.print()" style="padding:12px 32px;background:#db2777;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">
       Imprimir / Guardar PDF
     </button>
   </div>
