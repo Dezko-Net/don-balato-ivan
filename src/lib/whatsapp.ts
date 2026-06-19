@@ -111,6 +111,9 @@ export async function sendWhatsAppMessage(to: string, text: string, token: strin
       console.error('[WhatsApp] sendMessage error:', err);
       throw new Error(`WhatsApp API Error: ${err}`);
     }
+
+    const data = await res.json();
+    console.log('[WhatsApp] Message sent successfully. Response:', JSON.stringify(data));
   }
 }
 
@@ -155,6 +158,9 @@ export async function sendWhatsAppTemplate(
     console.error('[WhatsApp] sendTemplate error:', err);
     throw new Error(`WhatsApp API Error: ${err}`);
   }
+
+  const data = await res.json();
+  console.log('[WhatsApp] Template sent successfully. Response:', JSON.stringify(data));
 }
 
 // ─── Mark message as read ──────────────────────────────────────────────────────
