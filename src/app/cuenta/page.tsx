@@ -546,7 +546,7 @@ export default function CuentaPage() {
       </div>
 
       {/* ════════ MOBILE HARDCORE PREMIUM ════════ */}
-      <div className="cuenta-mobile" style={{ fontFamily: FF, background: 'transparent', minHeight: '100vh' }}>
+      <div className="cuenta-mobile" style={{ fontFamily: FF, background: 'linear-gradient(to bottom, #f8fafc, #f1f5f9)', minHeight: '100vh', paddingBottom: 50 }}>
         <style>{`
           .pm-pill:active { transform: scale(0.93); opacity: 0.85; }
           .pm-pill { transition: transform 0.18s cubic-bezier(.34,1.56,.64,1); }
@@ -557,10 +557,6 @@ export default function CuentaPage() {
           @keyframes qa-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
           @keyframes qa-glow-pulse { 0%,100% { filter: drop-shadow(0 0 3px rgba(227,150,191,0.2)); } 50% { filter: drop-shadow(0 0 8px rgba(227,150,191,0.25)); } }
           @keyframes qa-wiggle { 0% { transform: rotate(0deg); } 15% { transform: rotate(-8deg); } 30% { transform: rotate(6deg); } 45% { transform: rotate(-4deg); } 60% { transform: rotate(2deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
-          @keyframes td_shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-          @keyframes td_float { 0%,100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-2px); opacity: 1; } }
-          @keyframes td_bubble { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.4); opacity: 0.6; } }
-          @keyframes td_drift { 0%,100% { transform: translateX(0); opacity: 0.15; } 50% { transform: translateX(6px); opacity: 0.25; } }
           .qa-icon-float { animation: qa-float 3s ease-in-out infinite; }
           .qa-icon-float:nth-child(1) { animation-delay: 0s; }
           .qa-icon-float:nth-child(2) { animation-delay: 0.4s; }
@@ -584,38 +580,47 @@ export default function CuentaPage() {
             border: 1px solid rgba(0,0,0,0.07) !important;
             transform: none !important;
           }
+          .ios-group {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 24px;
+          }
+          .ios-group-title {
+            margin: 0 0 8px 12px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
         `}</style>
 
-        {/* ── HERO: card style like desktop ── */}
-        <div style={{ padding: '12px 12px 0' }}>
-          <div style={{ background: '#fff', borderRadius: 22, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
-            {/* Cover image */}
-            <div className="hero-cover" style={{
-              height: 140,
-              backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-            }}>
-              <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 10, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 5 }}>
-                <Pencil size={13} color="#374151" style={{ opacity: 0.8 }} />
-              </Link>
-              <div className="hero-cover-overlay" />
-            </div>
-            {/* Saludo arriba, avatar abajo */}
-            <div style={{ padding: '0 18px', marginTop: -36, position: 'relative', zIndex: 2, textAlign: 'center' }}>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#1a1a1a', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
-                ¡Hola, {firstName}! 👋
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user.email}
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 18px 20px', position: 'relative', zIndex: 2 }}>
-              <div style={{ position: 'relative' }}>
-                <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: PINK, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(227,150,191,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
-                  {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-                </div>
+        {/* ── HERO: Premium Mobile Cover ── */}
+        <div style={{ position: 'relative', marginBottom: 20 }}>
+          <div style={{
+            height: 180,
+            backgroundImage: coverUrl ? `url(${coverUrl})` : `url(${BG_CUENTA})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            position: 'relative',
+            borderBottomLeftRadius: 32,
+            borderBottomRightRadius: 32,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }} />
+            <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: 12, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.4)', zIndex: 5 }}>
+              <Pencil size={16} color="#fff" />
+            </Link>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -60, position: 'relative', zIndex: 2 }}>
+            <div style={{ position: 'relative' }}>
+              <div style={{ width: 110, height: 110, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 800, color: PINK, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+                {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+              </div>
               {!medalError ? (
                 <img 
                   src={MEDAL_IMAGES[currentLevel] || MEDAL_IMAGES.bronze}
@@ -623,13 +628,13 @@ export default function CuentaPage() {
                   onError={() => setMedalError(true)}
                   style={{ 
                     position: 'absolute', 
-                    bottom: -2, 
-                    right: -2, 
-                    width: 28, 
-                    height: 28, 
+                    bottom: 0, 
+                    right: 0, 
+                    width: 34, 
+                    height: 34, 
                     objectFit: 'contain',
                     zIndex: 10,
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                    filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.2))'
                   }}
                 />
               ) : (
@@ -639,34 +644,43 @@ export default function CuentaPage() {
                   return (
                     <div style={{
                       position: 'absolute',
-                      bottom: -2,
-                      right: -2,
-                      width: 28,
-                      height: 28,
+                      bottom: 0,
+                      right: 0,
+                      width: 34,
+                      height: 34,
                       borderRadius: '50%',
                       background: info.bg,
                       border: `2px solid #fff`,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       zIndex: 10,
                     }}>
-                      <FallbackIcon size={14} color={info.color} fill={info.color} />
+                      <FallbackIcon size={16} color={info.color} fill={info.color} />
                     </div>
                   );
                 })()
               )}
-              </div>
-              <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, width: '100%', maxWidth: 280, padding: '11px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(227,150,191,0.2)' }}>
-                <Trophy size={13} /> Tienda de puntos
-              </Link>
             </div>
+
+            <div style={{ textAlign: 'center', marginTop: 12, padding: '0 20px' }}>
+              <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                ¡Hola, {firstName}!
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: 14, color: '#64748b', fontWeight: 500 }}>
+                {user.email}
+              </p>
+            </div>
+
+            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, padding: '10px 24px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 20, textDecoration: 'none', boxShadow: '0 6px 16px rgba(227,150,191,0.3)', transition: 'transform 0.2s' }}>
+              <Trophy size={15} /> Tienda de puntos
+            </Link>
           </div>
         </div>
 
         {/* ── QUICK ACTIONS: gradient pill cards ── */}
-        <div style={{ padding: '14px 14px 0' }}>
+        <div style={{ padding: '0 16px 10px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
             {[
               { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
@@ -735,7 +749,7 @@ export default function CuentaPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 + idx * 0.12 }}
-                      style={{ fontSize: 10.5, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}
+                      style={{ fontSize: 11, fontWeight: 700, color: '#475569', textAlign: 'center', lineHeight: 1.2 }}
                     >{sc.label}</motion.span>
                   </Link>
                 </motion.div>
@@ -744,49 +758,43 @@ export default function CuentaPage() {
           </div>
         </div>
 
-
-
         {/* ── LOYALTY compact card ── */}
-        <div style={{ padding: '14px 14px 0' }}>
+        <div style={{ padding: '14px 16px 10px' }}>
           <LoyaltyLevel />
         </div>
 
-        {/* ── MENU GROUPS ── */}
-        <div style={{ padding: '14px 14px 50px' }}>
+        {/* ── MENU GROUPS (Native iOS Style) ── */}
+        <div style={{ padding: '10px 16px' }}>
 
-          {/* Section: Mis compras — modern card grid */}
-          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mis compras</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 16 }}>
-            {MIS_COMPRAS_ITEMS.map((item, i) => <MobileCard key={item.label} item={item} index={i} />)}
+          <h3 className="ios-group-title">Mis compras</h3>
+          <div className="ios-group">
+            {MIS_COMPRAS_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i} isLast={i === MIS_COMPRAS_ITEMS.length - 1} />)}
           </div>
 
-          {/* Section: Mi cuenta — modern card grid */}
-          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mi cuenta</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 16 }}>
-            {CUENTA_ITEMS.map((item, i) => <MobileCard key={item.label} item={item} index={i + 10} />)}
+          <h3 className="ios-group-title">Mi cuenta</h3>
+          <div className="ios-group">
+            {CUENTA_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i + 10} isLast={i === CUENTA_ITEMS.length - 1} />)}
           </div>
 
-          {/* Section: Más — modern card grid */}
-          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Más opciones</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 20 }}>
-            {CONFIG_ITEMS.map((item, i) => <MobileCard key={item.label} item={item} index={i + 20} />)}
+          <h3 className="ios-group-title">Más opciones</h3>
+          <div className="ios-group">
+            {CONFIG_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i + 20} isLast={i === CONFIG_ITEMS.length - 1} />)}
           </div>
 
-          {/* Logout */}
           <button className="pm-logout" onClick={handleLogout} style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            padding: '15px', background: '#fff', borderRadius: 18,
-            border: '1px solid rgba(220,38,38,0.15)',
-            boxShadow: '0 2px 12px rgba(220,38,38,0.08)',
-            cursor: 'pointer', color: '#dc2626', fontSize: 14.5, fontWeight: 700,
-            fontFamily: FF,
+            padding: '16px', background: '#fff', borderRadius: 20,
+            border: '1px solid #fee2e2',
+            boxShadow: '0 2px 10px rgba(220,38,38,0.05)',
+            cursor: 'pointer', color: '#dc2626', fontSize: 15, fontWeight: 700,
+            fontFamily: FF, marginTop: 10,
           }}>
-            <LogOut size={17} />Cerrar sesión
+            <LogOut size={18} />Cerrar sesión
           </button>
 
-          <div style={{ marginTop: 20, display: 'flex', gap: 20, justifyContent: 'center' }}>
+          <div style={{ marginTop: 24, display: 'flex', gap: 20, justifyContent: 'center' }}>
             {['Términos', 'Privacidad', 'Ayuda'].map(t => (
-              <span key={t} style={{ fontSize: 11, color: '#c4c9d4', cursor: 'pointer', fontWeight: 600 }}>{t}</span>
+              <span key={t} style={{ fontSize: 12, color: '#94a3b8', cursor: 'pointer', fontWeight: 600 }}>{t}</span>
             ))}
           </div>
         </div>
@@ -860,34 +868,31 @@ function ColoredCard({ item, index }: { item: MenuItem; index: number }) {
   );
 }
 
-function MobileCard({ item, index }: { item: MenuItem; index: number }) {
+function MobileRow({ item, index, isLast }: { item: MenuItem; index: number; isLast?: boolean }) {
   const Icon = item.icon;
   const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
   return (
     <Link href={item.href} style={{
-      textDecoration: 'none', display: 'flex', flexDirection: 'column',
-      background: '#fff', borderRadius: 16, overflow: 'hidden',
-      border: '1px solid rgba(0,0,0,0.07)',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06)',
-      transition: 'transform 0.15s', position: 'relative',
+      textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 14,
+      padding: '16px', background: '#fff',
+      borderBottom: isLast ? 'none' : '1px solid #f1f5f9',
+      transition: 'background 0.15s', position: 'relative',
     }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = ''; }}
+    onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
     >
-      <div style={{ height: 3, background: gradient }} />
-      <div style={{ padding: '14px 14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{
-          width: 38, height: 38, borderRadius: 11,
-          background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 3px 8px rgba(0,0,0,0.12)', flexShrink: 0,
-        }}>
-          <Icon size={17} color="#fff" strokeWidth={2.2} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{item.label}</p>
-          {item.desc && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9ca3af', lineHeight: 1.3 }}>{item.desc}</p>}
-        </div>
+      <div style={{
+        width: 36, height: 36, borderRadius: 10,
+        background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.1)', flexShrink: 0,
+      }}>
+        <Icon size={18} color="#fff" strokeWidth={2.2} />
       </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>{item.label}</p>
+        {item.desc && <p style={{ margin: '3px 0 0', fontSize: 11.5, color: '#64748b', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.desc}</p>}
+      </div>
+      <ChevronRight size={18} color="#cbd5e1" />
     </Link>
   );
 }

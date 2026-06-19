@@ -321,51 +321,6 @@ export default function AdminIAPage() {
               </div>
             </div>
 
-            {/* Cards row: WhatsApp + Appwrite */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Link href="/admin/ia/whatsapp" style={{ textDecoration: 'none' }}>
-              <div style={{ background: 'linear-gradient(135deg,#052e16,#14532d)', borderRadius: 20, padding: '20px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, cursor: 'pointer', transition: 'opacity .15s', border: '1px solid rgba(34,197,94,0.2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 50, height: 50, borderRadius: 14, background: '#25d366', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 20px rgba(37,211,102,0.35)' }}>
-                    <Phone style={{ width: 22, height: 22, color: '#fff' }} />
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>WhatsApp Business</p>
-                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 3 }}>
-                      {stats.totalThreads > 0
-                        ? `${stats.totalThreads} conversaciones · ${stats.unreadThreads > 0 ? `${stats.unreadThreads} sin leer` : 'todo leido'}`
-                        : 'Panel completo de chats con Kenia'}
-                    </p>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {stats.unreadThreads > 0 && (
-                    <span style={{ background: '#25d366', color: '#fff', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>
-                      {stats.unreadThreads} nuevos
-                    </span>
-                  )}
-                  <ChevronRight style={{ width: 20, height: 20, color: 'rgba(255,255,255,0.5)' }} />
-                </div>
-              </div>
-            </Link>
-
-            {/* Appwrite monitor card */}
-            <Link href="/admin/ia/appwrite" style={{ textDecoration: 'none' }}>
-              <div style={{ background: 'linear-gradient(135deg,#0f172a,#1e1b4b)', borderRadius: 20, padding: '20px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, cursor: 'pointer', transition: 'opacity .15s', border: '1px solid rgba(99,102,241,0.25)', height: '100%', boxSizing: 'border-box' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 50, height: 50, borderRadius: 14, background: 'linear-gradient(135deg,#4f46e5,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 20px rgba(79,70,229,0.4)' }}>
-                    <Activity style={{ width: 22, height: 22, color: '#fff' }} />
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Appwrite Monitor</p>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>Lecturas · Escrituras · Limite 60k/dia</p>
-                  </div>
-                </div>
-                <ChevronRight style={{ width: 18, height: 18, color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
-              </div>
-            </Link>
-            </div>
-
           </div>
 
           {/* RIGHT — Settings sidebar */}

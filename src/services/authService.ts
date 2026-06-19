@@ -353,8 +353,7 @@ export class AuthService {
           docId,
           {
             name: updates.name,
-            phone: updates.phone || '',
-            updatedAt: new Date().toISOString()
+            phone: updates.phone || ''
           }
         );
 
