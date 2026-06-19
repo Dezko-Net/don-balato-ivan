@@ -481,24 +481,44 @@ export default function AdminIAWhatsAppPage() {
   return (
     <div style={{ display: 'flex', height: '100dvh', background: '#111b21', overflow: 'hidden' }}>
       <style>{`
-        @keyframes complexBgAnim {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+        @keyframes darkDrift {
+          0% { transform: translate(0%, 0%) scale(1); }
+          50% { transform: translate(5%, 5%) scale(1.1); }
+          100% { transform: translate(0%, 0%) scale(1); }
         }
         .wa-animated-bg {
-          background: linear-gradient(-45deg, #0b141a, #111b21, #0f172a, #1e1b4b, #312e81, #3b0764);
-          background-size: 400% 400%;
-          animation: complexBgAnim 20s ease infinite;
+          background-color: #030303;
           position: relative;
+          overflow: hidden;
         }
         .wa-animated-bg::before {
           content: "";
           position: absolute;
-          inset: 0;
-          background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 1px, transparent 1px);
-          background-size: 30px 30px;
+          inset: -20%;
+          background: radial-gradient(circle at 30% 30%, #151515 0%, transparent 50%),
+                      radial-gradient(circle at 70% 70%, #111111 0%, transparent 50%),
+                      radial-gradient(circle at 80% 20%, #1a1a1a 0%, transparent 50%),
+                      radial-gradient(circle at 20% 80%, #0a0a0a 0%, transparent 50%);
+          animation: darkDrift 20s ease-in-out infinite alternate;
+          z-index: 0;
           pointer-events: none;
+        }
+        .wa-animated-bg::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image: 
+            linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+          background-size: 40px 40px;
+          mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
+          -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
+          z-index: 0;
+          pointer-events: none;
+        }
+        .wa-animated-bg > * {
+          position: relative;
+          z-index: 1;
         }
         .wa-app { display:flex; width:100%; height:100dvh; overflow:hidden; }
         .wa-sidebar { width:400px; min-width:320px; max-width:400px; flex-shrink:0; background:#111b21; border-right:1px solid #222e35; display:flex; flex-direction:column; overflow:hidden; }
