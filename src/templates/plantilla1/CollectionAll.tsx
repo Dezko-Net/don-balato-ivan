@@ -20,7 +20,7 @@ import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice, resolvePackUnitPrice, PACK_BONUS_DISCOUNT_PCT } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, resolvePackUnitPrice, PACK_BONUS_DISCOUNT_PCT, getLiveShoppingThreshold } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 import { getSkuFromFeatures } from '@/lib/product-features';
@@ -237,6 +237,23 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       .sort((a, b) => a.effectivePrice - b.effectivePrice)
       .slice(0, 20)
       .map(x => x.p);
+  }, [isPaquetes, isEmbalajes, allActiveProducts]);
+
+  // Productos del Live Shopping actual (importados hoy desde las 7AM) — siempre -20%
+  const liveShoppingProducts = useMemo(() => {
+    if (isPaquetes || isEmbalajes) return [];
+    const threshold = getLiveShoppingThreshold().getTime();
+    return allActiveProducts
+      .filter(p => {
+        if (!p.imported_at || p.imported_at === '1970-01-01T00:00:00.000Z') return false;
+        return new Date(p.imported_at).getTime() >= threshold;
+      })
+      .sort((a, b) => {
+        const ta = new Date(b.imported_at!).getTime();
+        const tb = new Date(a.imported_at!).getTime();
+        return ta - tb; // más recientes primero
+      })
+      .slice(0, 20);
   }, [isPaquetes, isEmbalajes, allActiveProducts]);
 
   const heroBadgeText = isPaquetes ? 'Paquetes Especiales' : (isEmbalajes ? 'Embalajes Profesionales' : (lockCategoryId ? 'Categoría' : 'Nuestra tienda'));
@@ -634,37 +651,40 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           );
         })()}
 
-        {/* LOS MÁS ECONÓMICOS — solo en /productos (retail) */}
-        {!isPaquetes && !isEmbalajes && cheapestRetailProducts.length > 0 && (() => {
+        {/* LIVE SHOPPING — productos del live con -20% y countdown hasta las 7AM */}
+        {!isPaquetes && !isEmbalajes && liveShoppingProducts.length > 0 && (() => {
+          const now = new Date();
+          const next7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
+          if (next7Am.getTime() <= now.getTime()) next7Am.setDate(next7Am.getDate() + 1);
+          const expiresAtSec = Math.floor(next7Am.getTime() / 1000);
           return (
-            <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: '#ffffff', border: '1.5px solid #fce7f3', boxShadow: '0 10px 40px rgba(219,39,119,0.08)' }}>
-              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 0% 0%, rgba(227,150,191,0.06), transparent 60%)', pointerEvents: 'none' }} />
+            <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: '#fff', border: '1.5px solid #fecdd3', boxShadow: '0 10px 40px rgba(233,69,96,0.08)' }}>
               <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', position: 'relative' }}>
-                <div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg,#db2777,#e396bf)', color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: 11, fontWeight: 900, marginBottom: 8, letterSpacing: '0.06em', boxShadow: '0 4px 14px rgba(219,39,119,0.35)' }}>
-                    💰 LOS MÁS ECONÓMICOS
+                <div style={{ flex: '1 1 200px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg,#e94560,#ff6b6b)', color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: 11, fontWeight: 900, marginBottom: 8, letterSpacing: '0.06em', boxShadow: '0 4px 14px rgba(233,69,96,0.4)' }}>
+                    🔴 EN VIVO AHORA
                   </div>
-                  <h2 style={{ fontSize: 23, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', fontFamily: FF }}>Los mejores precios de la tienda</h2>
-                  <p style={{ fontSize: 13, color: '#db2777', margin: '4px 0 0', fontWeight: 700 }}>Ordenados de menor a mayor precio — los más baratos primero</p>
+                  <h2 style={{ fontSize: 23, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', fontFamily: FF }}>Aprovecha los productos del Live</h2>
+                  <p style={{ fontSize: 13, color: '#ff6b6b', margin: '4px 0 0', fontWeight: 700 }}>20% OFF por tiempo limitado — precios especiales solo hoy</p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+                  <span style={{ fontSize: 10, color: '#aaa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Termina en</span>
+                  <CountdownTimer expiresAt={expiresAtSec} compact />
                 </div>
               </div>
               <div className="pk-carousel-no-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 24px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-                {cheapestRetailProducts.map(p => {
-                  const unitOfferExpired = !!(p.UNIT_OFFER_EXPIRES_AT && p.UNIT_OFFER_EXPIRES_AT < Date.now());
-                  const hasOffer = !unitOfferExpired && !!(p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < p.PRICE);
-                  const displayPrice = hasOffer ? p.CURRENTPRICE! : p.PRICE;
-                  const discPct = hasOffer ? Math.round((1 - p.CURRENTPRICE! / p.PRICE) * 100) : 0;
+                {liveShoppingProducts.map(p => {
+                  const pricing = resolveProductDisplayPrice(p, apertura);
+                  const displayPrice = pricing.displayPrice;
                   const stock = p.STOCK || 0;
                   return (
-                    <div key={p.$id} style={{ minWidth: 190, maxWidth: 210, flex: '0 0 auto', background: '#ffffff', borderRadius: 20, border: `1.5px solid ${hasOffer ? '#fbcfe8' : '#f3f4f6'}`, overflow: 'hidden', boxShadow: `0 4px 16px ${hasOffer ? 'rgba(219,39,119,0.10)' : 'rgba(0,0,0,0.04)'}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                      {discPct > 0 && (
-                        <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: 'linear-gradient(135deg,#db2777,#e396bf)', color: '#fff', borderRadius: 999, fontSize: 12, fontWeight: 900, padding: '4px 10px', boxShadow: '0 2px 8px rgba(219,39,119,0.4)' }}>-{discPct}%</div>
-                      )}
+                    <div key={p.$id} style={{ minWidth: 190, maxWidth: 210, flex: '0 0 auto', background: 'rgba(255,255,255,0.95)', borderRadius: 20, border: '1.5px solid #e94560', overflow: 'hidden', boxShadow: '0 4px 16px rgba(233,69,96,0.12)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: 'linear-gradient(135deg,#e94560,#ff6b6b)', color: '#fff', borderRadius: 999, fontSize: 12, fontWeight: 900, padding: '4px 10px', boxShadow: '0 2px 8px rgba(233,69,96,0.4)' }}>-20%</div>
                       <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8fafc', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
                         {getProductImageUrl(p) ? (
                           <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="210px" unoptimized />
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 38 }}>🏷️</div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 38 }}>🔴</div>
                         )}
                       </div>
                       <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -672,14 +692,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
                         </Link>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                          <span style={{ fontSize: 20, fontWeight: 900, color: hasOffer ? '#db2777' : '#0f172a', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(displayPrice)}</span>
-                          {hasOffer && <span style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</span>}
+                          <span style={{ fontSize: 20, fontWeight: 900, color: '#e94560', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(displayPrice)}</span>
+                          {pricing.originalPrice != null && <span style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
                         </div>
                         {stock <= 5 && stock > 0 && <p style={{ fontSize: 10, color: '#f97316', fontWeight: 800, margin: 0 }}>¡Solo {stock} en stock!</p>}
                         <button
                           onClick={() => stock > 0 && addItem(p, 1)}
                           disabled={stock <= 0}
-                          style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: stock <= 0 ? '#f1f5f9' : 'linear-gradient(135deg,#e396bf,#db2777)', color: stock <= 0 ? '#94a3b8' : '#fff', fontSize: 12, fontWeight: 800, cursor: stock <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF, boxShadow: stock <= 0 ? 'none' : '0 4px 14px rgba(219,39,119,0.3)', letterSpacing: '0.01em' }}
+                          style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: stock <= 0 ? '#f1f5f9' : 'linear-gradient(135deg,#e94560,#ff6b6b)', color: stock <= 0 ? '#94a3b8' : '#fff', fontSize: 12, fontWeight: 800, cursor: stock <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF, boxShadow: stock <= 0 ? 'none' : '0 4px 14px rgba(233,69,96,0.3)', letterSpacing: '0.01em' }}
                         >
                           <ShoppingCart size={13} /> {stock <= 0 ? 'Sin stock' : 'Agregar'}
                         </button>

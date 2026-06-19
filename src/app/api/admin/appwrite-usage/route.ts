@@ -63,7 +63,10 @@ export async function GET() {
       todayReads,
       sevenDaysReads,
       history: databaseReads,
+      writesHistory: dbData.databaseWrites || [],
       collections: collectionsUsage,
+      collectionsTotal: dbData.collectionsTotal || 0,
+      documentsTotal: dbData.documentsTotal || 0,
       lastUpdated: new Date().toISOString()
     };
 

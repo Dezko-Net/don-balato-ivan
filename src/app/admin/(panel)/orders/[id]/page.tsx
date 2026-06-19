@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { MEDIA_BUCKET_ID, MEDIA_PREFIXES, ID, Query } from '@/lib/appwrite';
+import { MEDIA_BUCKET_ID, MEDIA_PREFIXES, ORDER_BOX_PHOTOS_BUCKET_ID, ID, Query } from '@/lib/appwrite';
 import { Order, OrderStatus } from '@/types/admin';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
 import {
@@ -18,18 +18,40 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:            { label: 'Pendiente',                 bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
-  processing:         { label: 'Pago a Verificar',          bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
+  processing:         { label: 'Pago Recibido',             bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
   paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
-  assembling:         { label: 'Armando',                   bg: 'bg-indigo-50',  text: 'text-indigo-700',   border: 'border-indigo-200',  dot: 'bg-indigo-400',  icon: '📦' },
-  negotiation:        { label: 'Negociación',                bg: 'bg-pink-50',    text: 'text-pink-700',     border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
-  preparing_shipping: { label: 'Etiqueta Lista', bg: 'bg-orange-50',  text: 'text-orange-700',   border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🏷️' },
-  ready_to_ship:      { label: 'Pedido listo para enviar', bg: 'bg-cyan-50',    text: 'text-cyan-700',     border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '📋' },
-  shipped:            { label: 'Enviado',                   bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
-  delivered:          { label: 'Entregado',                 bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
+  assembling:         { label: 'Imprimiendo Etiqueta',      bg: 'bg-indigo-50',  text: 'text-indigo-700',   border: 'border-indigo-200',  dot: 'bg-indigo-400',  icon: '🏷️' },
+  confirming_stock:   { label: 'Confirmando Stock',         bg: 'bg-teal-50',    text: 'text-teal-700',     border: 'border-teal-200',    dot: 'bg-teal-400',    icon: '🔎' },
+  stock_confirmed:    { label: 'Stock Confirmado',          bg: 'bg-lime-50',    text: 'text-lime-700',     border: 'border-lime-200',    dot: 'bg-lime-400',    icon: '✔️' },
+  packing:            { label: 'Embalando Pedido',          bg: 'bg-amber-50',   text: 'text-amber-700',    border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '📦' },
+  negotiation:        { label: 'Negociación',               bg: 'bg-pink-50',    text: 'text-pink-700',     border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
+  preparing_shipping: { label: 'Etiqueta Lista',            bg: 'bg-orange-50',  text: 'text-orange-700',   border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🏷️' },
+  ready_to_ship:      { label: 'Listo para Despachar',      bg: 'bg-cyan-50',    text: 'text-cyan-700',     border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '📋' },
+  shipped:            { label: 'Salió de Tienda',           bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
+  delivered:          { label: 'Entregado a Agencia',       bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'ready_to_ship', 'shipped', 'delivered'];
+
+// Colores hex por estado (para gradientes/glows del rediseño)
+const STATUS_HEX: Record<string, string> = {
+  pending: '#f97316', processing: '#3b82f6', paid: '#10b981',
+  assembling: '#6366f1', confirming_stock: '#14b8a6', stock_confirmed: '#65a30d',
+  packing: '#d97706', negotiation: '#ec4899', preparing_shipping: '#f97316',
+  ready_to_ship: '#06b6d4', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
+};
+
+const isBluexpress = (agency?: string) => !!agency && agency.toUpperCase().replace(/\s/g, '').includes('BLUEXPRESS');
+const isPickupAgency = (agency?: string) => !!agency && agency.toUpperCase() === 'RETIRO EN TIENDA';
+
+// Etiqueta del estado según sea retiro en tienda o envío por agencia
+const displayStatusLabel = (status: string, agency?: string): string => {
+  const pickup = isPickupAgency(agency);
+  if (status === 'ready_to_ship') return pickup ? 'Listo para Retirar' : 'Listo para Despachar';
+  if (status === 'delivered') return pickup ? 'Entregado' : 'Entregado a Agencia';
+  return STATUS_CONFIG[status]?.label || status;
+};
 
 const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
@@ -72,6 +94,9 @@ export default function OrderDetailPage() {
   const [shippingProofIsPdf, setShippingProofIsPdf] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [uploadingShippingProof, setUploadingShippingProof] = useState(false);
+  const [uploadingBoxPhoto, setUploadingBoxPhoto] = useState(false);
+  const [detectedAddr, setDetectedAddr] = useState<{ region: string; comuna: string; full: string } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
   const [agencies, setAgencies] = useState<{ name: string }[]>([]);
   const [editingAgency, setEditingAgency] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState('');
@@ -465,12 +490,12 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Auto-print when status changes to 'paid'
+  // Auto-print when status changes to 'assembling' (Imprimiendo Etiqueta)
   useEffect(() => {
     if (!order) return;
     const prev = prevStatusRef.current;
     prevStatusRef.current = order.STATUS;
-    if (prev && prev !== 'paid' && order.STATUS === 'paid') {
+    if (prev && prev !== 'assembling' && order.STATUS === 'assembling') {
       setTimeout(() => window.print(), 500);
     }
   }, [order?.STATUS]);
@@ -523,6 +548,27 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Reverse-geocode de las coords GPS del cliente → dirección detectada (región/comuna)
+  useEffect(() => {
+    const info = order?.ADDITIONALINFO || '';
+    const m = info.match(/\[GEO:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\]/);
+    if (!m) { setDetectedAddr(null); return; }
+    let cancelled = false;
+    setGeoLoading(true);
+    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${m[1]}&longitude=${m[2]}&localityLanguage=es`)
+      .then(r => r.json())
+      .then((d: any) => {
+        if (cancelled) return;
+        const region = d.principalSubdivision || '';
+        const comuna = d.city || d.locality || '';
+        const full = Array.from(new Set([d.locality, d.city, d.principalSubdivision, d.countryName].filter(Boolean))).join(', ');
+        setDetectedAddr({ region, comuna, full });
+      })
+      .catch(() => { if (!cancelled) setDetectedAddr(null); })
+      .finally(() => { if (!cancelled) setGeoLoading(false); });
+    return () => { cancelled = true; };
+  }, [order?.ADDITIONALINFO]);
 
   useEffect(() => {
     if (order?.PAYMENTPROOFURL) {
@@ -762,7 +808,7 @@ export default function OrderDetailPage() {
   const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
   const sc = {
     ...scRaw,
-    label: isReadyRetiro ? 'Listo para retirar' : scRaw.label,
+    label: isReadyRetiro ? 'Listo para retirar' : displayStatusLabel(order.STATUS, order.SHIPPINGAGENCY),
     bg: isReadyRetiro ? 'bg-fuchsia-50' : scRaw.bg,
     text: isReadyRetiro ? 'text-fuchsia-700' : scRaw.text,
     border: isReadyRetiro ? 'border-fuchsia-200' : scRaw.border,
@@ -781,9 +827,20 @@ export default function OrderDetailPage() {
   const isGeolocated = !!geoMatch;
   const geoLat = geoMatch ? geoMatch[1] : null;
   const geoLng = geoMatch ? geoMatch[3] : null;
-  const displayAdditionalInfo = geoMatch 
+  const displayAdditionalInfo = geoMatch
     ? rawAdditionalInfo.replace(geoMatch[0], '').trim()
     : rawAdditionalInfo;
+
+  // Comparación dirección ingresada vs. detectada por GPS
+  const normTxt = (s?: string) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+  const fieldMatch = (a?: string, b?: string) => {
+    const na = normTxt(a), nb = normTxt(b);
+    if (!na || !nb) return false;
+    return na === nb || na.includes(nb) || nb.includes(na);
+  };
+  const comunaMatches = fieldMatch(order.COMUNA, detectedAddr?.comuna);
+  const regionMatches = fieldMatch(order.REGION, detectedAddr?.region);
+  const geoAddressMatches = !!detectedAddr && comunaMatches && regionMatches;
 
   const handleStatusChange = (newStatus: string) => {
     if (newStatus === 'cancelled' && !confirm('¿Cancelar este pedido? El stock será devuelto.')) return;
@@ -824,25 +881,17 @@ export default function OrderDetailPage() {
       await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
-      
-      const prevStatus = order.STATUS;
+
+      // El voucher/comprobante de envío solo se adjunta; no fuerza cambio de estado
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
         SHIPPINGPROOFURL: url,
-        STATUS: 'ready_to_ship',
         UPDATEDAT: Date.now(),
       });
-      setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: url, STATUS: 'ready_to_ship' as OrderStatus } : prev);
-      
+      setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: url } : prev);
+
       // Abrir automáticamente el comprobante PDF/imagen en el navegador
       window.open(url, '_blank');
-      
-      try {
-        const { notifyOrderStatusChange } = await import('@/services/notificationService');
-        await notifyOrderStatusChange(order, prevStatus, 'ready_to_ship');
-      } catch (err) {
-        console.error('Error notifying status change:', err);
-      }
-      
+
       await load();
     } catch (err: any) {
       alert('Error al subir comprobante de envío: ' + (err?.message || err));
@@ -886,6 +935,67 @@ export default function OrderDetailPage() {
       alert('Error al eliminar comprobante de envío: ' + (err?.message || err));
     }
   };
+
+  const handleUploadBoxPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !order) return;
+    setUploadingBoxPhoto(true);
+    try {
+      const { storage, databases } = getServices();
+      const { databaseId, endpoint, projectId } = getAppwriteConfig();
+      const newUrls: string[] = [];
+      for (const file of files) {
+        const fileId = ID.unique();
+        await storage.createFile(ORDER_BOX_PHOTOS_BUCKET_ID, fileId, file);
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        newUrls.push(`${endpoint}/storage/buckets/${ORDER_BOX_PHOTOS_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`);
+      }
+      let current: string[] = [];
+      try { current = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
+      const merged = [...current, ...newUrls];
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
+        BOXPHOTOS: JSON.stringify(merged),
+        UPDATEDAT: Date.now(),
+      });
+      setOrder(prev => prev ? { ...prev, BOXPHOTOS: JSON.stringify(merged) } : prev);
+    } catch (err: any) {
+      alert('Error al subir foto(s) de las cajas: ' + (err?.message || err));
+    } finally {
+      setUploadingBoxPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteBoxPhoto = async (url: string) => {
+    if (!order || !confirm('¿Eliminar esta foto de las cajas?')) return;
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      let current: string[] = [];
+      try { current = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
+      const next = current.filter(u => u !== url);
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
+        BOXPHOTOS: JSON.stringify(next),
+      });
+      setOrder(prev => prev ? { ...prev, BOXPHOTOS: JSON.stringify(next) } : prev);
+    } catch (err: any) {
+      alert('Error al eliminar la foto: ' + (err?.message || err));
+    }
+  };
+
+  // Fotos de las cajas (parse seguro)
+  let boxPhotos: string[] = [];
+  try { boxPhotos = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
+  // Banner de alerta: agencia (no BluExpress, no retiro) ya despachada sin N° seguimiento ni voucher
+  const orderIsPickup = isPickupAgency(order.SHIPPINGAGENCY);
+  const orderIsBluexpress = isBluexpress(order.SHIPPINGAGENCY);
+  const trackingPending =
+    ['shipped', 'delivered'].includes(order.STATUS) &&
+    !!order.SHIPPINGAGENCY && !orderIsPickup && !orderIsBluexpress &&
+    !((order as any).TRACKINGNUMBER && (order as any).TRACKINGNUMBER.trim()) &&
+    !(order.SHIPPINGPROOFURL && order.SHIPPINGPROOFURL.trim());
+  // Mostrar sección de fotos de cajas desde que está listo para despachar en adelante
+  const showBoxPhotos = ['ready_to_ship', 'shipped', 'delivered'].includes(order.STATUS) && !orderIsPickup;
 
   const totalItems = items.reduce((s, it) => s + it.qty, 0);
   const ageDays = Math.floor(ageMs / 86400000);
@@ -1097,7 +1207,90 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-    <div className="print-area max-w-6xl mx-auto space-y-4 sm:space-y-5 px-1 sm:px-0">
+    {/* ───────── HOJA DE IMPRESIÓN (1 página): cliente, agencia y productos sin imágenes ───────── */}
+    <div className="hidden print:block" style={{ color: '#111', fontSize: 12, lineHeight: 1.4, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as React.CSSProperties}>
+      {/* Encabezado */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111827', color: '#fff', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.7 }}>Orden de preparación</div>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>{order.ORDERCODE || '#' + order.$id.slice(-6)}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ display: 'inline-block', border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: 999, padding: '3px 12px', fontWeight: 700, fontSize: 12 }}>{displayStatusLabel(order.STATUS, order.SHIPPINGAGENCY)}</div>
+          <div style={{ fontSize: 11, marginTop: 5, opacity: 0.85 }}>{fmtDate(date.getTime())} · {fmtTime(date.getTime())}</div>
+          <div style={{ fontSize: 11, opacity: 0.85 }}>{totalItems} uds · {items.length} productos</div>
+        </div>
+      </div>
+
+      {/* Cliente / Envío */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+        <div style={{ flex: 1, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ background: '#f3f4f6', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#374151' }}>Cliente</div>
+          <div style={{ padding: '8px 12px' }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>{order.CUSTOMERNAME}</div>
+            {order.CUSTOMERRUT && <div>RUT: {order.CUSTOMERRUT}</div>}
+            {order.CUSTOMERPHONE && <div>Tel: {order.CUSTOMERPHONE}</div>}
+            {order.CUSTOMEREMAIL && <div style={{ color: '#4b5563' }}>{order.CUSTOMEREMAIL}</div>}
+          </div>
+        </div>
+        <div style={{ flex: 1, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ background: '#f3f4f6', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#374151' }}>Envío</div>
+          <div style={{ padding: '8px 12px' }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>{order.SHIPPINGAGENCY || 'Sin agencia'}</div>
+            <div>{order.ADDRESS || '—'}</div>
+            <div style={{ color: '#4b5563' }}>{[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</div>
+            {displayAdditionalInfo && <div style={{ color: '#4b5563', fontStyle: 'italic' }}>{displayAdditionalInfo}</div>}
+            <div style={{ marginTop: 2 }}>N° Seguimiento: <strong>{(order as any).TRACKINGNUMBER || '—'}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      {customerNote && (
+        <div style={{ border: '1px solid #fcd34d', background: '#fffbeb', borderRadius: 8, padding: '6px 12px', marginBottom: 12, fontSize: 11 }}>
+          <strong>Nota del cliente:</strong> {customerNote}
+        </div>
+      )}
+
+      {/* Productos (sin imágenes) */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
+        <thead>
+          <tr style={{ background: '#111827', color: '#fff', textAlign: 'left' }}>
+            <th style={{ padding: '6px 8px', width: 90 }}>SKU</th>
+            <th style={{ padding: '6px 8px' }}>Producto</th>
+            <th style={{ padding: '6px 8px', textAlign: 'center', width: 44 }}>Cant.</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right', width: 70 }}>Precio</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right', width: 80 }}>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid #e5e7eb', background: i % 2 ? '#f9fafb' : '#fff' }}>
+              <td style={{ padding: '5px 8px', fontFamily: 'monospace', color: '#6b21a8' }}>{(it.id ? productSkus[it.id] : '') || (it as any).sku || '—'}</td>
+              <td style={{ padding: '5px 8px' }}>{it.name}{(it as any).missing ? <strong style={{ color: '#b91c1c' }}> (FALTANTE)</strong> : ''}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 700 }}>{it.qty}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right' }}>{fmt(it.price)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>{fmt(it.total || it.price * it.qty)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Totales */}
+      <div style={{ marginTop: 12, marginLeft: 'auto', width: 260, fontSize: 12, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px' }}><span style={{ color: '#6b7280' }}>Subtotal</span><span>{fmt(order.SUBTOTAL || order.TOTAL)}</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px' }}><span style={{ color: '#6b7280' }}>Envío</span><span>{order.SHIPPINGCOST > 0 ? fmt(order.SHIPPINGCOST) : 'Contraentrega'}</span></div>
+        {order.DISCOUNTAMOUNT && order.DISCOUNTAMOUNT > 0 ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px', color: '#15803d' }}><span>Descuento {order.COUPONCODE ? `(${order.COUPONCODE})` : ''}</span><span>-{fmt(order.DISCOUNTAMOUNT)}</span></div>
+        ) : null}
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: '#111827', color: '#fff', fontWeight: 800, fontSize: 14 }}><span>TOTAL</span><span>{fmt(order.TOTAL)}</span></div>
+      </div>
+
+      <div style={{ marginTop: 16, paddingTop: 8, borderTop: '1px dashed #d1d5db', fontSize: 9, color: '#9ca3af', textAlign: 'center' }}>
+        Documento interno de preparación · {order.ORDERCODE} · Generado el {new Date().toLocaleDateString('es-CL')}
+      </div>
+    </div>
+
+    <div className="print-area print:hidden max-w-6xl mx-auto space-y-4 sm:space-y-5 px-1 sm:px-0">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -1117,141 +1310,151 @@ export default function OrderDetailPage() {
             <p className="text-xs sm:text-sm text-gray-500 truncate">{fmtDate(date.getTime())} · {fmtTime(date.getTime())} · Hace {ageStr}</p>
           </div>
         </div>
-        <div className="no-print flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <button onClick={() => copyOrderItemsList('barcode')} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition">
-            {copied === 'copiedBarcode' ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-green-600 animate-pulse" />
-                <span>Copiado (Barra)</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copiar (Barra)</span>
-              </>
-            )}
+        <div className="no-print flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap">
+          <button onClick={() => {
+            const statusLabelC = displayStatusLabel(order.STATUS, order.SHIPPINGAGENCY);
+            const textC = `Pedido: ${order.ORDERCODE}\nCliente: ${order.CUSTOMERNAME}\nRUT: ${order.CUSTOMERRUT || '-'}\nTeléfono: ${order.CUSTOMERPHONE || '-'}\nDirección: ${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}\nAgencia: ${order.SHIPPINGAGENCY || '-'}\nTotal: ${fmt(order.TOTAL)}\nEstado: ${statusLabelC}`;
+            copyText(textC, 'all');
+          }} className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-100 transition">
+            {copied === 'all' ? <><Check className="w-3.5 h-3.5 text-green-600 animate-pulse" /><span className="hidden xs:inline sm:inline">Copiado</span></> : <><Copy className="w-3.5 h-3.5" /><span className="hidden xs:inline sm:inline">Datos</span></>}
           </button>
           <button onClick={() => copyOrderItemsList('sku')} className="flex items-center gap-1.5 px-2 py-1.5 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl text-xs font-semibold hover:bg-violet-100 transition">
             {copied === 'copiedSku' ? (
               <>
                 <Check className="w-3.5 h-3.5 text-green-600 animate-pulse" />
-                <span>Copiado (SKU)</span>
+                <span className="hidden xs:inline sm:inline">Copiado</span>
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5" />
-                <span>Copiar (SKU)</span>
+                <span className="hidden xs:inline sm:inline">SKU</span>
               </>
             )}
           </button>
           <button onClick={() => window.print()} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white border border-gray-250 text-gray-600 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-50 transition">
             <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir</span>
           </button>
-          <button
-            onClick={() => {
-              const productExtraInfo: Record<string, any> = {};
-              for (const item of items) {
-                if (item.id) {
-                  productExtraInfo[item.id] = {
-                    sku: productSkus[item.id] || (item as any).sku || '',
-                    location: productLocations[item.id] || null
-                  };
-                }
-              }
-              generateOrderPdf(order as any, items as any, productExtraInfo);
-            }}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white border border-gray-250 text-indigo-700 rounded-xl text-xs sm:text-sm font-semibold hover:bg-indigo-50/40 transition"
-          >
-            <FileText className="w-4 h-4" /> <span className="hidden sm:inline">Descargar PDF</span>
-          </button>
-          {order.PAYMENTPROOFURL && (
-            <button onClick={() => setProofOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-emerald-100 transition">
-              <ImageIcon className="w-4 h-4" /> <span className="hidden sm:inline">Comprobante</span>
-            </button>
-          )}
-          <button onClick={load} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600 flex-shrink-0">
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
-          </button>
         </div>
       </div>
 
       {/* Summary cards (mobile-friendly) */}
-      <div className="no-print grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 p-3 sm:p-4 text-center shadow-sm">
-          <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-medium">Total</p>
-          <p className="text-lg sm:text-xl font-bold text-gray-900 mt-0.5">{fmt(order.TOTAL)}</p>
-        </div>
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 p-3 sm:p-4 text-center shadow-sm">
-          <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-medium">Items</p>
-          <p className="text-lg sm:text-xl font-bold text-gray-900 mt-0.5">{totalItems} <span className="text-xs font-normal text-gray-400">uds</span></p>
-        </div>
-        <div className={`rounded-xl sm:rounded-2xl border p-3 sm:p-4 text-center shadow-sm ${sc.bg} ${sc.border}`}>
-          <p className={`text-[10px] sm:text-xs uppercase tracking-wide font-medium ${sc.text}`}>Estado</p>
-          <p className={`text-sm sm:text-base font-bold mt-0.5 ${sc.text}`}>{sc.icon} {sc.label.split(' ')[0]}</p>
-        </div>
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 p-3 sm:p-4 text-center shadow-sm">
-          <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-medium">Antigüedad</p>
-          <p className={`text-lg sm:text-xl font-bold mt-0.5 ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>{ageStr}</p>
-        </div>
-      </div>
+      {(() => {
+        const statusHex = isReadyRetiro ? '#c026d3' : (STATUS_HEX[order.STATUS] || '#6b7280');
+        const cards: { label: string; value: React.ReactNode; hex: string; icon: React.ReactNode }[] = [
+          { label: 'Total', hex: '#4f46e5', value: fmt(order.TOTAL), icon: <DollarSign className="w-4 h-4 text-white" /> },
+          { label: 'Items', hex: '#d97706', value: <>{totalItems} <span className="text-xs font-semibold text-gray-400">uds</span></>, icon: <Package className="w-4 h-4 text-white" /> },
+          { label: 'Estado', hex: statusHex, value: <span style={{ color: statusHex }}>{sc.label}</span>, icon: <span className="text-base leading-none">{sc.icon}</span> },
+          { label: 'Antigüedad', hex: isOverdue ? '#ef4444' : '#64748b', value: <span style={{ color: isOverdue ? '#dc2626' : undefined }}>{ageStr}</span>, icon: <Clock className="w-4 h-4 text-white" /> },
+        ];
+        return (
+          <div className="no-print grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+            {cards.map((c, i) => (
+              <div key={i} className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 sm:p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${c.hex}12, transparent 70%)` }} />
+                <div className="relative flex items-center gap-2 mb-2">
+                  <span className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `linear-gradient(145deg, ${c.hex}, ${c.hex}d9)`, boxShadow: `0 3px 8px -3px ${c.hex}99, inset 0 1px 1px rgba(255,255,255,0.4)` }}>
+                    {c.icon}
+                  </span>
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-wide font-bold text-gray-400">{c.label}</p>
+                </div>
+                <p className="relative text-base sm:text-xl font-extrabold text-gray-900 tracking-tight leading-tight truncate">{c.value}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Status Stepper */}
       {!isCancelled ? (
-        <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-5">
-          <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg">{sc.icon}</span>
-              <p className={`text-xs sm:text-sm font-bold ${sc.text}`}>{sc.label}</p>
+        <div className="no-print relative rounded-[20px] overflow-hidden border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
+          {/* Ambient sutil */}
+          <div className="absolute -top-16 -left-10 w-52 h-52 rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${(isReadyRetiro ? '#c026d3' : (STATUS_HEX[order.STATUS] || '#6366f1'))}0d, transparent 70%)` }} />
+
+          {/* Header */}
+          <div className="relative flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg" style={{ background: `linear-gradient(145deg, ${(isReadyRetiro ? '#c026d3' : (STATUS_HEX[order.STATUS] || '#6b7280'))}, ${(isReadyRetiro ? '#c026d3' : (STATUS_HEX[order.STATUS] || '#6b7280'))}d9)`, boxShadow: `0 3px 8px -3px ${(isReadyRetiro ? '#c026d3' : (STATUS_HEX[order.STATUS] || '#6b7280'))}99, inset 0 1px 1px rgba(255,255,255,0.4)` }}>
+                {sc.icon}
+              </span>
+              <div>
+                <p className="text-sm sm:text-base font-extrabold text-gray-900 leading-tight tracking-tight">{sc.label}</p>
+                <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium leading-tight flex items-center gap-1">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                  Toca un paso para cambiar el estado
+                </p>
+              </div>
             </div>
-            <div className="no-print relative">
-              <select value={order.STATUS} onChange={e => handleStatusChange(e.target.value)} disabled={updating}
-                className="appearance-none text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 pr-7 sm:pr-8 bg-white text-gray-800 border-gray-200 disabled:opacity-50">
-                {Object.entries(STATUS_CONFIG).map(([k, v]) => {
-                  const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-                  const label = (k === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : v.label;
-                  return <option key={k} value={k}>{v.icon} {label}</option>;
-                })}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 sm:w-4 h-3 sm:h-4 pointer-events-none text-gray-400" />
+            <button
+              onClick={() => handleStatusChange('negotiation')}
+              disabled={updating || order.STATUS === 'negotiation'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition disabled:opacity-60 hover:-translate-y-0.5"
+              style={{ background: order.STATUS === 'negotiation' ? '#ec4899' : '#fdf2f8', color: order.STATUS === 'negotiation' ? '#fff' : '#db2777', border: '1px solid #fbcfe8' }}>
+              🤝 {order.STATUS === 'negotiation' ? 'En negociación' : 'Negociación'}
+            </button>
+          </div>
+
+          {/* Progress rail */}
+          <div className="relative overflow-x-auto pb-1">
+            <div className="flex items-start gap-0 min-w-max">
+              {STATUS_FLOW.map((step, i) => {
+                const isReadyRetiroStep = step === 'ready_to_ship' && isRetiro;
+                const hex = isReadyRetiroStep ? '#c026d3' : (STATUS_HEX[step] || '#6b7280');
+                const label = displayStatusLabel(step, order.SHIPPINGAGENCY);
+                const isCompleted = i < currentStepIdx;
+                const isCurrent = i === currentStepIdx;
+                const isFuture = i > currentStepIdx;
+                const nextHex = STATUS_HEX[STATUS_FLOW[i + 1]] || hex;
+                return (
+                  <React.Fragment key={step}>
+                    <button type="button" onClick={() => !isCurrent && handleStatusChange(step)} disabled={updating || isCurrent}
+                      title={`Cambiar a "${label}"`}
+                      className="group flex flex-col items-center gap-1.5 flex-shrink-0 disabled:cursor-default" style={{ width: 70 }}>
+                      <div className="relative transition-transform duration-200 group-hover:enabled:-translate-y-0.5 group-enabled:group-hover:scale-105" style={{ animation: isCurrent ? 'kcdFloat 2.6s ease-in-out infinite' : undefined, marginBottom: 4 }}>
+                        {isCurrent && <span className="absolute inset-0 rounded-[13px]" style={{ ['--kcd' as any]: `${hex}3d`, animation: 'kcdPulse 2.2s ease-out infinite' }} />}
+                        <div className="relative flex items-center justify-center rounded-[13px] transition-all duration-300"
+                          style={{
+                            width: isCurrent ? 42 : 34,
+                            height: isCurrent ? 42 : 34,
+                            background: isFuture ? 'linear-gradient(160deg,#ffffff,#f1f5f9)' : `linear-gradient(160deg, rgba(255,255,255,0.22), rgba(0,0,0,0.12)), ${hex}`,
+                            border: isFuture ? `1.5px dashed ${hex}3a` : '1px solid rgba(255,255,255,0.3)',
+                            boxShadow: isCurrent ? `0 0 0 3px ${hex}1a, 0 6px 14px -8px ${hex}aa, inset 0 1px 1px rgba(255,255,255,0.5)` : isFuture ? 'none' : `0 3px 9px -5px ${hex}80, inset 0 1px 1px rgba(255,255,255,0.45)`,
+                          }}>
+                          {isCompleted ? (
+                            <Check className="w-4 h-4 text-white" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' }} />
+                          ) : (
+                            <svg viewBox="0 0 100 100" className="w-4 h-4" style={{ color: isFuture ? `${hex}99` : '#fff', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' }} xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                              <circle cx="50" cy="50" r="25" fill="currentColor" />
+                            </svg>
+                          )}
+                          {!isFuture && <span className="absolute inset-x-1 top-1 h-1/3 rounded-full" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.45), transparent)' }} />}
+                        </div>
+                      </div>
+                      <span className="text-[8px] sm:text-[9px] font-bold text-center leading-tight transition-colors group-hover:enabled:text-gray-900" style={{ color: isCurrent ? hex : isFuture ? '#c2cbd6' : '#475569' }}>{label}</span>
+                    </button>
+                    {i < STATUS_FLOW.length - 1 && (
+                      <div className="relative self-start mt-[17px] flex-shrink-0 -mx-1 rounded-full overflow-hidden" style={{ height: 4, width: 24, background: isCompleted ? `linear-gradient(90deg, ${hex}, ${nextHex})` : '#e5e7eb' }}>
+                        {isCompleted && <span className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)', animation: `kcdShimmer 2.4s linear ${i * 0.18}s infinite` }} />}
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
-          {/* Progress bar */}
-          <div className="flex items-center gap-0.5 sm:gap-1">
-             {STATUS_FLOW.map((step, i) => {
-              const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-              const isReadyRetiro = step === 'ready_to_ship' && isRetiro;
-              const stepCfgRaw = STATUS_CONFIG[step];
-              const stepCfg = {
-                ...stepCfgRaw,
-                label: isReadyRetiro ? 'Listo para retirar' : stepCfgRaw.label,
-                bg: isReadyRetiro ? 'bg-fuchsia-50' : stepCfgRaw.bg,
-                text: isReadyRetiro ? 'text-fuchsia-700' : stepCfgRaw.text,
-                border: isReadyRetiro ? 'border-fuchsia-200' : stepCfgRaw.border,
-                dot: isReadyRetiro ? 'bg-fuchsia-400' : stepCfgRaw.dot,
-              };
-              const isCompleted = i <= currentStepIdx;
-              const isCurrent = i === currentStepIdx;
-              return (
-                <React.Fragment key={step}>
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 flex-1">
-                    <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${isCompleted ? `${stepCfg.bg} ${stepCfg.text} ${stepCfg.border} border` : 'bg-gray-100 text-gray-400 border border-gray-200'} ${isCurrent ? 'ring-2 ring-offset-1 sm:ring-offset-2 ring-indigo-300 scale-110' : ''}`}>
-                      {isCompleted && i < currentStepIdx ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : <span>{i + 1}</span>}
-                    </div>
-                    <span className={`text-[8px] sm:text-[9px] font-medium text-center leading-tight ${isCompleted ? stepCfg.text : 'text-gray-400'}`}>{stepCfg.label.split(' ')[0]}</span>
-                  </div>
-                  {i < STATUS_FLOW.length - 1 && (
-                    <div className={`h-0.5 flex-1 rounded-full transition-all ${i < currentStepIdx ? stepCfg.dot : 'bg-gray-200'}`} />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
+
           {order.STATUS === 'pending' && (
-            <p className="text-[10px] sm:text-xs text-amber-600 mt-2 sm:mt-3 flex items-center gap-1">
+            <p className="relative text-[10px] sm:text-xs text-amber-600 mt-3 flex items-center gap-1 font-semibold">
               <Clock className="w-3 h-3" /> Expira en {Math.max(0, Math.floor(((order.EXPIRESAT || date.getTime() + 3*3600000) - Date.now()) / 3600000))}h
             </p>
           )}
+
+          <style>{`
+            @keyframes kcdShimmer { 0% { transform: translateX(-110%); } 100% { transform: translateX(220%); } }
+            @keyframes kcdSheen { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+            @keyframes kcdPulse { 0% { box-shadow: 0 0 0 0 var(--kcd); } 70% { box-shadow: 0 0 0 11px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+            @keyframes kcdFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+          `}</style>
         </div>
       ) : (
         /* Cancelled banner */
@@ -1268,12 +1471,25 @@ export default function OrderDetailPage() {
           <div className="no-print relative">
             <select value={order.STATUS} onChange={e => handleStatusChange(e.target.value)} disabled={updating}
               className="appearance-none text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 pr-7 sm:pr-8 bg-white text-gray-800 border-gray-200">
-              {Object.entries(STATUS_CONFIG).map(([k, v]) => {
-                const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-                const label = (k === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : v.label;
-                return <option key={k} value={k}>{v.icon} {label}</option>;
-              })}
+              {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                <option key={k} value={k}>{v.icon} {displayStatusLabel(k, order.SHIPPINGAGENCY)}</option>
+              ))}
             </select>
+          </div>
+        </div>
+      )}
+
+      {/* ── Alerta: falta N° de seguimiento o voucher (agencias ≠ BluExpress) ── */}
+      {trackingPending && (
+        <div className="no-print rounded-xl sm:rounded-2xl border border-amber-300 bg-amber-50 p-3 sm:p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-amber-800">Seguimiento pendiente</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Este pedido se despachó por <strong>{order.SHIPPINGAGENCY}</strong>. Falta cargar el <strong>N° de seguimiento</strong> o subir la <strong>foto del voucher</strong> que entrega la agencia. (BluExpress no lo requiere — la etiqueta se imprime antes.)
+            </p>
           </div>
         </div>
       )}
@@ -1295,7 +1511,7 @@ export default function OrderDetailPage() {
               const isReplaced = !!(it as any).replaced;
               
               return (
-                <div key={idx} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                <div key={idx} className="py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap sm:flex-nowrap">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-8 h-8 rounded bg-gray-50 border overflow-hidden shrink-0 flex items-center justify-center">
                       {it.img ? <img src={it.img} className="w-full h-full object-contain" /> : <Package className="w-3 h-3 text-gray-300" />}
@@ -1430,17 +1646,68 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Location Map */}
+          {/* Location Map + verificación de dirección (no se imprime) */}
           {order.ADDRESS && (
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
+            <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2 flex-wrap">
                 <MapPinned className="w-4 h-4 text-indigo-500" />
-                <p className="font-semibold text-gray-900 text-xs sm:text-sm">
-                  Ubicación de entrega 
-                  {isGeolocated && <span className="ml-2 text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold border border-indigo-100">📍 Geolocalizado (GPS)</span>}
-                </p>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Ubicación de entrega</p>
+                {isGeolocated && <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold border border-indigo-100">📍 GPS</span>}
               </div>
-              <div className="aspect-[21/9] w-full">
+
+              {/* Comparación: dirección ingresada vs. detectada por GPS (siempre visible) */}
+              {(() => {
+                const ok = isGeolocated && geoAddressMatches;
+                const gpsAccent = !isGeolocated ? '#94a3b8' : geoLoading ? '#9ca3af' : ok ? '#22c55e' : '#ef4444';
+                const gpsBorder = !isGeolocated ? '#e5e7eb' : geoLoading ? '#e5e7eb' : ok ? '#bbf7d0' : '#fecaca';
+                const gpsBg = !isGeolocated ? '#f8fafc' : geoLoading ? '#f9fafb' : ok ? 'linear-gradient(160deg,#f0fdf4,#ffffff)' : 'linear-gradient(160deg,#fef2f2,#ffffff)';
+                return (
+                  <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 border-b border-gray-100">
+                    {/* Ingresada por el cliente */}
+                    <div className="rounded-xl border p-3" style={{ borderColor: '#bbf7d0', background: 'linear-gradient(160deg,#f0fdf4,#ffffff)' }}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center"><User className="w-3 h-3 text-white" /></span>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Dirección ingresada</p>
+                      </div>
+                      <p className="text-xs font-semibold text-gray-800 leading-snug">{order.ADDRESS}</p>
+                      <p className="text-[11px] text-gray-500">{[order.COMUNA, order.REGION].filter(Boolean).join(', ') || '—'}</p>
+                    </div>
+                    {/* Detectada por GPS */}
+                    <div className="rounded-xl border p-3" style={{ borderColor: gpsBorder, background: gpsBg }}>
+                      <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        <span className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: gpsAccent }}>
+                          <MapPin className="w-3 h-3 text-white" />
+                        </span>
+                        <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: !isGeolocated ? '#64748b' : geoLoading ? '#6b7280' : ok ? '#15803d' : '#b91c1c' }}>Detectada por GPS</p>
+                        {isGeolocated && !geoLoading && (
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full" style={{ background: ok ? '#dcfce7' : '#fee2e2', color: ok ? '#15803d' : '#b91c1c' }}>
+                            {ok ? '✓ COINCIDE' : '✕ DIFIERE'}
+                          </span>
+                        )}
+                      </div>
+                      {!isGeolocated ? (
+                        <p className="text-xs text-gray-400 leading-snug">El cliente no compartió su ubicación GPS en este pedido.</p>
+                      ) : geoLoading ? (
+                        <p className="text-xs text-gray-400 italic">Calculando dirección…</p>
+                      ) : detectedAddr ? (
+                        <>
+                          <p className="text-xs font-semibold text-gray-800 leading-snug">{detectedAddr.full || '—'}</p>
+                          <p className="text-[11px]" style={{ color: comunaMatches ? '#16a34a' : '#dc2626' }}>
+                            {detectedAddr.comuna || '—'}{detectedAddr.region ? <span style={{ color: regionMatches ? '#16a34a' : '#dc2626' }}>, {detectedAddr.region}</span> : null}
+                          </p>
+                          {!ok && (
+                            <p className="text-[10px] text-red-600 mt-1 leading-snug">⚠️ El cliente pudo haber hecho el pedido fuera de su casa. Verifica la dirección de envío.</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-xs text-gray-400 italic">No se pudo determinar.</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="aspect-[16/9] sm:aspect-[21/9] w-full">
                 <iframe
                   width="100%"
                   height="100%"
@@ -1472,18 +1739,6 @@ export default function OrderDetailPage() {
                   <p className="text-xs sm:text-sm text-pink-700 font-medium">🎁 Pedido marcado como regalo</p>
                 </div>
               )}
-              <div className="no-print">
-                <label className="text-[10px] sm:text-xs font-semibold text-gray-600 mb-1.5 block">Notas internas del admin</label>
-                <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)}
-                  rows={3} placeholder="Notas internas sobre este pedido..."
-                  className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-200 rounded-lg sm:rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
-                <div className="flex justify-end mt-1.5 sm:mt-2">
-                  <button onClick={saveNotes}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition ${notesSaved ? 'bg-green-100 text-green-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
-                    {notesSaved ? <><Check className="w-3 h-3" />Guardado</> : <><Save className="w-3 h-3" />Guardar</>}
-                  </button>
-                </div>
-              </div>
               {/* Timeline */}
               <div className="border-t border-gray-100 pt-3 sm:pt-4">
                 <p className="text-[10px] sm:text-xs font-semibold text-gray-500 mb-2 sm:mb-3 uppercase tracking-wide">Historial del pedido</p>
@@ -1496,8 +1751,7 @@ export default function OrderDetailPage() {
                     <TimelineEntry dot="bg-violet-400" title="Comprobante de envío subido" icon={<Truck className="w-3 h-3" />} />
                   )}
                   {order.UPDATEDAT && order.STATUS !== 'pending' && (() => {
-                    const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-                    const title = `Estado → ${(order.STATUS === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS)}`;
+                    const title = `Estado → ${displayStatusLabel(order.STATUS, order.SHIPPINGAGENCY)}`;
                     return (
                       <TimelineEntry dot={STATUS_CONFIG[order.STATUS]?.dot || 'bg-gray-400'} title={title} date={`${fmtDate(order.UPDATEDAT)} ${fmtTime(order.UPDATEDAT)}`} />
                     );
@@ -1539,7 +1793,7 @@ export default function OrderDetailPage() {
                   <select
                     value={selectedAgency}
                     onChange={e => setSelectedAgency(e.target.value)}
-                    className="text-sm font-bold border border-violet-200 rounded-lg px-2 py-1.5 bg-violet-50 text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    className="text-xs sm:text-sm font-bold border border-violet-200 rounded-lg px-2 py-1.5 bg-violet-50 text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-300 flex-1 min-w-[140px]"
                   >
                     <option value="">Seleccionar agencia</option>
                     {agencies.map(a => (
@@ -1586,7 +1840,7 @@ export default function OrderDetailPage() {
                 <div className="flex flex-col gap-1.5">
                   <p className="text-[10px] sm:text-xs font-semibold text-gray-500">N° de Seguimiento</p>
                   {editingTracking ? (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-col sm:flex-row">
                       <input
                         type="text"
                         value={trackingNumber}
@@ -1629,8 +1883,8 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              {/* Comprobante de envío */}
-              {(order.SHIPPINGPROOFURL || order.STATUS === 'preparing_shipping') && (
+              {/* Comprobante de envío / voucher de la agencia (no BluExpress) */}
+              {(order.SHIPPINGPROOFURL || order.STATUS === 'preparing_shipping' || (['ready_to_ship', 'shipped', 'delivered'].includes(order.STATUS) && !orderIsPickup && !orderIsBluexpress)) && (
                 <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
                   {order.SHIPPINGPROOFURL ? (
                     <div className="flex gap-2 w-full no-print">
@@ -1680,6 +1934,49 @@ export default function OrderDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Fotos de las cajas (registro antes de despachar) */}
+          {showBoxPhotos && (
+            <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-cyan-500" />
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Fotos de las cajas</p>
+                <span className="ml-auto text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">{boxPhotos.length} foto{boxPhotos.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="p-3 sm:p-5 space-y-3">
+                <p className="text-[10px] sm:text-xs text-gray-400">Registro fotográfico de las cajas antes del despacho (opcional).</p>
+                {boxPhotos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {boxPhotos.map((url) => (
+                      <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                        <a href={url} target="_blank" rel="noreferrer">
+                          <img src={url} alt="Caja" className="w-full h-full object-cover" />
+                        </a>
+                        <button onClick={() => handleDeleteBoxPhoto(url)} title="Eliminar"
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-cyan-50 border border-cyan-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-cyan-100 transition group">
+                  <input type="file" accept="image/*" multiple onChange={handleUploadBoxPhotos} className="hidden" disabled={uploadingBoxPhoto} />
+                  {uploadingBoxPhoto ? (
+                    <>
+                      <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs text-cyan-700 font-medium">Subiendo fotos...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-500 flex-shrink-0 group-hover:text-cyan-600" />
+                      <p className="text-[10px] sm:text-xs text-cyan-700 font-medium">Subir foto(s) de las cajas</p>
+                    </>
+                  )}
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* Payment */}
           <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -1750,15 +2047,6 @@ export default function OrderDetailPage() {
                 <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" /> WhatsApp Pago Pendiente
               </a>
             )}
-            <button onClick={() => {
-              const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-              const statusLabel = (order.STATUS === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS);
-              const text = `Pedido: ${order.ORDERCODE}\nCliente: ${order.CUSTOMERNAME}\nRUT: ${order.CUSTOMERRUT || '-'}\nTeléfono: ${order.CUSTOMERPHONE || '-'}\nDirección: ${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}\nAgencia: ${order.SHIPPINGAGENCY || '-'}\nTotal: ${fmt(order.TOTAL)}\nEstado: ${statusLabel}`;
-              copyText(text, 'all');
-            }}
-              className="flex items-center gap-2 w-full p-2 sm:p-2.5 bg-gray-50 border border-gray-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-100 transition">
-              {copied === 'all' ? <><Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" /> Copiado</> : <><Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Copiar datos</>}
-            </button>
             {order.STATUS !== 'cancelled' && (
               <button onClick={() => handleStatusChange('cancelled')}
                 className="flex items-center gap-2 w-full p-2 sm:p-2.5 bg-red-50 border border-red-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium text-red-600 hover:bg-red-100 transition">
@@ -1794,9 +2082,9 @@ export default function OrderDetailPage() {
             if (hasNegotiations && !isMissing && !isReplaced) return null;
 
             return (
-              <div key={i} className={`flex flex-col gap-2 px-3 sm:px-5 py-3.5 hover:bg-gray-50/50 transition border-b border-gray-100 last:border-0 ${isMissing ? 'bg-red-50/80 border-l-4 border-l-red-500' : isReplaced ? 'bg-emerald-50/40 border-l-4 border-l-emerald-400' : ''}`}>
-                <div className="flex items-center gap-2.5 sm:gap-4">
-                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+              <div key={i} className={`flex flex-col gap-2 px-3 sm:px-5 py-3 sm:py-3.5 hover:bg-gray-50/50 transition border-b border-gray-100 last:border-0 ${isMissing ? 'bg-red-50/80 border-l-4 border-l-red-500' : isReplaced ? 'bg-emerald-50/40 border-l-4 border-l-emerald-400' : ''}`}>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
                     {it.img
                       ? <img src={it.img} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
                       : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />}
@@ -1908,7 +2196,7 @@ export default function OrderDetailPage() {
 
                 {/* Actions row for this product inside order */}
                 {['pending', 'processing', 'paid', 'assembling', 'negotiation'].includes(order.STATUS) && (
-                  <div className="flex items-center gap-2 mt-1 sm:pl-18 no-print flex-wrap">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mt-1 sm:pl-18 no-print flex-wrap">
                     <button
                       onClick={() => toggleMissingItem(i)}
                       className={`text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg transition border ${isMissing ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
@@ -2032,8 +2320,8 @@ function InfoRow({ icon, label, value, onCopy, copied }: { icon: React.ReactNode
         </div>
       </div>
       <button onClick={onCopy}
-        className="no-print p-1 rounded-md hover:bg-gray-100 text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
-        {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+        className="no-print p-1.5 sm:p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-500 sm:opacity-0 sm:group-hover:opacity-100 transition flex-shrink-0">
+        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
     </div>
   );

@@ -66,7 +66,6 @@ const NAV_GROUPS: NavGroup[] = [
         { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
-        { href: '/admin/blocked-products', label: 'Productos Bloqueados', icon: Ico.Sparkles },
       ]},
       { href: '', label: 'INVENTARIO', icon: Ico.Inventario, children: [
         { href: '/admin/inventory',      label: 'Stock',           icon: Ico.Inventario },
@@ -90,6 +89,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '', label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders', children: [
       { href: '/admin/orders',            label: 'Todos los Pedidos', icon: Ico.Pedidos, badge: 'orders' },
       { href: '/admin/orders/negotiation', label: 'Negociación',       icon: Ico.Pedidos },
+      { href: '/admin/blocked-products',  label: 'Productos Bloqueados', icon: Ico.Sparkles },
     ]},
     { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },

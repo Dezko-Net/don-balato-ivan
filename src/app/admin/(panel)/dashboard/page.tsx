@@ -1436,128 +1436,12 @@ interface DashboardCacheData {
   pageViews: any;
   topViewedProducts: any[];
   lastRefresh: Date;
-  costStats?: any;
 }
 
 let dashboardCache: {
   timestamp: number;
   data: DashboardCacheData;
 } | null = null;
-
-function TestPeriodBanner() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [salesData, setSalesData] = useState<Order[]>([]);
-  const [percent, setPercent] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
-  const [timeLeft, setTimeLeft] = useState('00:00:00');
-
-  useEffect(() => {
-    const START_TIME = new Date('2026-06-16T02:55:00-04:00').getTime();
-    const END_TIME = new Date('2026-06-17T02:55:00-04:00').getTime();
-    const TOTAL_DURATION = END_TIME - START_TIME;
-
-    const update = () => {
-      const now = Date.now();
-      if (now >= END_TIME) {
-        setTimeLeft('00:00:00');
-        setPercent(100);
-        setIsFinished(true);
-        return;
-      }
-      
-      const elapsed = Math.max(0, now - START_TIME);
-      const calculatedPct = Math.min(100, (elapsed / TOTAL_DURATION) * 100);
-      setPercent(calculatedPct);
-
-      const remaining = END_TIME - now;
-      const hours = Math.floor(remaining / 3600000);
-      const minutes = Math.floor((remaining % 3600000) / 60000);
-      const seconds = Math.floor((remaining % 60000) / 1000);
-
-      const formatNum = (num: number) => String(num).padStart(2, '0');
-      setTimeLeft(`${formatNum(hours)}:${formatNum(minutes)}:${formatNum(seconds)}`);
-    };
-
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div style={{
-      background: 'linear-gradient(135deg, #1e1b4b 0%, #311042 100%)',
-      borderRadius: 14,
-      border: '1px solid rgba(168, 85, 247, 0.2)',
-      padding: '16px 20px',
-      marginBottom: 20,
-      color: '#fff',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Subtle glow in background */}
-      <div style={{
-        position: 'absolute',
-        top: -50,
-        right: -50,
-        width: 150,
-        height: 150,
-        borderRadius: '50%',
-        background: 'rgba(168, 85, 247, 0.15)',
-        filter: 'blur(30px)',
-        pointerEvents: 'none'
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            background: 'rgba(168, 85, 247, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <span style={{ fontSize: 16 }}>⏱️</span>
-          </div>
-          <div>
-            <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f3e8ff', letterSpacing: '0.02em' }}>
-              PERIODO DE PRUEBA DE 24 HORAS: OPTIMIZACIÓN APPWRITE
-            </h4>
-            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#d8b4fe' }}>
-              Monitoreo del consumo de lecturas para validar la efectividad de las soluciones aplicadas.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <span style={{ fontSize: 10, color: '#a78bfa', fontWeight: 600, textTransform: 'uppercase' }}>Tiempo Restante</span>
-          <span style={{ fontSize: 20, fontWeight: 800, color: '#f3e8ff', fontFamily: 'monospace', letterSpacing: '1px' }}>
-            {timeLeft}
-          </span>
-        </div>
-      </div>
-
-      {/* Progress Bar Container */}
-      <div style={{ width: '100%', height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
-        <div style={{
-          width: `${percent}%`,
-          height: '100%',
-          background: 'linear-gradient(90deg, #8b5cf6, #ec4899)',
-          borderRadius: 10,
-          transition: 'width 1s linear'
-        }} />
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#c084fc', fontWeight: 500 }}>
-        <span>Inicio: 16 Jun, 02:55</span>
-        <span>{isFinished ? 'Prueba Finalizada 🎉' : 'Meta: Mantener lecturas < 60k'}</span>
-        <span>Fin: 17 Jun, 02:55</span>
-      </div>
-    </div>
-  );
-}
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -1579,17 +1463,6 @@ export default function DashboardPage() {
   const [prevRevenue, setPrevRevenue]         = useState(0);
   const [prevOrders, setPrevOrders]           = useState(0);
   const [pageViews, setPageViews]             = useState<{ totalViews: number; todayViews: number; topPages: { page: string; views: number }[]; topComunas: { comuna: string; count: number; lat: number; lng: number }[]; visitorMarkers: { comuna: string; region: string; lat: number; lng: number; count: number; users: string[] }[] }>({ totalViews: 0, todayViews: 0, topPages: [], topComunas: [], visitorMarkers: [] });
-  const [costStats, setCostStats] = useState<{
-    databaseReadsTotal: number;
-    databaseWritesTotal: number;
-    todayReads: number;
-    sevenDaysReads?: number;
-    history: { date: string; value: number }[];
-    collections: { products: number; orders: number; inventory: number };
-    lastUpdated: string;
-    cached?: boolean;
-  } | null>(null);
-
   const [duplicateSkusList, setDuplicateSkusList] = useState<string[]>([]);
   const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
   const [lastDuplicateScanTime, setLastDuplicateScanTime] = useState<string | null>(null);
@@ -1626,27 +1499,12 @@ export default function DashboardPage() {
       setPageViews(cached.pageViews);
       setTopViewedProducts(cached.topViewedProducts);
       setLastRefresh(cached.lastRefresh);
-      if (cached.costStats) {
-        setCostStats(cached.costStats);
-      }
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true); setError('');
     try {
-      // Fetch cost statistics from API route
-      let costData = null;
-      try {
-        const costRes = await fetch('/api/admin/appwrite-usage');
-        if (costRes.ok) {
-          costData = await costRes.json();
-          setCostStats(costData);
-        }
-      } catch (errCost) {
-        console.error('Error fetching cost stats in dashboard:', errCost);
-      }
-
       const refreshDate = new Date();
       setLastRefresh(refreshDate);
 
@@ -1667,7 +1525,6 @@ export default function DashboardPage() {
           pageViews: { totalViews: 0, todayViews: 0, topPages: [], topComunas: [], visitorMarkers: [] },
           topViewedProducts: [],
           lastRefresh: refreshDate,
-          costStats: costData,
         }
       };
 
@@ -2100,279 +1957,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
-      {/* ═══ Monitoreo de Costos en Tiempo Real ═══ */}
-      <div className="db-card" style={{
-        background: '#ffffff',
-        borderRadius: 16,
-        border: '1px solid #e5e7eb',
-        padding: 24,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        marginBottom: 24,
-        color: '#1e293b',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Grilla de fondo sutil */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 50%)',
-          pointerEvents: 'none'
-        }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12, position: 'relative', zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
-            }}>
-              <Database size={18} color="#fff" />
-            </div>
-            <div>
-              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                Monitoreo de Costos y Recursos Appwrite
-              </h2>
-              <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>
-                Métricas de consumo en tiempo real para optimización de facturación
-              </p>
-            </div>
-          </div>
-
-          {costStats && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '4px 12px', borderRadius: 20, border: '1px solid #e2e8f0' }}>
-              <span style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: costStats.cached ? '#f59e0b' : '#10b981',
-                boxShadow: costStats.cached ? '0 0 6px #f59e0b' : '0 0 6px #10b981',
-                display: 'inline-block'
-              }} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#475569' }}>
-                {costStats.cached ? 'Caché Servidor (15m)' : 'Métricas Frescas'} · Actualizado {new Date(costStats.lastUpdated).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {!costStats ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 0' }}>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
-              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
-              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
-            </div>
-            <div style={{ height: 120, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
-          </div>
-        ) : (
-          <div style={{ position: 'relative', zIndex: 10 }}>
-            <TestPeriodBanner />
-            {/* KPI Cards Grid */}
-            {/* KPI Cards Grid */}
-            {(() => {
-              const baselineReads = (new Date().toDateString() === new Date('2026-06-16T00:00:00-04:00').toDateString()) ? 24998 : 0;
-              const displayTodayReads = Math.max(0, costStats.todayReads - baselineReads);
-              const pct = Math.min(100, (displayTodayReads / 60000) * 100);
-              
-              let barColor = '#10b981'; // green
-              let textColor = '#059669';
-              let alertMsg = 'Consumo óptimo y seguro dentro de los límites de facturación de la prueba.';
-              let alertIcon = <span style={{ marginRight: 6 }}>🛡️</span>;
-              
-              if (pct >= 85) {
-                barColor = '#ef4444'; // red
-                textColor = '#dc2626';
-                alertMsg = '¡Alerta Crítica! Estás por superar el límite seguro diario de la prueba. Considera pausar operaciones.';
-                alertIcon = <AlertTriangle size={14} color="#ef4444" style={{ marginRight: 6 }} />;
-              } else if (pct >= 50) {
-                barColor = '#f59e0b'; // orange
-                textColor = '#d97706';
-                alertMsg = 'Consumo moderado durante la prueba.';
-                alertIcon = <AlertTriangle size={14} color="#f59e0b" style={{ marginRight: 6 }} />;
-              }
-
-              return (
-                <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-                    
-                    {/* KPI 1: Database Reads Today vs 60k limit */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Hoy (Netas de Prueba)</span>
-                        <Activity size={14} color="#6366f1" />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                        <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
-                          {displayTodayReads.toLocaleString()}
-                        </span>
-                        <span style={{ fontSize: 12, color: '#64748b' }}>
-                          / 60,000
-                        </span>
-                      </div>
-                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                        Límite diario recomendado para plan gratuito (1.8M/mes)
-                      </p>
-                    </div>
-
-                    {/* KPI 2: Database Reads Last 7 Days */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Últimos 7 Días</span>
-                        <Calendar size={14} color="#0891b2" />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                        <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
-                          {(costStats.sevenDaysReads || 0).toLocaleString()}
-                        </span>
-                        <span style={{ fontSize: 12, color: '#64748b' }}>
-                          / 420,000
-                        </span>
-                      </div>
-                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                        Consumo acumulado real de la última semana
-                      </p>
-                    </div>
-
-                    {/* KPI 3: Global Database Reads (30 days total) */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Totales (30d)</span>
-                        <Coins size={14} color="#10b981" />
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>
-                        {costStats.databaseReadsTotal.toLocaleString()}
-                      </div>
-                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                        Lecturas acumuladas en la base de datos este periodo
-                      </p>
-                    </div>
-
-                    {/* KPI 4: Global Database Writes (30 days total) */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Escrituras Totales (30d)</span>
-                        <Database size={14} color="#06b6d4" />
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#06b6d4' }}>
-                        {costStats.databaseWritesTotal.toLocaleString()}
-                      </div>
-                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                        Operaciones de escritura/modificación de documentos
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Progress alert gauge */}
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, marginBottom: 24 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                        Progreso del Límite de Seguridad de la Prueba (60,000)
-                      </span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: textColor }}>
-                        {pct.toFixed(1)}%
-                      </span>
-                    </div>
-                    
-                    {/* The actual progress bar */}
-                    <div style={{ width: '100%', height: 10, background: '#e2e8f0', borderRadius: 5, overflow: 'hidden', marginBottom: 12 }}>
-                      <div style={{
-                        width: `${pct}%`,
-                        height: '100%',
-                        background: `linear-gradient(90deg, ${barColor}, #6366f1)`,
-                        borderRadius: 5,
-                        transition: 'width 0.8s'
-                      }} />
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: '#334155', background: '#f1f5f9', padding: '10px 14px', borderRadius: 8, border: `1px solid ${barColor}25` }}>
-                      {alertIcon}
-                      <span>{alertMsg} (Base actual hoy: {costStats.todayReads.toLocaleString()})</span>
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-              
-              {/* Left: 30-Day Daily Reads History Chart */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Historial de Lecturas Diarias (Últimos 30 Días)
-                </h3>
-                {costStats.history && costStats.history.length > 0 ? (
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 120, fontSize: 9, color: '#64748b' }}>
-                      {(() => {
-                        const vals = costStats.history.map((h: any) => h.value);
-                        const maxVal = Math.max(...vals, 100);
-                        return [maxVal, Math.round(maxVal * 0.5), 0].map((v, i) => (
-                          <span key={i} style={{ textAlign: 'right' }}>{v.toLocaleString()}</span>
-                        ));
-                      })()}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <AreaChart data={costStats.history.map((h: any) => h.value)} color="#3b82f6" height={120} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 9, color: '#64748b' }}>
-                        <span>{costStats.history[0]?.date ? new Date(costStats.history[0].date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : 'Inicio'}</span>
-                        <span>{costStats.history[costStats.history.length - 1]?.date ? new Date(costStats.history[costStats.history.length - 1].date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : 'Hoy'}</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: 13 }}>
-                    Sin datos históricos disponibles
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Key Collections volume breakdown */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Volumen de Colecciones Clave
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {[
-                    { label: 'Productos', count: costStats.collections.products, color: '#0284c7', desc: 'Catálogo total e imágenes' },
-                    { label: 'Pedidos', count: costStats.collections.orders, color: '#db2777', desc: 'Historial de compras y carritos' },
-                    { label: 'Inventario', count: costStats.collections.inventory, color: '#059669', desc: 'Relación productos y stock' }
-                  ].map((col, idx) => {
-                    const maxCount = Math.max(costStats.collections.products, costStats.collections.orders, costStats.collections.inventory, 1);
-                    const barPct = (col.count / maxCount) * 100;
-                    return (
-                      <div key={idx} style={{ padding: '8px 12px', borderRadius: 10, background: '#ffffff', border: '1px solid #e2e8f0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <div>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{col.label}</span>
-                            <span style={{ fontSize: 10, color: '#64748b', marginLeft: 6 }}>({col.desc})</span>
-                          </div>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: col.color }}>
-                            {col.count.toLocaleString()} <span style={{ fontSize: 9, fontWeight: 400, color: '#64748b' }}>docs</span>
-                          </span>
-                        </div>
-                        <div style={{ height: 4, background: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${barPct}%`, background: col.color, borderRadius: 2 }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p style={{ fontSize: 9, color: '#64748b', margin: '10px 0 0', lineHeight: 1.3, fontStyle: 'italic' }}>
-                  * El total de documentos actúa como un proxy del volumen de almacenamiento de la colección.
-                </p>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* ═══ Vista en tiempo real ═══ */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 24 }}>

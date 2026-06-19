@@ -2,34 +2,98 @@
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Query } from 'appwrite';
+import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, OrderStatus } from '@/types/admin';
-import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
-import { getWarehouseLocationFromFeatures } from '@/lib/product-features';
+import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package } from 'lucide-react';
+import { getWarehouseLocationFromFeatures, getSkuFromFeatures } from '@/lib/product-features';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
+
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'ready_to_ship', 'shipped', 'delivered'];
+
+// BluExpress no requiere paso extra (etiqueta se imprime antes); retiro en tienda termina antes.
+const isBluexpress = (agency?: string) => !!agency && agency.toUpperCase().replace(/\s/g, '').includes('BLUEXPRESS');
+const isPickup = (agency?: string) => !!agency && agency.toUpperCase() === 'RETIRO EN TIENDA';
+// Pedido de agencia (no BluExpress, no retiro) ya despachado pero sin N° de seguimiento ni voucher.
+const needsTracking = (o: Order) =>
+  ['shipped', 'delivered'].includes(o.STATUS) &&
+  !!o.SHIPPINGAGENCY && !isPickup(o.SHIPPINGAGENCY) && !isBluexpress(o.SHIPPINGAGENCY) &&
+  !(o.TRACKINGNUMBER && o.TRACKINGNUMBER.trim()) && !(o.SHIPPINGPROOFURL && o.SHIPPINGPROOFURL.trim());
+
+const STATUS_SVG: Record<string, React.ReactNode> = {
+  pending:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
+  processing:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
+  paid:               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 11.5l2 2 4-4"/></svg>,
+  assembling:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V3h12v6"/><path d="M6 17H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="7"/><circle cx="17.5" cy="12" r=".7"/></svg>,
+  confirming_stock:   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>,
+  stock_confirmed:    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 13l2 2 4-4"/></svg>,
+  packing:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5"/><path d="M12 22V12"/></svg>,
+  negotiation:        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-4 3V5a2 2 0 012-2h13a2 2 0 012 2z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/></svg>,
+  preparing_shipping: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
+  ready_to_ship:      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5L4 4h16l1 4.5"/><path d="M4 8.5V19a1 1 0 001 1h14a1 1 0 001-1V8.5"/><path d="M9.5 12.5h5"/></svg>,
+  shipped:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4h13v11H1z"/><path d="M14 8h4l3 3v4h-7z"/><circle cx="5.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>,
+  delivered:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18"/><path d="M9 21v-7h6v7"/></svg>,
+  cancelled:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+};
+
+const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
+  pending:            { color: '#f97316', bg: '#fff7ed' },
+  processing:         { color: '#3b82f6', bg: '#eff6ff' },
+  paid:               { color: '#10b981', bg: '#ecfdf5' },
+  assembling:         { color: '#6366f1', bg: '#eef2ff' },
+  confirming_stock:   { color: '#14b8a6', bg: '#f0fdfa' },
+  stock_confirmed:    { color: '#65a30d', bg: '#f7fee7' },
+  packing:            { color: '#d97706', bg: '#fffbeb' },
+  negotiation:        { color: '#ec4899', bg: '#fdf2f8' },
+  preparing_shipping: { color: '#f97316', bg: '#fff7ed' },
+  ready_to_ship:      { color: '#06b6d4', bg: '#ecfeff' },
+  shipped:            { color: '#8b5cf6', bg: '#f5f3ff' },
+  delivered:          { color: '#22c55e', bg: '#f0fdf4' },
+  cancelled:          { color: '#ef4444', bg: '#fef2f2' },
+};
 
 const PAGE_SIZE = 30;
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
-  pending:            { label: 'Pendiente',                 bg: 'bg-amber-100',   text: 'text-amber-700' },
-  processing:         { label: 'Pago a Verificar',          bg: 'bg-blue-100',    text: 'text-blue-700' },
-  paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  assembling:         { label: 'Armando',                   bg: 'bg-indigo-100',  text: 'text-indigo-700' },
-  negotiation:        { label: 'Negociación',                bg: 'bg-pink-100',    text: 'text-pink-700' },
-  preparing_shipping: { label: 'Etiqueta Lista', bg: 'bg-orange-100', text: 'text-orange-700' },
-  ready_to_ship:      { label: 'Pedido listo para enviar', bg: 'bg-cyan-100',    text: 'text-cyan-700' },
-  shipped:            { label: 'Enviado',                   bg: 'bg-violet-100',  text: 'text-violet-700' },
-  delivered:          { label: 'Entregado',                 bg: 'bg-green-100',   text: 'text-green-700' },
+  paid_group:         { label: 'Pagados',                   bg: 'bg-green-100',   text: 'text-green-700' },
+  pending:            { label: 'Pendiente',                 bg: 'bg-orange-100',  text: 'text-orange-700' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-100',     text: 'text-red-700' },
+  processing:         { label: 'Pago Recibido',             bg: 'bg-blue-100',    text: 'text-blue-700' },
+  paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  assembling:         { label: 'Imprimiendo Etiqueta',      bg: 'bg-indigo-100',  text: 'text-indigo-700' },
+  confirming_stock:   { label: 'Confirmando Stock',         bg: 'bg-teal-100',    text: 'text-teal-700' },
+  stock_confirmed:    { label: 'Stock Confirmado',          bg: 'bg-lime-100',    text: 'text-lime-700' },
+  packing:            { label: 'Embalando Pedido',          bg: 'bg-amber-100',   text: 'text-amber-700' },
+  negotiation:        { label: 'Negociación',               bg: 'bg-pink-100',    text: 'text-pink-700' },
+  preparing_shipping: { label: 'Etiqueta Lista',            bg: 'bg-orange-100',  text: 'text-orange-700' },
+  ready_to_ship:      { label: 'Listo para Despachar',      bg: 'bg-cyan-100',    text: 'text-cyan-700' },
+  shipped:            { label: 'Salió de Tienda',           bg: 'bg-violet-100',  text: 'text-violet-700' },
+  delivered:          { label: 'Entregado a Agencia',       bg: 'bg-green-100',   text: 'text-green-700' },
+};
+
+// Etiquetas cortas para los badges (evita el bug de label.split(' ')[0] que mostraba "Pago" en ambos)
+const SHORT_LABEL: Record<string, string> = {
+  pending:            'Pendiente',
+  processing:         'Recibido',
+  paid:               'Verificado',
+  assembling:         'Etiqueta',
+  confirming_stock:   'Confirmando',
+  stock_confirmed:    'Confirmado',
+  packing:            'Embalando',
+  negotiation:        'Negociación',
+  preparing_shipping: 'Etiqueta',
+  ready_to_ship:      'Despachar',
+  shipped:            'Salió',
+  delivered:          'Entregado',
+  cancelled:          'Cancelado',
 };
 
 const STATUS_KEYS = Object.keys(STATUS_CONFIG);
 
-type DateFilter = 'all' | 'today' | '7d' | '30d' | '90d';
-const DATE_FILTER_LABELS: Record<DateFilter, string> = { all: 'Todos', today: 'Hoy', '7d': '7d', '30d': '30d', '90d': '90d' };
+type DateFilter = 'all' | 'today' | 'yesterday' | 'day_before' | 'custom';
+const DATE_FILTER_LABELS: Record<DateFilter, string> = { all: 'Todos', today: 'Hoy', yesterday: 'Ayer', day_before: 'Anteayer', custom: 'Rango' };
 
 function OrdersContent() {
   const searchParams = useSearchParams();
@@ -38,7 +102,10 @@ function OrdersContent() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState(searchParams.get('status') || 'all');
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('today');
+  const [customDateStart, setCustomDateStart] = useState('');
+  const [customDateEnd, setCustomDateEnd] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -47,14 +114,93 @@ function OrdersContent() {
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [liveOnly, setLiveOnly] = useState(false);
+  const [trackingPending, setTrackingPending] = useState(false);
   const filterUserId = searchParams.get('userId') || '';
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [timelineOrderId, setTimelineOrderId] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  // Stats cache — persists until manual refresh
+  const [statsCache, setStatsCache] = useState<{ totalToday: number; countToday: number; topCustomer: { name: string; total: number } | null; avgTicket: number; totalPaid: number; countPaid: number; byStatus: Record<string, number>; byStatusAll: Record<string, number>; byStatusYesterday: Record<string, number>; byStatusDayBefore: Record<string, number>; allOrdersRaw: any[]; totalYesterday: number; countYesterday: number; totalAll: number; countAll: number; } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   // page cursors: key = page number, value = cursor to use to reach that page
   const pageCursorsRef = React.useRef<Map<number, string | null>>(new Map([[1, null]]));
+
+  // Load stats — cached until manual refresh
+  const loadStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const nowCLT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+      const startToday = new Date(nowCLT.getFullYear(), nowCLT.getMonth(), nowCLT.getDate(), 0, 0, 0, 0).getTime();
+      const startYesterday = startToday - 86400000;
+      const startDayBefore = startToday - 2 * 86400000;
+
+      // Fetch all orders from last 3 days + all paid orders for stats
+      const allOrders: any[] = [];
+      let cursor: string | null = null;
+      while (true) {
+        const q: any[] = [Query.orderDesc('CREATEDAT'), Query.limit(100)];
+        if (cursor) q.push(Query.cursorAfter(cursor));
+        const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, q);
+        allOrders.push(...resp.documents);
+        if (resp.documents.length < 100) break;
+        cursor = resp.documents[resp.documents.length - 1].$id;
+        if (allOrders.length > 3000) break;
+      }
+
+      const todayOrders = allOrders.filter((o: any) => (o.CREATEDAT || new Date(o.$createdAt).getTime()) >= startToday);
+      const yesterdayOrders = allOrders.filter((o: any) => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= startYesterday && ts < startToday; });
+      const paidStatuses = ['processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+      const paidOrdersToday = todayOrders.filter((o: any) => paidStatuses.includes(o.STATUS));
+
+      // Top customer
+      const byCustomer: Record<string, { name: string; total: number }> = {};
+      for (const o of todayOrders) {
+        const key = o.CUSTOMERRUT || o.CUSTOMERNAME || 'anon';
+        if (!byCustomer[key]) byCustomer[key] = { name: o.CUSTOMERNAME || key, total: 0 };
+        byCustomer[key].total += o.TOTAL || 0;
+      }
+      const topEntries = Object.values(byCustomer).sort((a, b) => b.total - a.total);
+
+      // By status counts (today)
+      const byStatus: Record<string, number> = {};
+      for (const o of todayOrders) { byStatus[o.STATUS] = (byStatus[o.STATUS] || 0) + 1; }
+      // By status counts (all orders — cached, 1 read)
+      const byStatusAll: Record<string, number> = {};
+      for (const o of allOrders) { byStatusAll[o.STATUS] = (byStatusAll[o.STATUS] || 0) + 1; }
+      // By status counts (yesterday)
+      const byStatusYesterday: Record<string, number> = {};
+      for (const o of yesterdayOrders) { byStatusYesterday[o.STATUS] = (byStatusYesterday[o.STATUS] || 0) + 1; }
+      // By status counts (day before)
+      const dayBeforeOrders = allOrders.filter((o: any) => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= startDayBefore && ts < startYesterday; });
+      const byStatusDayBefore: Record<string, number> = {};
+      for (const o of dayBeforeOrders) { byStatusDayBefore[o.STATUS] = (byStatusDayBefore[o.STATUS] || 0) + 1; }
+
+      setStatsCache({
+        totalToday: todayOrders.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0),
+        countToday: todayOrders.length,
+        totalYesterday: yesterdayOrders.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0),
+        countYesterday: yesterdayOrders.length,
+        topCustomer: topEntries[0] || null,
+        avgTicket: paidOrdersToday.length > 0 ? Math.round(paidOrdersToday.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0) / paidOrdersToday.length) : 0,
+        totalPaid: paidOrdersToday.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0),
+        countPaid: paidOrdersToday.length,
+        byStatus,
+        byStatusAll,
+        byStatusYesterday,
+        byStatusDayBefore,
+        allOrdersRaw: allOrders,
+        totalAll: allOrders.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0),
+        countAll: allOrders.length,
+      });
+    } catch (e: any) { console.error('Stats error:', e); }
+    finally { setStatsLoading(false); }
+  }, []);
 
   // Load agencies list
   useEffect(() => {
@@ -89,13 +235,13 @@ function OrdersContent() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const queries = [Query.orderDesc('CREATEDAT'), Query.limit(PAGE_SIZE)];
-      if (activeFilter !== 'all') {
-        queries.push(Query.equal('STATUS', activeFilter));
-      } else {
+      if (activeFilter === 'paid_group') {
         queries.push(Query.equal('STATUS', [
-          'processing', 'paid', 'assembling',
-          'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped'
+          'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing',
+          'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'
         ]));
+      } else if (activeFilter !== 'all') {
+        queries.push(Query.equal('STATUS', activeFilter));
       }
       // Use stored cursor for the requested page
       const pageCursor = pageCursorsRef.current.get(page) ?? null;
@@ -160,6 +306,7 @@ function OrdersContent() {
     setCurrentPage(1);
     load(1);
     autoDeliverShippedOrders();
+    loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter]);
 
@@ -310,14 +457,28 @@ function OrdersContent() {
         o.adminNotes?.toLowerCase().includes(q)
       )) return false;
     }
-    if (dateFilter !== 'all') {
+    if (!trackingPending && dateFilter !== 'all' && (dateFilter !== 'custom' || customDateStart || customDateEnd)) {
       const ts = o.CREATEDAT || new Date(o.$createdAt).getTime();
+      const nowCLT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+      const startToday = new Date(nowCLT.getFullYear(), nowCLT.getMonth(), nowCLT.getDate(), 0, 0, 0, 0).getTime();
       if (dateFilter === 'today') {
-        const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
-        if (ts < startOfDay.getTime()) return false;
-      } else {
-        const days = { '7d': 7, '30d': 30, '90d': 90 }[dateFilter as '7d'|'30d'|'90d'];
-        if (days) { const cutoff = Date.now() - days * 86400000; if (ts < cutoff) return false; }
+        if (ts < startToday) return false;
+      } else if (dateFilter === 'yesterday') {
+        const startY = startToday - 86400000;
+        if (ts < startY || ts >= startToday) return false;
+      } else if (dateFilter === 'day_before') {
+        const startY = startToday - 86400000;
+        const startDB = startToday - 2 * 86400000;
+        if (ts < startDB || ts >= startY) return false;
+      } else if (dateFilter === 'custom') {
+        if (customDateStart) {
+          const startTs = new Date(customDateStart + 'T00:00:00-03:00').getTime();
+          if (ts < startTs) return false;
+        }
+        if (customDateEnd) {
+          const endTs = new Date(customDateEnd + 'T23:59:59-03:00').getTime();
+          if (ts > endTs) return false;
+        }
       }
     }
     if (paymentFilter !== 'all') {
@@ -329,50 +490,400 @@ function OrdersContent() {
       if (r !== regionFilter) return false;
     }
     if (liveOnly && !(o as any).PURCHASEDFROMLIVE) return false;
+    if (trackingPending && !needsTracking(o)) return false;
     return true;
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Pedidos</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-base sm:text-xl font-bold text-gray-900">Pedidos</h1>
+          <p className="text-xs sm:text-sm text-gray-500">
             {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
             {(() => { const items = filtered.reduce((s, o) => { try { return s + (JSON.parse(o.ITEMS || '[]') as any[]).reduce((a: number, i: any) => a + (i.quantity || 1), 0); } catch { return s; } }, 0); return items > 0 ? <span className="ml-2 text-xs text-gray-400">{items} artículos</span> : null; })()}
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={exportCSV} disabled={filtered.length === 0} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
-            <Download className="w-4 h-4" />CSV
+          {/* Date range selector */}
+          <button onClick={() => setShowDatePicker(true)}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-50 transition">
+            <Calendar className="w-4 h-4" />
+            <span className="hidden sm:inline">{dateFilter === 'custom' && customDateStart ? `${customDateStart}${customDateEnd ? ' → ' + customDateEnd : ''}` : DATE_FILTER_LABELS[dateFilter]}</span>
           </button>
-          <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); }} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Actualizar
+          <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); loadStats(); }} disabled={isLoading}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
       </div>
 
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+          onClick={() => setShowDatePicker(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-gray-800">Seleccionar fecha</h3>
+              <button onClick={() => setShowDatePicker(false)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl leading-none">×</button>
+            </div>
+            <div className="space-y-2 mb-4">
+            {(['today', 'yesterday', 'day_before'] as DateFilter[]).map(d => (
+              <button key={d} onClick={() => { setDateFilter(d); setShowDatePicker(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${dateFilter === d ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}>
+                <Calendar className="w-4 h-4" />
+                {DATE_FILTER_LABELS[d]}
+              </button>
+            ))}
+            </div>
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold text-gray-500 mb-2">Rango personalizado</p>
+              <div className="flex flex-col gap-2">
+                <input type="date" value={customDateStart} onChange={e => setCustomDateStart(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Desde" />
+                <input type="date" value={customDateEnd} onChange={e => setCustomDateEnd(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Hasta" />
+                <button onClick={() => { if (customDateStart) { setDateFilter('custom'); setShowDatePicker(false); } }}
+                  disabled={!customDateStart}
+                  className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition disabled:opacity-40">
+                  Aplicar rango
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Dashboard */}
+      {statsCache && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          {/* Total Hoy */}
+          <div className="relative rounded-2xl border border-gray-100/80 p-3 sm:p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(145deg, rgba(238,242,255,0.6), rgba(255,255,255,0.95))', boxShadow: '0 4px 16px -8px rgba(79,70,229,0.12)' }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg, #6366f1, #4f46e5)' }} />
+            <div className="flex items-center gap-2 mb-2 mt-0.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(145deg, rgba(99,102,241,0.12), rgba(79,70,229,0.06))' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-bold">Total Hoy</p>
+            </div>
+            <p className="text-lg sm:text-2xl font-extrabold text-gray-900 tracking-tight">{fmt(statsCache.totalToday)}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <p className="text-[10px] text-gray-400 font-medium">{statsCache.countToday} pedidos hoy</p>
+              {statsCache.countYesterday > 0 && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${statsCache.totalToday > statsCache.totalYesterday ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                  {statsCache.totalToday > statsCache.totalYesterday ? '↑' : '↓'} {fmt(Math.abs(statsCache.totalToday - statsCache.totalYesterday))}
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Ventas Confirmadas */}
+          <div className="relative rounded-2xl border border-gray-100/80 p-3 sm:p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(145deg, rgba(236,253,245,0.6), rgba(255,255,255,0.95))', boxShadow: '0 4px 16px -8px rgba(5,150,105,0.12)' }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg, #10b981, #059669)' }} />
+            <div className="flex items-center gap-2 mb-2 mt-0.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(145deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06))' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-bold">Ventas Confirmadas</p>
+            </div>
+            <p className="text-lg sm:text-2xl font-extrabold text-gray-900 tracking-tight">{fmt(statsCache.totalPaid)}</p>
+            <p className="text-[10px] text-gray-400 font-medium mt-1">{statsCache.countPaid} pagados hoy</p>
+          </div>
+          {/* Cliente Top */}
+          <div className="relative rounded-2xl border border-gray-100/80 p-3 sm:p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(145deg, rgba(255,251,235,0.6), rgba(255,255,255,0.95))', boxShadow: '0 4px 16px -8px rgba(217,119,6,0.12)' }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg, #f59e0b, #d97706)' }} />
+            <div className="flex items-center gap-2 mb-2 mt-0.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(145deg, rgba(245,158,11,0.12), rgba(217,119,6,0.06))' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-bold">Top Cliente</p>
+            </div>
+            {statsCache.topCustomer ? (
+              <>
+                <p className="text-sm sm:text-base font-extrabold text-gray-900 truncate tracking-tight">{statsCache.topCustomer.name.split(' ').slice(0, 2).join(' ')}</p>
+                <p className="text-[10px] text-amber-600 mt-0.5 font-bold">{fmt(statsCache.topCustomer.total)} hoy</p>
+              </>
+            ) : <p className="text-sm text-gray-400 mt-1">Sin datos</p>}
+          </div>
+          {/* Ticket Promedio */}
+          <div className="relative rounded-2xl border border-gray-100/80 p-3 sm:p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(145deg, rgba(240,253,244,0.6), rgba(255,255,255,0.95))', boxShadow: '0 4px 16px -8px rgba(22,163,74,0.12)' }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg, #22c55e, #16a34a)' }} />
+            <div className="flex items-center gap-2 mb-2 mt-0.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(145deg, rgba(34,197,94,0.12), rgba(22,163,74,0.06))' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-bold">Ticket Prom.</p>
+            </div>
+            <p className="text-lg sm:text-2xl font-extrabold text-gray-900 tracking-tight">{fmt(statsCache.avgTicket)}</p>
+            <p className="text-[10px] text-gray-400 font-medium mt-1">por pedido pagado</p>
+          </div>
+        </div>
+      )}
+
+      {/* Process Timeline */}
+      {(() => {
+        const goFilter = (status: string, isActive: boolean) => {
+          setActiveFilter(isActive ? 'all' : status);
+          pageCursorsRef.current = new Map([[1, null]]);
+          setCurrentPage(1);
+          load(1);
+        };
+        // Compute status counts based on current date filter
+        let statusCounts: Record<string, number>;
+        if (dateFilter === 'today') statusCounts = statsCache?.byStatus || {};
+        else if (dateFilter === 'yesterday') statusCounts = statsCache?.byStatusYesterday || {};
+        else if (dateFilter === 'day_before') statusCounts = statsCache?.byStatusDayBefore || {};
+        else if (dateFilter === 'custom' && customDateStart) {
+          const sTs = new Date(customDateStart + 'T00:00:00').getTime();
+          const eTs = customDateEnd ? new Date(customDateEnd + 'T23:59:59').getTime() : sTs + 86400000;
+          const filtered = (statsCache?.allOrdersRaw || []).filter((o: any) => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= sTs && ts <= eTs; });
+          statusCounts = {};
+          for (const o of filtered) { statusCounts[o.STATUS] = (statusCounts[o.STATUS] || 0) + 1; }
+        } else statusCounts = statsCache?.byStatusAll || {};
+        const counts = STATUS_FLOW.map(st => statusCounts[st] || 0);
+        let furthestIdx = -1;
+        counts.forEach((c, i) => { if (c > 0) furthestIdx = i; });
+        const flowTotal = counts.reduce((s, c) => s + c, 0);
+
+        // Nodo del flujo principal — glossy + anillo activo + badge
+        const renderNode = (status: string, idx: number) => {
+          const sc = STATUS_COLORS[status] || { color: '#6b7280', bg: '#f3f4f6' };
+          const cfg = STATUS_CONFIG[status] || { label: status };
+          const count = counts[idx];
+          const isActive = activeFilter === status;
+          const dim = count === 0;
+          return (
+            <button
+              key={status}
+              onClick={() => goFilter(status, isActive)}
+              title={`${cfg.label}${count ? ` · ${count} pedido${count !== 1 ? 's' : ''}` : ''}`}
+              className="group flex flex-col items-center gap-1.5 sm:gap-2 flex-shrink-0 relative z-10"
+              style={{ width: 64 }}>
+              <div className="relative" style={{ animation: isActive ? 'kcFloat 2.6s ease-in-out infinite' : undefined }}>
+                {/* Anillo de pulso (solo activo) */}
+                {isActive && (
+                  <span className="absolute inset-0 rounded-[12px] sm:rounded-[14px]" style={{ ['--kc' as any]: `${sc.color}66`, animation: 'kcPulseRing 1.9s ease-out infinite' }} />
+                )}
+                <div
+                  className="relative flex items-center justify-center rounded-[12px] sm:rounded-[14px] transition-all duration-300 group-hover:-translate-y-0.5"
+                  style={{
+                    width: isActive ? 42 : 36,
+                    height: isActive ? 42 : 36,
+                    background: dim
+                      ? 'linear-gradient(160deg,#ffffff,#eef2f7)'
+                      : `linear-gradient(160deg, rgba(255,255,255,0.28), rgba(0,0,0,0.16)), ${sc.color}`,
+                    border: dim ? `1.5px dashed ${sc.color}4d` : '1px solid rgba(255,255,255,0.35)',
+                    boxShadow: isActive
+                      ? `0 0 0 3px ${sc.color}18, 0 6px 14px -6px ${sc.color}66, inset 0 1px 1px rgba(255,255,255,0.5)`
+                      : dim ? 'none' : `0 4px 10px -4px ${sc.color}55, inset 0 1px 1px rgba(255,255,255,0.4)`,
+                  }}>
+                  {STATUS_SVG[status] && React.cloneElement(STATUS_SVG[status] as any, {
+                    width: isActive ? 18 : 15,
+                    height: isActive ? 18 : 15,
+                    style: { color: dim ? sc.color : '#fff', opacity: dim ? 0.55 : 1, filter: dim ? 'none' : 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' },
+                  })}
+                  {/* Brillo superior */}
+                  {!dim && <span className="absolute inset-x-1 top-1 h-1/3 rounded-full" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.45), transparent)' }} />}
+                  {count > 0 && (
+                    <span
+                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] sm:min-w-[21px] sm:h-[21px] flex items-center justify-center text-[9px] sm:text-[10px] font-extrabold rounded-full px-1 border-2 sm:border-[2.5px] border-white"
+                      style={{ background: isActive ? '#0f172a' : `linear-gradient(135deg, ${sc.color}, ${sc.color}cc)`, color: '#fff', boxShadow: `0 2px 5px -1px ${sc.color}55`, animation: 'kcBadgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                      {count > 99 ? '99+' : count}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span
+                className="text-[8px] sm:text-[10px] font-bold leading-tight text-center transition"
+                style={{ color: isActive ? sc.color : dim ? '#c2cbd6' : '#475569' }}>
+                {cfg.label}
+              </span>
+            </button>
+          );
+        };
+
+        // Nodo lateral (Negociación / Cancelado) — mismo diseño glossy que renderNode
+        const renderSideNode = (status: string) => {
+          const sc = STATUS_COLORS[status] || { color: '#6b7280', bg: '#f3f4f6' };
+          const cfg = STATUS_CONFIG[status] || { label: status };
+          const count = statusCounts[status] || 0;
+          const isActive = activeFilter === status;
+          const dim = count === 0;
+          return (
+            <button
+              key={status}
+              onClick={() => goFilter(status, isActive)}
+              title={`${cfg.label}${count ? ` · ${count} pedido${count !== 1 ? 's' : ''}` : ''}`}
+              className="group flex flex-col items-center gap-1.5 sm:gap-2 flex-shrink-0 relative z-10"
+              style={{ width: 64 }}>
+              <div className="relative" style={{ animation: isActive ? 'kcFloat 2.6s ease-in-out infinite' : undefined }}>
+                {isActive && (
+                  <span className="absolute inset-0 rounded-[12px] sm:rounded-[14px]" style={{ ['--kc' as any]: `${sc.color}66`, animation: 'kcPulseRing 1.9s ease-out infinite' }} />
+                )}
+                <div
+                  className="relative flex items-center justify-center rounded-[12px] sm:rounded-[14px] transition-all duration-300 group-hover:-translate-y-0.5"
+                  style={{
+                    width: isActive ? 42 : 36,
+                    height: isActive ? 42 : 36,
+                    background: dim
+                      ? 'linear-gradient(160deg,#ffffff,#eef2f7)'
+                      : `linear-gradient(160deg, rgba(255,255,255,0.28), rgba(0,0,0,0.16)), ${sc.color}`,
+                    border: dim ? `1.5px dashed ${sc.color}4d` : '1px solid rgba(255,255,255,0.35)',
+                    boxShadow: isActive
+                      ? `0 0 0 3px ${sc.color}18, 0 6px 14px -6px ${sc.color}66, inset 0 1px 1px rgba(255,255,255,0.5)`
+                      : dim ? 'none' : `0 4px 10px -4px ${sc.color}55, inset 0 1px 1px rgba(255,255,255,0.4)`,
+                  }}>
+                  {STATUS_SVG[status] ? React.cloneElement(STATUS_SVG[status] as any, {
+                    width: isActive ? 18 : 15,
+                    height: isActive ? 18 : 15,
+                    style: { color: dim ? sc.color : '#fff', opacity: dim ? 0.55 : 1, filter: dim ? 'none' : 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' },
+                  }) : status === 'cancelled' && (
+                    <svg width={isActive ? 18 : 15} height={isActive ? 18 : 15} viewBox="0 0 24 24" fill="none" stroke={dim ? sc.color : '#fff'} strokeWidth="2" style={{ opacity: dim ? 0.55 : 1, filter: dim ? 'none' : 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' }}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  )}
+                  {!dim && <span className="absolute inset-x-1 top-1 h-1/3 rounded-full" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.45), transparent)' }} />}
+                  {count > 0 && (
+                    <span
+                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] sm:min-w-[21px] sm:h-[21px] flex items-center justify-center text-[9px] sm:text-[10px] font-extrabold rounded-full px-1 border-2 sm:border-[2.5px] border-white"
+                      style={{ background: isActive ? '#0f172a' : `linear-gradient(135deg, ${sc.color}, ${sc.color}cc)`, color: '#fff', boxShadow: `0 2px 5px -1px ${sc.color}55`, animation: 'kcBadgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                      {count > 99 ? '99+' : count}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span
+                className="text-[8px] sm:text-[10px] font-bold leading-tight text-center transition"
+                style={{ color: isActive ? sc.color : dim ? '#c2cbd6' : '#475569' }}>
+                {cfg.label}
+              </span>
+            </button>
+          );
+        };
+
+        // Separador punteado para estados laterales
+        const renderDashedSep = (key: string) => (
+          <div key={key} className="flex items-center self-start mt-[18px] sm:mt-[25px] flex-shrink-0">
+            <div className="flex items-center gap-0.5">
+              <div className="w-1.5 h-0.5 bg-gray-300 rounded-full" />
+              <div className="w-1 h-0.5 bg-gray-300 rounded-full" />
+              <div className="w-1.5 h-0.5 bg-gray-300 rounded-full" />
+            </div>
+          </div>
+        );
+
+        return (
+          <div className="relative rounded-[20px] overflow-hidden border border-white/70 shadow-[0_6px_24px_-12px_rgba(79,70,229,0.12)]"
+            style={{ background: 'linear-gradient(135deg, rgba(238,242,255,0.85), rgba(255,255,255,0.92) 45%, rgba(248,250,252,0.9))', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+            {/* Ambient blobs */}
+            <div className="absolute -top-16 -left-10 w-56 h-56 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.05), transparent 70%)' }} />
+            <div className="absolute -bottom-20 right-10 w-56 h-56 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.03), transparent 70%)' }} />
+            {/* Sheen animado superior */}
+            <div className="absolute top-0 left-0 right-0 h-px overflow-hidden pointer-events-none">
+              <div className="h-px w-1/3" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.4), transparent)', animation: 'kcSheen 4.5s linear infinite' }} />
+            </div>
+
+            {/* Header */}
+            <div className="relative flex items-start sm:items-center justify-between gap-3 px-4 sm:px-5 pt-4 pb-1 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(145deg,#6366f1,#4f46e5)', boxShadow: '0 4px 10px -4px rgba(79,70,229,0.4), inset 0 1px 1px rgba(255,255,255,0.4)' }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                </span>
+                <div>
+                  <p className="text-sm font-extrabold text-gray-900 leading-tight tracking-tight">Flujo del Pedido</p>
+                  <p className="text-[10px] sm:text-[11px] text-gray-400 leading-tight font-medium">{flowTotal} en proceso · toca un estado para filtrar</p>
+                </div>
+              </div>
+              {/* Ver todos */}
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {activeFilter !== 'all' && (
+                  <button onClick={() => goFilter('all', false)}
+                    className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-gray-900 text-white hover:bg-gray-800 transition flex-shrink-0 shadow-sm">
+                    Ver todos
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Track */}
+            <div className="relative px-4 sm:px-5 pb-5 pt-3 overflow-x-auto">
+              <div className="flex items-start gap-0 min-w-max relative">
+                {/* Flujo principal */}
+                {STATUS_FLOW.map((status, idx) => {
+                  const a = STATUS_COLORS[status]?.color || '#6b7280';
+                  const b = STATUS_COLORS[STATUS_FLOW[idx + 1]]?.color || a;
+                  const filled = idx < furthestIdx;
+                  return (
+                    <React.Fragment key={status}>
+                      {renderNode(status, idx)}
+                      {idx < STATUS_FLOW.length - 1 && (
+                        <div className="relative self-start mt-[18px] sm:mt-[25px] flex-shrink-0 -mx-1 sm:-mx-1.5 rounded-full overflow-hidden"
+                          style={{ height: 3, width: 20, background: filled ? `linear-gradient(90deg, ${a}, ${b})` : '#e5e7eb' }}>
+                          {filled && (
+                            <span className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)', animation: `kcShimmer 2.4s linear ${idx * 0.18}s infinite` }} />
+                          )}
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+                {/* Estados desconectados (extremo derecho) */}
+                <div className="flex-1 min-w-[24px]" />
+                {renderSideNode('negotiation')}
+                {renderDashedSep('sep-cancel')}
+                {renderSideNode('cancelled')}
+              </div>
+            </div>
+
+            <style>{`
+              @keyframes kcShimmer { 0% { transform: translateX(-110%); } 100% { transform: translateX(220%); } }
+              @keyframes kcSheen { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+              @keyframes kcPulseRing { 0% { box-shadow: 0 0 0 0 var(--kc); } 70% { box-shadow: 0 0 0 11px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+              @keyframes kcFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+              @keyframes kcBadgePop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.18); } 100% { transform: scale(1); opacity: 1; } }
+            `}</style>
+          </div>
+        );
+      })()}
+
       {/* Status Filters */}
-      <div className="flex flex-wrap gap-2">
-        {STATUS_KEYS.map(s => (
-          <button key={s} onClick={() => setActiveFilter(s)}
-            className={`px-3 py-1.5 rounded-xl text-sm font-medium transition ${activeFilter === s ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
-            {STATUS_CONFIG[s].label}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2 overflow-x-auto -mx-1 px-1 pb-1 sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0">
+        {/* Todos — black bg white text */}
+        <button onClick={() => setActiveFilter('all')}
+          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition ${activeFilter === 'all' ? 'bg-gray-900 text-white shadow-md ring-2 ring-gray-900 ring-inset' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
+          Todos
+        </button>
+        {/* Pagados — soft green */}
+        <button onClick={() => setActiveFilter('paid_group')}
+          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-green-100 text-green-700 border border-green-200 ${activeFilter === 'paid_group' ? 'ring-2 ring-green-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+          Pagados
+        </button>
+        {/* Pendiente — soft orange */}
+        <button onClick={() => setActiveFilter('pending')}
+          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-orange-100 text-orange-700 border border-orange-200 ${activeFilter === 'pending' ? 'ring-2 ring-orange-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+          Pendiente
+        </button>
+        {/* Cancelado — soft red */}
+        <button onClick={() => setActiveFilter('cancelled')}
+          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-red-100 text-red-700 border border-red-200 ${activeFilter === 'cancelled' ? 'ring-2 ring-red-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+          Cancelado
+        </button>
+        {/* More states — opens modal */}
+        <button onClick={() => setShowStatusModal(true)}
+          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 ${['processing','paid','assembling','confirming_stock','stock_confirmed','packing','negotiation','preparing_shipping','ready_to_ship','shipped','delivered'].includes(activeFilter) ? 'ring-2 ring-indigo-500 ring-inset shadow-sm' : ''}`}>
+          Más estados ▾
+        </button>
         {paymentMethods.length > 2 && (
           <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}
             className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
             {paymentMethods.map(pm => (
               <option key={pm} value={pm}>{pm === 'all' ? 'Todos los métodos' : pm}</option>
-            ))}
-          </select>
-        )}
-        {regions.length > 2 && (
-          <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-            {regions.map(r => (
-              <option key={r} value={r}>{r === 'all' ? 'Todas las regiones' : r}</option>
             ))}
           </select>
         )}
@@ -382,8 +893,15 @@ function OrdersContent() {
             🔴 Solo Live
           </button>
         )}
-        <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden ml-auto">
-          {(Object.keys(DATE_FILTER_LABELS) as DateFilter[]).map(d => (
+        {(() => { const n = orders.filter(needsTracking).length; return n > 0 ? (
+          <button onClick={() => setTrackingPending(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition border ${trackingPending ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
+            📍 Seguimiento pendiente <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${trackingPending ? 'bg-white/25' : 'bg-amber-200 text-amber-800'}`}>{n}</span>
+          </button>
+        ) : null; })()}
+        {/* Quick date buttons */}
+        <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden sm:ml-auto">
+          {(['all', 'today', 'yesterday', 'day_before'] as DateFilter[]).map(d => (
             <button key={d} onClick={() => setDateFilter(d)}
               className={`px-3 py-1.5 text-xs font-medium transition ${dateFilter === d ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
               {DATE_FILTER_LABELS[d]}
@@ -392,7 +910,230 @@ function OrdersContent() {
         </div>
       </div>
 
-      {/* Search + Region filter */}
+      {/* Status Modal — floating cards with blurred backdrop */}
+      {showStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+          onClick={() => setShowStatusModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-sm font-bold text-gray-800">Seleccionar estado</h3>
+              <button onClick={() => setShowStatusModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl leading-none">×</button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+              {(['processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'negotiation', 'ready_to_ship', 'shipped', 'delivered'] as const).map(key => {
+                const color = STATUS_COLORS[key]?.color || '#6b7280';
+                const bg = STATUS_COLORS[key]?.bg || '#f3f4f6';
+                return (
+                  <button key={key} onClick={() => { setActiveFilter(key); setShowStatusModal(false); }}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition ${activeFilter === key ? 'ring-2 ring-offset-1 shadow-sm' : 'hover:shadow-md'} hover:scale-105`}
+                    style={{ background: bg, borderColor: color + '33', color }}>
+                    <div style={{ color }}>{STATUS_SVG[key] && React.cloneElement(STATUS_SVG[key] as any, { width: 32, height: 32 })}</div>
+                    <span className="text-xs font-semibold text-center" style={{ color }}>{STATUS_CONFIG[key]?.label || key}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeline Modal — vertical timeline to change order status */}
+      {timelineOrderId && (() => {
+        const tOrder = orders.find(o => o.$id === timelineOrderId);
+        if (!tOrder) return null;
+        const currentIdx = STATUS_FLOW.indexOf(tOrder.STATUS);
+        const isCancelled = tOrder.STATUS === 'cancelled';
+        const tIsPickup = isPickup(tOrder.SHIPPINGAGENCY);
+        const STATUS_DESC: Record<string, string> = {
+          pending: 'El cliente hizo el pedido pero aún no ha pagado.',
+          processing: 'Se recibió el comprobante de pago, hay que verificarlo.',
+          paid: 'El pago fue confirmado y verificado correctamente.',
+          assembling: 'Se está imprimiendo la etiqueta del pedido.',
+          confirming_stock: 'El embalador está separando y confirmando los productos.',
+          stock_confirmed: 'El stock fue confirmado, el pedido está completo.',
+          packing: 'Se está embalando el pedido.',
+          negotiation: 'Faltan productos, se está negociando con el cliente.',
+          preparing_shipping: 'La etiqueta de envío está lista para imprimir.',
+          ready_to_ship: tIsPickup ? 'El pedido está listo para que el cliente lo retire.' : 'El paquete está listo para despachar (toma foto de las cajas).',
+          shipped: tIsPickup ? 'El pedido salió de la tienda.' : 'El pedido salió de la tienda con la agencia.',
+          delivered: tIsPickup ? 'El cliente retiró su pedido.' : 'El pedido fue entregado a la agencia de transporte.',
+          cancelled: 'El pedido fue cancelado y el stock fue devuelto.',
+        };
+        // Etiquetas dependientes de retiro/agencia para el timeline
+        const labelFor = (status: string) => {
+          if (status === 'ready_to_ship' && tIsPickup) return 'Listo para Retirar';
+          if (status === 'delivered' && tIsPickup) return 'Entregado';
+          return STATUS_CONFIG[status]?.label || status;
+        };
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+            onClick={() => setTimelineOrderId(null)}>
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              {/* Header with gradient */}
+              <div className="px-4 py-3 sm:px-6 sm:py-4" style={{ background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center rounded-2xl" style={{ width: 40, height: 40, background: isCancelled ? STATUS_COLORS.cancelled.bg : STATUS_COLORS[tOrder.STATUS]?.bg || '#f3f4f6' }}>
+                      <div style={{ color: isCancelled ? STATUS_COLORS.cancelled.color : STATUS_COLORS[tOrder.STATUS]?.color || '#6b7280' }}>
+                        {STATUS_SVG[tOrder.STATUS] || STATUS_SVG.cancelled}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-800">Línea de tiempo del pedido</h3>
+                      <p className="text-xs text-gray-400 font-mono">{tOrder.ORDERCODE || '#' + tOrder.$id.slice(-6)}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setTimelineOrderId(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition text-xl leading-none">×</button>
+                </div>
+              </div>
+
+              {/* Timeline */}
+              <div className="px-4 py-3 sm:px-6 sm:py-4 max-h-[50vh] overflow-y-auto">
+                <div className="relative">
+                  {STATUS_FLOW.map((status, idx) => {
+                    const isPast = idx < currentIdx;
+                    const isCurrent = idx === currentIdx;
+                    const isFuture = idx > currentIdx;
+                    const sc = STATUS_COLORS[status];
+                    const isClickable = !isCancelled && status !== tOrder.STATUS;
+                    return (
+                      <div key={status} className="flex items-start gap-3 relative pb-1" style={{ minHeight: 60 }}>
+                        {/* Vertical connector line */}
+                        {idx < STATUS_FLOW.length - 1 && (
+                          <div className="absolute left-[15px] top-9 bottom-0 w-[2px] rounded-full" style={{ background: isPast ? sc.color : '#e5e7eb', opacity: isPast ? 0.4 : 1 }} />
+                        )}
+                        {/* Node — clickable */}
+                        <button
+                          onClick={() => { if (isClickable) { updateStatus(tOrder.$id, status); } }}
+                          disabled={!isClickable}
+                          className="relative z-10 flex items-center justify-center rounded-full flex-shrink-0 transition-all"
+                          style={{
+                            width: 32, height: 32,
+                            background: isCurrent ? sc.color : (isPast ? sc.bg : '#fff'),
+                            border: `2.5px solid ${isCurrent ? sc.color : (isPast ? sc.color + '88' : '#e5e7eb')}`,
+                            cursor: isClickable ? 'pointer' : 'default',
+                            opacity: isFuture && !isClickable ? 0.5 : 1,
+                          }}>
+                          <div style={{ color: isCurrent ? '#fff' : (isPast ? sc.color : '#cbd5e1'), display: 'flex' }}>
+                            {STATUS_SVG[status] && React.cloneElement(STATUS_SVG[status] as any, { width: 15, height: 15 })}
+                          </div>
+                          {isCurrent && (
+                            <div className="absolute -right-1 -top-1 w-3 h-3 rounded-full border-2 border-white animate-pulse" style={{ background: sc.color }} />
+                          )}
+                        </button>
+                        {/* Label + description */}
+                        <div className={`pt-1.5 pb-2 flex-1 ${isClickable ? 'cursor-pointer' : ''}`}
+                          onClick={() => { if (isClickable) updateStatus(tOrder.$id, status); }}>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold transition" style={{ color: isCurrent ? sc.color : (isPast ? '#374151' : '#9ca3af') }}>
+                              {labelFor(status)}
+                            </p>
+                            {isCurrent && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: sc.color }}>ACTUAL</span>
+                            )}
+                            {isPast && !isCurrent && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={sc.color} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{STATUS_DESC[status]}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Negotiation branch node */}
+                  {(() => {
+                    const isNeg = tOrder.STATUS === 'negotiation';
+                    const ncol = STATUS_COLORS.negotiation;
+                    return (
+                      <div className="flex items-start gap-3 relative pt-2 mt-2 border-t border-dashed border-gray-200">
+                        <button
+                          onClick={() => { if (!isNeg && !isCancelled) updateStatus(tOrder.$id, 'negotiation'); }}
+                          disabled={isNeg || isCancelled}
+                          className="relative z-10 flex items-center justify-center rounded-full flex-shrink-0 transition-all"
+                          style={{ width: 32, height: 32, background: isNeg ? ncol.color : ncol.bg, border: `2.5px solid ${ncol.color}`, cursor: (isNeg || isCancelled) ? 'default' : 'pointer', opacity: isCancelled ? 0.4 : (isNeg ? 1 : 0.7) }}>
+                          <div style={{ color: isNeg ? '#fff' : ncol.color, display: 'flex' }}>
+                            {STATUS_SVG.negotiation && React.cloneElement(STATUS_SVG.negotiation as any, { width: 15, height: 15 })}
+                          </div>
+                        </button>
+                        <div className={`pt-1.5 pb-2 flex-1 ${(isNeg || isCancelled) ? '' : 'cursor-pointer'}`}
+                          onClick={() => { if (!isNeg && !isCancelled) updateStatus(tOrder.$id, 'negotiation'); }}>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold" style={{ color: isNeg ? ncol.color : '#9ca3af' }}>Negociación</p>
+                            {isNeg && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: ncol.color }}>ACTUAL</span>}
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{STATUS_DESC.negotiation}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Cancelled node */}
+                  <div className="flex items-start gap-3 relative pt-2 mt-2 border-t border-dashed border-gray-200">
+                    <button
+                      onClick={() => { if (tOrder.STATUS !== 'cancelled') { updateStatus(tOrder.$id, 'cancelled'); setTimelineOrderId(null); } }}
+                      disabled={isCancelled}
+                      className="relative z-10 flex items-center justify-center rounded-full flex-shrink-0 transition-all"
+                      style={{
+                        width: 32, height: 32,
+                        background: isCancelled ? STATUS_COLORS.cancelled.color : STATUS_COLORS.cancelled.bg,
+                        border: `2.5px solid ${STATUS_COLORS.cancelled.color}`,
+                        cursor: isCancelled ? 'default' : 'pointer',
+                        opacity: isCancelled ? 1 : 0.6,
+                      }}>
+                      <div style={{ color: isCancelled ? '#fff' : STATUS_COLORS.cancelled.color, display: 'flex' }}>
+                        {STATUS_SVG.cancelled}
+                      </div>
+                    </button>
+                    <div className="pt-1.5 pb-2 flex-1"
+                      onClick={() => { if (!isCancelled) { updateStatus(tOrder.$id, 'cancelled'); setTimelineOrderId(null); } }}>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold" style={{ color: isCancelled ? STATUS_COLORS.cancelled.color : '#9ca3af' }}>Cancelado</p>
+                        {isCancelled && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: STATUS_COLORS.cancelled.color }}>ACTUAL</span>}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{STATUS_DESC.cancelled}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer — navigation buttons */}
+              {!isCancelled && (
+                <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-100 flex gap-2">
+                  <button
+                    onClick={() => { if (currentIdx > 0) updateStatus(tOrder.$id, STATUS_FLOW[currentIdx - 1]); }}
+                    disabled={currentIdx <= 0 || updatingId === tOrder.$id}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    Anterior
+                  </button>
+                  <button
+                    onClick={() => { if (currentIdx < STATUS_FLOW.length - 1) updateStatus(tOrder.$id, STATUS_FLOW[currentIdx + 1]); }}
+                    disabled={currentIdx >= STATUS_FLOW.length - 1 || updatingId === tOrder.$id}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-white rounded-xl text-xs font-bold transition disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{ background: STATUS_COLORS[tOrder.STATUS]?.color || '#4f46e5' }}>
+                    Siguiente
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              )}
+              {isCancelled && (
+                <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-100">
+                  <button
+                    onClick={() => { updateStatus(tOrder.$id, 'pending'); }}
+                    disabled={updatingId === tOrder.$id}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold hover:bg-amber-100 transition disabled:opacity-40">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                    Reactivar pedido
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Search */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -400,28 +1141,17 @@ function OrdersContent() {
             className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
         </div>
-        {(() => {
-          const regions = Array.from(new Set(orders.map(o => (o as any).REGION).filter(Boolean))).sort();
-          if (regions.length < 2) return null;
-          return (
-            <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)}
-              className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shrink-0">
-              <option value="all">Todas las regiones</option>
-              {regions.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          );
-        })()}
       </div>
 
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
 
       {/* Bulk actions bar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 flex-wrap p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+        <div className="flex items-center gap-2 flex-wrap p-3 bg-indigo-50 border border-indigo-200 rounded-xl overflow-x-auto">
           <span className="text-sm font-medium text-indigo-700">{selected.size} seleccionado{selected.size !== 1 ? 's' : ''}</span>
           <span className="text-indigo-300">|</span>
           <span className="text-xs text-indigo-600">Cambiar a:</span>
-          {(['pending', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
+          {(['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'negotiation', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
             <button key={s} onClick={() => bulkUpdateStatus(s)} disabled={bulkUpdating}
               className={`px-3 py-1 rounded-xl text-xs font-medium transition disabled:opacity-60 ${STATUS_CONFIG[s].bg} ${STATUS_CONFIG[s].text} hover:opacity-80`}>
               {STATUS_CONFIG[s].label}
@@ -433,7 +1163,7 @@ function OrdersContent() {
 
       {/* Mobile Card List & Desktop Table view */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Mobile View: Cards */}
+        {/* Mobile View: Modern Cards */}
         <div className="block sm:hidden divide-y divide-gray-100">
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
@@ -455,66 +1185,76 @@ function OrdersContent() {
               const hasMissing = items.some((it: any) => it.missing === true);
               const isWarning = hasMissing && ['pending', 'processing'].includes(order.STATUS);
               const agency = order.SHIPPINGAGENCY || '';
+              const scfg = STATUS_CONFIG[order.STATUS];
+              const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+              const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
+              const ageH = Math.floor(ageMs / 3600000);
+              const ageD = Math.floor(ageH / 24);
+              const ageStr = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+              const pendingAgeStr = order.STATUS === 'pending' ? (ageD > 0 ? `${ageD}d ${ageH % 24}h sin pagar` : `${ageH}h sin pagar`) : null;
+              const totalItems = items.reduce((s: number, it: any) => s + (it.qty || 1), 0);
 
               return (
-                <div key={order.$id} className={`p-4 space-y-3 hover:bg-gray-50 transition-colors ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70' : isOverdue ? 'bg-red-50/50' : ''}`}
+                <div key={order.$id}
+                  className={`relative p-4 hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70' : isOverdue ? 'bg-red-50/50' : ''}`}
                   onClick={() => window.location.href = `/admin/orders/${order.$id}`}>
-                  <div className="flex items-center justify-between">
+                  {/* Status left border */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1 rounded-r" style={{ background: statusColor }} />
+
+                  {/* Row 1: Code + Time + Status */}
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={selected.has(order.$id)}
                         onChange={() => toggleSelect(order.$id)}
                         className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
-                      <span className="font-mono text-xs text-indigo-600 font-bold hover:underline">{order.ORDERCODE || '—'}</span>
+                      <span className="font-mono text-xs text-indigo-600 font-bold">{order.ORDERCODE || '—'}</span>
                     </div>
-                    {(() => {
-                      const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-                      const bg = isRetiro ? 'bg-fuchsia-100' : (STATUS_CONFIG[order.STATUS]?.bg || 'bg-gray-100');
-                      const text = isRetiro ? 'text-fuchsia-700' : (STATUS_CONFIG[order.STATUS]?.text || 'text-gray-700');
-                      const label = isRetiro ? 'Listo para retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS);
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-gray-400 font-medium">{ageStr}</span>
+                      {pendingAgeStr && <span className={`text-[10px] font-bold ${ageD >= 3 ? 'text-red-600' : 'text-orange-500'}`}>{pendingAgeStr}</span>}
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: (isRetiro ? '#fdf4ff' : STATUS_COLORS[order.STATUS]?.bg) || '#f3f4f6', color: statusColor }}>
+                        {isRetiro ? 'Retirar' : (SHORT_LABEL[order.STATUS] || scfg?.label || order.STATUS)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Customer + Total */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-900 truncate">{order.CUSTOMERNAME}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{order.CUSTOMERPHONE || ''} · {order.COMUNA || '—'}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-base font-bold text-gray-900">{fmt(order.TOTAL)}</p>
+                      <p className="text-[10px] text-gray-400">{totalItems} uds · {items.length} art.</p>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Badges */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {isWarning && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded border border-amber-200 animate-pulse">⚠️ FALTAN PROD.</span>}
+                    {needsTracking(order) && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-500 text-white rounded animate-pulse">📍 FALTA SEGUIMIENTO</span>}
+                    {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded">VENCIDO</span>}
+                    {(order as any).PURCHASEDFROMLIVE && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-600 text-white rounded">LIVE</span>}
+                    {(order as any).ISGIFT && <span className="text-[9px] font-bold px-1 py-0.5 bg-pink-100 text-pink-700 rounded">🎁</span>}
+                    {order.COUPONCODE && <span className="text-[9px] font-mono font-bold px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded">{order.COUPONCODE}</span>}
+                    {agency && (() => {
+                      const details = getAgencyDetails(agency);
                       return (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${bg} ${text}`}>
-                          {label}
+                        <span style={{ color: details?.color, backgroundColor: details?.bg, borderColor: details?.color + '20' }}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1">
+                          {details?.logo && <img src={details.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />}
+                          {details?.name}
                         </span>
                       );
                     })()}
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-semibold text-gray-900">{order.CUSTOMERNAME}</p>
-                      {isWarning && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded border border-amber-250 animate-pulse">⚠️ FALTAN PROD.</span>}
-                      {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded">VENCIDO</span>}
-                      {(order as any).PURCHASEDFROMLIVE && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-600 text-white rounded">LIVE</span>}
-                    </div>
-                    <p className="text-xs text-gray-500">{order.CUSTOMERPHONE || ''} · {order.COMUNA || '—'}, {order.REGION || '—'}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      {agency && (() => {
-                        const details = getAgencyDetails(agency);
-                        return (
-                          <span 
-                            style={{ 
-                              color: details?.color, 
-                              backgroundColor: details?.bg, 
-                              borderColor: details?.color + '20' 
-                            }} 
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1"
-                          >
-                            {details?.logo && (
-                              <img src={details.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />
-                            )}
-                            {details?.name}
-                          </span>
-                        );
-                      })()}
-                      {order.PAYMENTMETHOD && <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">{order.PAYMENTMETHOD}</span>}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-gray-900">{fmt(order.TOTAL)}</p>
-                      <p className="text-[10px] text-gray-400">{items.length} art.</p>
-                    </div>
+                    {order.PAYMENTMETHOD && <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">{order.PAYMENTMETHOD}</span>}
+                    {/* Status change button */}
+                    <button onClick={(e) => { e.stopPropagation(); setTimelineOrderId(order.$id); }}
+                      className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition flex items-center gap-1">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                      Estado
+                    </button>
                   </div>
                 </div>
               );
@@ -522,28 +1262,27 @@ function OrdersContent() {
           )}
         </div>
 
-        {/* Desktop View: Table */}
+        {/* Desktop View: Modern Table */}
         <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
+              <tr className="border-b border-gray-100 bg-gray-50/80">
                 <th className="px-4 py-3 w-8">
                   <input type="checkbox" checked={filtered.length > 0 && selected.size === filtered.length}
                     onChange={toggleSelectAll}
                     className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Código</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliente</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Región</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Agencia</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Código</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Cliente</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide hidden lg:table-cell">Agencia</th>
+                <th className="text-right px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">
                   <button onClick={() => toggleSort('total')} className="flex items-center gap-1 ml-auto hover:text-gray-700 transition">
                     Total
                     {sortBy === 'total' ? (sortDir === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
                   </button>
                 </th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
+                <th className="text-center px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Estado</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">
                   <button onClick={() => toggleSort('date')} className="flex items-center gap-1 hover:text-gray-700 transition">
                     Fecha
                     {sortBy === 'date' ? (sortDir === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
@@ -560,50 +1299,67 @@ function OrdersContent() {
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-gray-400">No se encontraron pedidos</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400">No se encontraron pedidos</td></tr>
               ) : (
                 filtered.map(order => {
                   const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
                   const isUpdating = updatingId === order.$id;
                   const ageMs = Date.now() - date.getTime();
                   const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
+                  const ageH = Math.floor(ageMs / 3600000);
+                  const ageD = Math.floor(ageH / 24);
+                  const ageStr = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+                  const pendingAgeStr = order.STATUS === 'pending' ? (ageD > 0 ? `${ageD}d ${ageH % 24}h sin pagar` : `${ageH}h sin pagar`) : null;
                   
                   let items: any[] = [];
                   try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
                   const hasMissing = items.some((it: any) => it.missing === true);
                   const isWarning = hasMissing && ['pending', 'processing'].includes(order.STATUS);
- 
+                  const totalItems = items.reduce((s: number, it: any) => s + (it.qty || 1), 0);
+                  const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+                  const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
+
                   return (
                     <React.Fragment key={order.$id}>
-                    <tr className={`hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70 hover:bg-amber-100/70' : isOverdue ? 'bg-red-50/50' : ''}`}
+                    <tr className={`hover:bg-gray-50/80 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70 hover:bg-amber-100/70' : isOverdue ? 'bg-red-50/50' : ''}`}
                       onClick={() => window.location.href = `/admin/orders/${order.$id}`}>
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={selected.has(order.$id)}
                           onChange={() => toggleSelect(order.$id)}
                           className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-indigo-600 font-semibold hover:underline">{order.ORDERCODE || '—'}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+                          <div>
+                            <p className="font-mono text-xs text-indigo-600 font-bold">{order.ORDERCODE || '—'}</p>
+                            <p className="text-[10px] text-gray-400">{totalItems} uds · {items.length} art.</p>
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="font-medium text-gray-900 truncate max-w-[130px]">{order.CUSTOMERNAME}</p>
+                          <p className="font-semibold text-gray-900 truncate max-w-[140px]">{order.CUSTOMERNAME}</p>
                           {isWarning && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-150 text-amber-800 rounded shrink-0 border border-amber-250 animate-pulse">
-                              ⚠️ FALTAN PROD.
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded shrink-0 border border-amber-200 animate-pulse">
+                              ⚠️ FALTAN
                             </span>
                           )}
                           {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded shrink-0">VENCIDO</span>}
+                          {needsTracking(order) && <span className="text-[9px] font-bold px-1 py-0.5 bg-amber-500 text-white rounded shrink-0 animate-pulse">📍 SEGUIMIENTO</span>}
                           {(order as any).PURCHASEDFROMLIVE && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-600 text-white rounded shrink-0">LIVE</span>}
-                          {(order as any).ISGIFT && <span className="text-[9px] font-bold px-1 py-0.5 bg-pink-100 text-pink-700 rounded shrink-0">🎁 REGALO</span>}
+                          {(order as any).ISGIFT && <span className="text-[9px] font-bold px-1 py-0.5 bg-pink-100 text-pink-700 rounded shrink-0">🎁</span>}
                           {(order as any).CUSTOMERNOTE && <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" title={(order as any).CUSTOMERNOTE} />}
                           {order.adminNotes && <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" title="Tiene notas internas" />}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 mt-0.5">
                           <p className="text-xs text-gray-400">{order.CUSTOMERPHONE || ''}</p>
                           {order.COUPONCODE && <span className="text-[9px] font-mono font-bold px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded">{order.COUPONCODE}</span>}
+                          <span className="text-[10px] text-gray-300">·</span>
+                          <span className="text-[10px] text-gray-400">{order.COMUNA || '—'}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{order.REGION || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600 hidden lg:table-cell">
+                      <td className="px-4 py-3 hidden lg:table-cell">
                         {order.SHIPPINGAGENCY ? (() => {
                           const details = getAgencyDetails(order.SHIPPINGAGENCY);
                           return (
@@ -621,40 +1377,27 @@ function OrdersContent() {
                               {details?.name}
                             </span>
                           );
-                        })() : '—'}
+                        })() : <span className="text-gray-300 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <p className="font-semibold text-gray-900">{fmt(order.TOTAL)}</p>
-                        {(() => { try { const items = JSON.parse(order.ITEMS || '[]'); return items.length > 0 ? <p className="text-[10px] text-gray-400">{items.length} art.</p> : null; } catch { return null; } })()}
+                        <p className="font-bold text-gray-900">{fmt(order.TOTAL)}</p>
+                        {order.PAYMENTMETHOD && <p className="text-[10px] text-gray-400 mt-0.5">{order.PAYMENTMETHOD}</p>}
                       </td>
                       <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
-                        <div className="relative inline-block">
-                          {(() => {
-                            const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-                            const bg = isRetiro ? 'bg-fuchsia-100' : (STATUS_CONFIG[order.STATUS]?.bg || 'bg-gray-100');
-                            const text = isRetiro ? 'text-fuchsia-700' : (STATUS_CONFIG[order.STATUS]?.text || 'text-gray-700');
-                            return (
-                              <select
-                                value={order.STATUS}
-                                onChange={e => updateStatus(order.$id, e.target.value)}
-                                disabled={isUpdating}
-                                className={`appearance-none text-xs font-medium px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 pr-6 ${bg} ${text}`}
-                              >
-                                {Object.entries(STATUS_CONFIG).filter(([k]) => k !== 'all').map(([k, v]) => {
-                                  const label = (k === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') ? 'Listo para retirar' : v.label;
-                                  return <option key={k} value={k}>{label}</option>;
-                                })}
-                              </select>
-                            );
-                          })()}
-                          <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" />
-                        </div>
+                        <button
+                          onClick={() => setTimelineOrderId(order.$id)}
+                          disabled={isUpdating}
+                          className="text-xs font-bold px-2.5 py-1.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 transition hover:opacity-80 inline-flex items-center gap-1.5"
+                          style={{ background: (isRetiro ? '#fdf4ff' : STATUS_COLORS[order.STATUS]?.bg) || '#f3f4f6', color: statusColor }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
+                          {isRetiro ? 'Retirar' : (SHORT_LABEL[order.STATUS] || STATUS_CONFIG[order.STATUS]?.label || order.STATUS)}
+                        </button>
                       </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        <p className="text-gray-500">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</p>
+                      <td className="px-4 py-3">
+                        <p className="text-xs text-gray-600 font-medium">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">
-                          {Math.floor(ageMs / 86400000) === 0 ? 'Hoy' : `hace ${Math.floor(ageMs / 86400000)}d`}
-                          {order.PAYMENTMETHOD ? ` · ${order.PAYMENTMETHOD}` : ''}
+                          <span className={`font-semibold ${ageH < 3 ? 'text-indigo-500' : ageH < 24 ? 'text-gray-400' : 'text-gray-300'}`}>{ageStr}</span>
+                          {pendingAgeStr && <span className={`block font-bold ${ageD >= 3 ? 'text-red-600' : 'text-orange-500'}`}>{pendingAgeStr}</span>}
                         </p>
                       </td>
                       <td className="px-4 py-3">
@@ -695,32 +1438,35 @@ function OrdersContent() {
                       const note = (order as any).CUSTOMERNOTE;
                       const gift = (order as any).ISGIFT;
                       return (
-                        <tr className="bg-indigo-50/30">
-                          <td colSpan={9} className="px-6 py-4">
+                        <tr className="bg-gray-50/50">
+                          <td colSpan={8} className="px-6 py-4">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                               {/* Items */}
                               <div className="lg:col-span-2">
-                                <p className="text-xs font-semibold text-gray-500 mb-2">PRODUCTOS ({items.length})</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Productos ({items.length})</p>
                                 <div className="space-y-1.5">
                                   {items.map((it: any, i: number) => {
                                     const loc = it.id ? productLocations[it.id] : null;
                                     const itemMissing = !!it.missing;
                                     return (
-                                      <div key={i} className={`flex items-center gap-3 rounded-lg px-3 py-2 border ${itemMissing ? 'bg-red-50 border-red-250 text-red-900' : 'bg-white border-gray-100'}`}>
-                                        {it.img && <img src={it.img} alt="" className="w-8 h-8 object-contain rounded" />}
-                                        <span className="text-sm flex-1 truncate">{it.name}</span>
+                                      <div key={i} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${itemMissing ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'}`}>
+                                        {it.img ? <img src={it.img} alt="" className="w-9 h-9 object-contain rounded-lg" /> : <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Package className="w-4 h-4 text-gray-300" /></div>}
+                                        <div className="flex-1 min-w-0">
+                                          <p className={`text-sm font-medium truncate ${itemMissing ? 'text-red-900' : 'text-gray-900'}`}>{it.name}</p>
+                                          <p className="text-[10px] text-gray-400">{fmt(it.price)} c/u</p>
+                                        </div>
                                         {itemMissing && (
-                                          <span className="text-[10px] font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded shrink-0 border border-red-200">
-                                            ⚠️ Sin stock
-                                          </span>
+                                          <span className="text-[10px] font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded shrink-0 border border-red-200">⚠️ Sin stock</span>
                                         )}
                                         {loc && loc.section !== null && !itemMissing && (
                                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold shrink-0">
                                             <MapPin className="w-2.5 h-2.5" /> G{loc.gondola} S{loc.section}
                                           </span>
                                         )}
-                                        <span className="text-xs text-gray-400">×{it.qty}</span>
-                                        <span className="text-sm font-medium text-gray-900">{fmt(it.total || it.price * it.qty)}</span>
+                                        <div className="text-right flex-shrink-0">
+                                          <p className="text-xs text-gray-400">×{it.qty}</p>
+                                          <p className="text-sm font-bold text-gray-900">{fmt(it.total || it.price * it.qty)}</p>
+                                        </div>
                                       </div>
                                     );
                                   })}
@@ -728,23 +1474,23 @@ function OrdersContent() {
                               </div>
                               {/* Details sidebar */}
                               <div className="space-y-3">
-                                <div>
-                                  <p className="text-xs font-semibold text-gray-500 mb-1">ENVÍO</p>
-                                  <p className="text-sm text-gray-700">{order.ADDRESS || '—'}</p>
+                                <div className="bg-white rounded-xl border border-gray-100 p-3">
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">Envío</p>
+                                  <p className="text-sm text-gray-800 font-medium">{order.ADDRESS || '—'}</p>
                                   <p className="text-xs text-gray-500">{order.COMUNA}, {order.REGION}</p>
-                                  <p className="text-xs text-gray-500">{order.SHIPPINGAGENCY || '—'}</p>
+                                  {order.SHIPPINGAGENCY && <p className="text-xs text-indigo-600 font-semibold mt-1">{order.SHIPPINGAGENCY}</p>}
                                 </div>
-                                <div>
-                                  <p className="text-xs font-semibold text-gray-500 mb-1">CONTACTO</p>
-                                  <p className="text-sm text-gray-700">{order.CUSTOMERNAME}</p>
+                                <div className="bg-white rounded-xl border border-gray-100 p-3">
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">Contacto</p>
+                                  <p className="text-sm text-gray-800 font-medium">{order.CUSTOMERNAME}</p>
                                   <p className="text-xs text-gray-500">{order.CUSTOMERPHONE} · {order.CUSTOMEREMAIL}</p>
                                   <p className="text-xs text-gray-500">RUT: {order.CUSTOMERRUT || '—'}</p>
                                 </div>
                                 {(note || gift) && (
-                                  <div>
-                                    <p className="text-xs font-semibold text-gray-500 mb-1">NOTAS</p>
+                                  <div className="bg-white rounded-xl border border-gray-100 p-3">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">Notas</p>
                                     {gift && <p className="text-xs text-pink-600 font-medium mb-1">🎁 Pedido marcado como regalo</p>}
-                                    {note && <p className="text-sm text-gray-700 bg-amber-50 rounded px-2 py-1 border border-amber-100">{note}</p>}
+                                    {note && <p className="text-sm text-gray-700 bg-amber-50 rounded-lg px-2 py-1.5 border border-amber-100">{note}</p>}
                                   </div>
                                 )}
                               </div>
@@ -785,7 +1531,6 @@ function OrdersContent() {
                         ) : null;
                       })()}
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell" />
                     <td className="px-4 py-3 hidden lg:table-cell" />
                     <td className="px-4 py-3 text-right">
                       <p className="font-bold text-gray-900">{fmt(totalSum)}</p>
@@ -796,7 +1541,7 @@ function OrdersContent() {
                     <td className="px-4 py-3 text-center text-xs text-gray-400">
                       {fmt(paidOrders.reduce((s, o) => s + o.TOTAL, 0))} pagados
                     </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-400 hidden md:table-cell">
+                    <td className="px-4 py-3 text-right text-xs text-gray-400">
                       {avgTicket > 0 && <p>{`∅ ${fmt(avgTicket)}`}</p>}
                       {couponDiscount > 0 && <p className="text-emerald-600">-{fmt(couponDiscount)} cupones</p>}
                       {(() => {
@@ -805,7 +1550,7 @@ function OrdersContent() {
                         return avgItems ? <p className="text-gray-400">∅ {avgItems} art./pedido</p> : null;
                       })()}
                     </td>
-                    <td className="hidden md:table-cell" />
+                    <td className="hidden" />
                   </tr>
                 </tfoot>
               );

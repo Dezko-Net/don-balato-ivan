@@ -31,10 +31,28 @@ export default function CountdownTimer({ expiresAt, label, compact = false, onEx
   const pad = (n: number) => n.toString().padStart(2, '0');
 
   if (compact) {
+    const boxStyle: React.CSSProperties = {
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(145deg,#fff,#f8f8f8)', color: '#e94560', borderRadius: 8, minWidth: 42, padding: '5px 7px',
+      border: '1px solid #fecdd3', boxShadow: '0 2px 6px rgba(233,69,96,0.1)',
+    };
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#e53935' }}>
-        <Clock size={12} /> {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={boxStyle}>
+          <span style={{ fontSize: 16, fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{pad(hours)}</span>
+          <span style={{ fontSize: 7, color: '#bbb', marginTop: 2, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Hrs</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#e94560', alignSelf: 'flex-start', marginTop: 3 }}>:</span>
+        <div style={boxStyle}>
+          <span style={{ fontSize: 16, fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{pad(minutes)}</span>
+          <span style={{ fontSize: 7, color: '#bbb', marginTop: 2, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Min</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#e94560', alignSelf: 'flex-start', marginTop: 3 }}>:</span>
+        <div style={boxStyle}>
+          <span style={{ fontSize: 16, fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{pad(seconds)}</span>
+          <span style={{ fontSize: 7, color: '#bbb', marginTop: 2, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Seg</span>
+        </div>
+      </div>
     );
   }
 

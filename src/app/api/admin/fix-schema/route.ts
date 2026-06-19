@@ -37,6 +37,10 @@ const FIXES: Record<string, AttrDef[]> = {
     { key: 'sku', type: 'string', size: 128, required: false },
     { key: 'jumpsellerId', type: 'string', size: 64, required: false },
   ],
+  orders: [
+    // size >= 16384 => almacenado como TEXT (fuera de fila), evita el límite de bytes de la fila
+    { key: 'BOXPHOTOS', type: 'string', size: 20000, required: false },
+  ],
   cart_snapshots: [
     { key: 'userId', type: 'string', size: 128, required: true },
     { key: 'userName', type: 'string', size: 256, required: false },

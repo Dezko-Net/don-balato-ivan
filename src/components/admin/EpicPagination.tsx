@@ -58,15 +58,15 @@ export default function EpicPagination({
       )}
 
       {/* Pagination controls */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-1.5">
         {/* First */}
         <button
           onClick={() => onPageChange(1)}
           disabled={!canPrev || isLoading}
           title="Primera página"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
+          className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
         >
-          <ChevronsLeft className="w-3.5 h-3.5" />
+          <ChevronsLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
 
         {/* Prev */}
@@ -74,9 +74,9 @@ export default function EpicPagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!canPrev || isLoading}
           title="Página anterior"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
+          className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
         >
-          <ChevronLeft className="w-3.5 h-3.5" />
+          <ChevronLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
 
         {/* Page numbers */}
@@ -85,7 +85,7 @@ export default function EpicPagination({
             page === '...' ? (
               <span
                 key={`ellipsis-${idx}`}
-                className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm"
+                className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center text-gray-400 text-sm"
               >
                 …
               </span>
@@ -95,7 +95,7 @@ export default function EpicPagination({
                 onClick={() => onPageChange(page as number)}
                 disabled={isLoading}
                 className={`
-                  min-w-[2rem] h-8 px-2 flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-150
+                  min-w-[2.25rem] sm:min-w-[2rem] h-9 sm:h-8 px-2 flex items-center justify-center rounded-xl text-sm font-bold transition-all duration-150
                   ${currentPage === page
                     ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-200 scale-105 border-0'
                     : 'border border-gray-200 text-gray-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -103,7 +103,7 @@ export default function EpicPagination({
                 `}
               >
                 {isLoading && currentPage === page ? (
-                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   page
                 )}
@@ -117,9 +117,9 @@ export default function EpicPagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!canNext || isLoading}
           title="Página siguiente"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
+          className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
         >
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
 
         {/* Last */}
@@ -127,17 +127,17 @@ export default function EpicPagination({
           onClick={() => onPageChange(totalPages)}
           disabled={!canNext || isLoading}
           title="Última página"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
+          className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
         >
-          <ChevronsRight className="w-3.5 h-3.5" />
+          <ChevronsRight className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
 
       {/* Page counter pill */}
-      <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border border-gray-100 rounded-full">
+      <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-full">
         <span className="text-xs text-gray-400">Página</span>
         <span className="text-xs font-bold text-indigo-600">{currentPage}</span>
-        <span className="text-xs text-gray-400">de</span>
+        <span className="text-xs text-gray-300">/</span>
         <span className="text-xs font-bold text-gray-700">{totalPages}</span>
       </div>
     </div>

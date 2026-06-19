@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'negotiation' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'confirming_stock' | 'stock_confirmed' | 'packing' | 'negotiation' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
   productId: string;
@@ -40,6 +40,8 @@ export interface Order {
   COUPONCODE?: string;
   DISCOUNTAMOUNT?: number;
   AGENCYCHANGED?: boolean;
+  TRACKINGNUMBER?: string;
+  BOXPHOTOS?: string; // JSON array de URLs de fotos de las cajas antes de despachar
   adminNotes?: string;
   $createdAt: string;
   $updatedAt: string;

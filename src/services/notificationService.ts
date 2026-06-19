@@ -56,6 +56,9 @@ const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'processing',
   'paid',
   'assembling',
+  'confirming_stock',
+  'stock_confirmed',
+  'packing',
   'negotiation',
   'preparing_shipping',
   'ready_to_ship',
@@ -78,8 +81,20 @@ const ORDER_STATUS_COPY: Record<
     buildMessage: (c) => `Tu pago para el pedido ${c} fue verificado con éxito.`,
   },
   assembling: {
-    title: 'Pedido armándose',
-    buildMessage: (c) => `Tu pedido ${c} está siendo armado en nuestro almacén.`,
+    title: 'Imprimiendo etiqueta',
+    buildMessage: (c) => `Estamos imprimiendo la etiqueta de tu pedido ${c}.`,
+  },
+  confirming_stock: {
+    title: 'Confirmando stock',
+    buildMessage: (c) => `Estamos confirmando el stock de tu pedido ${c} en bodega.`,
+  },
+  stock_confirmed: {
+    title: 'Stock confirmado',
+    buildMessage: (c) => `El stock de tu pedido ${c} fue confirmado. ¡Pronto lo embalamos!`,
+  },
+  packing: {
+    title: 'Embalando tu pedido',
+    buildMessage: (c) => `Estamos embalando tu pedido ${c}.`,
   },
   negotiation: {
     title: 'Pedido en negociación',
@@ -94,12 +109,12 @@ const ORDER_STATUS_COPY: Record<
     buildMessage: (c) => `Tu pedido ${c} ya está preparado y etiquetado para ser retirado por la agencia.`,
   },
   shipped: {
-    title: 'Pedido enviado',
-    buildMessage: (c) => `Tu pedido ${c} fue despachado. ¡Pronto lo recibirás!`,
+    title: 'Pedido despachado',
+    buildMessage: (c) => `Tu pedido ${c} salió de la tienda. ¡Pronto lo recibirás!`,
   },
   delivered: {
-    title: 'Pedido entregado',
-    buildMessage: (c) => `Tu pedido ${c} fue entregado. ¡Gracias por tu compra!`,
+    title: 'Entregado a la agencia',
+    buildMessage: (c) => `Tu pedido ${c} fue entregado a la agencia de transporte.`,
   },
   cancelled: {
     title: 'Pedido cancelado',
