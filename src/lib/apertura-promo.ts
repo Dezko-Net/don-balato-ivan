@@ -57,16 +57,72 @@ export function getAperturaDiscountedPrice(price: number, discountPercent: numbe
   return Math.round(price * (1 - discountPercent / 100));
 }
 
+/** Threshold del Live Shopping: 5PM todos los días. */
 export function getLiveShoppingThreshold(): Date {
   const now = new Date();
-  const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
-  if (now.getTime() >= today7Am.getTime()) {
-    return today7Am;
+  const today5Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+  if (now.getTime() >= today5Pm.getTime()) {
+    return today5Pm;
   } else {
-    const yesterday7Am = new Date(today7Am);
-    yesterday7Am.setDate(yesterday7Am.getDate() - 1);
-    return yesterday7Am;
+    const yesterday5Pm = new Date(today5Pm);
+    yesterday5Pm.setDate(yesterday5Pm.getDate() - 1);
+    return yesterday5Pm;
   }
+}
+
+/** Próximo Live Shopping a las 5PM. */
+export function getNextLiveShoppingTime(): Date {
+  const now = new Date();
+  const today5Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+  if (now.getTime() < today5Pm.getTime()) {
+    return today5Pm;
+  } else {
+    const tomorrow5Pm = new Date(today5Pm);
+    tomorrow5Pm.setDate(tomorrow5Pm.getDate() + 1);
+    return tomorrow5Pm;
+  }
+}
+
+/**
+ * Determina si un producto de live shopping todavía tiene el 20% off.
+ * Reglas:
+ * - 20% off durante 1 semana desde que fue importado.
+ * - Cada domingo a las 12AM, revierte a 10% off (solo unit, pack vuelve a precio normal).
+ * - Si ya pasó un domingo desde la importación, el descuento baja a 10%.
+ */
+export function getLiveShoppingDiscountPercent(importedAt: string): number {
+  const importedTime = new Date(importedAt).getTime();
+  const now = Date.now();
+  const oneWeek = 7 * 24 * 60 * 60 * 1000;
+
+  // Si pasó más de una semana, solo 10%
+  if (now - importedTime > oneWeek) return 10;
+
+  // Buscar el domingo más reciente a las 00:00 que sea posterior a importedAt
+  const importedDate = new Date(importedAt);
+  // Encontrar el próximo domingo 00:00 después de importado
+  const nextSundayMidnight = new Date(importedDate);
+  const dayOfWeek = importedDate.getDay(); // 0=domingo, 6=sábado
+  const daysUntilSunday = (7 - dayOfWeek) % 7;
+  // Si es domingo y ya pasó medianoche, el próximo domingo es en 7 días
+  if (dayOfWeek === 0 && importedDate.getHours() >= 0) {
+    // Si fue importado un domingo, el siguiente domingo es +7 días
+    nextSundayMidnight.setDate(nextSundayMidnight.getDate() + 7);
+  } else {
+    nextSundayMidnight.setDate(nextSundayMidnight.getDate() + daysUntilSunday);
+  }
+  nextSundayMidnight.setHours(0, 0, 0, 0);
+
+  // Si ya pasó un domingo 00:00 desde la importación, bajar a 10%
+  if (now >= nextSundayMidnight.getTime()) return 10;
+
+  // Todavía no ha pasado un domingo desde la importación → 20%
+  return 20;
+}
+
+/** Verifica si un producto es de live shopping (tiene imported_at válido). */
+export function isLiveShoppingProduct(product: ProductPriceLike): boolean {
+  return !!(product.imported_at && product.imported_at !== '1970-01-01T00:00:00.000Z');
 }
 
 /** Precio mostrado: oferta del producto (CURRENTPRICE) tiene prioridad sobre promoción apertura. */
@@ -80,16 +136,11 @@ export function resolveProductDisplayPrice(
   // If PRICE is 0 but WHOLESALEPRICE exists, use wholesale as base
   const effectiveBase = base > 0 ? base : (wholesale ?? 0);
 
-  // 0. Live Shopping promotion override: -20% on live day, -10% otherwise
-  const isLiveShoppingProduct = product.imported_at && product.imported_at !== '1970-01-01T00:00:00.000Z';
-  if (isLiveShoppingProduct) {
-    const importedTime = new Date(product.imported_at!).getTime();
-    const thresholdTime = getLiveShoppingThreshold().getTime();
-    const isCurrentLive = importedTime >= thresholdTime;
-    
-    const discountPercent = isCurrentLive ? 20 : 10;
+  // 0. Live Shopping promotion: 20% off for 1 week, then 10% after Sunday 12AM
+  const isLiveShopping = isLiveShoppingProduct(product);
+  if (isLiveShopping) {
+    const discountPercent = getLiveShoppingDiscountPercent(product.imported_at!);
     const displayPrice = Math.round(effectiveBase * (1 - discountPercent / 100));
-    
     return {
       displayPrice,
       originalPrice: effectiveBase,

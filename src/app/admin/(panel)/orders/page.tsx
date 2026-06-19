@@ -634,9 +634,6 @@ function OrdersContent() {
       {(() => {
         const goFilter = (status: string, isActive: boolean) => {
           setActiveFilter(isActive ? 'all' : status);
-          pageCursorsRef.current = new Map([[1, null]]);
-          setCurrentPage(1);
-          load(1);
         };
         // Compute status counts based on current date filter
         let statusCounts: Record<string, number>;

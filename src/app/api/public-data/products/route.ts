@@ -6,16 +6,16 @@ import { resolveProductDisplayPrice, fetchAperturaSettings } from '@/lib/apertur
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { normalizeProductImages } from '@/lib/product-images';
 
-// Helper to get threshold for live shopping
+// Helper to get threshold for live shopping (5PM)
 function getLiveShoppingThreshold(): Date {
   const now = new Date();
-  const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
-  if (now.getTime() >= today7Am.getTime()) {
-    return today7Am;
+  const today5Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+  if (now.getTime() >= today5Pm.getTime()) {
+    return today5Pm;
   } else {
-    const yesterday7Am = new Date(today7Am);
-    yesterday7Am.setDate(yesterday7Am.getDate() - 1);
-    return yesterday7Am;
+    const yesterday5Pm = new Date(today5Pm);
+    yesterday5Pm.setDate(yesterday5Pm.getDate() - 1);
+    return yesterday5Pm;
   }
 }
 
@@ -119,7 +119,7 @@ const getCachedAperturaSettings = unstable_cache(
   { revalidate: 3600, tags: ['settings'] }
 );
 
-// Cache live products for a specific "live day" (date 7am → next day 7am local).
+// Cache live products for a specific "live day" (date 5PM → next day 5PM local).
 let memoryCacheLiveProductsByDate: Record<string, { data: any[]; timestamp: number }> = {};
 const getCachedLiveProductsByDate = unstable_cache(
   async (dateStr: string) => {
@@ -129,8 +129,8 @@ const getCachedLiveProductsByDate = unstable_cache(
       return cached.data;
     }
     const [y, m, d] = dateStr.split('-').map(n => parseInt(n, 10));
-    const start = new Date(y, (m - 1), d, 7, 0, 0, 0);
-    const end = new Date(y, (m - 1), d + 1, 7, 0, 0, 0);
+    const start = new Date(y, (m - 1), d, 17, 0, 0, 0);
+    const end = new Date(y, (m - 1), d + 1, 17, 0, 0, 0);
 
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();

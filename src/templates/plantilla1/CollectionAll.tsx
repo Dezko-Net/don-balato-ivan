@@ -20,7 +20,7 @@ import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice, resolvePackUnitPrice, PACK_BONUS_DISCOUNT_PCT, getLiveShoppingThreshold } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, resolvePackUnitPrice, PACK_BONUS_DISCOUNT_PCT, getLiveShoppingThreshold, getNextLiveShoppingTime, isLiveShoppingProduct, getLiveShoppingDiscountPercent } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 import { getSkuFromFeatures } from '@/lib/product-features';
@@ -247,19 +247,38 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       .map(x => x.p);
   }, [isPaquetes, isEmbalajes, allActiveProducts]);
 
-  // Productos del Live Shopping actual (importados hoy desde las 7AM) — siempre -20%
+  // Productos del Live Shopping (importados hoy desde 5PM o ayer) — 20% off por 1 semana
   const liveShoppingProducts = useMemo(() => {
     if (isPaquetes || isEmbalajes) return [];
     const threshold = getLiveShoppingThreshold().getTime();
     return allActiveProducts
       .filter(p => {
-        if (!p.imported_at || p.imported_at === '1970-01-01T00:00:00.000Z') return false;
-        return new Date(p.imported_at).getTime() >= threshold;
+        if (!isLiveShoppingProduct(p)) return false;
+        return new Date(p.imported_at!).getTime() >= threshold;
       })
       .sort((a, b) => {
         const ta = new Date(b.imported_at!).getTime();
         const tb = new Date(a.imported_at!).getTime();
         return ta - tb; // más recientes primero
+      })
+      .slice(0, 20);
+  }, [isPaquetes, isEmbalajes, allActiveProducts]);
+
+  // Productos de ayer (live shopping anterior) — siguen con descuento si no ha pasado domingo
+  const yesterdayLiveProducts = useMemo(() => {
+    if (isPaquetes || isEmbalajes) return [];
+    const threshold = getLiveShoppingThreshold().getTime();
+    const twoDaysAgo = threshold - 24 * 60 * 60 * 1000;
+    return allActiveProducts
+      .filter(p => {
+        if (!isLiveShoppingProduct(p)) return false;
+        const importedTime = new Date(p.imported_at!).getTime();
+        return importedTime >= twoDaysAgo && importedTime < threshold;
+      })
+      .sort((a, b) => {
+        const ta = new Date(b.imported_at!).getTime();
+        const tb = new Date(a.imported_at!).getTime();
+        return ta - tb;
       })
       .slice(0, 20);
   }, [isPaquetes, isEmbalajes, allActiveProducts]);
@@ -661,35 +680,39 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           );
         })()}
 
-        {/* LIVE SHOPPING — productos del live con -20% y countdown hasta las 7AM */}
-        {!isPaquetes && !isEmbalajes && liveShoppingProducts.length > 0 && (() => {
-          const now = new Date();
-          const next7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
-          if (next7Am.getTime() <= now.getTime()) next7Am.setDate(next7Am.getDate() + 1);
-          const expiresAtSec = Math.floor(next7Am.getTime() / 1000);
+        {/* LIVE SHOPPING — productos del live con -20% y countdown hasta 5PM */}
+        {!isPaquetes && !isEmbalajes && (() => {
+          const nextLive = getNextLiveShoppingTime();
+          const nextLiveSec = Math.floor(nextLive.getTime() / 1000);
+          const hasLiveNow = liveShoppingProducts.length > 0;
+          const hasYesterday = yesterdayLiveProducts.length > 0;
+          const productsToShow = hasLiveNow ? liveShoppingProducts : yesterdayLiveProducts;
+          if (productsToShow.length === 0) return null;
+
           return (
             <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: '#fff', border: '1.5px solid #fecdd3', boxShadow: '0 10px 40px rgba(233,69,96,0.08)' }}>
               <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', position: 'relative' }}>
                 <div style={{ flex: '1 1 200px' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg,#e94560,#ff6b6b)', color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: 11, fontWeight: 900, marginBottom: 8, letterSpacing: '0.06em', boxShadow: '0 4px 14px rgba(233,69,96,0.4)' }}>
-                    🔴 EN VIVO AHORA
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: hasLiveNow ? 'linear-gradient(90deg,#e94560,#ff6b6b)' : 'linear-gradient(90deg,#f97316,#fb923c)', color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: 11, fontWeight: 900, marginBottom: 8, letterSpacing: '0.06em', boxShadow: `0 4px 14px ${hasLiveNow ? 'rgba(233,69,96,0.4)' : 'rgba(249,115,22,0.4)'}` }}>
+                    {hasLiveNow ? '🔴 EN VIVO AHORA' : '⏰ PRÓXIMO LIVE A LAS 5PM'}
                   </div>
-                  <h2 style={{ fontSize: 23, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', fontFamily: FF }}>Aprovecha los productos del Live</h2>
-                  <p style={{ fontSize: 13, color: '#ff6b6b', margin: '4px 0 0', fontWeight: 700 }}>20% OFF por tiempo limitado — precios especiales solo hoy</p>
+                  <h2 style={{ fontSize: 23, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', fontFamily: FF }}>{hasLiveNow ? 'Aprovecha los productos del Live' : 'Productos del Live de ayer'}</h2>
+                  <p style={{ fontSize: 13, color: hasLiveNow ? '#ff6b6b' : '#f97316', margin: '4px 0 0', fontWeight: 700 }}>{hasLiveNow ? '20% OFF por tiempo limitado — precios especiales solo hoy' : 'Aún con descuento — el próximo live inicia pronto'}</p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, margin: '0 auto' }}>
-                  <span style={{ fontSize: 10, color: '#aaa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Termina en</span>
-                  <CountdownTimer expiresAt={expiresAtSec} compact />
+                  <span style={{ fontSize: 10, color: '#aaa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{hasLiveNow ? 'Próximo live en' : 'Live inicia en'}</span>
+                  <CountdownTimer expiresAt={nextLiveSec} compact />
                 </div>
               </div>
               <div className="pk-carousel-no-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 24px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-                {liveShoppingProducts.map(p => {
+                {productsToShow.map(p => {
                   const pricing = resolveProductDisplayPrice(p, apertura);
                   const displayPrice = pricing.displayPrice;
                   const stock = p.STOCK || 0;
+                  const discountPct = isLiveShoppingProduct(p) ? getLiveShoppingDiscountPercent(p.imported_at!) : 20;
                   return (
                     <div key={p.$id} style={{ minWidth: 190, maxWidth: 210, flex: '0 0 auto', background: 'rgba(255,255,255,0.95)', borderRadius: 20, border: '1.5px solid #e94560', overflow: 'hidden', boxShadow: '0 4px 16px rgba(233,69,96,0.12)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: 'linear-gradient(135deg,#e94560,#ff6b6b)', color: '#fff', borderRadius: 999, fontSize: 12, fontWeight: 900, padding: '4px 10px', boxShadow: '0 2px 8px rgba(233,69,96,0.4)' }}>-20%</div>
+                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: 'linear-gradient(135deg,#e94560,#ff6b6b)', color: '#fff', borderRadius: 999, fontSize: 12, fontWeight: 900, padding: '4px 10px', boxShadow: '0 2px 8px rgba(233,69,96,0.4)' }}>-{discountPct}%</div>
                       <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8fafc', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
                         {getProductImageUrl(p) ? (
                           <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="210px" unoptimized />
