@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw, Heart, Sparkles, Star, Clock } from 'lucide-react';
@@ -52,6 +52,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const params = useParams<{ id: string; productId?: string }>();
   const id = previewProductId || params.productId || params.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPaquetesMode = searchParams.get('mode') === 'paquetes';
   const { user } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const [product, setProduct] = useState<Product | null>(null);
@@ -98,12 +100,15 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const data = await res.json();
         
         setProduct(data.product);
+        if (isPaquetesMode && data.product?.PACKQTY) {
+          setQty(data.product.PACKQTY);
+        }
         setActiveOffer(data.activeOffer);
         setCategoryName(data.categoryName);
         setCategoryBg(data.categoryBg || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/young-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Kriv9I1%2BxlaQ82%2Fe3rYaugEThNVyRAfMagiNC6isWPR5mNdXx0WaR4y1vLh5hQ4dmePjvlnq4M9QLS4Q0IReBjghaydSO8rWXbyJvc6823UgzvzZxChCZeYWjy0bBJ9EtW%2Bc5NN1YT%2B%2B5nW7k5DZW5aTZH%2F7np5s2NTquTvxGzxGzpefVaylS4KJc19%2FLVuaznxVuOfYWpKoMM6XScrcwQwwD8ir51EW9XFwLdN528WtGF%2FCspzulD%2BVDC4VYHD0EVurQiAGNhSzeFExCT2byhbijHmJgnxWEM6SR%2BZWaBoYxFTbDIkSNbzU736uiNbaM%2BKrxzF9bZSjgtfI947A5g%3D%3D');
         setCategoryColor(data.categoryColor || ORANGE_PRIMARY);
         setCategoryIcon(data.categoryIcon);
-        setRelated(data.related);
+        setRelated(data.related || []);
         
         trackView(data.product.$id);
 
@@ -124,7 +129,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       finally { setIsLoading(false); }
     }
     load();
-  }, [id, router]);
+  }, [id, router, isPaquetesMode]);
 
   // Dynamic SEO metadata
   useEffect(() => {
@@ -255,11 +260,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const stockLabel = stock > 10 ? 'Stock disponible' : stock > 5 ? 'Stock limitado' : stock > 0 ? 'Últimas unidades' : 'Sin stock';
   const isBestSeller = soldQty >= 20;
   const hasOffer = hasDisc && discPct >= 10;
+  const outOfStock = stock <= 0;
 
   function handleAdd() {
-    addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
+    addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined, isPaquetesMode);
     setAdded(true);
-    setTimeout(() => setAdded(false), 2500);
+    setTimeout(() => setAdded(false), 2000);
   }
 
   const handleStockRequest = async () => {
@@ -365,7 +371,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: ORANGE_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
           </div>
           <button type="button" onClick={() => {
-            addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
+            if (outOfStock) return;
+            addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined, isPaquetesMode);
             router.push('/carrito');
           }} style={{ width: '100%', padding: '12px 18px', background: ORANGE_PRIMARY, color: '#fff', border: `1.5px solid ${ORANGE_PRIMARY}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, transition: 'all 0.2s' }}>
             Comprar ahora
@@ -468,61 +475,6 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .pd-mobile-bar-actions button { flex: 1; border-radius: 10px; font-size: 12px; font-weight: 700; padding: 11px 8px; cursor: pointer; }
         .pd-mbar-buy { border: none; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT}); color: #fff; box-shadow: 0 4px 12px rgba(227,150,191,0.35); }
         .pd-mbar-cart { background: #fff; color: ${ORANGE_PRIMARY}; border: 1.5px solid ${PINK_LIGHT}; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        /* Buy button particles */
-        @keyframes pdOrbFloat {
-          0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
-          10% { opacity: 0.9; }
-          50% { transform: translateY(-22px) translateX(8px) scale(1.4); opacity: 1; }
-          90% { opacity: 0.7; }
-          100% { transform: translateY(-44px) translateX(-4px) scale(0.6); opacity: 0; }
-        }
-        @keyframes pdSparkle {
-          0% { transform: scale(0) rotate(0deg); opacity: 0; }
-          20% { transform: scale(1.2) rotate(90deg); opacity: 1; }
-          50% { transform: scale(0.8) rotate(180deg); opacity: 0.8; }
-          80% { transform: scale(1.1) rotate(270deg); opacity: 0.5; }
-          100% { transform: scale(0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes pdShimmer {
-          0% { left: -40%; }
-          100% { left: 110%; }
-        }
-        .pd-buy-btn { animation: pdPulse 2s ease-in-out infinite; }
-        .pd-buy-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(227,150,191,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
-        @keyframes pdPulse {
-          0%, 100% { box-shadow: 0 6px 16px rgba(227,150,191,0.3), inset 0 0 12px rgba(255,255,255,0.1); }
-          50% { box-shadow: 0 6px 16px rgba(227,150,191,0.5), inset 0 0 20px rgba(255,255,255,0.2); }
-        }
-        .pd-orb {
-          position: absolute; border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1));
-          box-shadow: 0 0 6px rgba(255,255,255,0.5);
-          animation: pdOrbFloat 2.8s ease-in-out infinite;
-        }
-        .pd-orb:nth-child(1) { width: 8px; height: 8px; left: 8%; bottom: 4px; animation-delay: 0s; }
-        .pd-orb:nth-child(2) { width: 5px; height: 5px; left: 22%; bottom: 2px; animation-delay: 0.4s; }
-        .pd-orb:nth-child(3) { width: 10px; height: 10px; left: 38%; bottom: 6px; animation-delay: 0.8s; }
-        .pd-orb:nth-child(4) { width: 6px; height: 6px; left: 52%; bottom: 3px; animation-delay: 1.2s; }
-        .pd-orb:nth-child(5) { width: 7px; height: 7px; left: 68%; bottom: 5px; animation-delay: 1.6s; }
-        .pd-orb:nth-child(6) { width: 4px; height: 4px; left: 82%; bottom: 2px; animation-delay: 2s; }
-        .pd-orb:nth-child(7) { width: 9px; height: 9px; left: 92%; bottom: 4px; animation-delay: 2.4s; }
-        .pd-sparkle {
-          position: absolute; width: 4px; height: 4px; background: white;
-          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-          animation: pdSparkle 2s ease-in-out infinite;
-          filter: drop-shadow(0 0 3px rgba(255,255,255,0.8));
-        }
-        .pd-sparkle:nth-child(8) { left: 15%; top: 30%; animation-delay: 0s; }
-        .pd-sparkle:nth-child(9) { left: 45%; top: 20%; animation-delay: 0.7s; width: 5px; height: 5px; }
-        .pd-sparkle:nth-child(10) { left: 75%; top: 40%; animation-delay: 1.4s; }
-        .pd-sparkle:nth-child(11) { left: 30%; top: 55%; animation-delay: 0.3s; width: 3px; height: 3px; }
-        .pd-sparkle:nth-child(12) { left: 60%; top: 15%; animation-delay: 1s; }
-        .pd-shimmer-line {
-          position: absolute; top: 0; bottom: 0; width: 40%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-          animation: pdShimmer 2.5s ease-in-out infinite;
-          pointer-events: none;
-        }
       `}</style>
 
       {/* Breadcrumb */}
@@ -683,48 +635,6 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#059669', background: 'rgba(5,150,105,0.1)', padding: '3px 8px', borderRadius: 20 }}>PRECIO MAYORISTA</span>
                 )}
               </div>
-              {/* Wholesale notice box - premium animated */}
-              {hasWholesale && (
-                <div style={{
-                  marginTop: 10,
-                  borderRadius: 12,
-                  padding: '10px 14px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 10,
-                  background: isWholesaleQty
-                    ? 'linear-gradient(135deg, rgba(5,150,105,0.08), rgba(16,185,129,0.12))'
-                    : 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(245,158,11,0.12))',
-                  border: isWholesaleQty ? '1.5px solid rgba(5,150,105,0.3)' : '1.5px solid rgba(245,158,11,0.35)',
-                  transition: 'all 0.4s ease',
-                }}>
-                  <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{isWholesaleQty ? '🎉' : '⭐'}</span>
-                  <div>
-                    {isWholesaleQty ? (
-                      <>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#059669' }}>¡Felicidades! Activaste el precio mayorista</p>
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#047857' }}>
-                          {formatPrice(product.WHOLESALEPRICE!)} c/u · Ahorras {formatPrice(displayPrice - product.WHOLESALEPRICE!)} por unidad
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#92400e' }}>
-                          {isExact
-                            ? qty < product.WHOLESALEMINQUANTITY!
-                              ? `Lleva exactamente ${product.WHOLESALEMINQUANTITY} unidades para precio mayorista (te faltan ${product.WHOLESALEMINQUANTITY! - qty})`
-                              : `El precio mayorista solo aplica para exactamente ${product.WHOLESALEMINQUANTITY} unidades (llevas ${qty})`
-                            : `Lleva ${product.WHOLESALEMINQUANTITY! - qty} unidad${product.WHOLESALEMINQUANTITY! - qty !== 1 ? 'es' : ''} más para precio mayorista`
-                          }
-                        </p>
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#78350f' }}>
-                          {formatPrice(product.WHOLESALEPRICE!)} c/u {isExact ? `llevando exactamente ${product.WHOLESALEMINQUANTITY}` : `comprando ${product.WHOLESALEMINQUANTITY}+`} · ¡Ahorras {formatPrice(displayPrice - product.WHOLESALEPRICE!)} por unidad!
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Características rápidas */}
@@ -739,14 +649,6 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-
-            {/* Description preview */}
-            {product.DESCRIPTION && (
-              <div>
-                <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: TEXT_DARK }}>Descripción</h3>
-                <p style={{ margin: 0, fontSize: 13, color: TEXT_MUTED, lineHeight: 1.6, whiteSpace: 'pre-line', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.DESCRIPTION}</p>
               </div>
             )}
 
@@ -796,7 +698,6 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           </div>
         )}
 
-
         {/* Tabs */}
         <ProductTabs tabs={[
           { id: 'desc', label: 'Descripción', content: (
@@ -832,16 +733,16 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         <div className="pd-mobile-bar">
           <div className="pd-mobile-bar-info">
             <div className="pd-mobile-bar-price">{formatPrice(effectivePrice)}</div>
-            {(hasDisc && !isWholesaleQty) && <div className="pd-mobile-bar-meta">{discPct}% OFF · {stockLabel}</div>}
-            {!(hasDisc && !isWholesaleQty) && <div className="pd-mobile-bar-meta">{stockLabel}</div>}
+            <div className="pd-mobile-bar-meta">{stockLabel}</div>
           </div>
           <div className="pd-mobile-bar-actions">
             <button type="button" className="pd-mbar-cart" onClick={handleAdd} aria-label="Agregar al carrito">
               <ShoppingCart size={16} />
               {added ? 'Listo' : 'Carrito'}
             </button>
-            <button type="button" className="pd-mbar-cart" onClick={() => {
-              addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
+            <button type="button" className="pd-mbar-buy" onClick={() => {
+              if (outOfStock) return;
+              addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined, isPaquetesMode);
               router.push('/carrito');
             }}>Comprar</button>
           </div>

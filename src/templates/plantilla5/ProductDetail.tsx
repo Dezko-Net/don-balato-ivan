@@ -13,7 +13,7 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice, STOCK_REQUESTS_COLLECTION } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { normalizeProductImages, resolveStorageImageUrl } from '@/lib/product-images';
@@ -122,6 +122,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const params = useParams<{ id: string; productId?: string }>();
   const id = previewProductId || params.productId || params.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPaquetesMode = searchParams.get('mode') === 'paquetes';
   const { addItem } = useCart();
   const { unlimitedStock } = useStoreSettings();
   const [product, setProduct] = useState<Product | null>(null);
@@ -156,12 +158,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
   // Reset quantity when active variant changes
   useEffect(() => {
-    setQty(1);
+    setQty(isPaquetesMode && product?.PACKQTY ? product.PACKQTY : 1);
     const qtyInput = refElement?.querySelector('input[name="quantity"]') as HTMLInputElement;
     if (qtyInput) {
-      qtyInput.value = '1';
+      qtyInput.value = String(isPaquetesMode && product?.PACKQTY ? product.PACKQTY : 1);
     }
-  }, [activeVariantId, refElement]);
+  }, [activeVariantId, refElement, isPaquetesMode, product?.PACKQTY]);
 
   /* ── Fetch Product from Appwrite ── */
   /* ── Fetch Product from Appwrite API (CACHED) ── */
@@ -340,7 +342,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
         const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
 
-        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined);
+        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined, isPaquetesMode);
         const textContent = newBtn.querySelector('.add-to-cart-text__content');
         if (textContent) {
           const originalText = textContent.textContent;
@@ -364,7 +366,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
         const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
 
-        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined);
+        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined, isPaquetesMode);
         router.push('/carrito');
       });
     }
@@ -1176,7 +1178,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         qtyInput.setAttribute('disabled', 'true');
         qtyInput.style.opacity = '0.5';
       } else {
-        if (qtyInput.value === '0') qtyInput.value = '1';
+        if (qtyInput.value === '0') qtyInput.value = String(isPaquetesMode && product?.PACKQTY ? product.PACKQTY : 1);
         qtyInput.removeAttribute('disabled');
         qtyInput.style.opacity = '1';
       }
@@ -1286,7 +1288,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
           const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
 
-          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : undefined);
+          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : undefined, isPaquetesMode);
           
           const textContent = newBtn.querySelector('.add-to-cart-text__content');
           if (textContent) {

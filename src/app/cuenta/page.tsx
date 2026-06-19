@@ -335,6 +335,35 @@ export default function CuentaPage() {
           transition: all 0.2s;
         }
         .section-tab.active .tab-icon { transform: scale(1.1); }
+
+        /* ── Premium colored cards ── */
+        .ccard {
+          position: relative; overflow: hidden;
+          transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s, border-color .22s;
+        }
+        .ccard:hover {
+          transform: translateY(-4px) scale(1.015);
+          box-shadow: 0 2px 4px rgba(0,0,0,.04), 0 8px 18px rgba(0,0,0,.08), 0 22px 40px rgba(0,0,0,.09) !important;
+        }
+        .ccard:hover .ccard-arrow { opacity: 1; transform: translateX(0); }
+        .ccard:hover .ccard-wm { transform: scale(1.12) rotate(-8deg); }
+        .ccard:hover .ccard-icon { transform: scale(1.08) rotate(-3deg); }
+        .ccard-arrow { opacity: 0; transform: translateX(-6px); transition: all .22s ease; }
+        .ccard-wm { transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
+        .ccard-icon { transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+
+        /* ── Section header ── */
+        .sec-head { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+        .sec-head-icon {
+          width: 34px; height: 34px; border-radius: 11px;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 11px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .sec-head-count {
+          font-size: 12px; font-weight: 800; color: #9ca3af;
+          background: rgba(0,0,0,0.05); border-radius: 999px; padding: 2px 10px;
+        }
+        .sec-head-line { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(0,0,0,0.08), transparent); }
       `}</style>
 
       {/* ════════════════ DESKTOP ════════════════ */}
@@ -401,8 +430,13 @@ export default function CuentaPage() {
               )}
             </div>
             <div style={{ paddingBottom: 6, flex: 1 }}>
-              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
-              <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 999, background: levelMeta.chipBg, border: `1px solid ${levelMeta.chipBorder}`, fontSize: 12, fontWeight: 800, color: levelMeta.color }}>
+                  <Trophy size={12} /> Nivel {levelMeta.name}
+                </span>
+              </div>
+              <p style={{ margin: '5px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
             <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, boxShadow: '0 4px 14px rgba(227,150,191,0.25)' }}>
               <Trophy size={15} /> Tienda de puntos
@@ -508,42 +542,27 @@ export default function CuentaPage() {
           <LoyaltyLevel />
         </div>
 
-        {/* ── Section tabs ── */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 16, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', border: 'var(--border-soft)' }}>
-          <button className="section-tab active" style={{ flex: 1, justifyContent: 'center' }}>
-            <div className="tab-icon" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}><ShoppingBag size={15} color="#fff" /></div>
-            Mis Compras
-          </button>
-          <button className="section-tab" style={{ flex: 1, justifyContent: 'center' }}>
-            <div className="tab-icon" style={{ background: 'linear-gradient(135deg,#3b82f6,#60a5fa)' }}><User size={15} color="#fff" /></div>
-            Mi Cuenta
-          </button>
-          <button className="section-tab" style={{ flex: 1, justifyContent: 'center' }}>
-            <div className="tab-icon" style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}><Settings size={15} color="#fff" /></div>
-            Más
-          </button>
-        </div>
-
-        {/* Mis Compras — grid with colored cards */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-            {MIS_COMPRAS_ITEMS.map((item, i) => <ColoredCard key={item.label} item={item} index={i} />)}
-          </div>
-        </div>
-
-        {/* Mi Cuenta — grid */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-            {CUENTA_ITEMS.map((item, i) => <ColoredCard key={item.label} item={item} index={i + 10} />)}
-          </div>
-        </div>
-
-        {/* Más opciones — grid */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-            {CONFIG_ITEMS.map((item, i) => <ColoredCard key={item.label} item={item} index={i + 20} />)}
-          </div>
-        </div>
+        {/* ── Sections with clear headers ── */}
+        {([
+          { title: 'Mis Compras',  Icon: ShoppingBag, g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', items: MIS_COMPRAS_ITEMS, base: 0,  cols: 4 },
+          { title: 'Mi Cuenta',    Icon: User,        g: 'linear-gradient(135deg,#3b82f6,#60a5fa)', items: CUENTA_ITEMS,      base: 10, cols: 3 },
+          { title: 'Más opciones', Icon: Settings,    g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', items: CONFIG_ITEMS,      base: 20, cols: 4 },
+        ] as const).map(sec => {
+          const SecIcon = sec.Icon;
+          return (
+            <div key={sec.title} style={{ marginBottom: 26 }}>
+              <div className="sec-head">
+                <div className="sec-head-icon" style={{ background: sec.g }}><SecIcon size={17} color="#fff" strokeWidth={2.2} /></div>
+                <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.015em' }}>{sec.title}</h2>
+                <span className="sec-head-count">{sec.items.length}</span>
+                <span className="sec-head-line" />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${sec.cols}, 1fr)`, gap: 14 }}>
+                {sec.items.map((item, i) => <ColoredCard key={item.label} item={item} index={i + sec.base} />)}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ════════ MOBILE HARDCORE PREMIUM ════════ */}
@@ -669,7 +688,12 @@ export default function CuentaPage() {
               <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
                 ¡Hola, {firstName}!
               </p>
-              <p style={{ margin: '2px 0 0', fontSize: 14, color: '#64748b', fontWeight: 500 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 999, background: levelMeta.chipBg, border: `1px solid ${levelMeta.chipBorder}`, fontSize: 11.5, fontWeight: 800, color: levelMeta.color }}>
+                  <Trophy size={12} /> Nivel {levelMeta.name}
+                </span>
+              </div>
+              <p style={{ margin: '7px 0 0', fontSize: 14, color: '#64748b', fontWeight: 500 }}>
                 {user.email}
               </p>
             </div>
@@ -836,34 +860,44 @@ const CARD_GRADIENTS = [
   'linear-gradient(135deg,#c0547a,#f97316)',
 ];
 
+const CARD_TINTS = ['#6366f1', '#e396bf', '#f59e0b', '#10b981', '#3b82f6', '#06b6d4', '#8b5cf6', '#0ea5e9', '#64748b', '#c0547a'];
+
 function ColoredCard({ item, index }: { item: MenuItem; index: number }) {
   const Icon = item.icon;
   const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+  const tint = CARD_TINTS[index % CARD_TINTS.length];
   return (
-    <Link href={item.href} style={{
+    <Link href={item.href} className="ccard" style={{
       textDecoration: 'none', display: 'flex', flexDirection: 'column',
-      background: '#fff', borderRadius: 18, overflow: 'hidden',
+      background: `linear-gradient(160deg, ${tint}0a, #fff 42%)`, borderRadius: 18, overflow: 'hidden',
       border: '1px solid rgba(0,0,0,0.07)',
       boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.05)',
-      transition: 'transform 0.2s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s',
-      position: 'relative', minHeight: 130,
-    }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)'; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.05)'; }}
-    >
+      minHeight: 132,
+    }}>
       <div style={{ height: 4, background: gradient }} />
-      <div style={{ padding: '18px 18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-        <div style={{
-          width: 44, height: 44, borderRadius: 13,
+      {/* Watermark icon */}
+      <Icon className="ccard-wm" size={104} color={tint} strokeWidth={1.5}
+        style={{ position: 'absolute', right: -22, bottom: -22, opacity: 0.08, pointerEvents: 'none' }} />
+      <div style={{ padding: '18px 18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1, position: 'relative', zIndex: 1 }}>
+        <div className="ccard-icon" style={{
+          width: 46, height: 46, borderRadius: 14,
           background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', flexShrink: 0,
+          boxShadow: `0 5px 14px ${tint}55, inset 0 1px 0 rgba(255,255,255,0.35)`, flexShrink: 0,
         }}>
-          <Icon size={20} color="#fff" strokeWidth={2.2} />
+          <Icon size={21} color="#fff" strokeWidth={2.2} />
         </div>
         <div style={{ flex: 1 }}>
           <p style={{ margin: '0 0 4px', fontSize: 14.5, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{item.label}</p>
           {item.desc && <p style={{ margin: 0, fontSize: 12.5, color: '#9ca3af', lineHeight: 1.4 }}>{item.desc}</p>}
         </div>
+      </div>
+      {/* Hover arrow */}
+      <div className="ccard-arrow" style={{
+        position: 'absolute', right: 14, bottom: 14, width: 26, height: 26, borderRadius: 9,
+        background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: `0 3px 9px ${tint}66`, zIndex: 2,
+      }}>
+        <ChevronRight size={15} color="#fff" strokeWidth={2.6} />
       </div>
     </Link>
   );

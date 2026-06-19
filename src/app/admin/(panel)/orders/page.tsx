@@ -115,6 +115,7 @@ function OrdersContent() {
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [liveOnly, setLiveOnly] = useState(false);
   const [trackingPending, setTrackingPending] = useState(false);
+  const [pickupReady, setPickupReady] = useState(false);
   const filterUserId = searchParams.get('userId') || '';
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [timelineOrderId, setTimelineOrderId] = useState<string | null>(null);
@@ -491,6 +492,7 @@ function OrdersContent() {
     }
     if (liveOnly && !(o as any).PURCHASEDFROMLIVE) return false;
     if (trackingPending && !needsTracking(o)) return false;
+    if (pickupReady && !(o.STATUS === 'ready_to_ship' && isPickup(o.SHIPPINGAGENCY))) return false;
     return true;
   });
 
@@ -893,6 +895,12 @@ function OrdersContent() {
             🔴 Solo Live
           </button>
         )}
+        {(() => { const n = orders.filter(o => o.STATUS === 'ready_to_ship' && isPickup(o.SHIPPINGAGENCY)).length; return n > 0 ? (
+          <button onClick={() => setPickupReady(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition border ${pickupReady ? 'bg-teal-500 text-white border-teal-500' : 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'}`}>
+            🏪 Listo para retirar <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pickupReady ? 'bg-white/25' : 'bg-teal-200 text-teal-800'}`}>{n}</span>
+          </button>
+        ) : null; })()}
         {(() => { const n = orders.filter(needsTracking).length; return n > 0 ? (
           <button onClick={() => setTrackingPending(v => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition border ${trackingPending ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>

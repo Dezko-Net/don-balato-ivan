@@ -50,6 +50,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
   const isPaquetes = catalogMode === 'paquetes';
   const isEmbalajes = catalogMode === 'embalajes';
+  const modeQueryParam = isPaquetes ? '?mode=paquetes' : '';
   const primaryColor = isPaquetes ? '#b8895a' : (isEmbalajes ? '#0ea5e9' : '#e396bf');
   const gradientColor = isPaquetes ? 'linear-gradient(135deg,#f5ede0,#e8dcc8)' : (isEmbalajes ? 'linear-gradient(135deg,#e0f2fe,#bae6fd)' : 'linear-gradient(135deg,#e396bf,#c0547a)');
   const buttonTextColor = isPaquetes ? '#5c3d24' : (isEmbalajes ? '#0369a1' : '#fff');
@@ -159,7 +160,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     if (!p.PACKQTY || p.PACKQTY <= 1) return false;
     const packStock = p.PACK_STOCK != null ? p.PACK_STOCK : Math.floor((p.STOCK || 0) / p.PACKQTY);
     return packStock > 0;
-  }) : products;
+  }) : products.filter(p => (p.STOCK || 0) > 0);
   const hasMore = !isReachingEnd;
 
   // Synchronize priceRange once SWR loads the products
@@ -626,7 +627,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       </div>
                       <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                         {oSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {oSku}</div>}
-                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 38 }}>{p.NAME}</p>
                         </Link>
                         {isPack && p.PACKQTY && p.PACKQTY > 1 && <span style={{ fontSize: 11, fontWeight: 800, color: textColor }}>{p.PACKQTY} UNIDADES / PAQUETE</span>}
@@ -697,7 +698,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         )}
                       </div>
                       <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
                         </Link>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
@@ -768,7 +769,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     </div>
                     <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {cSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {cSku}</div>}
-                      <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                      <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
                       </Link>
                       {p.PACKQTY && p.PACKQTY > 1 ? (
@@ -1062,7 +1063,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             <AnimHeart filled={fav} size={20} />
                           </button>
                         </div>
-                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
@@ -1170,7 +1171,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {cardSku && <div className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
-                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
                         {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: packQtyColor, fontWeight: 800, marginBottom: 6 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}

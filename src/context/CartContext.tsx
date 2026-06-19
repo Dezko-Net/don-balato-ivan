@@ -23,6 +23,7 @@ interface CartContextType {
   catalogSubtotal: number;
   aperturaSavings: number;
   getEffectivePrice: (item: CartItem) => number;
+  getEffectiveItemTotal: (item: CartItem) => number;
 }
 
 // Legacy per-item collection (kept for admin backward compat on read)
@@ -61,45 +62,54 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items]);
 
-  const getEffectivePrice = (item: CartItem): number => {
+  const getEffectiveItemTotal = (item: CartItem): number => {
     const now = Date.now();
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
-      return item.timedOfferPrice;
+      return item.timedOfferPrice * item.quantity;
     }
+    
+    if (item.wholesalePrice !== undefined) {
+      return item.wholesalePrice * item.quantity;
+    }
+    
+    if (item.isPack) {
+      return resolvePackUnitPrice(item.product) * item.quantity;
+    }
+    
     const pFeatures = Array.isArray(item.product.FEATURES) ? item.product.FEATURES.join('\n') : item.product.FEATURES || '';
     const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
     const minQty = item.product.WHOLESALEMINQUANTITY || 0;
-    
-    const qtyMatches = isExact 
-      ? item.quantity === minQty 
-      : item.quantity >= minQty;
-
+    const qtyMatches = isExact ? item.quantity === minQty : item.quantity >= minQty;
     const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
     
-    // Explicit wholesalePrice passed in item takes highest priority (e.g. from Embalajes / isPack)
-    if (item.wholesalePrice !== undefined) {
-      return item.wholesalePrice;
+    if (hasConfiguredWholesale && qtyMatches) {
+      return item.product.WHOLESALEPRICE! * item.quantity;
     }
-
-    // Si el item fue agregado como paquete, usar precio de paquete (20% o PACK_DISCOUNT_PCT)
-    if (item.isPack) {
-      return resolvePackUnitPrice(item.product);
-    }
-
-    // Si la cantidad alcanza el PACKQTY del producto, aplicar precio de paquete automáticamente
+    
     const packQty = item.product.PACKQTY;
+    const originalPrice = item.product.PRICE || 0;
+    
     if (packQty && packQty > 1 && item.quantity >= packQty) {
-      return resolvePackUnitPrice(item.product);
+      const fullPacks = Math.floor(item.quantity / packQty);
+      const remainder = item.quantity % packQty;
+      
+      const packDiscPct = item.product.PACK_DISCOUNT_PCT && item.product.PACK_DISCOUNT_PCT > 0 
+        ? item.product.PACK_DISCOUNT_PCT 
+        : 20;
+      
+      const packPriceUnit = Math.round(originalPrice * (1 - packDiscPct / 100));
+      const remainderPriceUnit = Math.round(originalPrice * 0.90);
+      
+      return (fullPacks * packQty * packPriceUnit) + (remainder * remainderPriceUnit);
     }
+    
+    const basePriceDisplay = resolveProductDisplayPrice(item.product, apertura).displayPrice;
+    return basePriceDisplay * item.quantity;
+  };
 
-    const effectiveWholesale = (hasConfiguredWholesale && qtyMatches)
-      ? item.product.WHOLESALEPRICE
-      : undefined;
-
-    if (effectiveWholesale) {
-      return effectiveWholesale;
-    }
-    return resolveProductDisplayPrice(item.product, apertura).displayPrice;
+  const getEffectivePrice = (item: CartItem): number => {
+    if (item.quantity === 0) return 0;
+    return Math.round(getEffectiveItemTotal(item) / item.quantity);
   };
 
   const addItem = (product: Product, qty = 1, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number, isPack?: boolean) => {
@@ -164,7 +174,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
   const subtotal = useMemo(
-    () => items.reduce((s, i) => s + getEffectivePrice(i) * i.quantity, 0),
+    () => items.reduce((s, i) => s + getEffectiveItemTotal(i), 0),
     [items, apertura],
   );
   const catalogSubtotal = useMemo(
@@ -177,7 +187,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <CartContext.Provider value={{ items, addItem, hasPackItems, removeItem, updateQuantity, clearCart, updateCartWithLiveProducts, totalItems, subtotal, catalogSubtotal, aperturaSavings, getEffectivePrice }}>
+    <CartContext.Provider value={{ items, addItem, hasPackItems, removeItem, updateQuantity, clearCart, updateCartWithLiveProducts, totalItems, subtotal, catalogSubtotal, aperturaSavings, getEffectivePrice, getEffectiveItemTotal }}>
       {children}
     </CartContext.Provider>
   );
