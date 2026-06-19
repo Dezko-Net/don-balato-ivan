@@ -906,6 +906,9 @@ export default function AdminIAWhatsAppPage() {
               <div className="wa-orb wa-orb-1" />
               <div className="wa-orb wa-orb-2" />
               <div className="wa-orb wa-orb-3" />
+              <div className="wa-orb wa-orb-4" />
+              <div className="wa-orb wa-orb-5" />
+              <div className="wa-vignette" />
               <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(0,168,132,0.12)', border:'2px solid rgba(0,168,132,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <MessageCircle className="h-10 w-10" style={{ color:'#00a884' }} />
               </div>
@@ -1011,6 +1014,9 @@ export default function AdminIAWhatsAppPage() {
                 <div className="wa-orb wa-orb-1" />
                 <div className="wa-orb wa-orb-2" />
                 <div className="wa-orb wa-orb-3" />
+                <div className="wa-orb wa-orb-4" />
+                <div className="wa-orb wa-orb-5" />
+                <div className="wa-vignette" />
                 {loadingThread ? (
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, gap:10, color:'#8696a0' }}>
                     <Loader2 className="h-8 w-8 animate-spin" style={{ color:'#00a884' }} />

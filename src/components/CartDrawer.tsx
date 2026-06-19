@@ -1,5 +1,5 @@
 'use client';
-
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { X, ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
@@ -96,18 +96,21 @@ function CartDrawerRow({
   removeItem: (id: string) => void;
 }) {
   const { unitPrice, pricing } = useCartItemPrice(item);
+  const p = item.product;
+  const [incrementMode, setIncrementMode] = useState<'unit' | 'pack'>(item.isPack ? 'pack' : 'unit');
+
   return (
     <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
       <div style={{ width: 64, height: 64, borderRadius: 6, background: '#f9f9f9', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
-        {item.product.IMAGEURL ? (
-          <Image src={item.product.IMAGEURL} alt={item.product.NAME} fill style={{ objectFit: 'contain', padding: 4 }} sizes="64px" />
+        {p.IMAGEURL ? (
+          <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 4 }} sizes="64px" />
         ) : (
           <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</span>
         )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: '0 0 4px', fontSize: 13, color: '#333', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-          {item.product.NAME}
+          {p.NAME}
         </p>
         {pricing.hasDiscount && pricing.originalPrice != null && (
           <p style={{ margin: '0 0 2px', fontSize: 11, color: '#999', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
@@ -115,30 +118,42 @@ function CartDrawerRow({
         <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? '#e396bf' : '#333' }}>{formatPrice(unitPrice)}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 4 }}>
-            <button type="button" onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - 1))}
+            <button type="button" onClick={() => updateQuantity(p.$id, Math.max(1, item.quantity - (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1)))}
               style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
               <Minus size={12} />
             </button>
             <span style={{ width: 28, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{item.quantity}</span>
-            <button type="button" onClick={() => updateQuantity(item.product.$id, item.quantity + 1)}
+            <button type="button" onClick={() => updateQuantity(p.$id, item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1))}
               style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
               <Plus size={12} />
             </button>
           </div>
 
-          {item.product.PACKQTY && item.product.PACKQTY > 1 ? (
-            <div style={{ display: 'flex', alignItems: 'center', background: '#fdf2f8', borderRadius: 4, border: '1px solid #fbcfe8' }}>
-              <button type="button" onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - (item.product.PACKQTY || 1)))} style={{ padding: '0 6px', height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db2777' }}>
-                <Minus size={10} />
-              </button>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#be185d', padding: '0 4px', whiteSpace: 'nowrap' }}>
-                Pack ({item.product.PACKQTY})
-              </span>
-              <button type="button" onClick={() => updateQuantity(item.product.$id, item.quantity + (item.product.PACKQTY || 1))} style={{ padding: '0 6px', height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db2777' }}>
-                <Plus size={10} />
-              </button>
-            </div>
-          ) : null}
+          {p.PACKQTY && p.PACKQTY > 1 && (
+            <select
+              value={incrementMode}
+              onChange={(e) => setIncrementMode(e.target.value as 'unit' | 'pack')}
+              style={{
+                fontSize: 11,
+                padding: '2px 18px 2px 6px',
+                borderRadius: 4,
+                border: '1px solid #fbcfe8',
+                background: incrementMode === 'pack' ? '#fdf2f8' : '#fff',
+                color: incrementMode === 'pack' ? '#be185d' : '#6b7280',
+                fontWeight: 600,
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${incrementMode === 'pack' ? '%23be185d' : '%236b7280'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 4px center',
+                backgroundSize: '10px'
+              }}
+            >
+              <option value="unit">Unidad</option>
+              <option value="pack">Pack ({p.PACKQTY})</option>
+            </select>
+          )}
 
           <button type="button" onClick={() => removeItem(item.product.$id)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4, marginLeft: 'auto' }}>

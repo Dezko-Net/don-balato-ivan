@@ -1210,7 +1210,7 @@ export default function OrderDetailPage() {
     {/* ───────── HOJA DE IMPRESIÓN (1 página): cliente, agencia y productos sin imágenes ───────── */}
     <div className="hidden print:block" style={{ color: '#111', fontSize: 12, lineHeight: 1.4, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as React.CSSProperties}>
       {/* Encabezado */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111827', color: '#fff', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#db2777', color: '#fff', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.7 }}>Orden de preparación</div>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>{order.ORDERCODE || '#' + order.$id.slice(-6)}</div>
@@ -1252,9 +1252,9 @@ export default function OrderDetailPage() {
       )}
 
       {/* Productos (sin imágenes) */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, border: '1px solid #fbcfe8', borderRadius: 10, overflow: 'hidden' }}>
         <thead>
-          <tr style={{ background: '#111827', color: '#fff', textAlign: 'left' }}>
+          <tr style={{ background: '#db2777', color: '#fff', textAlign: 'left' }}>
             <th style={{ padding: '6px 8px', width: 90 }}>SKU</th>
             <th style={{ padding: '6px 8px' }}>Producto</th>
             <th style={{ padding: '6px 8px', textAlign: 'center', width: 44 }}>Cant.</th>
@@ -1264,9 +1264,12 @@ export default function OrderDetailPage() {
         </thead>
         <tbody>
           {items.map((it, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #e5e7eb', background: i % 2 ? '#f9fafb' : '#fff' }}>
-              <td style={{ padding: '5px 8px', fontFamily: 'monospace', color: '#6b21a8' }}>{(it.id ? productSkus[it.id] : '') || (it as any).sku || '—'}</td>
-              <td style={{ padding: '5px 8px' }}>{it.name}{(it as any).missing ? <strong style={{ color: '#b91c1c' }}> (FALTANTE)</strong> : ''}</td>
+            <tr key={i} style={{ borderBottom: '1px solid #fce7f3', background: i % 2 ? '#fdf2f8' : '#fff' }}>
+              <td style={{ padding: '5px 8px', fontFamily: 'monospace', color: '#be185d' }}>{(it.id ? productSkus[it.id] : '') || (it as any).sku || '—'}</td>
+              <td style={{ padding: '5px 8px' }}>
+                {it.name}{(it as any).missing ? <strong style={{ color: '#b91c1c' }}> (FALTANTE)</strong> : ''}
+                {(it as any).note && <div style={{ fontSize: 10, color: '#d97706', marginTop: 2, background: '#fffbeb', padding: '2px 6px', borderRadius: 4, display: 'inline-block', border: '1px solid #fef3c7' }}>Nota: {(it as any).note}</div>}
+              </td>
               <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 700 }}>{it.qty}</td>
               <td style={{ padding: '5px 8px', textAlign: 'right' }}>{fmt(it.price)}</td>
               <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>{fmt(it.total || it.price * it.qty)}</td>
@@ -1276,13 +1279,13 @@ export default function OrderDetailPage() {
       </table>
 
       {/* Totales */}
-      <div style={{ marginTop: 12, marginLeft: 'auto', width: 260, fontSize: 12, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
+      <div style={{ marginTop: 12, marginLeft: 'auto', width: 260, fontSize: 12, border: '1px solid #fbcfe8', borderRadius: 10, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px' }}><span style={{ color: '#6b7280' }}>Subtotal</span><span>{fmt(order.SUBTOTAL || order.TOTAL)}</span></div>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px' }}><span style={{ color: '#6b7280' }}>Envío</span><span>{order.SHIPPINGCOST > 0 ? fmt(order.SHIPPINGCOST) : 'Contraentrega'}</span></div>
         {order.DISCOUNTAMOUNT && order.DISCOUNTAMOUNT > 0 ? (
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px', color: '#15803d' }}><span>Descuento {order.COUPONCODE ? `(${order.COUPONCODE})` : ''}</span><span>-{fmt(order.DISCOUNTAMOUNT)}</span></div>
         ) : null}
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: '#111827', color: '#fff', fontWeight: 800, fontSize: 14 }}><span>TOTAL</span><span>{fmt(order.TOTAL)}</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: '#db2777', color: '#fff', fontWeight: 800, fontSize: 14 }}><span>TOTAL</span><span>{fmt(order.TOTAL)}</span></div>
       </div>
 
       <div style={{ marginTop: 16, paddingTop: 8, borderTop: '1px dashed #d1d5db', fontSize: 9, color: '#9ca3af', textAlign: 'center' }}>

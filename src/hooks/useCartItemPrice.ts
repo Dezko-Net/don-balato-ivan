@@ -13,6 +13,7 @@ export function useCartItemPrice(item: CartItem): {
 
   return useMemo(() => {
     const now = Date.now();
+    // 1. Timed offer
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
       return {
         unitPrice: item.timedOfferPrice,
@@ -25,6 +26,45 @@ export function useCartItemPrice(item: CartItem): {
         },
       };
     }
+
+    // 2. Explicit wholesale price passed via item (e.g. from embalajes or isPack mode addition)
+    if (item.wholesalePrice !== undefined) {
+      return {
+        unitPrice: item.wholesalePrice,
+        pricing: {
+          displayPrice: item.wholesalePrice,
+          originalPrice: item.product.PRICE,
+          hasDiscount: item.wholesalePrice < item.product.PRICE,
+          discountPercent: item.product.PRICE > 0 ? Math.round(((item.product.PRICE - item.wholesalePrice) / item.product.PRICE) * 100) : 0,
+          fromApertura: false,
+        },
+      };
+    }
+
+    // 3. Paquetes: if item.isPack is true, or if qty reaches PACKQTY
+    const packQty = item.product.PACKQTY;
+    if (item.isPack || (packQty && packQty > 1 && item.quantity >= packQty)) {
+      const base = item.product.PRICE || 0;
+      let packPrice = base;
+      if (item.product.WHOLESALEPRICE && item.product.WHOLESALEPRICE > 0) {
+        packPrice = item.product.WHOLESALEPRICE;
+      } else {
+        const pct = item.product.PACK_DISCOUNT_PCT && item.product.PACK_DISCOUNT_PCT > 0 ? item.product.PACK_DISCOUNT_PCT : 20; // 20 is PACK_BONUS_DISCOUNT_PCT
+        packPrice = Math.round(base * (1 - pct / 100));
+      }
+      return {
+        unitPrice: packPrice,
+        pricing: {
+          displayPrice: packPrice,
+          originalPrice: base,
+          hasDiscount: packPrice < base,
+          discountPercent: base > 0 ? Math.round(((base - packPrice) / base) * 100) : 0,
+          fromApertura: false,
+        }
+      };
+    }
+
+    // 4. Regular Wholesale rules
     const pFeatures = Array.isArray(item.product.FEATURES) ? item.product.FEATURES.join('\n') : item.product.FEATURES || '';
     const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
     const minQty = item.product.WHOLESALEMINQUANTITY || 0;
@@ -35,7 +75,7 @@ export function useCartItemPrice(item: CartItem): {
     const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
     const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) 
       ? item.product.WHOLESALEPRICE 
-      : (hasConfiguredWholesale ? undefined : item.wholesalePrice);
+      : undefined;
 
     if (effectiveWholesale) {
       return {
@@ -44,11 +84,13 @@ export function useCartItemPrice(item: CartItem): {
           displayPrice: effectiveWholesale,
           originalPrice: item.product.PRICE,
           hasDiscount: effectiveWholesale < item.product.PRICE,
-          discountPercent: 0,
+          discountPercent: item.product.PRICE > 0 ? Math.round(((item.product.PRICE - effectiveWholesale) / item.product.PRICE) * 100) : 0,
           fromApertura: false,
         },
       };
     }
+
+    // 5. Default Apertura/Live logic
     const pricing = resolveProductDisplayPrice(item.product, apertura);
     return { unitPrice: pricing.displayPrice, pricing };
   }, [item, apertura]);

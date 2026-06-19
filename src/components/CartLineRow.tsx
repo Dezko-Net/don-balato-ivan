@@ -24,6 +24,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
   const lineTotal = unitPrice * item.quantity;
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [incrementMode, setIncrementMode] = useState<'unit' | 'pack'>(item.isPack ? 'pack' : 'unit');
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -87,30 +88,42 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
           {/* Qty + Line total */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', background: '#fafafa', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-              <button type="button" onClick={() => onUpdateQty(p.$id, Math.max(1, item.quantity - 1))} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+              <button type="button" onClick={() => onUpdateQty(p.$id, Math.max(1, item.quantity - (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1)))} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
                 <Minus size={12} />
               </button>
               <span style={{ minWidth: 24, textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#1a1a1a', padding: '0 4px', whiteSpace: 'nowrap' }}>
                 {item.quantity}
               </span>
-              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity + 1)} disabled={item.quantity >= p.STOCK} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: item.quantity >= p.STOCK ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity >= p.STOCK ? '#d1d5db' : '#6b7280' }}>
+              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1))} disabled={item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1) > p.STOCK} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1) > p.STOCK ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1) > p.STOCK ? '#d1d5db' : '#6b7280' }}>
                 <Plus size={12} />
               </button>
             </div>
 
-            {p.PACKQTY && p.PACKQTY > 1 ? (
-              <div style={{ display: 'flex', alignItems: 'center', background: '#fdf2f8', borderRadius: 8, border: '1px solid #fbcfe8', overflow: 'hidden' }}>
-                <button type="button" onClick={() => onUpdateQty(p.$id, Math.max(1, item.quantity - (p.PACKQTY || 1)))} style={{ padding: '0 6px', height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db2777' }}>
-                  <Minus size={10} />
-                </button>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#be185d', padding: '0 4px', whiteSpace: 'nowrap' }}>
-                  Pack ({p.PACKQTY})
-                </span>
-                <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity + (p.PACKQTY || 1))} disabled={item.quantity + (p.PACKQTY || 1) > p.STOCK} style={{ padding: '0 6px', height: 28, border: 'none', background: 'transparent', cursor: item.quantity + (p.PACKQTY || 1) > p.STOCK ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity + (p.PACKQTY || 1) > p.STOCK ? '#fbcfe8' : '#db2777' }}>
-                  <Plus size={10} />
-                </button>
-              </div>
-            ) : null}
+            {p.PACKQTY && p.PACKQTY > 1 && (
+              <select
+                value={incrementMode}
+                onChange={(e) => setIncrementMode(e.target.value as 'unit' | 'pack')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 20px 4px 8px',
+                  borderRadius: 6,
+                  border: '1px solid #fbcfe8',
+                  background: incrementMode === 'pack' ? '#fdf2f8' : '#fff',
+                  color: incrementMode === 'pack' ? '#be185d' : '#6b7280',
+                  fontWeight: 600,
+                  outline: 'none',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${incrementMode === 'pack' ? '%23be185d' : '%236b7280'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 4px center',
+                  backgroundSize: '12px'
+                }}
+              >
+                <option value="unit">Por unidad</option>
+                <option value="pack">Por pack ({p.PACKQTY})</option>
+              </select>
+            )}
 
             <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>{formatPrice(lineTotal)}</span>
           </div>
