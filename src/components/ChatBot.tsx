@@ -10,7 +10,6 @@ const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('RE
 export default function ChatBot() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [hideFab, setHideFab] = useState(false);
   const [enabled, setEnabled] = useState(true);
 
   const isHiddenRoute =
@@ -30,19 +29,12 @@ export default function ChatBot() {
       .catch((err) => console.error('Error fetching Kenia status:', err));
   }, []);
 
-  useEffect(() => {
-    const check = () => setHideFab(!!document.getElementById('tpl1-chatbot-button'));
-    check();
-    const obs = new MutationObserver(check);
-    obs.observe(document.body, { childList: true, subtree: true });
-    return () => obs.disconnect();
-  }, [pathname]);
-
-  if (isHiddenRoute || !mounted || hideFab || !enabled) return null;
+  if (isHiddenRoute || !mounted || !enabled) return null;
 
   return (
     <>
       <style>{`
+        #tpl1-chatbot-button { display: none !important; }
         @keyframes kenia-pulse {
           0%, 100% { box-shadow: 0 4px 18px rgba(227,150,191,0.45); }
           50%       { box-shadow: 0 6px 28px rgba(227,150,191,0.7); }

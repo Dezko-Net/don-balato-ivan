@@ -927,6 +927,7 @@ export default function PorMayorPage() {
                             <div className="min-w-0">
                               <p className="font-semibold text-gray-900 truncate text-[12px] max-w-[160px]">{p.NAME}</p>
                               <div className="flex items-center gap-1 flex-wrap">
+                                <span className="text-[9px] bg-indigo-50 text-indigo-500 px-1 rounded font-mono font-bold">SKU: {getSku(p) || '—'}</span>
                                 <span className="text-[9px] bg-gray-100 text-gray-500 px-1 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span>
                                 {psk<=0&&<span className="text-[9px] bg-red-100 text-red-600 px-1 rounded font-bold">SIN STOCK</span>}
                                 {psk>0&&psk<=3&&<span className="text-[9px] bg-amber-100 text-amber-600 px-1 rounded font-bold">BAJO</span>}
@@ -1011,6 +1012,7 @@ export default function PorMayorPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-900 text-sm truncate">{p.NAME}</p>
                       <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                        <span className="text-[10px] bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded font-mono font-bold">SKU: {getSku(p) || '—'}</span>
                         <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span>
                         {oa&&<span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-bold">🔥 OFERTA</span>}
                         {psk<=0&&<span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">SIN STOCK</span>}
@@ -1095,7 +1097,7 @@ export default function PorMayorPage() {
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2.5">
                               {p.IMAGEURL?<img src={p.IMAGEURL} alt={p.NAME} className="w-9 h-9 object-cover rounded-lg border bg-gray-50 shrink-0"/>:<div className="w-9 h-9 rounded-lg border bg-gray-100 flex items-center justify-center shrink-0"><Package className="w-4 h-4 text-gray-300"/></div>}
-                              <div className="min-w-0"><p className="font-semibold text-gray-900 truncate text-[13px]">{p.NAME}</p><span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span></div>
+                              <div className="min-w-0"><p className="font-semibold text-gray-900 truncate text-[13px]">{p.NAME}</p><div className="flex items-center gap-1.5 flex-wrap"><span className="text-[10px] bg-indigo-50 text-indigo-500 px-1.5 rounded font-mono font-bold">SKU: {getSku(p) || '—'}</span><span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span></div></div>
                             </div>
                           </td>
                           <td className="px-3 py-3 text-right font-bold text-gray-700">{formatPrice(p.PRICE)}</td>
@@ -1132,7 +1134,7 @@ export default function PorMayorPage() {
                   <div key={p.$id} className={`bg-white rounded-2xl border shadow-sm p-3 ${dirty?'border-amber-300':'border-gray-200'}`}>
                     <div className="flex items-center gap-3 mb-3">
                       {p.IMAGEURL?<img src={p.IMAGEURL} alt={p.NAME} className="w-11 h-11 object-cover rounded-xl border bg-gray-50 shrink-0"/>:<div className="w-11 h-11 rounded-xl border bg-gray-100 flex items-center justify-center shrink-0"><Package className="w-5 h-5 text-gray-300"/></div>}
-                      <div className="flex-1 min-w-0"><p className="font-bold text-gray-900 text-sm truncate">{p.NAME}</p><span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span></div>
+                      <div className="flex-1 min-w-0"><p className="font-bold text-gray-900 text-sm truncate">{p.NAME}</p><div className="flex items-center gap-1.5 flex-wrap mt-0.5"><span className="text-[10px] bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded font-mono font-bold">SKU: {getSku(p) || '—'}</span><span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-semibold">{getCategoryName(p.CATEGORYID)}</span></div></div>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-2.5 mb-3 flex items-center justify-between">
                       <div><p className="text-[10px] text-gray-400">Precio tienda</p><p className="font-bold text-gray-800 text-sm">{formatPrice(p.PRICE)}</p></div>

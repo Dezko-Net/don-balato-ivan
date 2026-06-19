@@ -135,19 +135,14 @@ function CartDrawerRow({
               onChange={(e) => setIncrementMode(e.target.value as 'unit' | 'pack')}
               style={{
                 fontSize: 11,
-                padding: '2px 18px 2px 6px',
+                padding: '2px 4px',
                 borderRadius: 4,
                 border: '1px solid #fbcfe8',
                 background: incrementMode === 'pack' ? '#fdf2f8' : '#fff',
                 color: incrementMode === 'pack' ? '#be185d' : '#6b7280',
                 fontWeight: 600,
                 outline: 'none',
-                cursor: 'pointer',
-                appearance: 'none',
-                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${incrementMode === 'pack' ? '%23be185d' : '%236b7280'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 4px center',
-                backgroundSize: '10px'
+                cursor: 'pointer'
               }}
             >
               <option value="unit">Unidad</option>

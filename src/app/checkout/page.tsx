@@ -1465,7 +1465,7 @@ function CheckoutInner() {
                   </button>
                   <button onClick={handleSkipGeo} disabled={isGeolocating}
                     style={{ width: '100%', padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 14, fontWeight: 700, cursor: isGeolocating ? 'not-allowed' : 'pointer', fontFamily: FF, transition: 'all 0.2s' }}>
-                    No, continuar con la dirección escrita
+                    No estoy en mi casa, prefiero escribirla.
                   </button>
                 </div>
               </div>

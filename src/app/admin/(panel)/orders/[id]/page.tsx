@@ -304,41 +304,68 @@ export default function OrderDetailPage() {
     const targetPrice = oldItem.price || 0;
     const totalMissingPrice = targetPrice * initialMissing;
 
-    // Rango de consulta: Nunca menos a 100 pesos ni mayor a 1000 pesos de diferencia
-    const minDiscounted = Math.max(0, totalMissingPrice - 100);
-    const maxDiscounted = totalMissingPrice + 1000;
+    // Rango de consulta: nunca más de un 10% de diferencia, pero mínimo 150 pesos
+    const variance = Math.max(150, totalMissingPrice * 0.10);
+    const minDiscounted = Math.max(0, totalMissingPrice - variance);
+    const maxDiscounted = totalMissingPrice + variance;
 
-    const minPriceLimit = Math.round(minDiscounted / 0.8);
+    // Para combinaciones (ej. 2 de 500), buscamos productos cuyo precio unitario pueda multiplicar para llegar al total
+    // Buscamos productos desde un precio mucho menor (ej. total / 4) hasta el maxDiscounted
+    const minUnitDiscounted = Math.max(0, (totalMissingPrice / 4) - variance);
+    const minPriceLimit = Math.round(minUnitDiscounted / 0.8);
     const maxPriceLimit = Math.round(maxDiscounted / 0.8);
 
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // 1. Query products with price range (accounting for 20% discount)
       let prods: any[] = [];
       try {
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
           Query.greaterThanEqual('PRICE', minPriceLimit),
           Query.lessThanEqual('PRICE', maxPriceLimit),
-          Query.limit(100)
+          Query.limit(150)
         ]);
         prods = res.documents;
       } catch (err) {
         console.error("Error querying by price range:", err);
       }
 
-      // 2. Sort by price descending (siempre primero lo mayor)
-      const sorted = [...prods].sort((a: any, b: any) => {
-        const priceA = Math.round((a.CURRENTPRICE ?? a.PRICE ?? 0) * 0.8);
-        const priceB = Math.round((b.CURRENTPRICE ?? b.PRICE ?? 0) * 0.8);
-        return priceB - priceA;
-      });
+      // Palabras clave del producto original para similitud
+      const keywords = oldItem.name.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
 
-      // Filter out the product itself from the results if it matches oldItem.id
-      const filtered = sorted.filter((p: any) => p.$id !== oldItem.id);
+      // Filtrar y calcular la mejor cantidad (combinaciones)
+      const validCombinations: any[] = [];
+      for (const p of prods) {
+        if (p.$id === oldItem.id) continue;
+        const pPrice = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
+        if (pPrice <= 0) continue;
 
-      setSearchResults(filtered);
+        // ¿Cuántas unidades de p nos acercan más al totalMissingPrice?
+        const bestQty = Math.max(1, Math.round(totalMissingPrice / pPrice));
+        const comboTotal = bestQty * pPrice;
+        
+        // Si el total de esta combinación está dentro del margen de varianza permitido:
+        if (Math.abs(comboTotal - totalMissingPrice) <= variance) {
+          // Calcular score de similitud
+          let score = 0;
+          const pName = p.NAME.toLowerCase();
+          for (const kw of keywords) {
+            if (pName.includes(kw)) score += 10;
+          }
+          
+          // Castigo leve si la diferencia de precio es mayor
+          const priceDiff = Math.abs(comboTotal - totalMissingPrice);
+          score -= (priceDiff / 100);
+
+          validCombinations.push({ ...p, _bestQty: bestQty, _score: score, _comboTotal: comboTotal });
+        }
+      }
+
+      // Sort by score (descending), then by combo total (descending)
+      validCombinations.sort((a, b) => b._score - a._score || b._comboTotal - a._comboTotal);
+
+      setSearchResults(validCombinations);
     } catch (e) {
       console.error("Error finding similar products:", e);
     } finally {
@@ -444,7 +471,7 @@ export default function OrderDetailPage() {
 
       const totalMissingPrice = missingQty * (oldItem.price || 0);
       const isCloserToTotal = Math.abs(newPrice - totalMissingPrice) < Math.abs(newPrice - (oldItem.price || 0));
-      const newQty = isCloserToTotal ? 1 : missingQty;
+      const newQty = newProduct._bestQty || (isCloserToTotal ? 1 : missingQty);
 
       const newReplacedItem = {
         ...oldItem,
@@ -1169,30 +1196,41 @@ export default function OrderDetailPage() {
                     const originalPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
                     const price = Math.round(originalPrice * 0.8);
                     const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+                    const isCombo = p._bestQty && p._bestQty > 1;
                     return (
                       <div
                         key={p.$id}
                         className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/70 transition-colors"
                       >
-                        <div className="w-10 h-10 rounded-lg bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative">
                           {p.IMAGEURL ? (
                             <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
                           ) : (
                             <Package className="w-4 h-4 text-gray-300" />
                           )}
+                          {isCombo && (
+                            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[9px] font-bold px-1 rounded-bl-md">
+                              x{p._bestQty}
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{p.NAME}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                            {isCombo ? `(${p._bestQty} uds) ${p.NAME}` : p.NAME}
+                          </p>
                           <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
                             SKU: <span className="font-mono">{pSku || '—'}</span> · Stock: <span className={p.STOCK > 0 || p.STOCK === 99999 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{p.STOCK === 99999 ? 'Ilimitado' : p.STOCK}</span>
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
-                          <p className="text-xs sm:text-sm font-bold text-gray-900">{fmt(price)}</p>
+                          <p className="text-xs sm:text-sm font-bold text-gray-900">
+                            {isCombo ? fmt(p._comboTotal) : fmt(price)}
+                          </p>
+                          {isCombo && <p className="text-[9px] text-gray-400">{fmt(price)} c/u</p>}
                           <button
                             onClick={() => replaceItem(p)}
                             disabled={p.STOCK <= 0 && p.STOCK !== 99999}
-                            className="text-[10px] font-bold px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                            className="text-[10px] font-bold px-2.5 py-1 mt-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                           >
                             Seleccionar
                           </button>
@@ -2307,12 +2345,22 @@ export default function OrderDetailPage() {
               <span className="text-emerald-600 text-[10px] sm:text-xs font-medium">Pago contraentrega</span>
             </div>
           )}
-          {order.DISCOUNTAMOUNT && order.DISCOUNTAMOUNT > 0 && (
-            <div className="flex justify-between text-xs sm:text-sm">
-              <span className="text-emerald-600 flex items-center gap-1"><Tag className="w-3 h-3" /> Descuento {order.COUPONCODE && <span className="font-mono text-[10px] sm:text-xs">({order.COUPONCODE})</span>}</span>
-              <span className="text-emerald-600 font-medium">-{fmt(order.DISCOUNTAMOUNT)}</span>
-            </div>
-          )}
+          {(() => {
+            const sub = order.SUBTOTAL || 0;
+            const ship = order.SHIPPINGCOST || 0;
+            const total = order.TOTAL || 0;
+            const storedDisc = order.DISCOUNTAMOUNT || 0;
+            const calcDisc = storedDisc > 0 ? storedDisc : (sub + ship - total);
+            if (calcDisc > 0) {
+              return (
+                <div className="flex justify-between text-xs sm:text-sm">
+                  <span className="text-emerald-600 flex items-center gap-1"><Tag className="w-3 h-3" /> Descuento {order.COUPONCODE && <span className="font-mono text-[10px] sm:text-xs">({order.COUPONCODE})</span>}{!order.COUPONCODE && !storedDisc && <span className="text-[9px] text-gray-400">(auto-calculado)</span>}</span>
+                  <span className="text-emerald-600 font-medium">-{fmt(calcDisc)}</span>
+                </div>
+              );
+            }
+            return null;
+          })()}
           <div className="flex justify-between text-base sm:text-lg font-bold pt-1.5 sm:pt-2 border-t border-gray-200">
             <span className="text-gray-900">Total</span>
             <span className="text-gray-900">{fmt(order.TOTAL)}</span>

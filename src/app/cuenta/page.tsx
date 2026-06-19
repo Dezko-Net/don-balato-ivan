@@ -278,6 +278,53 @@ export default function CuentaPage() {
           z-index: 10;
           border-radius: 22px 22px 0 0;
         }
+        /* ── Hero cover gradient ── */
+        .hero-cover {
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #5b21b6 50%, #9d174d 75%, #be185d 100%);
+        }
+        .hero-cover::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse 60% 80% at 20% 30%, rgba(227,150,191,0.25) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 60% at 80% 70%, rgba(129,140,248,0.2) 0%, transparent 50%),
+            radial-gradient(ellipse 40% 50% at 50% 50%, rgba(168,85,247,0.15) 0%, transparent 60%);
+          z-index: 1;
+        }
+        .hero-cover::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.04'%3E%3Ccircle cx='15' cy='15' r='6'/%3E%3Cpath d='M35 10l3 3 3-3z'/%3E%3Ccircle cx='55' cy='20' r='4'/%3E%3Cpath d='M10 40c3 0 5 2 5 5s-2 5-5 5-5-2-5-5 2-5 5-5z'/%3E%3Cpath d='M35 35l4 4 4-4' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='50' r='5'/%3E%3Cpath d='M20 65l3-3 3 3' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+          background-size: 80px 80px;
+          z-index: 1;
+        }
+        .hero-cover-overlay {
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          height: 60%;
+          background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.9) 90%, #fff 100%);
+          z-index: 2;
+        }
+        /* ── Section tabs ── */
+        .section-tab {
+          display: flex; align-items: center; gap: 10px;
+          padding: 14px 18px; font-size: 13px; font-weight: 800;
+          text-transform: uppercase; letter-spacing: 0.06em;
+          color: #6b7280; cursor: pointer;
+          transition: all 0.2s; border-bottom: 2.5px solid transparent;
+        }
+        .section-tab:hover { color: #1a1a1a; }
+        .section-tab.active { color: #1a1a1a; border-bottom-color: #e396bf; }
+        .section-tab .tab-icon {
+          width: 28px; height: 28px; border-radius: 9px;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s;
+        }
+        .section-tab.active .tab-icon { transform: scale(1.1); }
       `}</style>
 
       {/* ════════════════ DESKTOP ════════════════ */}
@@ -453,8 +500,41 @@ export default function CuentaPage() {
           <LoyaltyLevel />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-          {ALL_CARDS.map(item => <DesktopCard key={item.label} item={item} />)}
+        {/* ── Section tabs ── */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 16, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', border: 'var(--border-soft)' }}>
+          <button className="section-tab active" style={{ flex: 1, justifyContent: 'center' }}>
+            <div className="tab-icon" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}><ShoppingBag size={15} color="#fff" /></div>
+            Mis Compras
+          </button>
+          <button className="section-tab" style={{ flex: 1, justifyContent: 'center' }}>
+            <div className="tab-icon" style={{ background: 'linear-gradient(135deg,#3b82f6,#60a5fa)' }}><User size={15} color="#fff" /></div>
+            Mi Cuenta
+          </button>
+          <button className="section-tab" style={{ flex: 1, justifyContent: 'center' }}>
+            <div className="tab-icon" style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}><Settings size={15} color="#fff" /></div>
+            Más
+          </button>
+        </div>
+
+        {/* Mis Compras — grid with colored cards */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+            {MIS_COMPRAS_ITEMS.map((item, i) => <ColoredCard key={item.label} item={item} index={i} />)}
+          </div>
+        </div>
+
+        {/* Mi Cuenta — grid */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            {CUENTA_ITEMS.map((item, i) => <ColoredCard key={item.label} item={item} index={i + 10} />)}
+          </div>
+        </div>
+
+        {/* Más opciones — grid */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+            {CONFIG_ITEMS.map((item, i) => <ColoredCard key={item.label} item={item} index={i + 20} />)}
+          </div>
         </div>
       </div>
 
