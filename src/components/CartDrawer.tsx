@@ -113,7 +113,7 @@ function CartDrawerRow({
           <p style={{ margin: '0 0 2px', fontSize: 11, color: '#999', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
         )}
         <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? '#e396bf' : '#333' }}>{formatPrice(unitPrice)}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 4 }}>
             <button type="button" onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - 1))}
               style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
@@ -125,8 +125,23 @@ function CartDrawerRow({
               <Plus size={12} />
             </button>
           </div>
+
+          {item.product.PACKQTY && item.product.PACKQTY > 1 ? (
+            <div style={{ display: 'flex', alignItems: 'center', background: '#fdf2f8', borderRadius: 4, border: '1px solid #fbcfe8' }}>
+              <button type="button" onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - (item.product.PACKQTY || 1)))} style={{ padding: '0 6px', height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db2777' }}>
+                <Minus size={10} />
+              </button>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#be185d', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                Pack ({item.product.PACKQTY})
+              </span>
+              <button type="button" onClick={() => updateQuantity(item.product.$id, item.quantity + (item.product.PACKQTY || 1))} style={{ padding: '0 6px', height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#db2777' }}>
+                <Plus size={10} />
+              </button>
+            </div>
+          ) : null}
+
           <button type="button" onClick={() => removeItem(item.product.$id)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4 }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4, marginLeft: 'auto' }}>
             <Trash2 size={14} />
           </button>
         </div>
