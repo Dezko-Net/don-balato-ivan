@@ -1172,8 +1172,10 @@ function OrdersContent() {
         const msg3 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile. Para poder liberar el stock a otros clientes, te comentamos que tu pedido ${order.ORDERCODE || ''} se cancelará automáticamente en unas horas. Si aún deseas tus productos, puedes enviarnos el comprobante de transferencia hoy mismo para procesarlo de inmediato. ¡Quedamos atentos!`;
         
         let msg4 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido ${order.ORDERCODE || ''}. Queríamos comentarte que lamentablemente nos quedamos sin stock de: ${missingNames || 'algunos productos'}. Puedes ingresar a este enlace para ver las opciones disponibles y seleccionar tus productos de reemplazo: ${orderLink}`;
-        if (firstMissingImg) {
-          msg4 += `\n\nFoto de referencia del producto faltante: ${firstMissingImg}`;
+        
+        const missingWithImgs = missingItems.filter((it: any) => !!it.img);
+        if (missingWithImgs.length > 0) {
+          msg4 += `\n\nFotos de referencia:\n` + missingWithImgs.map((it: any) => `- ${it.name || ''}: ${it.img}`).join('\n');
         }
 
         const waUrl1 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg1)}`;
