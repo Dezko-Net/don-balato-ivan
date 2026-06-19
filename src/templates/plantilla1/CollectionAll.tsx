@@ -50,14 +50,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
   const isPaquetes = catalogMode === 'paquetes';
   const isEmbalajes = catalogMode === 'embalajes';
-  const primaryColor = isPaquetes ? '#c68b59' : (isEmbalajes ? '#0ea5e9' : '#e396bf');
-  const gradientColor = isPaquetes ? 'linear-gradient(135deg,#faf0e6,#eed9c4)' : (isEmbalajes ? 'linear-gradient(135deg,#e0f2fe,#bae6fd)' : 'linear-gradient(135deg,#e396bf,#c0547a)');
+  const primaryColor = isPaquetes ? '#b8895a' : (isEmbalajes ? '#0ea5e9' : '#e396bf');
+  const gradientColor = isPaquetes ? 'linear-gradient(135deg,#f5ede0,#e8dcc8)' : (isEmbalajes ? 'linear-gradient(135deg,#e0f2fe,#bae6fd)' : 'linear-gradient(135deg,#e396bf,#c0547a)');
   const buttonTextColor = isPaquetes ? '#5c3d24' : (isEmbalajes ? '#0369a1' : '#fff');
-  const lightBgColor = isPaquetes ? '#fdf8f5' : (isEmbalajes ? '#f0f9ff' : '#fdf2f8');
-  const lightBorderColor = isPaquetes ? '#eed9c4' : (isEmbalajes ? '#bae6fd' : '#fce7f3');
+  const lightBgColor = isPaquetes ? '#faf7f2' : (isEmbalajes ? '#f0f9ff' : '#fdf2f8');
+  const lightBorderColor = isPaquetes ? '#e8dcc8' : (isEmbalajes ? '#bae6fd' : '#fce7f3');
   const shadowColor = isPaquetes ? 'rgba(198,139,89,0.25)' : (isEmbalajes ? 'rgba(14,165,233,0.2)' : 'rgba(227,150,191,0.25)');
   const shadowColorLight = isPaquetes ? 'rgba(198,139,89,0.1)' : (isEmbalajes ? 'rgba(14,165,233,0.08)' : 'rgba(227,150,191,0.1)');
-  const radialBgColor = isPaquetes ? 'rgba(198,139,89,0.16)' : (isEmbalajes ? 'rgba(14,165,233,0.12)' : 'rgba(227,150,191,0.16)');
+  const radialBgColor = isPaquetes ? 'rgba(198,139,89,0.08)' : (isEmbalajes ? 'rgba(14,165,233,0.12)' : 'rgba(227,150,191,0.16)');
   const packQtyColor = isPaquetes ? '#0ea5e9' : (isEmbalajes ? '#0284c7' : '#db2777');
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -154,7 +154,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
   const priceRange = fetchedPriceRange;
   const filtered = products;
-  const visibleProducts = products;
+  const packStockAvailable = (p: Product) => p.PACK_STOCK ?? Math.floor((p.STOCK || 0) / (p.PACKQTY || 1));
+  const visibleProducts = isPaquetes ? products.filter(p => {
+    if (!p.PACKQTY || p.PACKQTY <= 1) return false;
+    const packStock = p.PACK_STOCK != null ? p.PACK_STOCK : Math.floor((p.STOCK || 0) / p.PACKQTY);
+    return packStock > 0;
+  }) : products;
   const hasMore = !isReachingEnd;
 
   // Synchronize priceRange once SWR loads the products
@@ -200,7 +205,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         return (
           p.PACKQTY && p.PACKQTY > 1 &&
           p.PACK_OFFER_PRICE && p.PACK_OFFER_PRICE > 0 &&
-          p.PACK_OFFER_EXPIRES_AT && p.PACK_OFFER_EXPIRES_AT > nowMs
+          p.PACK_OFFER_EXPIRES_AT && p.PACK_OFFER_EXPIRES_AT > nowMs &&
+          packStockAvailable(p) > 0
         );
       }
       if (!isEmbalajes) {
@@ -219,6 +225,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     if (!isPaquetes) return [];
     return allActiveProducts
       .filter(p => p.PACKQTY && p.PACKQTY > 1 && p.WHOLESALEPRICE && p.WHOLESALEPRICE > 0)
+      .filter(p => packStockAvailable(p) > 0)
       .sort((a, b) => {
         const priceA = (a.WHOLESALEPRICE || a.PRICE) * (a.PACKQTY || 1);
         const priceB = (b.WHOLESALEPRICE || b.PRICE) * (b.PACKQTY || 1);
@@ -266,8 +273,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       setZoomImage({ src: imgSrc, alt: p.NAME });
     }
   };
-
-  const packStockAvailable = (p: Product) => p.PACK_STOCK ?? Math.floor((p.STOCK || 0) / (p.PACKQTY || 1));
 
   // Load catalog categories & offers once on mount
   useEffect(() => {
@@ -540,22 +545,22 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
         {/* OFERTAS DEL DÍA — visible tanto en paquetes como en unidad */}
         {offersDayProducts.length > 0 && (isPaquetes || (!isPaquetes && !isEmbalajes)) && (() => {
-          const bannerBorderColor = isPaquetes ? '#ffe2c2' : '#fce7f3';
-          const bannerRadial = isPaquetes ? 'rgba(249,115,22,0.07)' : 'rgba(227,150,191,0.06)';
-          const badgeBg = isPaquetes ? 'linear-gradient(90deg,#f97316,#ef4444)' : 'linear-gradient(90deg,#db2777,#e396bf)';
-          const badgeShadow = isPaquetes ? 'rgba(249,115,22,0.35)' : 'rgba(219,39,119,0.35)';
-          const textColor = isPaquetes ? '#ea580c' : '#db2777';
-          const buttonGradient = isPaquetes ? 'linear-gradient(135deg,#ef4444,#f97316)' : 'linear-gradient(135deg,#db2777,#e396bf)';
-          const buttonShadow = isPaquetes ? 'rgba(239,68,68,0.35)' : 'rgba(219,39,119,0.35)';
-          const cardBorderUrgent = isPaquetes ? '#fecaca' : '#fbcfe8';
-          const cardBorderNormal = isPaquetes ? '#ffe2c2' : '#fce7f3';
-          const cardShadowUrgent = isPaquetes ? 'rgba(239,68,68,0.12)' : 'rgba(219,39,119,0.12)';
-          const cardShadowNormal = isPaquetes ? 'rgba(249,115,22,0.10)' : 'rgba(219,39,119,0.10)';
-          const btnBg = isPaquetes ? '#fff7ed' : '#fdf2f8';
-          const countdownBgUrgent = isPaquetes ? 'rgba(239,68,68,0.08)' : 'rgba(219,39,119,0.08)';
-          const countdownBgNormal = isPaquetes ? 'rgba(249,115,22,0.08)' : 'rgba(219,39,119,0.08)';
-          const countdownBorderUrgent = isPaquetes ? 'rgba(239,68,68,0.25)' : 'rgba(219,39,119,0.25)';
-          const countdownBorderNormal = isPaquetes ? 'rgba(249,115,22,0.2)' : 'rgba(219,39,119,0.2)';
+          const bannerBorderColor = isPaquetes ? '#e8dcc8' : '#fce7f3';
+          const bannerRadial = isPaquetes ? 'rgba(198,139,89,0.07)' : 'rgba(227,150,191,0.06)';
+          const badgeBg = isPaquetes ? 'linear-gradient(90deg,#c68b59,#d4a574)' : 'linear-gradient(90deg,#db2777,#e396bf)';
+          const badgeShadow = isPaquetes ? 'rgba(198,139,89,0.35)' : 'rgba(219,39,119,0.35)';
+          const textColor = isPaquetes ? '#8b6f4e' : '#db2777';
+          const buttonGradient = isPaquetes ? 'linear-gradient(135deg,#d4c4a8,#c9b896)' : 'linear-gradient(135deg,#db2777,#e396bf)';
+          const buttonShadow = isPaquetes ? 'rgba(198,139,89,0.25)' : 'rgba(219,39,119,0.35)';
+          const cardBorderUrgent = isPaquetes ? '#e8dcc8' : '#fbcfe8';
+          const cardBorderNormal = isPaquetes ? '#e8dcc8' : '#fce7f3';
+          const cardShadowUrgent = isPaquetes ? 'rgba(198,139,89,0.12)' : 'rgba(219,39,119,0.12)';
+          const cardShadowNormal = isPaquetes ? 'rgba(198,139,89,0.10)' : 'rgba(219,39,119,0.10)';
+          const btnBg = isPaquetes ? '#faf6f0' : '#fdf2f8';
+          const countdownBgUrgent = isPaquetes ? 'rgba(198,139,89,0.08)' : 'rgba(219,39,119,0.08)';
+          const countdownBgNormal = isPaquetes ? 'rgba(198,139,89,0.08)' : 'rgba(219,39,119,0.08)';
+          const countdownBorderUrgent = isPaquetes ? 'rgba(198,139,89,0.25)' : 'rgba(219,39,119,0.25)';
+          const countdownBorderNormal = isPaquetes ? 'rgba(198,139,89,0.2)' : 'rgba(219,39,119,0.2)';
 
           return (
             <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: '#ffffff', border: `1.5px solid ${bannerBorderColor}`, boxShadow: `0 10px 40px ${isPaquetes ? 'rgba(249,115,22,0.10)' : 'rgba(219,39,119,0.10)'}` }}>
@@ -598,6 +603,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const stockAvailable = isPack ? packStockAvailable(p) : (p.STOCK || 0);
                   const qtyToAdd = isPack ? (p.PACKQTY || 1) : 1;
                   const unitOfferPrice = isPack ? p.PACK_OFFER_PRICE! : p.CURRENTPRICE!;
+                  const oFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+                  const oTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+                  const oSku = getSkuFromFeatures(oFeatures, oTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
 
                   return (
                     <div key={p.$id} style={{ minWidth: 238, maxWidth: 256, flex: '0 0 auto', background: '#ffffff', borderRadius: 20, border: `1.5px solid ${isUrgent ? cardBorderUrgent : cardBorderNormal}`, overflow: 'hidden', boxShadow: `0 6px 24px ${isUrgent ? cardShadowUrgent : cardShadowNormal}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -617,6 +625,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         )}
                       </div>
                       <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        {oSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {oSku}</div>}
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 38 }}>{p.NAME}</p>
                         </Link>
@@ -714,7 +723,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
         {/* Carousel hero para paquetes */}
         {isPaquetes && carouselPaquetes.length > 0 && (
-          <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg,#fef9f4 0%,#fff8f0 100%)', border: '1px solid #eed9c4', boxShadow: '0 8px 32px rgba(198,139,89,0.12)' }}>
+          <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg,#fdfaf6 0%,#faf6f0 100%)', border: '1px solid #e8dcc8', boxShadow: '0 8px 32px rgba(198,139,89,0.08)' }}>
             <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg,#c68b59,#e09b6f)', color: '#fff', padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 800, marginBottom: 8, letterSpacing: '0.04em' }}>
@@ -737,10 +746,13 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                 const packPrice = (p.WHOLESALEPRICE || p.PRICE) * (p.PACKQTY || 1);
                 const origPackPrice = p.PRICE * (p.PACKQTY || 1);
                 const discPct = origPackPrice > packPrice ? Math.round((1 - packPrice / origPackPrice) * 100) : 0;
+                const cFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+                const cTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+                const cSku = getSkuFromFeatures(cFeatures, cTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
                 return (
                   <div key={p.$id} style={{ minWidth: 204, maxWidth: 224, flex: '0 0 auto', background: '#fff', borderRadius: 18, border: '1px solid #eed9c4', overflow: 'hidden', boxShadow: '0 4px 14px rgba(198,139,89,0.08)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                     {discPct > 0 && (
-                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 900, padding: '3px 9px' }}>-{discPct}%</div>
+                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: '#b8a07a', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 900, padding: '3px 9px' }}>-{discPct}%</div>
                     )}
                     {p.PACK_MIN_PACKS && p.PACK_DISCOUNT_PCT ? (
                       <div style={{ position: 'absolute', top: discPct > 0 ? 38 : 10, right: 10, zIndex: 2, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 800, padding: '2px 8px', whiteSpace: 'nowrap' }}>
@@ -755,6 +767,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       )}
                     </div>
                     <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      {cSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {cSku}</div>}
                       <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
                       </Link>
@@ -1060,7 +1073,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             <>
                               <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: isPaquetes ? primaryColor : (hasDisc ? '#d97bb0' : '#111'), letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
-                              {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
+                              {hasDisc && (isPaquetes ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 999, fontSize: 11, fontWeight: 900, letterSpacing: '0.04em', background: '#b8a07a', color: '#fff', lineHeight: 1, position: 'relative', zIndex: 2 }}>✦ -{disc}%</span>
+                              ) : (
+                                <AperturaDiscountBadge percent={disc} size="sm" />
+                              ))}
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
@@ -1141,7 +1158,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       {hasDisc && (
                         <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3 }}>
-                          <AperturaDiscountBadge percent={disc} size="sm" />
+                          {isPaquetes ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 999, fontSize: 11, fontWeight: 900, letterSpacing: '0.04em', background: '#b8a07a', color: '#fff', lineHeight: 1 }}>✦ -{disc}%</span>
+                          ) : (
+                            <AperturaDiscountBadge percent={disc} size="sm" />
+                          )}
                         </div>
                       )}
                       <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#f8f9fa', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>

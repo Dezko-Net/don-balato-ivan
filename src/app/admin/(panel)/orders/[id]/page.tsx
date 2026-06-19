@@ -1571,7 +1571,7 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-800 truncate">{it.name}</p>
-                      <p className="text-gray-400 text-[10px]">Cantidad en pedido: {it.qty}</p>
+                      <p className="text-gray-400 text-[10px]">{(() => { const sku = (it.id ? productSkus[it.id] : '') || (it as any).sku || ''; return sku ? <>SKU: <span className="font-mono">{sku}</span> · </> : null; })()}Cantidad en pedido: {it.qty}</p>
                     </div>
                   </div>
 
