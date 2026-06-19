@@ -1159,13 +1159,28 @@ function OrdersContent() {
         const phoneClean = order.CUSTOMERPHONE ? order.CUSTOMERPHONE.replace(/\D/g, '') : '';
         const waPhone = phoneClean.length === 9 ? '56' + phoneClean : phoneClean;
         
+        let items: any[] = [];
+        try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
+        const missingItems = items.filter((it: any) => !!it.missing);
+        const hasMissing = missingItems.length > 0;
+        const missingNames = missingItems.map((it: any) => `${it.name || ''} (x${it.qty || 1})`).join(', ');
+        const orderLink = typeof window !== 'undefined' ? `${window.location.origin}/pedido/${order.$id}` : '';
+        const firstMissingImg = missingItems[0]?.img || '';
+
         const msg1 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido ${order.ORDERCODE || ''}. Queríamos confirmar si tuviste algún problema para realizar tu pago o si tienes alguna duda con el envío. ¡Avísanos y te ayudamos a completarlo!`;
         const msg2 = `Hola ${order.CUSTOMERNAME || ''}, espero que estés muy bien. Aún tenemos reservado tu pedido ${order.ORDERCODE || ''} en Kevin&Coco Chile. Como queremos que disfrutes tus productos, si realizas tu pago hoy te regalamos un 5% de descuento adicional en esta compra con el cupón PAGO5. ¿Te gustaría que te envíe los datos de transferencia?`;
         const msg3 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile. Para poder liberar el stock a otros clientes, te comentamos que tu pedido ${order.ORDERCODE || ''} se cancelará automáticamente en unas horas. Si aún deseas tus productos, puedes enviarnos el comprobante de transferencia hoy mismo para procesarlo de inmediato. ¡Quedamos atentos!`;
         
+        let msg4 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido ${order.ORDERCODE || ''}. Queríamos comentarte que lamentablemente nos quedamos sin stock de: ${missingNames || 'algunos productos'}. Puedes ingresar a este enlace para ver las opciones disponibles y seleccionar tus productos de reemplazo: ${orderLink}`;
+        if (firstMissingImg) {
+          msg4 += `\n\nFoto de referencia del producto faltante: ${firstMissingImg}`;
+        }
+
         const waUrl1 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg1)}`;
         const waUrl2 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg2)}`;
         const waUrl3 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg3)}`;
+        const waUrl4 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg4)}`;
+        const showNegotiationBtn = hasMissing || order.STATUS === 'negotiation';
         
         const agencyDetails = order.SHIPPINGAGENCY ? getAgencyDetails(order.SHIPPINGAGENCY) : null;
 
@@ -1213,6 +1228,45 @@ function OrdersContent() {
                   </div>
                 </div>
 
+                {/* Productos Faltantes (Negociación) */}
+                {hasMissing && (
+                  <div className="bg-red-50/50 border border-red-100 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-red-800">
+                        <AlertTriangle size={18} className="shrink-0" />
+                        <h4 className="text-xs font-extrabold uppercase tracking-wider">Productos Faltantes</h4>
+                      </div>
+                      <span className="text-[10px] font-bold text-red-700 bg-red-100/80 px-2 py-0.5 rounded-full border border-red-200">Negociación</span>
+                    </div>
+                    <div className="space-y-2">
+                      {missingItems.map((it: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-red-100/60 shadow-sm animate-fade-in">
+                          {it.img ? (
+                            <img src={it.img} alt="" className="w-10 h-10 object-contain rounded-lg border border-gray-100 shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 shrink-0">
+                              <Package className="w-4 h-4 text-gray-300" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-gray-800 truncate">{it.name || ''}</p>
+                            <p className="text-[10px] text-gray-400">Cantidad faltante: {it.qty || 1}</p>
+                          </div>
+                          {it.img && (
+                            <button
+                              onClick={() => copyToClipboard(`img-${idx}`, it.img)}
+                              className={`p-1.5 rounded-lg border transition text-gray-400 hover:text-indigo-600 hover:bg-gray-50 shrink-0 ${copiedField === `img-${idx}` ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'}`}
+                              title="Copiar URL de la foto"
+                            >
+                              {copiedField === `img-${idx}` ? <span className="text-[9px] font-extrabold px-0.5">✓</span> : <Copy size={11} />}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* WhatsApp Messages section */}
                 <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
@@ -1237,6 +1291,13 @@ function OrdersContent() {
                       <span>3. Último Aviso / Liberar Stock (3d+)</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
                     </a>
+                    {showNegotiationBtn && (
+                      <a href={waUrl4} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-between px-3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal border border-pink-500">
+                        <span>🤝 4. Aviso Falta de Stock / Negociación</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
+                      </a>
+                    )}
                   </div>
                 </div>
                 
