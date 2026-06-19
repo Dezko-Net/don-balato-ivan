@@ -78,6 +78,14 @@ const FALLBACK_MEDAL_ICONS: Record<string, { icon: any; color: string; bg: strin
   ruby: { icon: Sparkles, color: '#f43f5e', bg: '#ffe4e6' },
 };
 
+const LEVEL_META: Record<string, { name: string; color: string; chipBg: string; chipBorder: string }> = {
+  bronze:  { name: 'Bronce',   color: '#b45309', chipBg: 'rgba(205,127,50,0.12)',  chipBorder: 'rgba(205,127,50,0.3)' },
+  silver:  { name: 'Plata',    color: '#6b7280', chipBg: 'rgba(156,163,175,0.14)', chipBorder: 'rgba(156,163,175,0.35)' },
+  gold:    { name: 'Oro',      color: '#b45309', chipBg: 'rgba(251,191,36,0.16)',  chipBorder: 'rgba(251,191,36,0.4)' },
+  diamond: { name: 'Diamante', color: '#2563eb', chipBg: 'rgba(96,165,250,0.14)',  chipBorder: 'rgba(96,165,250,0.4)' },
+  ruby:    { name: 'Rubí',     color: '#e11d48', chipBg: 'rgba(244,63,94,0.12)',   chipBorder: 'rgba(244,63,94,0.35)' },
+};
+
 export default function CuentaPage() {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
   useCuentaBg(BG_CUENTA);
@@ -165,6 +173,7 @@ export default function CuentaPage() {
   const userName = user?.name || 'Usuario';
   const initials = userName.split(' ').filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase() || 'U';
   const firstName = userName.split(' ')[0] || 'Usuario';
+  const levelMeta = LEVEL_META[currentLevel] || LEVEL_META.bronze;
 
   return (
     <>
@@ -331,19 +340,17 @@ export default function CuentaPage() {
       <div className="cuenta-desktop" style={{ display: 'none' }}>
         {/* Hero header */}
         <div style={{ background: '#fff', borderRadius: 22, marginBottom: 24, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
-          <div style={{
-            height: 160,
-            backgroundImage: coverUrl ? `url(${coverUrl})` : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+          <div className="hero-cover" style={{
+            height: 180,
+            backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            position: 'relative',
-            overflow: 'hidden'
           }}>
-            <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 5 }}>
               <Pencil size={15} color="#374151" style={{ opacity: 0.8 }} />
             </Link>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
+            <div className="hero-cover-overlay" />
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
             <div style={{ position: 'relative' }}>
@@ -583,19 +590,17 @@ export default function CuentaPage() {
         <div style={{ padding: '12px 12px 0' }}>
           <div style={{ background: '#fff', borderRadius: 22, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
             {/* Cover image */}
-            <div style={{
-              height: 130,
-              backgroundImage: coverUrl ? `url(${coverUrl})` : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+            <div className="hero-cover" style={{
+              height: 140,
+              backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
-              position: 'relative',
-              overflow: 'hidden'
             }}>
-              <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 10, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 10, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 5 }}>
                 <Pencil size={13} color="#374151" style={{ opacity: 0.8 }} />
               </Link>
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
+              <div className="hero-cover-overlay" />
             </div>
             {/* Saludo arriba, avatar abajo */}
             <div style={{ padding: '0 18px', marginTop: -36, position: 'relative', zIndex: 2, textAlign: 'center' }}>
@@ -749,30 +754,22 @@ export default function CuentaPage() {
         {/* ── MENU GROUPS ── */}
         <div style={{ padding: '14px 14px 50px' }}>
 
-          {/* Section: Mis compras */}
+          {/* Section: Mis compras — modern card grid */}
           <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mis compras</p>
-          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
-            <PmRow icon={Receipt} label="Mis Pedidos" desc="Seguí tus compras" href="/cuenta/pedidos" g="linear-gradient(135deg,#6366f1,#8b5cf6)" />
-            <PmRow icon={PackageSearch} label="Consultas" desc="Disponibilidad de productos" href="/cuenta/consultas" g="linear-gradient(135deg,#c0547a,#f97316)" />
-            <PmRow icon={Ticket} label="Cupones" desc="Tus descuentos disponibles" href="/cuenta/cupones" g="linear-gradient(135deg,#e396bf,#f472b6)" />
-            <PmRow icon={Gift} label="Regalos" desc="Tus regalos disponibles" href="/cuenta/regalos" g="linear-gradient(135deg,#f59e0b,#fbbf24)" last badge={hasGifts ? 1 : undefined} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 16 }}>
+            {MIS_COMPRAS_ITEMS.map((item, i) => <MobileCard key={item.label} item={item} index={i} />)}
           </div>
 
-          {/* Section: Mi cuenta */}
+          {/* Section: Mi cuenta — modern card grid */}
           <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mi cuenta</p>
-          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
-            <PmRow icon={User} label="Datos personales" desc="Nombre, foto y perfil" href="/cuenta" g="linear-gradient(135deg,#3b82f6,#60a5fa)" />
-            <PmRow icon={Phone} label="Contacto" desc="Teléfono y RUT" href="/cuenta/info" g="linear-gradient(135deg,#06b6d4,#22d3ee)" />
-            <PmRow icon={MapPin} label="Direcciones" desc="Envíos guardados" href="/cuenta/direcciones" g="linear-gradient(135deg,#10b981,#34d399)" last />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 16 }}>
+            {CUENTA_ITEMS.map((item, i) => <MobileCard key={item.label} item={item} index={i + 10} />)}
           </div>
 
-          {/* Section: Más */}
+          {/* Section: Más — modern card grid */}
           <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Más opciones</p>
-          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 20 }}>
-            <PmRow icon={Trophy} label="Mis Niveles" desc="Programa de lealtad" href="/cuenta/niveles" g="linear-gradient(135deg,#f59e0b,#fbbf24)" />
-            <PmRow icon={Building2} label="Cuenta Mayorista" desc="Precios por volumen" href="/mayorista" g="linear-gradient(135deg,#8b5cf6,#a78bfa)" />
-            <PmRow icon={HelpCircle} label="Soporte" desc="Ayuda y tickets" href="/cuenta/tickets" g="linear-gradient(135deg,#64748b,#94a3b8)" />
-            <PmRow icon={MessageCircle} label="Conversaciones" desc="Historial de chats" href="/cuenta/conversaciones" g="linear-gradient(135deg,#0ea5e9,#38bdf8)" last />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 20 }}>
+            {CONFIG_ITEMS.map((item, i) => <MobileCard key={item.label} item={item} index={i + 20} />)}
           </div>
 
           {/* Logout */}
@@ -812,6 +809,84 @@ function DesktopCard({ item }: { item: MenuItem }) {
         {item.desc && (
           <p style={{ margin: 0, fontSize: 14, color: '#9ca3af', lineHeight: 1.4 }}>{item.desc}</p>
         )}
+      </div>
+    </Link>
+  );
+}
+
+const CARD_GRADIENTS = [
+  'linear-gradient(135deg,#6366f1,#8b5cf6)',
+  'linear-gradient(135deg,#e396bf,#f472b6)',
+  'linear-gradient(135deg,#f59e0b,#fbbf24)',
+  'linear-gradient(135deg,#10b981,#34d399)',
+  'linear-gradient(135deg,#3b82f6,#60a5fa)',
+  'linear-gradient(135deg,#06b6d4,#22d3ee)',
+  'linear-gradient(135deg,#8b5cf6,#a78bfa)',
+  'linear-gradient(135deg,#0ea5e9,#38bdf8)',
+  'linear-gradient(135deg,#64748b,#94a3b8)',
+  'linear-gradient(135deg,#c0547a,#f97316)',
+];
+
+function ColoredCard({ item, index }: { item: MenuItem; index: number }) {
+  const Icon = item.icon;
+  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+  return (
+    <Link href={item.href} style={{
+      textDecoration: 'none', display: 'flex', flexDirection: 'column',
+      background: '#fff', borderRadius: 18, overflow: 'hidden',
+      border: '1px solid rgba(0,0,0,0.07)',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.05)',
+      transition: 'transform 0.2s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s',
+      position: 'relative', minHeight: 130,
+    }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)'; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.05)'; }}
+    >
+      <div style={{ height: 4, background: gradient }} />
+      <div style={{ padding: '18px 18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 13,
+          background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', flexShrink: 0,
+        }}>
+          <Icon size={20} color="#fff" strokeWidth={2.2} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: '0 0 4px', fontSize: 14.5, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{item.label}</p>
+          {item.desc && <p style={{ margin: 0, fontSize: 12.5, color: '#9ca3af', lineHeight: 1.4 }}>{item.desc}</p>}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function MobileCard({ item, index }: { item: MenuItem; index: number }) {
+  const Icon = item.icon;
+  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+  return (
+    <Link href={item.href} style={{
+      textDecoration: 'none', display: 'flex', flexDirection: 'column',
+      background: '#fff', borderRadius: 16, overflow: 'hidden',
+      border: '1px solid rgba(0,0,0,0.07)',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06)',
+      transition: 'transform 0.15s', position: 'relative',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = ''; }}
+    >
+      <div style={{ height: 3, background: gradient }} />
+      <div style={{ padding: '14px 14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: 11,
+          background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 3px 8px rgba(0,0,0,0.12)', flexShrink: 0,
+        }}>
+          <Icon size={17} color="#fff" strokeWidth={2.2} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{item.label}</p>
+          {item.desc && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9ca3af', lineHeight: 1.3 }}>{item.desc}</p>}
+        </div>
       </div>
     </Link>
   );

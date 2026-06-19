@@ -85,13 +85,19 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', fontFamily: FF }}>
-      {/* Solid white background */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, background: '#ffffff' }} />
+      {/* Soft premium background — tinted gradient + pink/lavender glows */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, #fdf4f9 0%, #faf7fe 38%, #f7f9ff 100%)' }} />
+        {/* Radial glows */}
+        <div style={{ position: 'absolute', top: '-12%', left: '-8%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(227,150,191,0.22) 0%, transparent 68%)', filter: 'blur(8px)' }} />
+        <div style={{ position: 'absolute', top: '-6%', right: '-10%', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.18) 0%, transparent 68%)', filter: 'blur(8px)' }} />
+        <div style={{ position: 'absolute', bottom: '-14%', left: '34%', width: 560, height: 560, borderRadius: '50%', background: 'radial-gradient(circle, rgba(129,140,248,0.10) 0%, transparent 70%)', filter: 'blur(10px)' }} />
+        {/* Faint dot grid */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(167,139,250,0.10) 1px, transparent 1px)', backgroundSize: '26px 26px', opacity: 0.5, maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.9), transparent 75%)', WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,0.9), transparent 75%)' }} />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
-        body { background-color: #ffffff !important; }
+        body { background-color: #fdf4f9 !important; }
         .cl-sidebar { display: none }
         @media (min-width: 900px) {
           .cl-sidebar { display: flex !important }

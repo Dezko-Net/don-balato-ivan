@@ -104,7 +104,11 @@ export default function NegotiationOrdersPage() {
       const res = await fetch(`/api/cron/negotiation?secret=negotiation_secret_key_2026&orderId=${orderId}`);
       const data = await res.json();
       if (res.ok) {
-        alert('Negociación iniciada con éxito. Mensaje enviado al cliente.');
+        if (data.processed && data.processed.length > 0) {
+          alert('Negociación iniciada con éxito. Mensaje enviado al cliente.');
+        } else {
+          alert('Error: La API se ejecutó, pero el mensaje no pudo ser enviado a WhatsApp. (¿Usaste el mismo número de Kenia o la plantilla "saludo_kenia" no está aprobada?)');
+        }
         loadNegotiationOrders();
       } else {
         alert('Error al negociar: ' + (data.error || 'Ocurrió un error'));
