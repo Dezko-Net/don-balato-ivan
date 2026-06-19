@@ -372,7 +372,22 @@ export default function OrderDetailPage() {
           oldSku = oldProd.sku || getSkuFromFeatures(oldProd.FEATURES, oldProd.TAGS, oldProd.jumpseller_id, oldProd.sku);
           oldName = oldProd.NAME || oldName;
           oldImg = oldProd.IMAGEURL || oldImg;
-        } catch {}
+        } catch {
+          try {
+            const nameSearchRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+              Query.equal('NAME', oldItem.name),
+              Query.limit(1)
+            ]);
+            if (nameSearchRes.documents.length > 0) {
+              const oldProd = nameSearchRes.documents[0] as any;
+              oldSku = oldProd.sku || getSkuFromFeatures(oldProd.FEATURES, oldProd.TAGS, oldProd.jumpseller_id, oldProd.sku);
+              oldName = oldProd.NAME || oldName;
+              oldImg = oldProd.IMAGEURL || oldImg;
+            }
+          } catch (errName) {
+            console.error("Error doing name fallback search for blocked products:", errName);
+          }
+        }
       }
 
       if (oldSku) {

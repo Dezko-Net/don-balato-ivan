@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { getSkuFromFeatures, getBarcodeFromFeatures } from '@/lib/product-features';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { Query, ID } from 'appwrite';
 import Image from 'next/image';
@@ -471,16 +472,23 @@ function CheckoutInner() {
       const { databaseId } = getAppwriteConfig();
       const now = Date.now();
       const reqCode = `WR-${String(now).slice(-8)}`;
-      const itemsData = items.map(i => ({
-        id: i.product.$id,
-        name: i.product.NAME,
-        price: i.wholesalePrice || i.product.WHOLESALEPRICE || i.product.PRICE,
-        packQty: i.product.PACKQTY || 1,
-        qty: i.quantity,
-        img: i.product.IMAGEURL || '',
-        total: (i.wholesalePrice || i.product.WHOLESALEPRICE || i.product.PRICE) * i.quantity,
-        isPack: i.isPack || false,
-      }));
+      const itemsData = items.map(i => {
+        const prod = i.product as any;
+        const productSku = prod.SKU || getSkuFromFeatures(prod.FEATURES, prod.TAGS, prod.jumpseller_id, prod.SKU) || '';
+        const productBarcode = prod.BARCODE || getBarcodeFromFeatures(prod.FEATURES, prod.BARCODE) || '';
+        return {
+          id: prod.$id,
+          name: prod.NAME,
+          price: i.wholesalePrice || prod.WHOLESALEPRICE || prod.PRICE,
+          packQty: prod.PACKQTY || 1,
+          qty: i.quantity,
+          img: prod.IMAGEURL || '',
+          total: (i.wholesalePrice || prod.WHOLESALEPRICE || prod.PRICE) * i.quantity,
+          isPack: i.isPack || false,
+          sku: productSku,
+          barcode: productBarcode
+        };
+      });
       const finalAddress = (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && !form.address.startsWith('[SUCURSAL]'))
         ? `[SUCURSAL] ${form.address}` : form.address;
       const additionalInfoWithGeo = coords
