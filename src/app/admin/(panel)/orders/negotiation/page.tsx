@@ -108,10 +108,12 @@ export default function NegotiationOrdersPage() {
           alert('Negociación iniciada con éxito. Mensaje enviado al cliente.');
         } else if (data.skipped_no_missing && data.skipped_no_missing.length > 0) {
           alert('Error: El pedido no tiene productos marcados como faltantes. Ve al pedido, marca qué productos faltan en el "Panel de Negociación por Productos Faltantes" y luego vuelve a intentarlo.');
+        } else if (data.send_errors && data.send_errors.length > 0) {
+          alert('Error al enviar WhatsApp:\n' + data.send_errors.join('\n'));
         } else if (data.has_wa_token === false) {
           alert('Error: WHATSAPP_ACCESS_TOKEN no está configurado en las variables de entorno.');
         } else {
-          alert('Error: No se pudo enviar el mensaje. Verifica que el teléfono del cliente sea válido y que WHATSAPP_PHONE_NUMBER_ID esté configurado.');
+          alert('Error: No se pudo enviar el mensaje. Revisa la consola del servidor para más detalles.');
         }
         loadNegotiationOrders();
       } else {

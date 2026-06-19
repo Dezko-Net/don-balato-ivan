@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
     }
 
     const processedOrders: string[] = [];
+    const sendErrors: string[] = [];
+    const debugInfo: any[] = [];
 
     for (const order of activeOrders) {
       const orderId = order.$id;
@@ -143,7 +145,7 @@ export async function GET(req: NextRequest) {
       const formattedPhone = formatWhatsAppPhone(rawPhone);
 
       if (formattedPhone && WA_TOKEN) {
-        let templateSent = false;
+        let messageSent = false;
         let sendError = '';
         try {
           // Send the approved template first
@@ -164,16 +166,17 @@ export async function GET(req: NextRequest) {
             ],
             WA_TOKEN
           );
-          templateSent = true;
+          messageSent = true;
         } catch (tplErr: any) {
           console.error(`[Cron Negotiation] Template failed for ${orderCode}, trying plain text:`, tplErr.message);
           sendError = tplErr.message;
         }
 
         // If template failed, send as plain text message
-        if (!templateSent) {
+        if (!messageSent) {
           try {
             await sendWhatsAppMessage(formattedPhone, messageText, WA_TOKEN);
+            messageSent = true;
             console.log(`[Cron Negotiation] Plain text sent to ${formattedPhone} for order ${orderCode} (template failed)`);
           } catch (txtErr: any) {
             console.error(`[Cron Negotiation] Plain text also failed for ${orderCode}:`, txtErr.message);
@@ -181,36 +184,43 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        try {
-          const historyMsg = templateSent
-            ? `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Kevin&Coco. ¿Cómo estás?`
-            : messageText;
-          await addToHistory(formattedPhone, 'assistant', historyMsg);
+        if (messageSent) {
+          try {
+            const historyMsg = sendError
+              ? messageText
+              : `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Kevin&Coco. ¿Cómo estás?`;
+            await addToHistory(formattedPhone, 'assistant', historyMsg);
 
-          // If manually triggered (targetOrderId is present), log that details cannot be sent until reply
-          if (targetOrderId) {
-            console.log(`[Cron Negotiation] Manual trigger: Message sent to ${formattedPhone} for order ${orderCode}. Details will be sent when customer replies.`);
-          } else {
-            console.log(`[Cron Negotiation] WhatsApp message sent successfully to ${formattedPhone} for order ${orderCode}`);
+            if (targetOrderId) {
+              console.log(`[Cron Negotiation] Manual trigger: Message sent to ${formattedPhone} for order ${orderCode}.`);
+            } else {
+              console.log(`[Cron Negotiation] WhatsApp message sent successfully to ${formattedPhone} for order ${orderCode}`);
+            }
+            
+            // 5. Update order notes to mark as notified
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const updatedNotes = adminNotes 
+              ? `${adminNotes}\n[negot_wa_notified: ${timestamp}]`
+              : `[negot_wa_notified: ${timestamp}]`;
+
+            await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+              adminNotes: updatedNotes,
+              UPDATEDAT: Date.now()
+            });
+
+            processedOrders.push(orderCode);
+          } catch (postErr: any) {
+            console.error(`[Cron Negotiation] Failed to save history/update order for ${orderCode}:`, postErr);
+            sendErrors.push(`${orderCode}: ${postErr.message}`);
           }
-          
-          // 5. Update order notes to mark as notified
-          const timestamp = new Date().toISOString().slice(0, 10);
-          const updatedNotes = adminNotes 
-            ? `${adminNotes}\n[negot_wa_notified: ${timestamp}]`
-            : `[negot_wa_notified: ${timestamp}]`;
-
-          await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-            adminNotes: updatedNotes,
-            UPDATEDAT: Date.now()
-          });
-
-          processedOrders.push(orderCode);
-        } catch (postErr: any) {
-          console.error(`[Cron Negotiation] Failed to save history/update order for ${orderCode}:`, postErr);
+        } else {
+          sendErrors.push(`${orderCode}: ${sendError}`);
         }
       } else {
-        console.warn(`[Cron Negotiation] Could not send message to order ${orderCode}: phone is invalid (${rawPhone}) or WA_TOKEN is missing.`);
+        const reason = !formattedPhone ? `phone invalid or empty (raw: "${rawPhone}")` : 'WA_TOKEN missing';
+        console.warn(`[Cron Negotiation] Could not send message to order ${orderCode}: ${reason}.`);
+        sendErrors.push(`${orderCode}: ${reason}`);
+        debugInfo.push({ orderCode, rawPhone, formattedPhone, hasToken: !!WA_TOKEN });
       }
     }
 
@@ -225,6 +235,8 @@ export async function GET(req: NextRequest) {
         } catch { return true; }
       }).map(o => o.ORDERCODE || o.$id),
       has_wa_token: !!WA_TOKEN,
+      send_errors: sendErrors,
+      debug: debugInfo,
     });
 
   } catch (err: any) {
