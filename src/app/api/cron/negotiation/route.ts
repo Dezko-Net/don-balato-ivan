@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
           await sendWhatsAppTemplate(
             formattedPhone,
             'saludo_kenia',
-            'es_MX',
+            'es_419',
             [
               {
                 type: 'body',
