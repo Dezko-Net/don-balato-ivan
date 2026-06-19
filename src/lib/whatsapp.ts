@@ -81,8 +81,7 @@ export async function clearHistory(phone: string): Promise<void> {
 // ─── Send a plain text message ─────────────────────────────────────────────────
 export async function sendWhatsAppMessage(to: string, text: string, token: string): Promise<void> {
   if (!token || !WA_PHONE_NUMBER_ID) {
-    console.error('[WhatsApp] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
-    return;
+    throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
   }
 
   const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;
@@ -110,6 +109,7 @@ export async function sendWhatsAppMessage(to: string, text: string, token: strin
     if (!res.ok) {
       const err = await res.text();
       console.error('[WhatsApp] sendMessage error:', err);
+      throw new Error(`WhatsApp API Error: ${err}`);
     }
   }
 }
@@ -123,8 +123,7 @@ export async function sendWhatsAppTemplate(
   token: string
 ): Promise<void> {
   if (!token || !WA_PHONE_NUMBER_ID) {
-    console.error('[WhatsApp] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
-    return;
+    throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
   }
 
   const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;

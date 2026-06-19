@@ -106,8 +106,12 @@ export default function NegotiationOrdersPage() {
       if (res.ok) {
         if (data.processed && data.processed.length > 0) {
           alert('Negociación iniciada con éxito. Mensaje enviado al cliente.');
+        } else if (data.skipped_no_missing && data.skipped_no_missing.length > 0) {
+          alert('Error: El pedido no tiene productos marcados como faltantes. Ve al pedido, marca qué productos faltan en el "Panel de Negociación por Productos Faltantes" y luego vuelve a intentarlo.');
+        } else if (data.has_wa_token === false) {
+          alert('Error: WHATSAPP_ACCESS_TOKEN no está configurado en las variables de entorno.');
         } else {
-          alert('Error: La API se ejecutó, pero el mensaje no pudo ser enviado a WhatsApp. (¿Usaste el mismo número de Kenia o la plantilla "saludo_kenia" no está aprobada?)');
+          alert('Error: No se pudo enviar el mensaje. Verifica que el teléfono del cliente sea válido y que WHATSAPP_PHONE_NUMBER_ID esté configurado.');
         }
         loadNegotiationOrders();
       } else {

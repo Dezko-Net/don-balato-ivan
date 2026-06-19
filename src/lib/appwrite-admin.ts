@@ -86,6 +86,7 @@ export const ORDER_STATUS_HISTORY_COLLECTION_ID = 'order_status_history';
 export const COUPONS_COLLECTION_ID = 'discount_coupons';
 export const POINTS_STORE_COLLECTION_ID = 'points_store_items';
 export const WHOLESALE_REQUESTS_COLLECTION_ID = 'wholesale_requests';
+export const WHOLESALE_ORDERS_COLLECTION_ID = 'wholesale_orders';
 export const REVIEWS_COLLECTION_ID = 'reviews';
 export const FAVORITES_COLLECTION_ID = 'favorites';
 export const CART_ITEMS_COLLECTION_ID = 'cart_items';

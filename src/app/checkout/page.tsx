@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_ORDERS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { CHILE_REGIONES } from '@/types';
@@ -535,7 +535,7 @@ function CheckoutInner() {
       const additionalInfoWithGeo = coords
         ? `${form.additionalInfo ? form.additionalInfo + '\n' : ''}[GEO:${coords.lat},${coords.lng}]`
         : form.additionalInfo;
-      const docId = await databases.createDocument(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, ID.unique(), {
+      const docId = await databases.createDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, ID.unique(), {
         USERID: user?.id || 'guest',
         ITEMS: JSON.stringify(itemsData),
         CUSTOMERNAME: form.name,

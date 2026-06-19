@@ -143,6 +143,8 @@ export async function GET(req: NextRequest) {
       const formattedPhone = formatWhatsAppPhone(rawPhone);
 
       if (formattedPhone && WA_TOKEN) {
+        let templateSent = false;
+        let sendError = '';
         try {
           // Send the approved template first
           await sendWhatsAppTemplate(
@@ -162,15 +164,34 @@ export async function GET(req: NextRequest) {
             ],
             WA_TOKEN
           );
-          
-          const historyMsg = `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Kevin&Coco. ¿Cómo estás?`;
+          templateSent = true;
+        } catch (tplErr: any) {
+          console.error(`[Cron Negotiation] Template failed for ${orderCode}, trying plain text:`, tplErr.message);
+          sendError = tplErr.message;
+        }
+
+        // If template failed, send as plain text message
+        if (!templateSent) {
+          try {
+            await sendWhatsAppMessage(formattedPhone, messageText, WA_TOKEN);
+            console.log(`[Cron Negotiation] Plain text sent to ${formattedPhone} for order ${orderCode} (template failed)`);
+          } catch (txtErr: any) {
+            console.error(`[Cron Negotiation] Plain text also failed for ${orderCode}:`, txtErr.message);
+            sendError = `Template: ${sendError} | Text: ${txtErr.message}`;
+          }
+        }
+
+        try {
+          const historyMsg = templateSent
+            ? `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Kevin&Coco. ¿Cómo estás?`
+            : messageText;
           await addToHistory(formattedPhone, 'assistant', historyMsg);
 
           // If manually triggered (targetOrderId is present), log that details cannot be sent until reply
           if (targetOrderId) {
-            console.log(`[Cron Negotiation] Manual trigger: Template sent to ${formattedPhone} for order ${orderCode}. Details will be sent when customer replies.`);
+            console.log(`[Cron Negotiation] Manual trigger: Message sent to ${formattedPhone} for order ${orderCode}. Details will be sent when customer replies.`);
           } else {
-            console.log(`[Cron Negotiation] WhatsApp template sent successfully to ${formattedPhone} for order ${orderCode}`);
+            console.log(`[Cron Negotiation] WhatsApp message sent successfully to ${formattedPhone} for order ${orderCode}`);
           }
           
           // 5. Update order notes to mark as notified
@@ -185,8 +206,8 @@ export async function GET(req: NextRequest) {
           });
 
           processedOrders.push(orderCode);
-        } catch (sendErr: any) {
-          console.error(`[Cron Negotiation] Failed to send WhatsApp/update order for ${orderCode}:`, sendErr);
+        } catch (postErr: any) {
+          console.error(`[Cron Negotiation] Failed to save history/update order for ${orderCode}:`, postErr);
         }
       } else {
         console.warn(`[Cron Negotiation] Could not send message to order ${orderCode}: phone is invalid (${rawPhone}) or WA_TOKEN is missing.`);
@@ -196,7 +217,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       status: 'ok',
       processed: processedOrders,
-      total_found: activeOrders.length
+      total_found: activeOrders.length,
+      skipped_no_missing: activeOrders.filter(o => {
+        try {
+          const items = JSON.parse((o.ITEMS as string) || '[]');
+          return !items.some((it: any) => it.missing === true);
+        } catch { return true; }
+      }).map(o => o.ORDERCODE || o.$id),
+      has_wa_token: !!WA_TOKEN,
     });
 
   } catch (err: any) {

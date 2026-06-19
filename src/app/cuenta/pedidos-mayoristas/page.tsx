@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Package, Loader2, Clock, CheckCircle, XCircle, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { getServices, getAppwriteConfig } from '@/lib/appwrite';
-import { WHOLESALE_REQUESTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { WHOLESALE_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
 import { Query } from 'appwrite';
@@ -43,7 +43,7 @@ export default function PedidosMayoristasPage() {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [
+        const res = await databases.listDocuments(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, [
           Query.equal('USERID', user.id),
           Query.orderDesc('$createdAt'),
           Query.limit(50),
@@ -53,7 +53,7 @@ export default function PedidosMayoristasPage() {
         try {
           const { databases } = getServices();
           const { databaseId } = getAppwriteConfig();
-          const res2 = await databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [
+          const res2 = await databases.listDocuments(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, [
             Query.equal('CUSTOMEREMAIL', user.email || ''),
             Query.orderDesc('$createdAt'),
             Query.limit(50),
