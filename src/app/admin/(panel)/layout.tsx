@@ -113,6 +113,7 @@ const NAV_GROUPS: NavGroup[] = [
   ]},
   { label: 'Configuración', defaultOpen: false, items: [
     { href: '/admin/engagement/plantillas', label: 'Plantillas',       icon: Ico.Plantillas },
+    { href: '/admin/editor',                label: 'Editor de Banners', icon: Ico.HeroCarousel },
     { href: '', label: 'Mi Tienda', icon: Ico.MiTienda, children: [
       { href: '/admin/settings',       label: 'Servidor',         icon: Ico.Server },
       { href: '/admin/store-settings', label: 'Información',      icon: Ico.Productos },

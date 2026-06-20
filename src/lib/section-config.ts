@@ -426,6 +426,14 @@ export interface SectionSettings {
   overlayEnabled?: boolean;
   overlayOpacity?: number;
   overlayColor?: string;
+  // Hero Banners (Plantilla 23 overrides)
+  tpl23Hero1DesktopImg?: string;
+  tpl23Hero1MobileImg?: string;
+  tpl23Hero1Title?: string;
+  tpl23Hero1BtnText?: string;
+  tpl23Hero1BtnLink?: string;
+  tpl23Hero2DesktopImg?: string;
+  tpl23Hero2MobileImg?: string;
 }
 
 export interface CollectionItem {

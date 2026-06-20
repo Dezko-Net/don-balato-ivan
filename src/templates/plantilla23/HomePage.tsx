@@ -28,6 +28,7 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { getSectionConfigAsync, type SectionConfig } from '@/lib/section-config';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
@@ -166,6 +167,8 @@ export default function HomePage23() {
   const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
   const [keniaEnabled, setKeniaEnabled] = useState(true);
+  const [themeSections, setThemeSections] = useState<SectionConfig[]>([]);
+  const [isThemeConfigLoaded, setIsThemeConfigLoaded] = useState(false);
 
   useEffect(() => {
     fetch('/api/public-data/kenia-status')
@@ -176,6 +179,15 @@ export default function HomePage23() {
         }
       })
       .catch(() => {});
+
+    getSectionConfigAsync()
+      .then((cfg) => {
+        setThemeSections(cfg);
+        setIsThemeConfigLoaded(true);
+      })
+      .catch(() => {
+        setIsThemeConfigLoaded(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -1869,7 +1881,7 @@ export default function HomePage23() {
 
   /* ── Set innerHTML ONCE via ref ── */
   useEffect(() => {
-    if (!bodyHtml || !containerRef.current || !isAppwriteLoaded) return;
+    if (!bodyHtml || !containerRef.current || !isAppwriteLoaded || !isThemeConfigLoaded) return;
     if (containerRef.current.dataset.htmlSet) return;
 
     // Parse HTML string to DOM nodes in memory
@@ -2045,6 +2057,61 @@ export default function HomePage23() {
     containerRef.current.dataset.htmlSet = '1';
     setHtmlInjected(true);
 
+    // ═══ CUSTOM HERO CONFIG OVERRIDES (FROM ADMIN) ═══
+    const heroConfig = themeSections.find(s => s.id === 'tpl1_hero')?.settings || {};
+    
+    // 1. Desktop Image override
+    if (heroConfig.tpl23Hero1DesktopImg) {
+      const vidDesktop = containerRef.current.querySelector('#hero1-video-desktop') as HTMLVideoElement | null;
+      if (vidDesktop) {
+        vidDesktop.style.display = 'none'; // Ocultar video por defecto
+        let customImg = containerRef.current.querySelector('#hero1-custom-img-desktop') as HTMLImageElement;
+        if (!customImg) {
+          customImg = document.createElement('img');
+          customImg.id = 'hero1-custom-img-desktop';
+          customImg.className = vidDesktop.className;
+          customImg.style.opacity = '1';
+          vidDesktop.parentElement?.insertBefore(customImg, vidDesktop);
+        }
+        customImg.src = heroConfig.tpl23Hero1DesktopImg;
+      }
+    }
+
+    // 2. Mobile Image override
+    if (heroConfig.tpl23Hero1MobileImg) {
+      const vidMobile = containerRef.current.querySelector('#hero1-video-mobile') as HTMLVideoElement | null;
+      if (vidMobile) {
+        vidMobile.style.display = 'none'; // Ocultar video por defecto
+        let customImg = containerRef.current.querySelector('#hero1-custom-img-mobile') as HTMLImageElement;
+        if (!customImg) {
+          customImg = document.createElement('img');
+          customImg.id = 'hero1-custom-img-mobile';
+          customImg.className = vidMobile.className;
+          customImg.style.opacity = '1';
+          vidMobile.parentElement?.insertBefore(customImg, vidMobile);
+        }
+        customImg.src = heroConfig.tpl23Hero1MobileImg;
+      }
+    }
+
+    // 3. Text & Button override
+    if (heroConfig.tpl23Hero1Title) {
+      const headingSpan = containerRef.current.querySelector('giant-heading h2 span.leading-none');
+      if (headingSpan) headingSpan.textContent = heroConfig.tpl23Hero1Title;
+    }
+    if (heroConfig.tpl23Hero1BtnText) {
+      const splitHero = containerRef.current.querySelector('split-hero');
+      if (splitHero) {
+        const btn = splitHero.querySelector('a.button--primary');
+        if (btn) {
+           btn.textContent = heroConfig.tpl23Hero1BtnText;
+           if (heroConfig.tpl23Hero1BtnLink) {
+             (btn as HTMLAnchorElement).href = heroConfig.tpl23Hero1BtnLink;
+           }
+        }
+      }
+    }
+
     // 🎞️ Segundo Hero Banner (Kenia) — carrusel overlay con crossfade sobre la banner
     // original, con flechas, puntos, autoplay (5s) y responsive (PC ≥993px / móvil <993px).
     try {
@@ -2054,8 +2121,11 @@ export default function HomePage23() {
 
         const KENIA_PHONE = '56936599658';
         const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
-        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758588825-pegada-1781758586654.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XuK0ff%2FaOBtzwSnfof24jryXdgHqvpnnFpt41fhV7HXSqq%2FsLtXBdxn1EeoICl6hOqGuAI8p2OEjm1v%2BItCsAfedWAJL9DdZAOgD9ax0YS7GUFnwGi%2Blugbq%2F52eS4Xf3M0PY9il9TikeU6BMNgqRoOVc5wsYcgUHLHI5bHkn3vMSaZty9kBmi%2BZlhXir7eM%2F5RGBD9yBJWDQsw19lA3qp8fEo5p8Wn%2FbrGMv9NXIELdqG2%2Bv0HvURo1zJsNcD%2B0TCsoLGVkuK7ojYLl6f8hB6yCLdAFH2LgICS%2B800QecmCHs3kJQeOG%2FlXlpvF9T11vamgc24ZptjcwlmmVzwyTw%3D%3D';
-        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758310444-pegada-1781758308350.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=GjfIQEBUtw%2F4U6GjdNN4ECU4wcqITqFei2LBBSdASIQyNI%2FRs2M0%2BH%2Fd8OTLaGhjmG%2B6eWQfFTXBoCdmhkyo%2Fd1H9kvIeAlzmDkUY%2BPzS35yTsjelnVXlTvt77zKpsUQfYYR9u5eYIDN%2FfdSEFY98Wb5rlPJOFt2FXneYQqnqfyJA8OhSGnHYKmfxfymlsZakUv6GmiiZGewHQ%2FbTABTHHz4cSgI5rlEISwoPGnDzEsait9CHZoszRscjCeocczr34Vbnd15CJsxrDl%2BaDIijdHSC7JPvAdt14rW6kxp6q1QAbNfxxdUmeIawwAP4tPI2a7EAg8Vna5RIr171OqYtg%3D%3D';
+        const DEFAULT_KENIA_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758588825-pegada-1781758586654.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XuK0ff%2FaOBtzwSnfof24jryXdgHqvpnnFpt41fhV7HXSqq%2FsLtXBdxn1EeoICl6hOqGuAI8p2OEjm1v%2BItCsAfedWAJL9DdZAOgD9ax0YS7GUFnwGi%2Blugbq%2F52eS4Xf3M0PY9il9TikeU6BMNgqRoOVc5wsYcgUHLHI5bHkn3vMSaZty9kBmi%2BZlhXir7eM%2F5RGBD9yBJWDQsw19lA3qp8fEo5p8Wn%2FbrGMv9NXIELdqG2%2Bv0HvURo1zJsNcD%2B0TCsoLGVkuK7ojYLl6f8hB6yCLdAFH2LgICS%2B800QecmCHs3kJQeOG%2FlXlpvF9T11vamgc24ZptjcwlmmVzwyTw%3D%3D';
+        const DEFAULT_KENIA_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758310444-pegada-1781758308350.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=GjfIQEBUtw%2F4U6GjdNN4ECU4wcqITqFei2LBBSdASIQyNI%2FRs2M0%2BH%2Fd8OTLaGhjmG%2B6eWQfFTXBoCdmhkyo%2Fd1H9kvIeAlzmDkUY%2BPzS35yTsjelnVXlTvt77zKpsUQfYYR9u5eYIDN%2FfdSEFY98Wb5rlPJOFt2FXneYQqnqfyJA8OhSGnHYKmfxfymlsZakUv6GmiiZGewHQ%2FbTABTHHz4cSgI5rlEISwoPGnDzEsait9CHZoszRscjCeocczr34Vbnd15CJsxrDl%2BaDIijdHSC7JPvAdt14rW6kxp6q1QAbNfxxdUmeIawwAP4tPI2a7EAg8Vna5RIr171OqYtg%3D%3D';
+
+        const KENIA_IMG_PC = heroConfig.tpl23Hero2DesktopImg || DEFAULT_KENIA_PC;
+        const KENIA_IMG_MOBILE = heroConfig.tpl23Hero2MobileImg || DEFAULT_KENIA_MOBILE;
 
         const heroBg = heroSec.querySelector('.slideshow__background') as HTMLElement | null;
         if (heroBg) {
@@ -2768,7 +2838,7 @@ export default function HomePage23() {
     setTimeout(injectMobileHeroButtons, 800);
     setTimeout(injectMobileHeroButtons, 2000);
 
-  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers, keniaEnabled]);
+  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers, keniaEnabled, isThemeConfigLoaded]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
   useEffect(() => {

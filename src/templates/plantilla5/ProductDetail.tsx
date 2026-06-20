@@ -429,15 +429,16 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     if (window.innerWidth < 768) {
       root.querySelectorAll('.product-media.media:not(.carousel__thumbnail):not(.media-gallery__grid-thumbnails .product-media)').forEach((el: any) => {
         el.style.setProperty('padding-bottom', '0', 'important');
-        el.style.setProperty('aspect-ratio', 'unset', 'important');
+        el.style.setProperty('aspect-ratio', '1440 / 1438', 'important');
         el.style.setProperty('height', 'auto', 'important');
         el.style.setProperty('min-height', 'unset', 'important');
+        el.style.setProperty('overflow', 'hidden', 'important');
       });
       // Also fix the swiper slide that wraps the main image
       root.querySelectorAll('.media-gallery__carousel .swiper-slide:not(.media-gallery__carousel-thumbnails .swiper-slide)').forEach((el: any) => {
         el.style.setProperty('height', 'auto', 'important');
         el.style.setProperty('padding-bottom', '0', 'important');
-        el.style.setProperty('aspect-ratio', 'unset', 'important');
+        el.style.setProperty('aspect-ratio', '1440 / 1438', 'important');
       });
     }
     
@@ -1923,21 +1924,31 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         });
 
         // Fix main gallery slider images and their container elements
-        root.querySelectorAll('.media-gallery__item').forEach((item: any, idx: number) => {
-          if (item.closest('.media-gallery__carousel-thumbnails') || item.closest('.media-gallery__grid-thumbnails')) return;
-          
-          // To ensure we map the correct index even if mobile/desktop items are interleaved
-          // we use the index divided by however many image containers there are, but since we just
-          // want to loop through pImages, we can just use the index of the element relative to its parent.
-          const siblings = Array.from(item.parentNode.children);
-          const localIdx = siblings.indexOf(item) !== -1 ? siblings.indexOf(item) : idx;
-          const imgUrl = pImages[localIdx % pImages.length] || pImages[0];
-          
+        // Count only gallery items (not thumbnails)
+        const galleryItems = Array.from(root.querySelectorAll('.media-gallery__item')).filter((item: any) =>
+          !item.closest('.media-gallery__carousel-thumbnails') && !item.closest('.media-gallery__grid-thumbnails')
+        );
+
+        galleryItems.forEach((item: any, idx: number) => {
+          // If there are more slides than images, hide extra slides to prevent duplicate scrolling
+          if (idx >= pImages.length) {
+            const slide = item.closest('.swiper-slide') || item;
+            (slide as HTMLElement).style.setProperty('display', 'none', 'important');
+            return;
+          }
+
+          const imgUrl = pImages[idx] || pImages[0];
+
           // Fix data attributes for Photoswipe zoom
           item.setAttribute('data-media-src', imgUrl);
-          item.setAttribute('data-media-width', "3000");
-          item.setAttribute('data-media-height', "3000");
-          
+          item.setAttribute('data-media-width', "1440");
+          item.setAttribute('data-media-height', "1438");
+
+          // Force aspect ratio 1440x1438 on the media container
+          item.style.setProperty('aspect-ratio', '1440 / 1438', 'important');
+          item.style.setProperty('width', '100%', 'important');
+          item.style.setProperty('height', 'auto', 'important');
+
           const el = item.querySelector('img');
           if (el) {
             el.src = imgUrl;
@@ -1948,6 +1959,21 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             el.removeAttribute('data-mode');
             el.removeAttribute('loading');
             el.classList.add('loaded', 'is-revealed');
+            // Force square crop
+            el.style.setProperty('width', '100%', 'important');
+            el.style.setProperty('height', '100%', 'important');
+            el.style.setProperty('object-fit', 'cover', 'important');
+            el.style.setProperty('aspect-ratio', '1440 / 1438', 'important');
+            el.style.setProperty('display', 'block', 'important');
+          }
+        });
+
+        // Also hide extra swiper slides in the main carousel wrapper
+        const mainSlides = root.querySelectorAll('.media-gallery__carousel-wrapper .swiper-slide');
+        mainSlides.forEach((slide: any, idx: number) => {
+          if (slide.closest('.media-gallery__carousel-thumbnails')) return;
+          if (idx >= pImages.length) {
+            slide.style.setProperty('display', 'none', 'important');
           }
         });
       }
@@ -2504,20 +2530,19 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           }
           .product-media.media {
             padding-bottom: 0 !important;
-            height: auto !important;
-            min-height: unset !important;
+            aspect-ratio: 1440 / 1438 !important;
             width: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            display: block !important;
+            overflow: hidden !important;
           }
           .product-media.media picture,
           .product-media.media img {
             position: relative !important;
-            height: auto !important;
             width: 100% !important;
-            max-height: 55vh !important;
-            object-fit: contain !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            aspect-ratio: 1440 / 1438 !important;
+            display: block !important;
           }
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails--inside,
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails {

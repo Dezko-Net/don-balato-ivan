@@ -6,11 +6,31 @@ function getApiKey(): string {
   return process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
 }
 
-async function callGemini(prompt: string): Promise<string> {
+type GeminiOptions = {
+  imageUrls?: string[];
+};
+
+export interface ProductAiPack {
+  titles: string[];
+  selectedTitle: string;
+  description: string;
+  details: string;
+  usage: string;
+  ingredients: string;
+}
+
+function cleanJsonBlock(text: string) {
+  return text
+    .replace(/```json/gi, '')
+    .replace(/```/g, '')
+    .trim();
+}
+
+async function callGemini(prompt: string, options?: GeminiOptions): Promise<string> {
   const res = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, imageUrls: options?.imageUrls || [] }),
   });
 
   if (!res.ok) {
@@ -22,12 +42,19 @@ async function callGemini(prompt: string): Promise<string> {
   return data.text || '';
 }
 
-export async function generateProductTitle(description: string, category: string): Promise<string[]> {
+export async function generateProductTitle(
+  description: string,
+  category: string,
+  imageUrls: string[] = [],
+  currentName = ''
+): Promise<string[]> {
   const prompt = `Eres un experto en e-commerce y marketing digital en Chile.
 Genera 5 títulos de producto atractivos, concisos (máx 60 caracteres cada uno) y optimizados para SEO.
 
 Categoría: ${category || 'General'}
+Nombre actual: ${currentName || 'Sin nombre'}
 Descripción actual: ${description || 'Sin descripción'}
+${imageUrls.length > 0 ? `Analiza primero las imágenes del producto y usa lo visual como fuente principal de verdad.` : ''}
 
 Reglas:
 - Cada título en una línea nueva
@@ -38,17 +65,23 @@ Reglas:
 
 Responde SOLO con los 5 títulos, uno por línea.`;
 
-  const response = await callGemini(prompt);
+  const response = await callGemini(prompt, { imageUrls });
   return response.split('\n').map(t => t.trim()).filter(t => t.length > 3 && t.length < 100).slice(0, 5);
 }
 
-export async function generateProductDescription(name: string, category: string, currentDesc: string): Promise<string> {
+export async function generateProductDescription(
+  name: string,
+  category: string,
+  currentDesc: string,
+  imageUrls: string[] = []
+): Promise<string> {
   const prompt = `Eres un copywriter experto en e-commerce en Chile.
 Genera una descripción de producto atractiva y persuasiva.
 
 Producto: ${name}
 Categoría: ${category || 'General'}
 ${currentDesc ? `Descripción actual: ${currentDesc}` : ''}
+${imageUrls.length > 0 ? 'Antes de escribir, analiza las imágenes del producto y combínalas con el título y el contexto textual.' : ''}
 
 Reglas:
 - Máximo 3 párrafos cortos (total ~100-150 palabras)
@@ -59,7 +92,7 @@ Reglas:
 
 Responde SOLO con la descripción.`;
 
-  return await callGemini(prompt);
+  return await callGemini(prompt, { imageUrls });
 }
 
 export async function generateProductTags(name: string, description: string, category: string): Promise<string[]> {
@@ -79,4 +112,64 @@ Responde SOLO con las etiquetas, una por línea.`;
 
   const response = await callGemini(prompt);
   return response.split('\n').map(t => t.trim()).filter(t => t.length > 1 && t.length < 40).slice(0, 8);
+}
+
+export async function generateProductAiPack(params: {
+  name?: string;
+  description?: string;
+  category?: string;
+  imageUrls?: string[];
+}): Promise<ProductAiPack> {
+  const prompt = `Eres una experta en catalogación y copywriting para e-commerce de belleza en Chile.
+Debes analizar primero las imágenes del producto. Luego usa el nombre actual, la descripción actual y la categoría solo como apoyo.
+
+Nombre actual: ${params.name || 'Sin nombre'}
+Categoría: ${params.category || 'General'}
+Descripción actual: ${params.description || 'Sin descripción'}
+
+Objetivo:
+1. Proponer 5 títulos SEO.
+2. Elegir el mejor título final.
+3. Crear una descripción comercial clara.
+4. Completar ficha técnica con:
+   - details
+   - usage
+   - ingredients
+
+Reglas:
+- No inventes cosas absurdas o imposibles de ver.
+- Si un dato no se puede confirmar visualmente, usa formulaciones prudentes y útiles para e-commerce.
+- El título final debe sonar natural y vender bien.
+- La descripción debe ser breve, clara y persuasiva.
+- details debe enfocarse en beneficios y características visibles o razonables.
+- usage debe explicar cómo se usa de forma práctica.
+- ingredients no debe inventar composición química exacta; si no es visible, redacta una nota breve orientada a revisar el empaque.
+- Responde SOLO JSON válido.
+
+Formato exacto:
+{
+  "titles": ["", "", "", "", ""],
+  "selectedTitle": "",
+  "description": "",
+  "details": "",
+  "usage": "",
+  "ingredients": ""
+}`;
+
+  const raw = await callGemini(prompt, { imageUrls: params.imageUrls || [] });
+  const cleaned = cleanJsonBlock(raw);
+  const parsed = JSON.parse(cleaned) as Partial<ProductAiPack>;
+
+  const titles = Array.isArray(parsed.titles)
+    ? parsed.titles.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 5)
+    : [];
+
+  return {
+    titles,
+    selectedTitle: String(parsed.selectedTitle || titles[0] || params.name || '').trim(),
+    description: String(parsed.description || '').trim(),
+    details: String(parsed.details || '').trim(),
+    usage: String(parsed.usage || '').trim(),
+    ingredients: String(parsed.ingredients || '').trim(),
+  };
 }
