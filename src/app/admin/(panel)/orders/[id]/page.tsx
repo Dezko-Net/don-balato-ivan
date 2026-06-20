@@ -6,12 +6,13 @@ import Link from 'next/link';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { MEDIA_BUCKET_ID, MEDIA_PREFIXES, ORDER_BOX_PHOTOS_BUCKET_ID, ID, Query } from '@/lib/appwrite';
 import { Order, OrderStatus } from '@/types/admin';
-import { generateOrderPdf } from '@/lib/generateOrderPdf';
+import { generateOrderPdf, generateReplacementPdf } from '@/lib/generateOrderPdf';
 import {
   ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock, FileText,
   Phone, Mail, Hash, ChevronDown, Save, CheckCircle, Copy, Check,
   AlertTriangle, ExternalLink, Image as ImageIcon, MessageSquare, Calendar, DollarSign,
-  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload, Search, Download
+  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload, Search, Download,
+  RefreshCw, Plus
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 import { resolveStorageImageUrl } from '@/lib/product-images';
@@ -115,6 +116,239 @@ export default function OrderDetailPage() {
   const [notifyingIdx, setNotifyingIdx] = useState<number | null>(null);
   const [notifiedIndices, setNotifiedIndices] = useState<Set<number>>(new Set());
   const [missingQty, setMissingQty] = useState<number>(1);
+  const [negotiationSearch, setNegotiationSearch] = useState('');
+  const [replacementSelection, setReplacementSelection] = useState<{ product: any; qty: number }[]>([]);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [addProductSearch, setAddProductSearch] = useState('');
+  const [addProductResults, setAddProductResults] = useState<any[]>([]);
+  const [addingProduct, setAddingProduct] = useState(false);
+
+  const replacementTargetTotal = replacingIdx !== null && order
+    ? (() => {
+        try {
+          const parsed = JSON.parse(order.ITEMS || '[]');
+          const it = parsed[replacingIdx];
+          return it ? (it.price || 0) * (missingQty || 1) : 0;
+        } catch { return 0; }
+      })()
+    : 0;
+  const replacementCurrentSum = replacementSelection.reduce((s, r) => {
+    const price = Math.round((r.product.CURRENTPRICE ?? r.product.PRICE ?? 0) * 0.8);
+    return s + price * r.qty;
+  }, 0);
+
+  const addToReplacementSelection = (product: any) => {
+    setReplacementSelection(prev => {
+      const existing = prev.find(r => r.product.$id === product.$id);
+      if (existing) {
+        return prev.map(r => r.product.$id === product.$id ? { ...r, qty: r.qty + 1 } : r);
+      }
+      return [...prev, { product, qty: 1 }];
+    });
+  };
+
+  const updateReplacementQty = (productId: string, delta: number) => {
+    setReplacementSelection(prev => prev
+      .map(r => r.product.$id === productId ? { ...r, qty: Math.max(1, r.qty + delta) } : r)
+      .filter(r => r.qty > 0)
+    );
+  };
+
+  const removeFromReplacementSelection = (productId: string) => {
+    setReplacementSelection(prev => prev.filter(r => r.product.$id !== productId));
+  };
+
+  const replaceItemWithMultiple = async () => {
+    if (!order || replacingIdx === null || replacementSelection.length === 0) return;
+    let parsedItems: any[] = [];
+    try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    const oldItem = parsedItems[replacingIdx];
+    if (!oldItem) return;
+
+    const confirmMsg = `¿Reemplazar "${oldItem.name}" por ${replacementSelection.length} producto(s)?\nTotal reemplazo: ${fmt(replacementCurrentSum)}\nOriginal: ${fmt(replacementTargetTotal)}`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Block old product SKU
+      let oldSku = oldItem.sku || '';
+      let oldName = oldItem.name;
+      let oldImg = oldItem.img || '';
+      if (oldItem.id) {
+        try {
+          const oldProd: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, oldItem.id);
+          oldSku = oldProd.sku || getSkuFromFeatures(oldProd.FEATURES, oldProd.TAGS, oldProd.jumpseller_id, oldProd.sku);
+          oldName = oldProd.NAME || oldName;
+          oldImg = oldProd.IMAGEURL || oldImg;
+        } catch {}
+      }
+      if (oldSku) {
+        try {
+          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
+            Query.equal('sku', oldSku),
+            Query.limit(1)
+          ]);
+          if (blockedResp.documents.length === 0) {
+            await databases.createDocument(databaseId, 'blocked_products', ID.unique(), {
+              sku: oldSku, name: oldName, imageUrl: oldImg
+            });
+          }
+        } catch (err) { console.error("Error writing to blocked_products:", err); }
+      }
+      if (oldItem.id) {
+        try { await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION_ID, oldItem.id); } catch {}
+      }
+
+      // Build replacement items
+      const newItems: any[] = replacementSelection.map((r, idx) => {
+        const p = r.product;
+        const newPrice = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
+        const newSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+        return {
+          id: p.$id,
+          name: p.NAME,
+          price: newPrice,
+          originalPrice: p.CURRENTPRICE ?? p.PRICE ?? 0,
+          img: resolveStorageImageUrl(p.IMAGEURL),
+          sku: newSku,
+          qty: r.qty,
+          total: newPrice * r.qty,
+          missing: false,
+          replaced: true,
+          originalItem: idx === 0 ? {
+            id: oldItem.id || '',
+            name: oldItem.name,
+            price: oldItem.price,
+            img: oldItem.img || '',
+            sku: oldSku
+          } : undefined,
+        };
+      });
+
+      // Replace old item at index with all new items
+      parsedItems.splice(replacingIdx, 1, ...newItems);
+
+      const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
+      const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
+
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        ITEMS: JSON.stringify(parsedItems),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newTotal
+      });
+
+      setReplacingIdx(null);
+      setSearchQuery('');
+      setSearchResults([]);
+      setIsSimilarSearch(false);
+      setReplacementSelection([]);
+      await load();
+      alert('Producto reemplazado por múltiples items exitosamente.');
+    } catch (e: any) {
+      alert('Error al reemplazar: ' + e.message);
+    }
+  };
+
+  const revertReplacement = async (index: number) => {
+    if (!order) return;
+    let parsedItems: any[] = [];
+    try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    const replacedItem = parsedItems[index];
+    if (!replacedItem || !replacedItem.replaced) return;
+
+    const origItem = replacedItem.originalItem;
+    if (!origItem) {
+      alert('No hay información del producto original para revertir.');
+      return;
+    }
+
+    if (!confirm(`¿Revertir el reemplazo y restaurar "${origItem.name}"?`)) return;
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Find all replacement items that share the same originalItem (multi-product replacement)
+      const replacementIndices: number[] = [];
+      for (let i = 0; i < parsedItems.length; i++) {
+        const it = parsedItems[i];
+        if (it.replaced && it.originalItem && it.originalItem.id === origItem.id) {
+          replacementIndices.push(i);
+        }
+      }
+
+      // If only one item was replaced, just revert that one
+      if (replacementIndices.length === 0) replacementIndices.push(index);
+
+      // Remove replacement items (from highest index to lowest to preserve indices)
+      const sortedIndices = [...replacementIndices].sort((a, b) => b - a);
+      for (const idx of sortedIndices) {
+        parsedItems.splice(idx, 1);
+      }
+
+      // Insert original item at the position of the first replacement
+      const insertIdx = Math.min(...replacementIndices);
+      const restoredItem: any = {
+        id: origItem.id || '',
+        name: origItem.name,
+        price: origItem.price,
+        img: origItem.img || '',
+        sku: origItem.sku || '',
+        qty: replacedItem.qty,
+        total: (origItem.price || 0) * (replacedItem.qty || 1),
+        missing: false,
+        replaced: false,
+      };
+      parsedItems.splice(insertIdx, 0, restoredItem);
+
+      const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
+      const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
+
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        ITEMS: JSON.stringify(parsedItems),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newTotal
+      });
+
+      // Unblock the original product SKU
+      if (origItem.sku) {
+        try {
+          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
+            Query.equal('sku', origItem.sku),
+            Query.limit(1)
+          ]);
+          if (blockedResp.documents.length > 0) {
+            await databases.deleteDocument(databaseId, 'blocked_products', blockedResp.documents[0].$id);
+          }
+        } catch (err) { console.error("Error unblocking product:", err); }
+      }
+
+      // Re-create the original product document if it was deleted
+      if (origItem.id) {
+        try {
+          await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, origItem.id);
+        } catch {
+          // Product was deleted, recreate it
+          try {
+            await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, origItem.id, {
+              NAME: origItem.name,
+              PRICE: origItem.price,
+              IMAGEURL: origItem.img || '',
+              sku: origItem.sku || '',
+              STOCK: 1,
+            });
+          } catch (err) { console.error("Error recreating product:", err); }
+        }
+      }
+
+      await load();
+      alert('Reemplazo revertido. Producto original restaurado.');
+    } catch (e: any) {
+      alert('Error al revertir: ' + e.message);
+    }
+  };
 
   const toggleMissingItem = async (index: number) => {
     if (!order) return;
@@ -246,6 +480,133 @@ export default function OrderDetailPage() {
     }
   };
 
+  const searchProductsForAdd = async (q: string) => {
+    setAddProductSearch(q);
+    if (!q.trim()) {
+      setAddProductResults([]);
+      return;
+    }
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      // Try SKU exact match first (works across all products regardless of pagination)
+      const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+        Query.equal('sku', q.trim()),
+        Query.limit(5)
+      ]);
+      if (skuRes.documents.length > 0) {
+        setAddProductResults(skuRes.documents);
+        return;
+      }
+      // Try name search
+      const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+        Query.search('NAME', q.trim()),
+        Query.limit(30)
+      ]);
+      setAddProductResults(res.documents);
+    } catch {
+      // Fallback: manual search with pagination
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const allProds: any[] = [];
+        let offset = 0;
+        while (offset < 2000) {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.limit(100),
+            Query.offset(offset)
+          ]);
+          if (res.documents.length === 0) break;
+          allProds.push(...res.documents);
+          offset += 100;
+        }
+        const filteredProds = allProds.filter((p: any) =>
+          p.NAME?.toLowerCase().includes(q.toLowerCase()) ||
+          p.sku?.toLowerCase().includes(q.toLowerCase())
+        );
+        setAddProductResults(filteredProds.slice(0, 30));
+      } catch {}
+    }
+  };
+
+  const searchBySkuAndAdd = async (skuQuery: string) => {
+    const trimmed = skuQuery.trim();
+    if (!trimmed) return;
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const queriesToTry = [trimmed, trimmed.toUpperCase(), trimmed.toLowerCase()];
+      const uniqueQueries = Array.from(new Set(queriesToTry));
+      for (const q of uniqueQueries) {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.equal('sku', q),
+          Query.limit(1)
+        ]);
+        if (res.documents.length > 0) {
+          await addProductToOrder(res.documents[0], 1);
+          return;
+        }
+      }
+      alert(`No se encontró ningún producto con el SKU "${trimmed}".`);
+    } catch (e: any) {
+      alert('Error al buscar por SKU: ' + e.message);
+    }
+  };
+
+  const addProductToOrder = async (product: any, qty: number = 1) => {
+    if (!order) return;
+    setAddingProduct(true);
+    try {
+      let parsedItems: any[] = [];
+      try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+
+      const price = Math.round((product.CURRENTPRICE ?? product.PRICE ?? 0) * 0.8);
+      const pSku = product.sku || getSkuFromFeatures(product.FEATURES, product.TAGS, product.jumpseller_id, product.sku);
+
+      const newItem: any = {
+        id: product.$id,
+        name: product.NAME,
+        price,
+        originalPrice: product.CURRENTPRICE ?? product.PRICE ?? 0,
+        img: resolveStorageImageUrl(product.IMAGEURL),
+        sku: pSku,
+        qty,
+        total: price * qty,
+        missing: false,
+        replaced: false,
+      };
+
+      // Check if same product already exists in order
+      const existingIdx = parsedItems.findIndex((x: any) => x.id === product.$id && !x.missing && !x.replaced);
+      if (existingIdx !== -1) {
+        parsedItems[existingIdx].qty += qty;
+        parsedItems[existingIdx].total = parsedItems[existingIdx].price * parsedItems[existingIdx].qty;
+      } else {
+        parsedItems.push(newItem);
+      }
+
+      const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
+      const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
+
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        ITEMS: JSON.stringify(parsedItems),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newTotal
+      });
+
+      await load();
+      setAddProductSearch('');
+      setAddProductResults([]);
+      setShowAddProduct(false);
+    } catch (e: any) {
+      alert('Error al añadir producto: ' + e.message);
+    } finally {
+      setAddingProduct(false);
+    }
+  };
+
   const handleUpdateQty = async (index: number, newQty: number) => {
     if (!order) return;
     let parsedItems: any[] = [];
@@ -373,31 +734,212 @@ export default function OrderDetailPage() {
     }
   };
 
-  const handleDownloadSimilarCatalog = () => {
+  const handleDownloadSimilarCatalog = async () => {
     if (replacingIdx === null || !items[replacingIdx]) return;
     if (searchResults.length === 0) {
       alert("No hay opciones disponibles para descargar.");
       return;
     }
 
-    const topResults = searchResults.slice(0, 4); // Max 4 opciones
-    
-    topResults.forEach(p => {
-      if (p.IMAGEURL) {
-        // Change Appwrite /view endpoint to /download to force browser download
-        const downloadUrl = p.IMAGEURL.replace('/view?', '/download?');
-        const price = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
-        
+    const oldItem = items[replacingIdx];
+    const topResults = searchResults.slice(0, 12);
+    const fmtP = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+
+    // Fetch image via same-origin proxy and convert to data URL to avoid canvas tainting
+    const fetchAsDataUrl = async (url: string): Promise<string | null> => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return null;
+      }
+    };
+
+    const loadImage = (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(new Image());
+        img.src = src;
+      });
+    };
+
+    // Load all images: fetch as data URL first, then load into Image
+    // If fetch fails, use empty image - NEVER load directly as it taints canvas
+    const images: HTMLImageElement[] = [];
+    for (const p of topResults) {
+      const rawUrl = p.IMAGEURL ? resolveStorageImageUrl(p.IMAGEURL) : '';
+      if (rawUrl) {
+        if (rawUrl.startsWith('data:')) {
+          images.push(await loadImage(rawUrl));
+        } else {
+          // Ensure URL goes through our same-origin proxy
+          const fetchUrl = rawUrl.startsWith('/api/image')
+            ? rawUrl
+            : `/api/image?url=${encodeURIComponent(rawUrl)}`;
+          const dataUrl = await fetchAsDataUrl(fetchUrl);
+          if (dataUrl) {
+            images.push(await loadImage(dataUrl));
+          } else {
+            images.push(new Image());
+          }
+        }
+      } else {
+        images.push(new Image());
+      }
+    }
+
+    // Generate canvas image with up to 6 products
+    const generateImage = (subset: typeof topResults, imgSubset: HTMLImageElement[], partNum: number, totalParts: number) => {
+      const cols = 3;
+      const rows = Math.ceil(subset.length / cols);
+      const cellW = 280;
+      const cellH = 300;
+      const padding = 20;
+      const headerH = 80;
+      const canvasW = cols * cellW + (cols + 1) * padding;
+      const canvasH = headerH + rows * cellH + (rows + 1) * padding;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+
+      // Header - pink
+      ctx.fillStyle = '#db2777';
+      ctx.fillRect(0, 0, canvasW, headerH);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Opciones de reemplazo: ${oldItem?.name || ''}`, canvasW / 2, 32);
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#fbcfe8';
+      ctx.fillText(`Meta: ${fmtP(replacementTargetTotal)} · Parte ${partNum}/${totalParts}`, canvasW / 2, 58);
+
+      // Draw each product
+      subset.forEach((p, idx) => {
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        const x = padding + col * (cellW + padding);
+        const y = headerH + padding + row * (cellH + padding);
+
+        // Card
+        ctx.fillStyle = '#fdf2f8';
+        ctx.fillRect(x, y, cellW, cellH);
+        ctx.strokeStyle = '#fbcfe8';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, cellW, cellH);
+
+        // Number badge - pink
+        ctx.fillStyle = '#db2777';
+        ctx.beginPath();
+        ctx.arc(x + 18, y + 18, 14, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 13px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${idx + 1}`, x + 18, y + 23);
+
+        // Image - big, centered
+        const img = imgSubset[idx];
+        const imgSize = 180;
+        const imgX = x + (cellW - imgSize) / 2;
+        const imgY = y + 20;
+        if (img && img.width > 0 && img.height > 0) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(imgX, imgY, imgSize, imgSize);
+          const ratio = Math.min(imgSize / img.width, imgSize / img.height);
+          const dw = img.width * ratio;
+          const dh = img.height * ratio;
+          ctx.drawImage(img, imgX + (imgSize - dw) / 2, imgY + (imgSize - dh) / 2, dw, dh);
+        } else {
+          ctx.fillStyle = '#f3f4f6';
+          ctx.fillRect(imgX, imgY, imgSize, imgSize);
+          ctx.fillStyle = '#9ca3af';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('Sin imagen', imgX + imgSize / 2, imgY + imgSize / 2);
+        }
+
+        // Info below image
+        const infoY = imgY + imgSize + 12;
+        ctx.textAlign = 'center';
+
+        const originalPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
+        const price = Math.round(originalPrice * 0.8);
+        const isCombo = p._bestQty && p._bestQty > 1;
+        const productTotal = isCombo ? (p._comboTotal || price * p._bestQty) : price;
+        const diff = productTotal - replacementTargetTotal;
+        const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku) || '—';
+        const name = isCombo ? `(${p._bestQty} uds) ${p.NAME}` : (p.NAME || 'Producto');
+
+        // Name
+        ctx.fillStyle = '#111827';
+        ctx.font = 'bold 13px Arial';
+        const maxChars = 38;
+        const displayName = name.length > maxChars ? name.slice(0, maxChars) + '...' : name;
+        ctx.fillText(displayName, x + cellW / 2, infoY);
+
+        // SKU
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '11px Arial';
+        ctx.fillText(`SKU: ${pSku}`, x + cellW / 2, infoY + 18);
+
+        // Price
+        ctx.fillStyle = '#111827';
+        ctx.font = 'bold 15px Arial';
+        ctx.fillText(fmtP(productTotal), x + cellW / 2, infoY + 40);
+
+        // Only saldo a favor
+        if (diff > 0) {
+          ctx.fillStyle = '#059669';
+          ctx.font = 'bold 12px Arial';
+          ctx.fillText(`Saldo a favor: +${fmtP(diff)}`, x + cellW / 2, infoY + 60);
+        }
+      });
+
+      // Download as PNG
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
         const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.target = '_blank';
-        // Optional: you can include the price in the downloaded filename
-        a.download = `${p.NAME.replace(/[^a-zA-Z0-9]/g, '_')}_$${price}.jpg`;
+        a.href = dataUrl;
+        a.download = `reemplazo_${oldItem?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'producto'}_parte${partNum}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        return true;
+      } catch (e) {
+        console.error('Canvas export failed', e);
+        return false;
       }
+    };
+
+    // Generate both images
+    const part1 = topResults.slice(0, 6);
+    const part2 = topResults.slice(6, 12);
+    const img1 = images.slice(0, 6);
+    const img2 = images.slice(6, 12);
+
+    const totalParts = part2.length > 0 ? 2 : 1;
+    await new Promise<void>(resolve => {
+      generateImage(part1, img1, 1, totalParts);
+      setTimeout(resolve, 800);
     });
+    if (part2.length > 0) {
+      generateImage(part2, img2, 2, totalParts);
+    }
   };
 
   const replaceItem = async (newProduct: any) => {
@@ -1120,10 +1662,105 @@ export default function OrderDetailPage() {
         );
       })()}
 
+      {/* Add Product Modal */}
+      {showAddProduct && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col overflow-hidden shadow-xl border border-gray-100">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <div className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-gray-900 text-sm">Añadir Producto al Pedido</h3>
+              </div>
+              <button onClick={() => { setShowAddProduct(false); setAddProductSearch(''); setAddProductResults([]); }} className="text-gray-400 hover:text-gray-600 transition">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-4 flex-1 overflow-y-auto space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  value={addProductSearch}
+                  onChange={e => {
+                    setAddProductSearch(e.target.value);
+                    if (!e.target.value.trim()) setAddProductResults([]);
+                  }}
+                  onKeyDown={async e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const trimmed = addProductSearch.trim();
+                      if (!trimmed) return;
+                      // Try SKU exact match first - add directly
+                      const { databases } = getServices();
+                      const { databaseId } = getAppwriteConfig();
+                      let found = false;
+                      for (const qv of [trimmed, trimmed.toUpperCase(), trimmed.toLowerCase()]) {
+                        try {
+                          const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+                            Query.equal('sku', qv),
+                            Query.limit(1)
+                          ]);
+                          if (skuRes.documents.length > 0) {
+                            await addProductToOrder(skuRes.documents[0], 1);
+                            found = true;
+                            break;
+                          }
+                        } catch {}
+                      }
+                      if (!found) {
+                        // Not an exact SKU, do a name search and show results
+                        await searchProductsForAdd(trimmed);
+                      }
+                    }
+                  }}
+                  placeholder="Escribe y presiona Enter para buscar... (SKU exacto añade directo)"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                {addProductResults.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-8">
+                    {addProductSearch.trim() ? 'No se encontraron productos' : 'Escribe para buscar productos...'}
+                  </p>
+                ) : (
+                  addProductResults.map(p => {
+                    const price = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
+                    const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+                    return (
+                      <div key={p.$id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/70 transition-colors">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {p.IMAGEURL ? <img src={p.IMAGEURL} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-300" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{p.NAME}</p>
+                          <p className="text-[10px] text-gray-500">
+                            SKU: <span className="font-mono">{pSku || '—'}</span> · Stock: <span className={p.STOCK > 0 || p.STOCK === 99999 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{p.STOCK === 99999 ? 'Ilimitado' : p.STOCK}</span>
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
+                          <p className="text-xs font-bold text-gray-900">{fmt(price)}</p>
+                          <button
+                            onClick={() => addProductToOrder(p, 1)}
+                            disabled={addingProduct}
+                            className="text-[10px] font-bold px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                          >
+                            {addingProduct ? 'Añadiendo...' : '+ Añadir'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Replacement Modal */}
       {replacingIdx !== null && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-xl border border-gray-100">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl border border-gray-100">
             {/* Modal Header */}
             <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-gray-50">
               <div className="flex items-center gap-3">
@@ -1135,7 +1772,7 @@ export default function OrderDetailPage() {
                     {isSimilarSearch ? 'Buscar Productos Similares' : 'Reemplazar Producto'}
                   </h3>
                   <p className="text-xs text-gray-500">
-                    Reemplazando: <span className="font-semibold text-gray-700">{items[replacingIdx]?.name}</span> ({fmt(items[replacingIdx]?.price)})
+                    Reemplazando: <span className="font-semibold text-gray-700">{items[replacingIdx]?.name}</span> · {fmt(items[replacingIdx]?.price)} c/u · {missingQty} ud(s) · <span className="font-bold text-gray-900">Meta: {fmt(replacementTargetTotal)}</span>
                   </p>
                 </div>
               </div>
@@ -1149,7 +1786,7 @@ export default function OrderDetailPage() {
                   </button>
                 )}
                 <button
-                  onClick={() => { setReplacingIdx(null); setSearchQuery(''); setSearchResults([]); setIsSimilarSearch(false); }}
+                  onClick={() => { setReplacingIdx(null); setSearchQuery(''); setSearchResults([]); setIsSimilarSearch(false); setReplacementSelection([]); }}
                   className="text-gray-400 hover:text-gray-600 transition"
                 >
                   <XCircle className="w-6 h-6" />
@@ -1158,31 +1795,57 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+            <div className="flex-1 overflow-y-auto flex flex-col">
               {/* Search Bar */}
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    value={searchQuery}
-                    onChange={e => {
-                      setIsSimilarSearch(false);
-                      handleSearchProducts(e.target.value);
-                    }}
-                    onKeyDown={async e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        await handleSearchBySkuAndReplace(searchQuery);
-                      }
-                    }}
-                    placeholder="Buscar por nombre o SKU..."
-                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+              <div className="p-4 pb-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      value={searchQuery}
+                      onChange={e => {
+                        setIsSimilarSearch(false);
+                        setSearchQuery(e.target.value);
+                        if (!e.target.value.trim()) setSearchResults([]);
+                      }}
+                      onKeyDown={async e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const trimmed = searchQuery.trim();
+                          if (!trimmed) return;
+                          // Try SKU exact match first - add to selection cart
+                          const { databases } = getServices();
+                          const { databaseId } = getAppwriteConfig();
+                          let found = false;
+                          for (const qv of [trimmed, trimmed.toUpperCase(), trimmed.toLowerCase()]) {
+                            try {
+                              const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+                                Query.equal('sku', qv),
+                                Query.limit(1)
+                              ]);
+                              if (skuRes.documents.length > 0) {
+                                addToReplacementSelection(skuRes.documents[0]);
+                                setSearchQuery('');
+                                found = true;
+                                break;
+                              }
+                            } catch {}
+                          }
+                          if (!found) {
+                            // Not an exact SKU match, do a name search
+                            await handleSearchProducts(trimmed);
+                          }
+                        }
+                      }}
+                      placeholder="Escribe SKU y Enter para añadir al carrito... o nombre para buscar"
+                      className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Search Results */}
-              <div className="space-y-2.5">
+              <div className="px-4 pb-3 space-y-2.5">
                 {searching ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -1197,10 +1860,13 @@ export default function OrderDetailPage() {
                     const price = Math.round(originalPrice * 0.8);
                     const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
                     const isCombo = p._bestQty && p._bestQty > 1;
+                    const inSelection = replacementSelection.some(r => r.product.$id === p.$id);
+                    const productTotal = isCombo ? (p._comboTotal || price * p._bestQty) : price;
+                    const diff = productTotal - replacementTargetTotal;
                     return (
                       <div
                         key={p.$id}
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/70 transition-colors"
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${inSelection ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/70'}`}
                       >
                         <div className="w-10 h-10 rounded-lg bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative">
                           {p.IMAGEURL ? (
@@ -1221,6 +1887,9 @@ export default function OrderDetailPage() {
                           <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
                             SKU: <span className="font-mono">{pSku || '—'}</span> · Stock: <span className={p.STOCK > 0 || p.STOCK === 99999 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{p.STOCK === 99999 ? 'Ilimitado' : p.STOCK}</span>
                           </p>
+                          <span className={`inline-block mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md ${diff === 0 ? 'bg-gray-100 text-gray-600' : diff > 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {diff === 0 ? 'Mismo precio' : diff > 0 ? `Saldo a favor: +${fmt(diff)}` : `Dif en contra: -${fmt(Math.abs(diff))}`}
+                          </span>
                         </div>
                         <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
                           <p className="text-xs sm:text-sm font-bold text-gray-900">
@@ -1228,17 +1897,105 @@ export default function OrderDetailPage() {
                           </p>
                           {isCombo && <p className="text-[9px] text-gray-400">{fmt(price)} c/u</p>}
                           <button
-                            onClick={() => replaceItem(p)}
+                            onClick={() => addToReplacementSelection(p)}
                             disabled={p.STOCK <= 0 && p.STOCK !== 99999}
-                            className="text-[10px] font-bold px-2.5 py-1 mt-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                            className={`text-[10px] font-bold px-2.5 py-1 mt-1 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed ${inSelection ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                           >
-                            Seleccionar
+                            {inSelection ? '✓ Agregado' : '+ Agregar'}
                           </button>
                         </div>
                       </div>
                     );
                   })
                 )}
+              </div>
+
+              {/* Selection Cart */}
+              {replacementSelection.length > 0 && (
+                <div className="border-t border-gray-200 bg-gray-50/50 p-4 space-y-2.5">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Productos seleccionados ({replacementSelection.length})</p>
+                    <button
+                      onClick={() => setReplacementSelection([])}
+                      className="text-[10px] text-red-500 hover:text-red-700 font-medium"
+                    >Limpiar todo</button>
+                  </div>
+                  {replacementSelection.map(r => {
+                    const price = Math.round((r.product.CURRENTPRICE ?? r.product.PRICE ?? 0) * 0.8);
+                    return (
+                      <div key={r.product.$id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
+                        <div className="w-8 h-8 rounded-md bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0">
+                          {r.product.IMAGEURL ? <img src={r.product.IMAGEURL} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-300 m-auto mt-1" />}
+                        </div>
+                        <p className="flex-1 text-xs font-medium text-gray-800 truncate">{r.product.NAME}</p>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => updateReplacementQty(r.product.$id, -1)} className="w-6 h-6 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-bold flex items-center justify-center">−</button>
+                          <span className="text-xs font-bold w-6 text-center">{r.qty}</span>
+                          <button onClick={() => updateReplacementQty(r.product.$id, +1)} className="w-6 h-6 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-bold flex items-center justify-center">+</button>
+                        </div>
+                        <p className="text-xs font-bold text-gray-900 w-16 text-right">{fmt(price * r.qty)}</p>
+                        <button onClick={() => removeFromReplacementSelection(r.product.$id)} className="text-red-400 hover:text-red-600 p-1">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 p-4 bg-white flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-gray-500">Meta:</span>
+                  <span className="font-bold text-gray-900">{fmt(replacementTargetTotal)}</span>
+                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-500">Suma:</span>
+                  <span className={`font-bold ${replacementCurrentSum >= replacementTargetTotal ? 'text-green-600' : 'text-orange-600'}`}>{fmt(replacementCurrentSum)}</span>
+                </div>
+                {(() => {
+                  const diff = replacementCurrentSum - replacementTargetTotal;
+                  if (replacementCurrentSum === 0) {
+                    return (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 inline-block w-fit">
+                        Selecciona productos para reemplazar
+                      </span>
+                    );
+                  }
+                  if (diff === 0) {
+                    return (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 inline-block w-fit">
+                        ✓ Monto exacto
+                      </span>
+                    );
+                  }
+                  if (diff > 0) {
+                    return (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 inline-block w-fit">
+                        ✓ Saldo a favor: {fmt(diff)}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 inline-block w-fit">
+                      ⚠️ Diferencia en contra: {fmt(Math.abs(diff))}
+                    </span>
+                  );
+                })()}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setReplacingIdx(null); setSearchQuery(''); setSearchResults([]); setIsSimilarSearch(false); setReplacementSelection([]); }}
+                  className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                >Cancelar</button>
+                <button
+                  onClick={replaceItemWithMultiple}
+                  disabled={replacementSelection.length === 0}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                >
+                  Confirmar reemplazo ({replacementSelection.length})
+                </button>
               </div>
             </div>
           </div>
@@ -1371,6 +2128,57 @@ export default function OrderDetailPage() {
                 <span className="hidden xs:inline sm:inline">SKU</span>
               </>
             )}
+          </button>
+          <button
+            onClick={() => {
+              const replacedItems = items.filter((it: any) => it.replaced && it.originalItem);
+              if (replacedItems.length > 0) {
+                // Group replaced items: first item with originalItem starts a group,
+                // subsequent replaced items without originalItem belong to the same group
+                const replacements: { original: any; newItems: any[] }[] = [];
+                let currentGroup: { original: any; newItems: any[] } | null = null;
+                for (const it of items) {
+                  if ((it as any).replaced && (it as any).originalItem) {
+                    // Start new group
+                    if (currentGroup) replacements.push(currentGroup);
+                    currentGroup = {
+                      original: {
+                        name: (it as any).originalItem.name || '',
+                        sku: (it as any).originalItem.sku || '',
+                        price: (it as any).originalItem.price || 0,
+                        qty: it.qty || 1,
+                        img: (it as any).originalItem.img || '',
+                      },
+                      newItems: [{
+                        name: it.name || '',
+                        sku: (it.id ? productSkus[it.id] : '') || (it as any).sku || '',
+                        price: it.price || 0,
+                        qty: it.qty || 1,
+                        img: it.img || '',
+                      }],
+                    };
+                  } else if ((it as any).replaced && currentGroup) {
+                    // Add to current group
+                    currentGroup.newItems.push({
+                      name: it.name || '',
+                      sku: (it.id ? productSkus[it.id] : '') || (it as any).sku || '',
+                      price: it.price || 0,
+                      qty: it.qty || 1,
+                      img: it.img || '',
+                    });
+                  }
+                }
+                if (currentGroup) replacements.push(currentGroup);
+                generateReplacementPdf(order?.ORDERCODE || order?.$id || 'Pedido', replacements);
+              } else {
+                generateOrderPdf(order as any, items as any, Object.fromEntries(
+                  Object.entries(productSkus).map(([id, sku]) => [id, { sku, location: productLocations[id] || null }])
+                ));
+              }
+            }}
+            className="flex items-center gap-1.5 px-2 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition"
+          >
+            <FileText className="w-3.5 h-3.5" /> <span className="hidden xs:inline sm:inline">PDF</span>
           </button>
           <button onClick={() => window.print()} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white border border-gray-250 text-gray-600 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-50 transition">
             <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir</span>
@@ -1558,10 +2366,26 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {/* Search bar for quick SKU/name filtering */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              value={negotiationSearch}
+              onChange={e => setNegotiationSearch(e.target.value)}
+              placeholder="Buscar por SKU o nombre..."
+              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
           <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto">
             {items.map((it, idx) => {
               const isMissing = !!(it as any).missing;
               const isReplaced = !!(it as any).replaced;
+              const itemSku = (it.id ? productSkus[it.id] : '') || (it as any).sku || '';
+              const matchesSearch = !negotiationSearch.trim() ||
+                it.name.toLowerCase().includes(negotiationSearch.toLowerCase().trim()) ||
+                itemSku.toLowerCase().includes(negotiationSearch.toLowerCase().trim());
+              if (!matchesSearch) return null;
               
               return (
                 <div key={idx} className="py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap sm:flex-nowrap">
@@ -2155,11 +2979,17 @@ export default function OrderDetailPage() {
                           <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                             🔄 Reemplazado
                           </span>
-                          {it.originalPrice && it.originalPrice > it.price && (
-                            <span className="text-[9px] sm:text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
-                              Dif molestias: {fmt(((origItem?.price || it.originalPrice) * it.qty) - (it.price * it.qty))}
-                            </span>
-                          )}
+                          {(() => {
+                            const origTotal = (origItem?.price || it.originalPrice || 0) * it.qty;
+                            const replTotal = it.price * it.qty;
+                            const diff = origTotal - replTotal;
+                            if (diff === 0) return null;
+                            return (
+                              <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${diff > 0 ? 'text-orange-600 bg-orange-50 border-orange-100' : 'text-emerald-600 bg-emerald-50 border-emerald-100'}`}>
+                                {diff > 0 ? `Dif en contra: ${fmt(diff)}` : `Saldo a favor: ${fmt(Math.abs(diff))}`}
+                              </span>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
@@ -2225,19 +3055,54 @@ export default function OrderDetailPage() {
                       const replacementPriceTotal = it.price * it.qty;
                       const difference = originalPriceTotal - replacementPriceTotal;
                       return (
-                        <div className="mt-1 text-[10px] text-gray-500 bg-gray-50 p-2 rounded-lg border border-gray-100 inline-block">
-                          <p className="italic">Originalmente: <span className="font-semibold">{origItem.name}</span> ({origItem.sku || 'Sin SKU'}) a {fmt(origItem.price)} c/u</p>
-                          {difference > 0 ? (
-                            <p className="text-emerald-600 font-bold mt-0.5">
-                              Saldo a favor del cliente por diferencia: {fmt(difference)}
-                            </p>
-                          ) : difference < 0 ? (
-                            <p className="text-indigo-600 font-bold mt-0.5">
-                              Diferencia a pagar por el cliente: {fmt(Math.abs(difference))}
-                            </p>
-                          ) : (
-                            <p className="text-gray-500 font-bold mt-0.5">Sin diferencia de precio</p>
-                          )}
+                        <div className="mt-2 bg-gray-50 rounded-xl border border-gray-100 p-2.5">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Original product */}
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                {origItem.img ? <img src={origItem.img} className="w-full h-full object-contain p-0.5" /> : <Package className="w-4 h-4 text-gray-300" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[10px] sm:text-xs font-semibold text-gray-600 truncate line-through">{origItem.name}</p>
+                                <p className="text-[9px] text-gray-400 flex items-center gap-1">
+                                  <Hash className="w-2.5 h-2.5" />{origItem.sku || 'Sin SKU'}
+                                </p>
+                                <p className="text-[9px] text-gray-500 font-bold">{fmt(origItem.price)} c/u</p>
+                              </div>
+                            </div>
+
+                            {/* Arrow */}
+                            <div className="flex flex-col items-center justify-center shrink-0">
+                              <span className="text-gray-300 text-lg sm:text-xl font-bold">→</span>
+                              <span className="text-[8px] text-gray-400 font-medium">reemplazado</span>
+                            </div>
+
+                            {/* New product */}
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white border border-emerald-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                {it.img ? <img src={it.img} className="w-full h-full object-contain p-0.5" /> : <Package className="w-4 h-4 text-gray-300" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[10px] sm:text-xs font-semibold text-emerald-700 truncate">{it.name}</p>
+                                <p className="text-[9px] text-gray-400 flex items-center gap-1">
+                                  <Hash className="w-2.5 h-2.5" />{sku || 'Sin SKU'}
+                                </p>
+                                <p className="text-[9px] text-gray-500 font-bold">{fmt(it.price)} c/u</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Price difference */}
+                          <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+                            <span className="text-[9px] text-gray-400">Diferencia de precio:</span>
+                            {difference > 0 ? (
+                              <span className="text-[10px] font-bold text-orange-600">Dif en contra: {fmt(difference)}</span>
+                            ) : difference < 0 ? (
+                              <span className="text-[10px] font-bold text-emerald-600">Saldo a favor: {fmt(Math.abs(difference))}</span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-gray-400">Sin diferencia</span>
+                            )}
+                          </div>
                         </div>
                       );
                     })()}
@@ -2248,7 +3113,7 @@ export default function OrderDetailPage() {
                 </div>
 
                 {/* Actions row for this product inside order */}
-                {['pending', 'processing', 'paid', 'assembling', 'negotiation'].includes(order.STATUS) && (
+                {['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'negotiation'].includes(order.STATUS) && (
                   <div className="flex items-center gap-1.5 sm:gap-2 mt-1 sm:pl-18 no-print flex-wrap">
                     <button
                       onClick={() => toggleMissingItem(i)}
@@ -2315,6 +3180,7 @@ export default function OrderDetailPage() {
                             setIsSimilarSearch(false);
                             setReplacingIdx(i);
                             setMissingQty(it.qty || 1);
+                            setReplacementSelection([]);
                           }}
                           className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
                         >
@@ -2322,13 +3188,68 @@ export default function OrderDetailPage() {
                         </button>
                       </>
                     )}
+                    {isReplaced && origItem && (
+                      <button
+                        onClick={() => revertReplacement(i)}
+                        className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3" /> Revertir Reemplazo
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
         </div>
-        {/* Totals at the end */}
+        {/* Standalone Add Product button - always visible */}
+        {['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'negotiation'].includes(order.STATUS) && (
+          <div className="px-3 sm:px-5 py-2.5 border-t border-gray-100 no-print">
+            <button
+              onClick={() => setShowAddProduct(true)}
+              className="w-full py-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Añadir Producto al Pedido
+            </button>
+          </div>
+        )}
+        {/* Totals / Negotiation summary */}
+        {order.STATUS === 'negotiation' && (() => {
+          const missingItems = items.filter((it: any) => it.missing);
+          const replacedItems = items.filter((it: any) => it.replaced);
+          const missingTotal = missingItems.reduce((s, it: any) => s + (it.price * it.qty), 0);
+          const replacedTotal = replacedItems.reduce((s, it: any) => s + (it.price * it.qty), 0);
+          const remaining = missingTotal - replacedTotal;
+          const pct = missingTotal > 0 ? Math.min(100, Math.round((replacedTotal / missingTotal) * 100)) : 0;
+          return (
+            <div className="px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-orange-50 to-amber-50 border-t border-orange-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-bold text-gray-700">📊 Resumen de negociación</span>
+                <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${remaining <= 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                  {remaining <= 0 ? '✓ Cubierto' : 'Pendiente'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="text-gray-600">Faltante total</span>
+                <span className="font-bold text-gray-900">{fmt(missingTotal)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="text-gray-600">Reemplazado hasta ahora</span>
+                <span className={`font-bold ${remaining <= 0 ? 'text-green-600' : 'text-orange-600'}`}>{fmt(replacedTotal)}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${remaining <= 0 ? 'bg-green-500' : 'bg-orange-500'}`} style={{ width: `${pct}%` }} />
+              </div>
+              <div className="flex items-center justify-between text-[10px] sm:text-xs">
+                <span className="text-gray-500">Progreso: {pct}%</span>
+                <span className={`font-bold ${remaining <= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                  {remaining <= 0 ? `Cubierto (+${fmt(Math.abs(remaining))})` : `Falta: ${fmt(remaining)}`}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+        {order.STATUS !== 'negotiation' && (
         <div className="px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-gray-50 to-white border-t border-gray-100 space-y-1.5 sm:space-y-2">
           <div className="flex justify-between text-xs sm:text-sm">
             <span className="text-gray-500">Subtotal</span>
@@ -2366,6 +3287,7 @@ export default function OrderDetailPage() {
             <span className="text-gray-900">{fmt(order.TOTAL)}</span>
           </div>
         </div>
+        )}
       </div>
     </div>
     </>

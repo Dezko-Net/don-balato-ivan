@@ -17,20 +17,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing url param' }, { status: 400 });
     }
 
-    // Only proxy Appwrite storage URLs
-    if (!url.includes('cloud.appwrite.io') || !url.includes('/storage/buckets/')) {
-      return NextResponse.redirect(url);
-    }
-
     // Strip mode=admin if present
     const cleanUrl = url.replace(/&?mode=admin/, '').replace(/\?mode=admin/, '?').replace(/\?$/, '');
 
-    const res = await fetch(cleanUrl, {
-      headers: {
-        'X-Appwrite-Project': PROJECT_ID,
-        'X-Appwrite-Key': API_KEY,
-      },
-    });
+    // Fetch ALL URLs server-side to avoid CORS issues
+    // For Appwrite URLs, add auth headers
+    const isAppwrite = cleanUrl.includes('cloud.appwrite.io') || cleanUrl.includes('/storage/buckets/');
+    const headers: Record<string, string> = {};
+    if (isAppwrite) {
+      headers['X-Appwrite-Project'] = PROJECT_ID;
+      headers['X-Appwrite-Key'] = API_KEY;
+    }
+
+    const res = await fetch(cleanUrl, { headers });
 
     if (!res.ok) {
       return NextResponse.json({ error: `Upstream ${res.status}` }, { status: res.status });

@@ -1208,12 +1208,12 @@ export default function PedidoPage() {
                               <p className="font-semibold text-gray-700">Detalles del reemplazo:</p>
                               <p className="mt-0.5">Producto original: <span className="font-bold text-gray-600">{origItem.name}</span> ({formatPrice(origItem.price)})</p>
                               {difference > 0 ? (
-                                <p className="text-emerald-600 font-bold mt-0.5">
-                                  Saldo a favor por diferencia: {formatPrice(difference)}
+                                <p className="text-orange-600 font-bold mt-0.5">
+                                  Diferencia en contra: {formatPrice(difference)}
                                 </p>
                               ) : difference < 0 ? (
-                                <p className="text-indigo-600 font-bold mt-0.5">
-                                  Diferencia a pagar: {formatPrice(Math.abs(difference))}
+                                <p className="text-emerald-600 font-bold mt-0.5">
+                                  Saldo a favor: {formatPrice(Math.abs(difference))}
                                 </p>
                               ) : (
                                 <p className="text-gray-500 font-bold mt-0.5">Sin diferencia de precio</p>
