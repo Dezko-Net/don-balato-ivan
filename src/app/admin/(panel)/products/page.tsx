@@ -6,7 +6,8 @@ import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload } from 'lucide-react';
+import Link from 'next/link';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures } from '@/lib/product-features';
@@ -31,14 +32,14 @@ const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: s
 );
 
 const getLiveStatus = (p: Product) => {
-  if (!p.imported_at) return null;
+  if (!p.$createdAt) return null;
   const now = new Date();
   const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
   const threshold = now.getTime() >= today7Am.getTime()
     ? today7Am.getTime()
     : new Date(today7Am.getFullYear(), today7Am.getMonth(), today7Am.getDate() - 1, 7, 0, 0, 0).getTime();
 
-  const importedTime = new Date(p.imported_at).getTime();
+  const importedTime = new Date(p.$createdAt).getTime();
   if (importedTime < threshold) return null;
 
   const createdTime = p.$createdAt ? new Date(p.$createdAt).getTime() : 0;
@@ -71,7 +72,8 @@ export default function ProductsPage() {
   const [stockModal, setStockModal] = useState(false);
   const [stockAdj, setStockAdj] = useState<{ type: 'add' | 'set'; value: string }>({ type: 'add', value: '' });
   const [applyingStock, setApplyingStock] = useState(false);
-  const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string } | null>(null);
+  const [imageDrawer, setImageDrawer] = useState<{ productId: string; productName: string; img1: string; img2: string; img3: string; img4: string; origImg1: string; origImg2: string; origImg3: string; origImg4: string } | null>(null);
+  const [imageDrawerSaving, setImageDrawerSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState<'title' | 'desc' | null>(null);
   const [aiTitles, setAiTitles] = useState<string[]>([]);
   const [KeniaOpen, setKeniaOpen] = useState(false);
@@ -956,18 +958,25 @@ export default function ProductsPage() {
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
   const catName = (id?: string) => categories.find(c => c.$id === id)?.name || '—';
 
-  const saveImageUrl = async () => {
-    if (!imageUrlModal) return;
+  const saveImageDrawer = async () => {
+    if (!imageDrawer) return;
+    setImageDrawerSaving(true);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, imageUrlModal.productId, {
-        IMAGEURL: imageUrlModal.newUrl,
-      });
-      setProducts(prev => prev.map(p => p.$id === imageUrlModal.productId ? { ...p, IMAGEURL: imageUrlModal.newUrl } : p));
-      setImageUrlModal(null);
-      invalidateProductCache();
+      const payload: Record<string, any> = {};
+      if (imageDrawer.img1 !== imageDrawer.origImg1) payload.IMAGEURL = imageDrawer.img1;
+      if (imageDrawer.img2 !== imageDrawer.origImg2) payload.IMAGEURL2 = imageDrawer.img2;
+      if (imageDrawer.img3 !== imageDrawer.origImg3) payload.IMAGEURL3 = imageDrawer.img3;
+      if (imageDrawer.img4 !== imageDrawer.origImg4) payload.IMAGEURL4 = imageDrawer.img4;
+      if (Object.keys(payload).length > 0) {
+        await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, imageDrawer.productId, payload);
+        setProducts(prev => prev.map(p => p.$id === imageDrawer.productId ? { ...p, ...payload } : p));
+        invalidateProductCache();
+      }
+      setImageDrawer(null);
     } catch (e: any) { alert('Error: ' + e.message); }
+    finally { setImageDrawerSaving(false); }
   };
 
   const exportCSV = () => {
@@ -1284,9 +1293,9 @@ export default function ProductsPage() {
     if (!liveA && liveB) return 1;
 
     if (liveA && liveB) {
-      // Both are in Live Shopping: sort by imported_at descending
-      const timeA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
-      const timeB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
+      // Both are in Live Shopping: sort by $createdAt descending
+      const timeA = a.$createdAt ? new Date(a.$createdAt).getTime() : 0;
+      const timeB = b.$createdAt ? new Date(b.$createdAt).getTime() : 0;
       return timeB - timeA;
     }
 
@@ -1296,8 +1305,8 @@ export default function ProductsPage() {
       av = (a.COST && a.PRICE) ? ((a.PRICE - a.COST) / a.PRICE) : -1;
       bv = (b.COST && b.PRICE) ? ((b.PRICE - b.COST) / b.PRICE) : -1;
     } else if (sort.key === 'CREATED') {
-      av = new Date(a.$createdAt).getTime();
-      bv = new Date(b.$createdAt).getTime();
+      av = new Date(a.$createdAt || 0).getTime();
+      bv = new Date(b.$createdAt || 0).getTime();
     } else {
       av = a[sort.key] ?? 0; bv = b[sort.key] ?? 0;
     }
@@ -1733,6 +1742,9 @@ export default function ProductsPage() {
           <button id="btn-export-shopify" onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
             <Download className="w-4 h-4" /> Shopify CSV
           </button>
+          <Link href="/admin/products/import-images" className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-sm font-medium hover:bg-amber-100 transition" title="Importar imágenes por SKU">
+            <Upload className="w-4 h-4" /> Importar Imágenes
+          </Link>
           <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
             <Sparkles className="w-4 h-4" /> Categorizar con Kenia
           </button>
@@ -2092,10 +2104,17 @@ export default function ProductsPage() {
                         <div
                           className="relative w-10 h-10 shrink-0 cursor-pointer group"
                           onClick={() =>
-                            setImageUrlModal({
+                            setImageDrawer({
                               productId: p.$id,
-                              currentUrl: p.IMAGEURL || '',
-                              newUrl: p.IMAGEURL || '',
+                              productName: p.NAME || '',
+                              img1: p.IMAGEURL || '',
+                              img2: p.IMAGEURL2 || '',
+                              img3: p.IMAGEURL3 || '',
+                              img4: (p as any).IMAGEURL4 || '',
+                              origImg1: p.IMAGEURL || '',
+                              origImg2: p.IMAGEURL2 || '',
+                              origImg3: p.IMAGEURL3 || '',
+                              origImg4: (p as any).IMAGEURL4 || '',
                             })
                           }
                           title="Click para cambiar imagen"
@@ -2140,9 +2159,9 @@ export default function ProductsPage() {
                                 Ya estaba (En Live)
                               </span>
                             )}
-                            {liveStatus && p.imported_at && (
+                            {liveStatus && p.$createdAt && (
                               <span className="text-[9px] text-gray-400 font-medium">
-                                ({new Date(p.imported_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })})
+                                ({new Date(p.$createdAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })})
                               </span>
                             )}
                           </div>
@@ -2401,30 +2420,71 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Image URL replacement modal */}
-      {imageUrlModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <p className="font-bold text-gray-900">Cambiar imagen</p>
-              <button onClick={() => setImageUrlModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              {imageUrlModal.currentUrl && (
-                <div className="w-full h-32 rounded-xl bg-gray-100 overflow-hidden">
-                  <img src={imageUrlModal.currentUrl} alt="Actual" className="w-full h-full object-cover" />
-                </div>
-              )}
+      {/* Image drawer (cortina lateral) */}
+      {imageDrawer && (
+        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => !imageDrawerSaving && setImageDrawer(null)}>
+          <div className="absolute inset-0 bg-black/40 transition-opacity" />
+          <div
+            className="relative w-full max-w-md h-full bg-white shadow-2xl overflow-y-auto transition-transform duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-10">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">URL de la nueva imagen</label>
-                <input type="url" value={imageUrlModal.newUrl} onChange={e => setImageUrlModal(m => m ? { ...m, newUrl: e.target.value } : null)}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <p className="font-bold text-gray-900">Imágenes del producto</p>
+                <p className="text-xs text-gray-500 truncate max-w-[250px]">{imageDrawer.productName}</p>
               </div>
+              <button onClick={() => !imageDrawerSaving && setImageDrawer(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
-              <button onClick={() => setImageUrlModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
-              <button onClick={saveImageUrl} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">Guardar</button>
+            <div className="p-4 space-y-4">
+              {[
+                { label: 'Imagen 1', key: 'img1', field: 'IMAGEURL' },
+                { label: 'Imagen 2', key: 'img2', field: 'IMAGEURL2' },
+                { label: 'Imagen 3', key: 'img3', field: 'IMAGEURL3' },
+                { label: 'Imagen 4', key: 'img4', field: 'IMAGEURL4' },
+              ].map((slot) => (
+                <div key={slot.key} className="space-y-2">
+                  <label className="block text-xs font-semibold text-gray-600">{slot.label}</label>
+                  {imageDrawer[slot.key as 'img1'] ? (
+                    <div className="relative w-full h-32 rounded-xl bg-gray-100 overflow-hidden group">
+                      <img src={imageDrawer[slot.key as 'img1']} alt={slot.label} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setImageDrawer(d => d ? { ...d, [slot.key]: '' } : null)}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition shadow-lg"
+                        title="Quitar imagen"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-full h-32 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400">
+                      <Package className="w-8 h-8" />
+                    </div>
+                  )}
+                  <input
+                    type="url"
+                    value={imageDrawer[slot.key as 'img1']}
+                    onChange={e => setImageDrawer(d => d ? { ...d, [slot.key]: e.target.value } : null)}
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 p-4 flex justify-end gap-3">
+              <button
+                onClick={() => !imageDrawerSaving && setImageDrawer(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition"
+              >Cancelar</button>
+              <button
+                onClick={saveImageDrawer}
+                disabled={imageDrawerSaving}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
+              >
+                {imageDrawerSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
+                {imageDrawerSaving ? 'Guardando...' : 'Guardar'}
+              </button>
             </div>
           </div>
         </div>

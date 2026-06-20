@@ -78,7 +78,7 @@ const getCachedHomeData = unstable_cache(
     memoryCacheHomeTime = Date.now();
     return result;
   },
-  ['yaxsell-home-data-v1'],
+  ['yaxsell-home-data-v2'],
   { revalidate: 86400, tags: ['home', 'products', 'offers'] }
 );
 

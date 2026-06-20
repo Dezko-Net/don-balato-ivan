@@ -16,7 +16,7 @@ export type ProductPriceLike = {
   PACKQTY?: number | null;
   PACK_DISCOUNT_PCT?: number | null;
   UNIT_OFFER_EXPIRES_AT?: number | null;
-  imported_at?: string | null;
+  $createdAt?: string | null;
 };
 
 /** Porcentaje de descuento al comprar en paquete (cuando no hay PACK_DISCOUNT_PCT específico). */
@@ -120,9 +120,9 @@ export function getLiveShoppingDiscountPercent(importedAt: string): number {
   return 20;
 }
 
-/** Verifica si un producto es de live shopping (tiene imported_at válido). */
+/** Verifica si un producto es de live shopping (tiene $createdAt válido). */
 export function isLiveShoppingProduct(product: ProductPriceLike): boolean {
-  return !!(product.imported_at && product.imported_at !== '1970-01-01T00:00:00.000Z');
+  return !!(product.$createdAt && product.$createdAt !== '1970-01-01T00:00:00.000Z');
 }
 
 /** Precio mostrado: oferta del producto (CURRENTPRICE) tiene prioridad sobre promoción apertura. */
@@ -139,7 +139,7 @@ export function resolveProductDisplayPrice(
   // 0. Live Shopping promotion: 20% off for 1 week, then 10% after Sunday 12AM
   const isLiveShopping = isLiveShoppingProduct(product);
   if (isLiveShopping) {
-    const discountPercent = getLiveShoppingDiscountPercent(product.imported_at!);
+    const discountPercent = getLiveShoppingDiscountPercent(product.$createdAt!);
     const displayPrice = Math.round(effectiveBase * (1 - discountPercent / 100));
     return {
       displayPrice,

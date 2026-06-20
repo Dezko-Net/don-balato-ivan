@@ -135,10 +135,10 @@ const getCachedLiveProductsByDate = unstable_cache(
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
     const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-      Query.greaterThanEqual('imported_at', start.toISOString()),
-      Query.lessThan('imported_at', end.toISOString()),
+      Query.greaterThanEqual('$createdAt', start.toISOString()),
+      Query.lessThan('$createdAt', end.toISOString()),
       Query.greaterThanEqual('STOCK', 0),
-      Query.orderDesc('imported_at'),
+      Query.orderDesc('$createdAt'),
       Query.limit(500),
     ]);
     const normalized = res.documents.map(p => normalizeProductImages(p as any));
@@ -161,9 +161,9 @@ const getCachedLiveProducts = unstable_cache(
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
     const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-      Query.greaterThanEqual('imported_at', thresholdIso),
+      Query.greaterThanEqual('$createdAt', thresholdIso),
       Query.greaterThanEqual('STOCK', 0),
-      Query.orderDesc('imported_at'),
+      Query.orderDesc('$createdAt'),
       Query.limit(500),
     ]);
     const normalized = res.documents.map(p => normalizeProductImages(p as any));

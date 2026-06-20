@@ -559,17 +559,26 @@ export default function HomePage23() {
         
         if (!active) return;
 
-        // Verify that we actually received valid non-empty data
-        const hasCategories = data.categories && data.categories.length > 0;
-        const hasProducts = data.products && data.products.length > 0;
-        if (!hasCategories || !hasProducts) {
-          throw new Error('Received empty categories or products from database');
+        const nextCategories = Array.isArray(data.categories) ? data.categories : [];
+        const nextSubcategories = Array.isArray(data.subcategories) ? data.subcategories : [];
+        const nextProducts = Array.isArray(data.products) ? data.products : [];
+        const nextCheapestProducts = Array.isArray(data.cheapestProducts)
+          ? data.cheapestProducts
+          : [];
+
+        if (nextCategories.length === 0 || nextProducts.length === 0) {
+          console.warn('[Plantilla23] Home data came back empty or partial.', {
+            categories: nextCategories.length,
+            products: nextProducts.length,
+            subcategories: nextSubcategories.length,
+            cheapestProducts: nextCheapestProducts.length,
+          });
         }
 
-        setCategories(data.categories || []);
-        setSubcategories(data.subcategories || []);
-        setProducts(data.products || []);
-        setCheapestProducts(data.cheapestProducts || []);
+        setCategories(nextCategories);
+        setSubcategories(nextSubcategories);
+        setProducts(nextProducts);
+        setCheapestProducts(nextCheapestProducts.length > 0 ? nextCheapestProducts : nextProducts);
         setDestacadoTemporal(data.destacadoTemporal || null);
         setPackTimer(data.packTimer || null);
         setTimedOffers(data.timedOffers || []);

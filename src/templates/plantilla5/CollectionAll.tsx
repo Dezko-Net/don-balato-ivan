@@ -327,16 +327,16 @@ export default function CollectionAll5() {
 
     // Sort: Live Shopping products (imported today since 7am) appear first
     return filtered.sort((a, b) => {
-      const aIsLive = a.imported_at && new Date(a.imported_at).getTime() >= liveThreshold;
-      const bIsLive = b.imported_at && new Date(b.imported_at).getTime() >= liveThreshold;
+      const aIsLive = a.$createdAt && new Date(a.$createdAt).getTime() >= liveThreshold;
+      const bIsLive = b.$createdAt && new Date(b.$createdAt).getTime() >= liveThreshold;
 
       if (aIsLive && !bIsLive) return -1;
       if (!aIsLive && bIsLive) return 1;
 
       if (aIsLive && bIsLive) {
-        // Both live: sort by imported_at descending
-        const timeA = new Date(a.imported_at!).getTime();
-        const timeB = new Date(b.imported_at!).getTime();
+        // Both live: sort by $createdAt descending
+        const timeA = new Date(a.$createdAt!).getTime();
+        const timeB = new Date(b.$createdAt!).getTime();
         return timeB - timeA;
       }
 

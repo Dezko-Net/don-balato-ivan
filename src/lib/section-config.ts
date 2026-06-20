@@ -7,6 +7,7 @@
 import { getServices, getAppwriteConfig, THEME_CONFIG_COLLECTION } from './appwrite';
 
 export interface SectionSettings {
+  [key: string]: any;
   // Content
   title?: string;
   subtitle?: string;

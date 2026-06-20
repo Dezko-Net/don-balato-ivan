@@ -259,11 +259,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     return allActiveProducts
       .filter(p => {
         if (!isLiveShoppingProduct(p)) return false;
-        return new Date(p.imported_at!).getTime() >= threshold;
+        return new Date(p.$createdAt!).getTime() >= threshold;
       })
       .sort((a, b) => {
-        const ta = new Date(b.imported_at!).getTime();
-        const tb = new Date(a.imported_at!).getTime();
+        const ta = new Date(b.$createdAt!).getTime();
+        const tb = new Date(a.$createdAt!).getTime();
         return ta - tb; // más recientes primero
       })
       .slice(0, 20);
@@ -277,12 +277,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     return allActiveProducts
       .filter(p => {
         if (!isLiveShoppingProduct(p)) return false;
-        const importedTime = new Date(p.imported_at!).getTime();
+        const importedTime = new Date(p.$createdAt!).getTime();
         return importedTime >= twoDaysAgo && importedTime < threshold;
       })
       .sort((a, b) => {
-        const ta = new Date(b.imported_at!).getTime();
-        const tb = new Date(a.imported_at!).getTime();
+        const ta = new Date(b.$createdAt!).getTime();
+        const tb = new Date(a.$createdAt!).getTime();
         return ta - tb;
       })
       .slice(0, 20);
@@ -305,7 +305,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     const dates = new Set<string>();
     allActiveProducts.forEach(p => {
       if (!isLiveShoppingProduct(p)) return;
-      const d = new Date(p.imported_at!);
+      const d = new Date(p.$createdAt!);
       // Format as YYYY-MM-DD
       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       dates.add(dateStr);
@@ -751,7 +751,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const pricing = resolveProductDisplayPrice(p, apertura);
                   const displayPrice = pricing.displayPrice;
                   const stock = p.STOCK || 0;
-                  const discountPct = isLiveShoppingProduct(p) ? getLiveShoppingDiscountPercent(p.imported_at!) : 20;
+                  const discountPct = isLiveShoppingProduct(p) ? getLiveShoppingDiscountPercent(p.$createdAt!) : 20;
                   return (
                     <div key={p.$id} style={{ minWidth: 190, maxWidth: 210, flex: '0 0 auto', background: 'rgba(255,255,255,0.95)', borderRadius: 20, border: '1.5px solid #e94560', overflow: 'hidden', boxShadow: '0 4px 16px rgba(233,69,96,0.12)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                       <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: 'linear-gradient(135deg,#e94560,#ff6b6b)', color: '#fff', borderRadius: 999, fontSize: 12, fontWeight: 900, padding: '4px 10px', boxShadow: '0 2px 8px rgba(233,69,96,0.4)' }}>-{discountPct}%</div>
@@ -1068,7 +1068,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   } else if (catalogMode === 'paquetes') {
                     // Si es producto de live shopping, usar el precio con descuento de live para paquete también
                     if (isLiveShoppingProduct(p)) {
-                      const liveDiscount = getLiveShoppingDiscountPercent(p.imported_at!);
+                      const liveDiscount = getLiveShoppingDiscountPercent(p.$createdAt!);
                       price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
                       origPrice = p.PRICE;
                     } else {
@@ -1209,7 +1209,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     origPrice = p.PRICE;
                   } else if (catalogMode === 'paquetes') {
                     if (isLiveShoppingProduct(p)) {
-                      const liveDiscount = getLiveShoppingDiscountPercent(p.imported_at!);
+                      const liveDiscount = getLiveShoppingDiscountPercent(p.$createdAt!);
                       price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
                       origPrice = p.PRICE;
                     } else {
@@ -1470,7 +1470,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   {liveHistoryProducts.map(p => {
                     const pricing = resolveProductDisplayPrice(p, apertura);
                     const stock = p.STOCK || 0;
-                    const discountPct = isLiveShoppingProduct(p) ? getLiveShoppingDiscountPercent(p.imported_at!) : 20;
+                    const discountPct = isLiveShoppingProduct(p) ? getLiveShoppingDiscountPercent(p.$createdAt!) : 20;
                     return (
                       <div key={p.$id} style={{ background: '#fff', borderRadius: 16, border: '1px solid #f3f4f6', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8fafc', cursor: 'pointer' }} onClick={() => handleCardImageClick(p)}>

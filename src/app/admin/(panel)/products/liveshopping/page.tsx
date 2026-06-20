@@ -46,8 +46,8 @@ const fmtDate = (iso: string) =>
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 function getLiveStatus(p: Product, thresholdTime: number) {
-  if (!p.imported_at) return null;
-  const importedTime = new Date(p.imported_at).getTime();
+  if (!p.$createdAt) return null;
+  const importedTime = new Date(p.$createdAt).getTime();
   if (importedTime < thresholdTime) return null;
   const createdTime = p.$createdAt ? new Date(p.$createdAt).getTime() : 0;
   return createdTime >= thresholdTime ? 'new' : 'existing';
@@ -529,7 +529,7 @@ function ProductRow({
 
       {/* Import time */}
       <td className="px-6 py-4 text-center text-gray-500 font-mono text-xs">
-        {p.imported_at ? fmtTime(p.imported_at) : '—'}
+        {p.$createdAt ? fmtTime(p.$createdAt) : '—'}
       </td>
 
       {/* Actions */}
@@ -652,7 +652,7 @@ function SessionCard({ session }: { session: LiveSession }) {
                         )}
                       </td>
                       <td className="px-5 py-3 text-center text-gray-500 font-mono text-xs">
-                        {p.imported_at ? fmtTime(p.imported_at) : '—'}
+                        {p.$createdAt ? fmtTime(p.$createdAt) : '—'}
                       </td>
                     </tr>
                   );
@@ -692,14 +692,14 @@ export default function LiveShoppingAdminPage() {
       const oneWeekAgo = new Date(Date.now() - 7 * 86400000);
 
       const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-        Query.greaterThanEqual('imported_at', oneWeekAgo.toISOString()),
-        Query.orderDesc('imported_at'),
+        Query.greaterThanEqual('$createdAt', oneWeekAgo.toISOString()),
+        Query.orderDesc('$createdAt'),
         Query.limit(500),
       ]);
 
       const docs = (resp.documents as unknown as Product[]).sort((a, b) => {
-        const timeA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
-        const timeB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
+        const timeA = a.$createdAt ? new Date(a.$createdAt).getTime() : 0;
+        const timeB = b.$createdAt ? new Date(b.$createdAt).getTime() : 0;
         return timeB - timeA;
       });
 
@@ -735,7 +735,7 @@ export default function LiveShoppingAdminPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, { imported_at: '1970-01-01T00:00:00.000Z' });
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, { $createdAt: '1970-01-01T00:00:00.000Z' });
       setAllProducts(prev => prev.filter(p => p.$id !== productId));
     } catch (e: any) {
       alert('Error al quitar de Live: ' + e.message);
@@ -755,15 +755,15 @@ export default function LiveShoppingAdminPage() {
 
   // Separate today's live products from history
   const todayProducts = allProducts.filter(p => {
-    if (!p.imported_at) return false;
-    return new Date(p.imported_at).getTime() >= thresholdTime;
+    if (!p.$createdAt) return false;
+    return new Date(p.$createdAt).getTime() >= thresholdTime;
   });
 
   // Group history by date (past days only)
   const historyByDate = allProducts
-    .filter(p => p.imported_at && new Date(p.imported_at).getTime() < thresholdTime)
+    .filter(p => p.$createdAt && new Date(p.$createdAt).getTime() < thresholdTime)
     .reduce<Record<string, Product[]>>((acc, p) => {
-      const key = new Date(p.imported_at!).toISOString().slice(0, 10);
+      const key = new Date(p.$createdAt!).toISOString().slice(0, 10);
       if (!acc[key]) acc[key] = [];
       acc[key].push(p);
       return acc;
@@ -891,7 +891,7 @@ export default function LiveShoppingAdminPage() {
                       const prod = resp.documents[0];
                       const newStock = (prod.STOCK || 0) > 0 ? prod.STOCK : 1;
                       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, prod.$id, {
-                        imported_at: new Date().toISOString(),
+                        $createdAt: new Date().toISOString(),
                         ISACTIVE: true,
                         STOCK: newStock
                       });

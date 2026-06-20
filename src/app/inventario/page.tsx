@@ -1269,7 +1269,7 @@ export default function InventarioPage() {
             name_cn: row.nameCn || '',
             ISACTIVE: false,                   // 🔒 SIEMPRE inactivo al importar
             DATE_ADDED: row.dateAdded || now,
-            imported_at: now,
+            $createdAt: now,
           };
           const doc = await databases.createDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, ID.unique(), payload);
           created++;

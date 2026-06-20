@@ -34,7 +34,6 @@ export interface Product {
   GROUPID?: string;
   COMING_SOON?: boolean;
   DATE_ADDED?: string;
-  imported_at?: string;
   section?: number;
   $createdAt?: string;
   $updatedAt?: string;

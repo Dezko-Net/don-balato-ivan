@@ -204,10 +204,10 @@ export default function BulkAddPage() {
           if (product) {
             // Product already exists: do NOT create/add a new document.
             if (sendToLive) {
-              // Update imported_at so it goes to today's Live Shopping, and ensure it has stock >= 1
+              // Update $createdAt so it goes to today's Live Shopping, and ensure it has stock >= 1
               const newStock = (product.STOCK || 0) > 0 ? product.STOCK : 1;
               const updatePayload: any = {
-                imported_at: new Date().toISOString(),
+                $createdAt: new Date().toISOString(),
                 STOCK: newStock,
                 ISACTIVE: true
               };
@@ -249,7 +249,7 @@ export default function BulkAddPage() {
             productPayload.STOCK = unlimitedStock ? 99999 : 0;
             if (sendToLive) {
               productPayload.STOCK = 1; // initialize stock to 1
-              productPayload.imported_at = new Date().toISOString();
+              productPayload.$createdAt = new Date().toISOString();
             }
             await databases.createDocument(
               databaseId, 

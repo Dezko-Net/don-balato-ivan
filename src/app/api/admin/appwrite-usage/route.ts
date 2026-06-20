@@ -49,12 +49,23 @@ export async function GET() {
       })
     );
 
-    // Get today's reads from the databaseReads array (usually the last element)
-    const databaseReads = dbData.databaseReads || [];
-    const todayData = databaseReads[databaseReads.length - 1];
-    const todayReads = todayData ? todayData.value : 0;
+    // Fetch 24h usage for accurate today's reads
+    const dbRes24 = await fetch(`${endpoint}/databases/${databaseId}/usage?range=24h`, { headers });
+    let todayReads = 0;
+    if (dbRes24.ok) {
+      const dbData24 = await dbRes24.json();
+      const reads24 = dbData24.databaseReads || [];
+      for (const read of reads24) {
+        todayReads += read.value || 0;
+      }
+    } else {
+      const databaseReads = dbData.databaseReads || [];
+      const todayData = databaseReads[databaseReads.length - 1];
+      todayReads = todayData ? todayData.value : 0;
+    }
 
     // Calculate last 7 days reads
+    const databaseReads = dbData.databaseReads || [];
     const sevenDaysReads = databaseReads.slice(-7).reduce((acc: number, curr: any) => acc + (curr.value || 0), 0);
 
     const result = {
