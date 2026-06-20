@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_ORDERS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { notifyNewOrder } from '@/lib/notify-admin';
 import { CHILE_REGIONES } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/appwrite';
@@ -706,6 +707,9 @@ function CheckoutInner() {
       });
       submittedRef.current = true;
       const orderId = (docId as unknown as { $id: string }).$id;
+
+      // Notify admin about new order
+      notifyNewOrder(orderCode, form.name, total, items.length).catch(() => {});
 
       // ── Descontar stock reservado (con rollback si falla) ──
       // Solo se descuenta si el producto tiene stock real asignado (< 99999).

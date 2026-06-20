@@ -8,6 +8,7 @@ import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION,
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
+import { notifyPaymentUploaded, notifyNegotiationOpened, notifyNegotiationPartial, notifyNegotiationComplete } from '@/lib/notify-admin';
 import { useAuth } from '@/hooks/useAuth';
 
 const BANK_DEFAULTS = {
@@ -388,15 +389,27 @@ export default function PedidoPage() {
       await load();
       alert('¡Producto reemplazado con éxito!');
 
-      // Notify admin
+      // Notify admin about replacement status
       try {
-        const adminMsg = `✅ El cliente del pedido *#${order.ORDERCODE || order.$id}* ha completado un reemplazo en la web.\n• Producto original: ${oldItem.name}\n• Nuevo producto: ${newProd.NAME}`;
-        await fetch('/api/admin/whatsapp-send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          // Usamos el fallback_admin por defecto. Si el endpoint falla no rompe la app.
-          body: JSON.stringify({ phone: '56936599658', message: adminMsg })
-        });
+        const updatedItems = parsedItems;
+        const missingCount = updatedItems.filter((it: any) => it.missing === true).length;
+        const replacedCount = updatedItems.filter((it: any) => it.replaced === true).length;
+        const orderCode = order.ORDERCODE || order.$id;
+        const customerName = order.CUSTOMERNAME || 'Cliente';
+
+        if (missingCount === 0 && replacedCount > 0) {
+          await notifyNegotiationComplete(orderCode, customerName, replacedCount);
+        } else if (missingCount > 0 && replacedCount > 0) {
+          await notifyNegotiationPartial(orderCode, customerName, replacedCount, missingCount);
+        } else {
+          // Fallback: use the old message format for edge cases
+          const adminMsg = `✅ El cliente del pedido *#${orderCode}* ha completado un reemplazo en la web.\n• Producto original: ${oldItem.name}\n• Nuevo producto: ${newProd.NAME}`;
+          await fetch('/api/admin/whatsapp-send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: '56936599658', message: adminMsg })
+          });
+        }
       } catch (errNotify) {
         console.warn('Error notificando al admin:', errNotify);
       }
@@ -424,6 +437,8 @@ export default function PedidoPage() {
           await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
             NEGOTIATION_OPENED_AT: Date.now()
           });
+          // Notify admin that customer opened the negotiation link
+          notifyNegotiationOpened(o.ORDERCODE || id, o.CUSTOMERNAME || 'Cliente').catch(() => {});
         } catch (e) {
           console.warn('No se pudo marcar NEGOTIATION_OPENED_AT:', e);
         }
@@ -524,6 +539,9 @@ export default function PedidoPage() {
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
       setUploaded(true);
       await load();
+
+      // Notify admin about payment upload
+      notifyPaymentUploaded(order?.ORDERCODE || id, order?.CUSTOMERNAME || 'Cliente').catch(() => {});
     } catch { alert('Error al subir el comprobante. Intenta de nuevo.'); }
     finally { setUploading(false); }
   }
