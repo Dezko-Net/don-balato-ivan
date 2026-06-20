@@ -2046,10 +2046,11 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {/* Productos (sin imágenes) */}
+      {/* Productos (con imágenes) */}
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, border: '1px solid #fbcfe8', borderRadius: 10, overflow: 'hidden' }}>
         <thead>
           <tr style={{ background: '#db2777', color: '#fff', textAlign: 'left' }}>
+            <th style={{ padding: '6px 8px', width: 50 }}></th>
             <th style={{ padding: '6px 8px', width: 90 }}>SKU</th>
             <th style={{ padding: '6px 8px' }}>Producto</th>
             <th style={{ padding: '6px 8px', textAlign: 'center', width: 44 }}>Cant.</th>
@@ -2060,6 +2061,11 @@ export default function OrderDetailPage() {
         <tbody>
           {items.map((it, i) => (
             <tr key={i} style={{ borderBottom: '1px solid #fce7f3', background: i % 2 ? '#fdf2f8' : '#fff' }}>
+              <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                {(it as any).img ? (
+                  <img src={(it as any).img} style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 4, border: '1px solid #e5e7eb', background: '#fff' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                ) : ''}
+              </td>
               <td style={{ padding: '5px 8px', fontFamily: 'monospace', color: '#be185d' }}>{(it.id ? productSkus[it.id] : '') || (it as any).sku || '—'}</td>
               <td style={{ padding: '5px 8px' }}>
                 {it.name}{(it as any).missing ? <strong style={{ color: '#b91c1c' }}> (FALTANTE)</strong> : ''}

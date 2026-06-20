@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, ADMIN_CHAT_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order } from '@/types/admin';
-import { Search, RefreshCw, AlertTriangle, Play, ClipboardList, CheckCircle, MessageSquare, Send, X, Bot, User } from 'lucide-react';
+import { Search, RefreshCw, AlertTriangle, Play, ClipboardList, CheckCircle, MessageSquare, Send, X, Bot, User, Eye, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NegotiationOrdersPage() {
@@ -217,6 +217,28 @@ export default function NegotiationOrdersPage() {
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
+  type NegotiationStatus = 'not_opened' | 'in_progress' | 'partial' | 'complete';
+
+  const getNegotiationStatus = (order: Order): { status: NegotiationStatus; missingCount: number; replacedCount: number; openedAt?: number } => {
+    let parsed: any[] = [];
+    try { parsed = JSON.parse(order.ITEMS || '[]'); } catch {}
+    const missingCount = parsed.filter(it => it.missing === true).length;
+    const replacedCount = parsed.filter(it => it.replaced === true).length;
+    const openedAt = (order as any).NEGOTIATION_OPENED_AT as number | undefined;
+
+    if (missingCount === 0 && replacedCount > 0) return { status: 'complete', missingCount, replacedCount, openedAt };
+    if (missingCount > 0 && replacedCount > 0) return { status: 'partial', missingCount, replacedCount, openedAt };
+    if (openedAt) return { status: 'in_progress', missingCount, replacedCount, openedAt };
+    return { status: 'not_opened', missingCount, replacedCount, openedAt };
+  };
+
+  const statusConfig: Record<NegotiationStatus, { label: string; bg: string; text: string; icon: string }> = {
+    not_opened: { label: 'Link no abierto', bg: 'bg-gray-100', text: 'text-gray-600', icon: '📭' },
+    in_progress: { label: 'Cambio en proceso', bg: 'bg-amber-100', text: 'text-amber-700', icon: '⏳' },
+    partial: { label: 'Cambio parcial', bg: 'bg-blue-100', text: 'text-blue-700', icon: '🔄' },
+    complete: { label: 'Cambio completo', bg: 'bg-emerald-100', text: 'text-emerald-700', icon: '✅' },
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -313,13 +335,19 @@ export default function NegotiationOrdersPage() {
                 hasMissing = parsed.some((it: any) => it.missing === true);
               } catch {}
 
+              const negStatus = getNegotiationStatus(order);
+              const sc = statusConfig[negStatus.status];
+
               return (
                 <div key={order.$id} className="p-5 flex justify-between items-center hover:bg-gray-50/50 transition flex-wrap gap-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-extrabold text-sm text-gray-900">#{order.ORDERCODE}</span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700">
                         Negociación
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${sc.bg} ${sc.text}`}>
+                        {sc.icon} {sc.label}
                       </span>
                       {hasMissing && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
@@ -330,8 +358,11 @@ export default function NegotiationOrdersPage() {
                     <div className="text-xs text-gray-500">
                       <strong>Cliente:</strong> {order.CUSTOMERNAME} | <strong>Total:</strong> {fmt(order.TOTAL)}
                     </div>
-                    <div className="text-[11px] text-gray-400">
-                      Fecha: {date.toLocaleDateString('es-CL', { hour: '2-digit', minute: '2-digit' })} | {itemsCount} productos
+                    <div className="text-[11px] text-gray-400 flex items-center gap-3">
+                      <span>Fecha: {date.toLocaleDateString('es-CL', { hour: '2-digit', minute: '2-digit' })} | {itemsCount} productos</span>
+                      {negStatus.missingCount > 0 && <span className="text-red-500 font-semibold">Faltan: {negStatus.missingCount}</span>}
+                      {negStatus.replacedCount > 0 && <span className="text-green-600 font-semibold">Reemplazados: {negStatus.replacedCount}</span>}
+                      {negStatus.openedAt && <span className="text-amber-600 flex items-center gap-0.5"><Clock className="w-3 h-3" /> Abierto: {new Date(negStatus.openedAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
                     </div>
                   </div>
 

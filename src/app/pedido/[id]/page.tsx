@@ -417,6 +417,17 @@ export default function PedidoPage() {
       setOrder(o);
       if (o.PAYMENTPROOFURL) setUploaded(true);
       try { setItems(JSON.parse(o.ITEMS)); } catch {}
+
+      // If order is in negotiation and customer hasn't opened it yet, mark as opened
+      if (o.STATUS === 'negotiation' && !(o as any).NEGOTIATION_OPENED_AT) {
+        try {
+          await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+            NEGOTIATION_OPENED_AT: Date.now()
+          });
+        } catch (e) {
+          console.warn('No se pudo marcar NEGOTIATION_OPENED_AT:', e);
+        }
+      }
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
   }, [id]);

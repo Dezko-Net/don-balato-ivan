@@ -149,7 +149,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     isMobile
   } = useProductsCache({
     categoryId: lockCategoryId || selectedCat || undefined,
-    subcategoryId: selectedSubcat || undefined,
+    subcategoryId: selectedSubcat && selectedSubcat !== 'ofertas-temporales' ? selectedSubcat : undefined,
     sortBy,
     search: search || undefined,
     tag: selectedTag || undefined,
@@ -161,10 +161,17 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const priceRange = fetchedPriceRange;
   const filtered = products;
   const packStockAvailable = (p: Product) => p.PACK_STOCK ?? Math.floor((p.STOCK || 0) / (p.PACKQTY || 1));
+  const isLiveShoppingFilter = selectedSubcat === 'ofertas-temporales' && !selectedCat;
+  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const visibleProducts = isPaquetes ? products.filter(p => {
     if (!p.PACKQTY || p.PACKQTY <= 1) return false;
     const packStock = p.PACK_STOCK != null ? p.PACK_STOCK : Math.floor((p.STOCK || 0) / p.PACKQTY);
     return packStock > 0;
+  }) : isLiveShoppingFilter ? products.filter(p => {
+    if ((p.STOCK || 0) <= 0) return false;
+    if (!isLiveShoppingProduct(p)) return false;
+    const importedTime = new Date(p.$createdAt!).getTime();
+    return importedTime >= oneWeekAgo;
   }) : products.filter(p => (p.STOCK || 0) > 0);
   const hasMore = !isReachingEnd;
 
@@ -445,7 +452,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedSubcat === 'ofertas-temporales' && !selectedCat ? 700 : 500, color: selectedSubcat === 'ofertas-temporales' && !selectedCat ? primaryColor : '#6b7280', background: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#f8f9fa' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 14 }}>🛍️</span>
           <span style={{ flex: 1 }}>OFERTAS DE LIVE SHOPPING</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#e5e7eb' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{products.filter(p => timedOffersMap[p.$id]).length}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#e5e7eb' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{allActiveProducts.filter(p => isLiveShoppingProduct(p) && new Date(p.$createdAt!).getTime() >= oneWeekAgo && (p.STOCK || 0) > 0).length}</span>
         </button>
         {categories.map(c => {
           const count = catCountMap[c.$id] || 0;
