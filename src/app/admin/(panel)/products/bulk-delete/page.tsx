@@ -38,8 +38,24 @@ export default function BulkDeletePage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Get all products first to find by SKU
-      const allProducts = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(1000)]);
+      // Get all products first to find by SKU (paginate to get everything)
+      let allProductsDocs: any[] = [];
+      let cursor: string | undefined = undefined;
+      let hasMore = true;
+
+      while (hasMore) {
+        const queries = [Query.limit(100)];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+        allProductsDocs.push(...res.documents);
+
+        if (res.documents.length < 100) {
+          hasMore = false;
+        } else {
+          cursor = res.documents[res.documents.length - 1].$id;
+        }
+      }
 
       let deleted = 0;
       const notFound: string[] = [];
@@ -48,7 +64,7 @@ export default function BulkDeletePage() {
       for (const sku of skus) {
         try {
           // Find product by SKU (check FEATURES, TAGS, or jumpseller_id)
-          const product = allProducts.documents.find((p: any) => {
+          const product = allProductsDocs.find((p: any) => {
             const features = p.FEATURES || '';
             const tags = p.TAGS || '';
             const jumpId = p.jumpseller_id || '';
