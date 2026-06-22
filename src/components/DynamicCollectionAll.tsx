@@ -19,8 +19,12 @@ export default function DynamicCollectionAll({ catalogMode }: { catalogMode?: 'r
   // Use catalog key for all products page
   const template = getSectionTemplate('catalog');
   
-  if (template === 100) return <CollectionAll100 />;
-  if (template === 5) return <CollectionAll5 />; // Plantilla 5 does not support packages yet
+  // If we are in 'paquetes' or 'embalajes' mode, we must use Plantilla 1 
+  // because Plantilla 5 and 100 do not support them yet.
+  if (!catalogMode || catalogMode === 'retail') {
+    if (template === 100) return <CollectionAll100 />;
+    if (template === 5) return <CollectionAll5 />;
+  }
   
   // Default to plantilla 1
   return <CollectionAll1 catalogMode={catalogMode} />;

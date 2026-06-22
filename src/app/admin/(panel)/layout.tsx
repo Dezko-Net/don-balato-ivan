@@ -63,6 +63,7 @@ const NAV_GROUPS: NavGroup[] = [
         { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
         { href: '/admin/products/liveshopping', label: 'Live Shopping',   icon: Ico.LiveShop },
         { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
+        { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
         { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
@@ -70,7 +71,6 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '', label: 'INVENTARIO', icon: Ico.Inventario, children: [
         { href: '/admin/inventory',      label: 'Stock',           icon: Ico.Inventario },
         { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
-        { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
         { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
         { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },
         { href: '/admin/products/stock-editor', label: 'Editor de Stock', icon: Ico.Inventario },

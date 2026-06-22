@@ -160,12 +160,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
   const priceRange = fetchedPriceRange;
   const filtered = products;
-  const packStockAvailable = (p: Product) => p.PACK_STOCK ?? Math.floor((p.STOCK || 0) / (p.PACKQTY || 1));
+  const packStockAvailable = (p: Product) => (p.PACK_STOCK && p.PACK_STOCK > 0) ? p.PACK_STOCK : Math.floor((p.STOCK || 0) / (p.PACKQTY || 1));
   const isLiveShoppingFilter = selectedSubcat === 'ofertas-temporales' && !selectedCat;
   const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const visibleProducts = isPaquetes ? products.filter(p => {
     if (!p.PACKQTY || p.PACKQTY <= 1) return false;
-    const packStock = p.PACK_STOCK != null ? p.PACK_STOCK : Math.floor((p.STOCK || 0) / p.PACKQTY);
+    const packStock = (p.PACK_STOCK && p.PACK_STOCK > 0) ? p.PACK_STOCK : Math.floor((p.STOCK || 0) / p.PACKQTY);
     return packStock > 0;
   }) : isLiveShoppingFilter ? products.filter(p => {
     if ((p.STOCK || 0) <= 0) return false;

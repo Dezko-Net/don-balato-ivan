@@ -1488,14 +1488,35 @@ export default function HomePage23() {
 /* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
       custom-header.header-element[data-scroll="true"],
       .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
-        background: rgba(253, 242, 248, 0.72) !important;
-        background-color: rgba(253, 242, 248, 0.72) !important;
+        background: #fdf2f8 !important;
+        background-color: #fdf2f8 !important;
         background-image: none !important;
         backdrop-filter: blur(12px) saturate(140%) !important;
         -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
         border: none !important;
         border-bottom: none !important;
         box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
+      }
+
+      /* Logo and UNIDAD/PAQUETE buttons black only when scrolled navbar appears */
+      custom-header[data-scroll="true"] .logo-wrapper img,
+      .header[data-scroll="true"] .logo-wrapper img {
+        filter: brightness(0) !important;
+      }
+      custom-header[data-scroll="true"] a[href*="/productos"],
+      custom-header[data-scroll="true"] a[href*="/paquetes"],
+      .header[data-scroll="true"] a[href*="/productos"],
+      .header[data-scroll="true"] a[href*="/paquetes"] {
+        color: #000000 !important;
+        border-color: #000000 !important;
+      }
+      custom-header[data-scroll="true"] a[href*="/productos"] *,
+      custom-header[data-scroll="true"] a[href*="/paquetes"] *,
+      .header[data-scroll="true"] a[href*="/productos"] *,
+      .header[data-scroll="true"] a[href*="/paquetes"] * {
+        color: #000000 !important;
+        fill: #000000 !important;
+        stroke: #000000 !important;
       }
 
       /* ==========================================
@@ -3517,7 +3538,7 @@ export default function HomePage23() {
       setTimeout(() => {
         // 1. Populate Tab 1: Productos baratos para empezar a emprender (cheapest in-stock)
         const tab1Products = [...cheapestProducts]
-          .filter(p => p.STOCK && p.STOCK > 0)
+          .filter(p => p.STOCK === undefined || p.STOCK === null || p.STOCK > 0 || p.STOCK === 99999)
           .sort((a: any, b: any) => {
             const priceA = a.CURRENTPRICE && a.CURRENTPRICE > 0 ? a.CURRENTPRICE : (a.PRICE || 0);
             const priceB = b.CURRENTPRICE && b.CURRENTPRICE > 0 ? b.CURRENTPRICE : (b.PRICE || 0);
