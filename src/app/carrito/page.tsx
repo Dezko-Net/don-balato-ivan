@@ -17,7 +17,7 @@ import { useState, useEffect } from 'react';
 const PINK = '#e396bf';
 const FF = '"DM Sans",system-ui,sans-serif';
 
-export function CarritoPageContent() {
+function CarritoPageContent() {
   const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings, getEffectivePrice, clearCart } = useCart();
 
   const belowMinimum = isBelowMinimumOrder(subtotal);

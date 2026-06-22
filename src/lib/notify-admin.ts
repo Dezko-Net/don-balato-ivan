@@ -1,3 +1,5 @@
+'use server';
+
 import { sendWhatsAppMessage, formatWhatsAppPhone, addToHistory } from '@/lib/whatsapp';
 import { getKeniaRuntimeSnapshot } from '@/lib/kenia-runtime';
 
