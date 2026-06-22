@@ -1,0 +1,2 @@
+window.__cartCheckboxListenerAdded||(window.__cartCheckboxListenerAdded=!0,document.addEventListener("change",e=>{if(!e.target||e.target.id!=="cart_additional_checkbox")return;const isChecked=e.target.checked,label=e.target.dataset.label;if(!label)return;const body=JSON.stringify({attributes:{[label]:isChecked}});fetch(window.routes.cart_update_url,{...fetchConfig(),body})}));
+//# sourceMappingURL=/cdn/shop/t/85/assets/cart-checkbox-attribute.js.map?v=50620452784065204751780336096

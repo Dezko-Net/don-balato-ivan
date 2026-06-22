@@ -146,7 +146,7 @@ const getCachedLiveProductsByDate = unstable_cache(
     return normalized;
   },
   ['live-products-by-date-cache-v1'],
-  { revalidate: 60, tags: ['products', 'live'] }
+  { revalidate: 86400, tags: ['products', 'live'] }
 );
 
 // Cache live products for 60 seconds
@@ -174,7 +174,7 @@ const getCachedLiveProducts = unstable_cache(
     return normalized;
   },
   ['live-products-cache-v3'],
-  { revalidate: 60, tags: ['products', 'live'] }
+  { revalidate: 86400, tags: ['products', 'live'] }
 );
 
 export async function GET(request: NextRequest) {

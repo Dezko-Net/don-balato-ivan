@@ -7,10 +7,12 @@ import { ArrowLeft } from 'lucide-react';
 
 const TEMPLATE_COMPONENTS: Record<number, any> = {
   5: dynamic(() => import('@/templates/plantilla5/CollectionAll'), { ssr: false }),
+  100: dynamic(() => import('@/templates/plantilla100/CollectionAll'), { ssr: false }),
 };
 
 const TEMPLATE_NAMES: Record<number, string> = {
   5: 'Pebble Little',
+  100: 'Plantilla 100',
 };
 
 export default function PreviewCollectionHandlePage() {

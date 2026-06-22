@@ -55,13 +55,13 @@ const SECTIONS: SectionConfig[] = [
     key: 'cart',
     label: 'Carrito de Compras',
     icon: <ShoppingCart size={16} />,
-    previewPath: (tplId) => `/preview/plantilla/${tplId}`,
+    previewPath: (tplId) => `/carrito?_tpl=${tplId}&section=cart`,
   },
   {
     key: 'checkout',
     label: 'Checkout / Pago',
     icon: <CreditCard size={16} />,
-    previewPath: (tplId) => `/preview/plantilla/${tplId}`,
+    previewPath: (tplId) => `/checkout?_tpl=${tplId}&section=checkout`,
   },
 ];
 
@@ -81,6 +81,8 @@ const TEMPLATES: Template[] = [
   { id: 23, name: 'Plantilla 23', description: 'Plantilla de alto impacto visual.', emoji: '📦', tags: ['Custom'], accent: '#14b8a6', accentDark: '#0f766e', bg: '#f0fdfa', navBg: '#ccfbf1', sections: ['landing'] },
   { id: 24, name: 'Noble Preview', description: 'Vista previa avanzada de la serie Noble.', emoji: '👀', tags: ['Preview', 'Noble'], accent: '#6366f1', accentDark: '#4338ca', bg: '#eef2ff', navBg: '#e0e7ff', sections: ['landing'] },
   { id: 25, name: 'Concept Theme Tech', description: 'Tema conceptual para productos tecnológicos.', emoji: '💻', tags: ['Tech', 'Concept'], accent: '#0ea5e9', accentDark: '#0369a1', bg: '#f0f9ff', navBg: '#e0f2fe', sections: ['landing'] },
+  { id: 100, name: 'Plantilla 100', description: 'Base completa para la siguiente migración Shopify. Ya queda registrada para landing, colecciones, catálogo, producto, carrito y checkout.', emoji: '🧩', tags: ['Base', 'Shopify', 'Full'], accent: '#111827', accentDark: '#374151', bg: '#f9fafb', navBg: '#111827', sections: ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] },
+  { id: 101, name: 'Wonder Theme Fashion', description: 'Captura renderizada del storefront original wonder-theme-fashion.myshopify.com con assets locales generados por shopify-folla.', emoji: '✨', tags: ['Wonder', 'Shopify', 'Landing'], accent: '#5b21b6', accentDark: '#6d28d9', bg: '#f5f3ff', navBg: '#ddd6fe', sections: ['landing'] },
 ];
 
 function TemplatePreview({ t, isActive }: { t: Template; isActive: boolean }) {

@@ -2,6 +2,7 @@
 import { useTemplate } from '@/context/TemplateContext';
 import CollectionAll5 from '@/templates/plantilla5/CollectionAll';
 import CollectionAll1 from '@/templates/plantilla1/CollectionAll';
+import CollectionAll100 from '@/templates/plantilla100/CollectionAll';
 
 export default function DynamicCollectionAll({ catalogMode }: { catalogMode?: 'retail' | 'paquetes' | 'embalajes' } = {}) {
   const { isLoading, getSectionTemplate } = useTemplate();
@@ -18,6 +19,7 @@ export default function DynamicCollectionAll({ catalogMode }: { catalogMode?: 'r
   // Use catalog key for all products page
   const template = getSectionTemplate('catalog');
   
+  if (template === 100) return <CollectionAll100 />;
   if (template === 5) return <CollectionAll5 />; // Plantilla 5 does not support packages yet
   
   // Default to plantilla 1

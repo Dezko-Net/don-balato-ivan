@@ -23,6 +23,7 @@ const TEMPLATE_NAMES: Record<number, string> = {
   23: 'Plantilla 23',
   24: 'Noble Preview',
   25: 'Concept Theme Tech',
+  100: 'Plantilla 100',
 };
 
 export default function PreviewProductDetailPage() {

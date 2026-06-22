@@ -2,6 +2,7 @@
 import { useTemplate } from '@/context/TemplateContext';
 import CollectionList5 from '@/templates/plantilla5/CollectionList';
 import CollectionList1 from '@/templates/plantilla1/CollectionList';
+import CollectionList100 from '@/templates/plantilla100/CollectionList';
 
 export default function DynamicCollectionList() {
   const { isLoading, getSectionTemplate } = useTemplate();
@@ -18,6 +19,7 @@ export default function DynamicCollectionList() {
   // Use collections key for categories page
   const template = getSectionTemplate('collections');
   
+  if (template === 100) return <CollectionList100 />;
   if (template === 5) return <CollectionList5 />;
   
   // Default to plantilla 1

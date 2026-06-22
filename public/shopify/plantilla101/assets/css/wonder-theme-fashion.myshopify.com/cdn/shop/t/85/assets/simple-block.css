@@ -1,0 +1,14 @@
+.ui-spacer {
+  border: 0;
+  margin: 0;
+  box-shadow: none;
+  height: var(--ui-spacer-mobile-height);
+  color: transparent;
+  background-color: transparent;
+}
+@media (min-width: 900px) {
+  .ui-spacer {
+    height: var(--ui-spacer-desktop-height);
+  }
+}
+/*# sourceMappingURL=simple-block.css.map */

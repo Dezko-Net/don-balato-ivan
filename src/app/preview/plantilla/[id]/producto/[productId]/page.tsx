@@ -12,6 +12,7 @@ const TEMPLATE_PRODUCT_DETAIL_COMPONENTS: Record<number, any> = {
   5: dynamic(() => import('@/templates/plantilla5/ProductDetail'), { ssr: false }),
   // Template 23 uses plantilla5's ProductDetail (same as DynamicProductDetail)
   23: dynamic(() => import('@/templates/plantilla5/ProductDetail'), { ssr: false }),
+  100: dynamic(() => import('@/templates/plantilla100/ProductDetail'), { ssr: false }),
 };
 
 const TEMPLATE_NAMES: Record<number, string> = {
@@ -30,6 +31,7 @@ const TEMPLATE_NAMES: Record<number, string> = {
   23: 'Plantilla 23',
   24: 'Noble Preview',
   25: 'Concept Theme Tech',
+  100: 'Plantilla 100',
 };
 
 export default function PreviewProductDetailPage() {

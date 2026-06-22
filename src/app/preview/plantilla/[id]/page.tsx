@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { ArrowLeft } from 'lucide-react';
 
@@ -22,6 +22,8 @@ const TEMPLATE_COMPONENTS: Record<number, any> = {
   23: dynamic(() => import('@/templates/plantilla23/HomePage'), { ssr: false }),
   24: dynamic(() => import('@/templates/plantilla24/HomePage'), { ssr: false }),
   25: dynamic(() => import('@/templates/plantilla25/HomePage'), { ssr: false }),
+  100: dynamic(() => import('@/templates/plantilla100/HomePage'), { ssr: false }),
+  101: dynamic(() => import('@/templates/plantilla101/HomePage'), { ssr: false }),
 };
 
 const TEMPLATE_NAMES: Record<number, string> = {
@@ -40,12 +42,17 @@ const TEMPLATE_NAMES: Record<number, string> = {
   23: 'Plantilla 23',
   24: 'Noble Preview',
   25: 'Concept Theme Tech',
+  100: 'Plantilla 100',
+  101: 'Wonder Theme Fashion',
 };
 
 
 export default function PreviewPlantillaPage() {
   const params = useParams();
-  const id = Number(params?.id);
+  const pathname = usePathname();
+  const paramId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const fallbackId = pathname.match(/\/preview\/plantilla\/(\d+)/)?.[1];
+  const id = Number(paramId || fallbackId || 0);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {

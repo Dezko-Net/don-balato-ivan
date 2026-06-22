@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getKeniaConfig, saveKeniaConfig } from '@/lib/kenia-runtime';
+import { revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
@@ -22,6 +23,7 @@ export async function PUT(req: NextRequest) {
       messageThresholdForPause: typeof body.messageThresholdForPause === 'number' ? body.messageThresholdForPause : undefined,
       isEnabled: typeof body.isEnabled === 'boolean' ? body.isEnabled : undefined,
     });
+    revalidateTag('kenia-status');
     return NextResponse.json({ success: true, config });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'No se pudo guardar la configuración de Kenia' }, { status: 500 });

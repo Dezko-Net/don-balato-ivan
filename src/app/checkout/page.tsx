@@ -20,6 +20,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import DynamicCheckout from '@/components/DynamicCheckout';
 
 interface AgencyOption { name: string; color: string; bg: string; desc: string; logo: string; active?: boolean; }
 interface SavedAddress { id: string; alias: string; name: string; phone: string; fullAddress: string; commune: string; region: string; lat: number; lng: number; }
@@ -1626,8 +1627,10 @@ function CheckoutInner() {
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div style={{ background: 'linear-gradient(180deg, #fdf2f8 0%, #fff 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}><p style={{ color: '#f5a8cf' }}>Cargando...</p></div>}>
-      <CheckoutInner />
-    </Suspense>
+    <DynamicCheckout>
+      <Suspense fallback={<div style={{ background: 'linear-gradient(180deg, #fdf2f8 0%, #fff 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}><p style={{ color: '#f5a8cf' }}>Cargando...</p></div>}>
+        <CheckoutInner />
+      </Suspense>
+    </DynamicCheckout>
   );
 }

@@ -34,15 +34,13 @@ export function useTemplate() {
 export function TemplateProvider({ children }: { children: ReactNode }) {
   const [template, setTemplate] = useState(23);
   const [sections, setSections] = useState<SectionTemplates>({ landing: 23, collections: 23, catalog: 23, productDetail: 5, cart: 23, checkout: 23 });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       let dbGlobal = 23;
       let dbSections = { landing: 23, collections: 23, catalog: 23, productDetail: 5, cart: 23, checkout: 23 };
 
-      // 1. Fetch template configuration from the database first (Bypassed to reduce requests)
-      /*
       try {
         const res = await fetch(`/api/template`);
         if (res.ok) {
@@ -64,7 +62,6 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error('[TemplateContext] failed to load template from API:', err);
       }
-      */
 
       // 2. Check for _tpl override or pathname match to apply target section override
       if (typeof window !== 'undefined') {
@@ -86,11 +83,17 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
           const t = Number(pathnameMatch[1]);
           const path = window.location.pathname;
           // Check if current route is a preview page for a specific section
+          const isCart = path.includes('/carrito');
+          const isCheckout = path.includes('/checkout');
           const isProductDetail = path.includes('/producto/') || path.includes('/productos/');
           const isCatalog = path.includes('/collections/all');
           const isCollections = path.includes('/collections');
 
-          if (isProductDetail) {
+          if (isCart) {
+            dbSections.cart = t;
+          } else if (isCheckout) {
+            dbSections.checkout = t;
+          } else if (isProductDetail) {
             dbSections.productDetail = t;
           } else if (isCatalog) {
             dbSections.catalog = t;
@@ -142,6 +145,8 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
       3: '#f5f5f5',
       4: '#ffffff',
       5: '#fdfbf7',
+      100: '#ffffff',
+      101: '#ffffff',
     };
     document.body.style.backgroundColor = bgMap[activeTemplate] || '#f8f9fa';
     document.body.style.color = activeTemplate === 2 ? '#333333' : activeTemplate === 4 ? '#1F1F1F' : activeTemplate === 5 ? '#2a2120' : '#111827';

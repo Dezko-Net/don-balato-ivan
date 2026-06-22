@@ -8,7 +8,7 @@ const getCachedKeniaStatus = unstable_cache(
     return { isEnabled: config.isEnabled !== false };
   },
   ['kenia-status-key'],
-  { revalidate: 60 } // Cache for 60 seconds
+  { revalidate: 86400, tags: ['kenia-status'] } // Cache for 24 hours
 );
 
 export async function GET() {

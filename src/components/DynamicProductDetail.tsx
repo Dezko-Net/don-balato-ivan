@@ -3,6 +3,7 @@ import { useTemplate } from '@/context/TemplateContext';
 import ProductDetailPlantilla1 from '@/templates/plantilla1/ProductDetail';
 import ProductDetailPlantilla2 from '@/templates/plantilla2/ProductDetail';
 import ProductDetailPlantilla5 from '@/templates/plantilla5/ProductDetail';
+import ProductDetailPlantilla100 from '@/templates/plantilla100/ProductDetail';
 
 export default function DynamicProductDetail({ productId }: { productId?: string }) {
   const { isLoading, getSectionTemplate } = useTemplate();
@@ -18,6 +19,7 @@ export default function DynamicProductDetail({ productId }: { productId?: string
 
   const template = getSectionTemplate('productDetail');
 
+  if (template === 100) return <ProductDetailPlantilla100 previewProductId={productId} />;
   if (template === 5 || template === 23) return <ProductDetailPlantilla5 previewProductId={productId} />;
   if (template === 1) return <ProductDetailPlantilla1 previewProductId={productId} />;
   return <ProductDetailPlantilla2 previewProductId={productId} />;

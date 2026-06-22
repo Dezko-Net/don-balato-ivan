@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { formatPrice, getServices, getAppwriteConfig, ORDERS_COLLECTION } from '@/lib/appwrite';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import CartLineRow from '@/components/CartLineRow';
+import DynamicCart from '@/components/DynamicCart';
 import { MINIMUM_ORDER_CLP, isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -16,7 +17,7 @@ import { useState, useEffect } from 'react';
 const PINK = '#e396bf';
 const FF = '"DM Sans",system-ui,sans-serif';
 
-export default function CarritoPage() {
+export function CarritoPageContent() {
   const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings, getEffectivePrice, clearCart } = useCart();
 
   const belowMinimum = isBelowMinimumOrder(subtotal);
@@ -435,5 +436,13 @@ export default function CarritoPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function CarritoPage() {
+  return (
+    <DynamicCart>
+      <CarritoPageContent />
+    </DynamicCart>
   );
 }

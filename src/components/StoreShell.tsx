@@ -29,9 +29,11 @@ const FOOTER_LINKS = [
 
 export default function StoreShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { template } = useTemplate();
+  const { getSectionTemplate } = useTemplate();
   const isAdmin       = pathname.startsWith('/admin');
   const isAuth        = pathname.startsWith('/login');
+  const landingTemplate = getSectionTemplate('landing');
+  const hideNavbarForCapturedLanding = (pathname === '/' || pathname.startsWith('/preview/plantilla/')) && landingTemplate === 101;
 
   if (isAdmin || isAuth) {
     return <>{children}</>;
@@ -43,7 +45,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   return (
     <MaintenanceGuard>
     <>
-      <DynamicNavbar />
+      {!hideNavbarForCapturedLanding && <DynamicNavbar />}
       <PageTransition><main>{children}</main></PageTransition>
       {!hideNativeFooter && (
       <footer className="store-footer" style={{ background: '#f9f9f9', color: '#374151', borderTop: '1px solid #e5e7eb', marginTop: 40 }}>

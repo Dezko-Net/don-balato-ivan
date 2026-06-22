@@ -1,0 +1,118 @@
+{
+  "plantilla": 101,
+  "sourceUrl": "https://wonder-theme-fashion.myshopify.com",
+  "shopifyHost": "wonder-theme-fashion.myshopify.com",
+  "themeId": "85",
+  "capturedAt": "2026-06-21T00:34:27.929Z",
+  "css": [
+    "/shopify/plantilla101/assets/css/inline/index-inline-1.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/critical.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/main.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/custom.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-video.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-logo-banner.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/simple-block.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-featured-collections-tabs.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/swiper.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-multicol.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-shoppable-video.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/shoppable-image.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-parallax.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-video-carousel.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-brands.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/section-blog-posts.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/cart-drawer.css",
+    "/shopify/plantilla101/assets/css/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/localization-drawer.css"
+  ],
+  "js": [
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/variants.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/constants.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/pubsub.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/global.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/base.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/color-swatch.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/localization-form.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/animations.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/drawer-select.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/model_element.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/announcement-bar.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/search-drawer.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/page-header.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/page-header-logo-banner-v2.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/low-power-video.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/featured-collections-tabs.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/slider.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/video-controls.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/shoppable-video.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/quick-add.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/subscription-widget.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/product-form.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/parallax.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/video-reels.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/cart.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/cart-drawer.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/cart-drawer-note.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/cart-checkbox-attribute.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/cart-additional-features.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/localization-drawer.js",
+    "/shopify/plantilla101/assets/js/wonder-theme-fashion.myshopify.com/cdn/shop/t/85/assets/instantpage.js",
+    "/shopify/plantilla101/assets/js/cdn.shopify.com/storefront/standard-actions.js"
+  ],
+  "fonts": [
+    "/shopify/plantilla101/assets/fonts/wonder-theme-fashion.myshopify.com/cdn/fonts/outfit/outfit_n4.387c2e2715c484a1f1075eb90d64808f1b37ac58.woff2",
+    "/shopify/plantilla101/assets/fonts/wonder-theme-fashion.myshopify.com/cdn/fonts/outfit/outfit_n4.aca8c81f18f62c9baa15c2dc5d1f6dd5442cdc50.woff",
+    "/shopify/plantilla101/assets/fonts/wonder-theme-fashion.myshopify.com/cdn/fonts/outfit/outfit_n7.bfc2ca767cd7c6962e82c320123933a7812146d6.woff2",
+    "/shopify/plantilla101/assets/fonts/wonder-theme-fashion.myshopify.com/cdn/fonts/outfit/outfit_n7.f0b22ea9a32b6f1f6f493dd3a7113aae3464d8b2.woff",
+    "/shopify/plantilla101/assets/fonts/wonder-theme-fashion.myshopify.com/cdn/fonts/outfit/outfit_n3.8c97ae4c4fac7c2ea467a6dc784857f4de7e0e37.woff2",
+    "/shopify/plantilla101/assets/fonts/wonder-theme-fashion.myshopify.com/cdn/fonts/outfit/outfit_n3.b50a189ccde91f9bceee88f207c18c09f0b62a7b.woff"
+  ],
+  "stats": {
+    "cssTotal": 17,
+    "jsTotal": 32,
+    "fontsTotal": 6,
+    "imagesTotal": 726,
+    "videosTotal": 9,
+    "svgMasksTotal": 0,
+    "inlineAnimScripts": 3,
+    "inlineCssKB": 26,
+    "bodyCleanKB": 798,
+    "downloaded": {
+      "css": {
+        "ok": 17,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "js": {
+        "ok": 32,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "fonts": {
+        "ok": 6,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "images": {
+        "ok": 364,
+        "skip": 362,
+        "fail": 0,
+        "errors": []
+      },
+      "videos": {
+        "ok": 9,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "svgMasks": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      }
+    }
+  }
+}

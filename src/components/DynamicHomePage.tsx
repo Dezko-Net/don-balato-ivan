@@ -15,6 +15,8 @@ import HomePage13 from '@/templates/plantilla13/HomePage';
 import HomePage24 from '@/templates/plantilla24/HomePage';
 import HomePage25 from '@/templates/plantilla25/HomePage';
 import HomePage23 from '@/templates/plantilla23/HomePage';
+import HomePage100 from '@/templates/plantilla100/HomePage';
+import HomePage101 from '@/templates/plantilla101/HomePage';
 
 export default function DynamicHomePage({ children }: { children: React.ReactNode }) {
   const { isLoading, getSectionTemplate } = useTemplate();
@@ -42,5 +44,7 @@ export default function DynamicHomePage({ children }: { children: React.ReactNod
   if (template === 24) return <HomePage24 />;
   if (template === 23) return <HomePage23 />;
   if (template === 25) return <HomePage25 />;
+  if (template === 100) return <HomePage100 />;
+  if (template === 101) return <HomePage101 />;
   return <>{children}</>;
 }

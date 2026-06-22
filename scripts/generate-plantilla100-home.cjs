@@ -1,0 +1,117 @@
+const fs = require('fs');
+const path = require('path');
+
+const themeRoot = 'C:\\Proyectos\\SHOPIFY TIENDA\\mym-moda';
+const outDir = 'C:\\Proyectos\\PROJECT YAXSEL (PRODUCCION) - 14-06-2026 (3GB)\\public\\shopify\\plantilla100';
+const assetBase = 'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/';
+
+const parts = [
+  'snippets/header-wonder.liquid',
+  'snippets/logo-banner.liquid',
+  ...Array.from({ length: 21 }, (_, index) => `snippets/home-${index + 1}.liquid`),
+  'sections/footer-wonder.liquid',
+];
+
+const css = [
+  'https://kxym3z-mf.myshopify.com/cdn/shopifycloud/portable-wallets/latest/accelerated-checkout-backwards-compat.css',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/index-inline-1.css?v=47553563498408079421781924567',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/critical.css?v=142571611690619262841781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/main.css?v=59354260956630729661781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/custom.css?v=34870174136235316281781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-video.css?v=102450015234384317291781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-logo-banner.css?v=93865869024848015881781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/simple-block.css?v=123149991779750558581781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-featured-collections-tabs.css?v=101788496001594330251781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/swiper.css?v=89712408881310985251781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-multicol.css?v=132290279207983739361781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-shoppable-video.css?v=126215223475333134801781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/shoppable-image.css?v=166123297702800805801781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-parallax.css?v=135847513095446946431781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-video-carousel.css?v=13512897563934173971781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-brands.css?v=51878729415059192011781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/section-blog-posts.css?v=170327459641375785031781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/cart-drawer.css?v=174693480530349773381781923370',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/localization-drawer.css?v=58306770054739261391781923370',
+];
+
+const js = [
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/variants.js?v=49410913613506027641781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/constants.js?v=153673072477245866711781971186',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/pubsub.js?v=32676842995548684781781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/global.js?v=33711985830657423271781923408',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/base.js?v=2455264823433150041781923396',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/color-swatch.js?v=100090016656961075171781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/localization-form.js?v=62959395549352001591781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/animations.js?v=169289200333750829241781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/drawer-select.js?v=134254635072155562021781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/model_element.js?v=97401310717212672541781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/announcement-bar.js?v=108542734522711712081781923394',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/search-drawer.js?v=99576043690523604381781923412',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/page-header.js?v=171586452839881002501781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/page-header-logo-banner-v2.js?v=117875201982053072251781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/low-power-video.js?v=178517387073938042701781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/featured-collections-tabs.js?v=171310317739202187351781971186',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/slider.js?v=132445601000848107031781923412',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/video-controls.js?v=106329887840850833351781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/shoppable-video.js?v=139156643546874803121781923412',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/quick-add.js?v=44216803879543966241781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/subscription-widget.js?v=63093043352851624801781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/product-form.js?v=96289496497298341921781923404',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/parallax.js?v=144243701761481098021781971187',
+  'https://kxym3z-mf.myshopify.com/cdn/shop/t/2/assets/video-reels.js?v=25409229938678961831781923412',
+];
+
+function transformLiquid(content) {
+  let result = content;
+
+  result = result.replace(/\{%\s*schema\s*%}[\s\S]*?\{%\s*endschema\s*%}/g, '');
+  result = result.replace(/<link[^>]*href="\{\{\s*'[^']+'\s*\|\s*asset_url\s*\}\}"[^>]*>\s*/g, '');
+  result = result.replace(/<script[^>]*src="\{\{\s*'[^']+'\s*\|\s*asset_url\s*\}\}"[^>]*><\/script>\s*/g, '');
+  result = result.replace(/\{\{\s*'([^']+)'\s*\|\s*asset_url\s*\}\}/g, (_, fileName) => `${assetBase}${fileName}`);
+  result = result.replace(/href="#product[^"]*"/g, 'href="/productos"');
+  result = result.replace(/\{\{[^}]+\}\}/g, '');
+  result = result.replace(/\{%[^%]+%\}/g, '');
+  result = result.replace(/\n{3,}/g, '\n\n');
+
+  return result.trim();
+}
+
+const bodyHtml = parts
+  .map((relativePath) => {
+    const absolutePath = path.join(themeRoot, relativePath);
+    const content = fs.readFileSync(absolutePath, 'utf8');
+    return transformLiquid(content);
+  })
+  .join('\n\n');
+
+fs.mkdirSync(outDir, { recursive: true });
+
+fs.writeFileSync(
+  path.join(outDir, 'body-clean.html'),
+  `${bodyHtml}\n`,
+  'utf8'
+);
+
+fs.writeFileSync(
+  path.join(outDir, 'manifest.json'),
+  JSON.stringify(
+    {
+      plantilla: 100,
+      sourceTheme: 'mym-moda',
+      sourceUrl: 'https://kxym3z-mf.myshopify.com/?preview_theme_id=157105258596',
+      shopifyHost: 'kxym3z-mf.myshopify.com',
+      themeId: 157105258596,
+      cdnThemePath: 't/2',
+      bodyClassName: 'template-index nav-drawer-big mobile-nav page-header-sticky wt-logo-banner-v2--ready drawers-animated',
+      htmlDataTemplate: '100',
+      css,
+      js,
+      generatedAt: new Date().toISOString(),
+    },
+    null,
+    2
+  ),
+  'utf8'
+);
+
+console.log(`Generated plantilla100 body and manifest in ${outDir}`);
