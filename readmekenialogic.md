@@ -87,8 +87,28 @@ Para mantener la profesionalidad sin perder la frescura:
   - Para responder mensajes regulares, la API de Meta acepta el prefijo `+56 9...`. 
   - **PERO** para enviar plantillas (Templates) que inician conversaciones, Meta arroja `Invalid parameter` si el número lleva el `9`. 
   - Se implementó en `formatWhatsAppPhone` un formateador automático que elimina el `9` exclusivamente al enviar plantillas a móviles chilenos (ej: `569...` pasa a `563...`), cumpliendo con la estricta regulación de telecomunicaciones de Meta.
-- **Webhook de Creación de Pedidos (`/api/webhooks/appwrite/orders`)**: 
-  - Puesto que los pedidos se crean desde el frontend (React), el servidor no se enteraba al instante. 
-  - Se configuró un Webhook en Appwrite atado al evento `databases.*.collections.orders.documents.*.create`. 
-  - Al dispararse, este webhook envía **automáticamente** la plantilla oficial de WhatsApp (`estado_de_pedido`) al cliente informando que el pedido fue recibido (Pendiente de pago). 
-  - **Filtro de Admin**: Para evitar saturar el WhatsApp del Administrador, el webhook **NO** le notifica cuando se crean pedidos en estado *Pendiente*. Solo notificará cuando el estado sea diferente (ej. Pagado).
+
+### 📬 Plantillas de WhatsApp (Meta Templates)
+
+Se usan **2 plantillas oficiales** aprobadas por Meta:
+
+| Plantilla | Cuándo se envía | Variables |
+|---|---|---|
+| `pedido_recibido` | Al **crear** un pedido nuevo (status `pending`) | `{{1}}` nombre cliente, `{{2}}` código pedido |
+| `estado_de_pedido` | Al **cambiar** de estado (paid, shipped, etc.) | `{{1}}` nombre, `{{2}}` código, `{{3}}` estado |
+
+- **`pedido_recibido`**: Mensaje de bienvenida al cliente confirmando que su pedido fue recibido exitosamente. No menciona "pendiente de pago" para evitar confusión.
+- **`estado_de_pedido`**: Notifica cambios de estado posteriores (Pagado, En preparación, Enviado, Entregado, Cancelado, etc.)
+
+### 🔔 Webhook de Pedidos (`/api/webhooks/appwrite/orders`)
+
+- **Eventos escuchados**: `.create` y `.update` (ambos configurados en Appwrite)
+- **Flujo al crear pedido** (`.create`):
+  1. Envía plantilla `pedido_recibido` al cliente por WhatsApp
+  2. **NO** notifica al admin (porque está en `pending`)
+- **Flujo al actualizar pedido** (`.update`):
+  1. Envía plantilla `estado_de_pedido` al cliente con el nuevo estado
+  2. Si el estado es `paid` → **SÍ** notifica al admin (campanita + panel)
+- **Deduplicación**: `existsByRefKey` previene envíos duplicados del mismo estado para el mismo pedido
+- **Historial**: Cada plantilla enviada se registra en el chat de Kenia via `addToHistory()` para que aparezca en el panel `/admin/ia/whatsapp`
+
