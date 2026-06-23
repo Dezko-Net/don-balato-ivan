@@ -32,6 +32,8 @@ import {
   X,
   Zap,
   Filter,
+  Plus,
+  MessageSquarePlus,
 } from 'lucide-react';
 
 type OrderDetail = {
@@ -197,6 +199,10 @@ export default function AdminIAWhatsAppPage() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingTemplate, setSendingTemplate] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newChatPhone, setNewChatPhone] = useState('');
+  const [newChatName, setNewChatName] = useState('');
+  const [sendingNewTemplate, setSendingNewTemplate] = useState(false);
   const [savingBlock, setSavingBlock] = useState(false);
   const [promptTab, setPromptTab] = useState<'customer' | 'admin'>('customer');
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
@@ -431,6 +437,64 @@ export default function AdminIAWhatsAppPage() {
       showToast('error', error?.message || 'No se pudo enviar la plantilla');
     } finally {
       setSendingTemplate(false);
+    }
+  }
+
+  function handleCreateNewChat() {
+    if (!newChatPhone) return;
+    const phone = newChatPhone.replace(/\D/g, '').trim();
+    if (phone.length < 8) {
+      showToast('error', 'El número de teléfono es muy corto');
+      return;
+    }
+    const finalPhone = phone.startsWith('56') ? phone : (phone.length === 9 && phone.startsWith('9') ? '56' + phone : phone);
+    
+    // Check if exists
+    if (!threads.find(t => t.phone === finalPhone)) {
+      setThreads(prev => [{
+        phone: finalPhone,
+        displayName: newChatName || 'Desconocido',
+        preview: '',
+        lastAt: new Date().toISOString(),
+        totalMessages: 0,
+        unreadCount: 0,
+        customerMessages: 0,
+        adminMessages: 0,
+        segment: 'customer',
+        blocked: false,
+        tokenLimit: config.tokenLimitPerCustomer,
+        totalTokens: 0,
+        promptTokens: 0,
+        responseTokens: 0,
+        overLimit: false,
+        lastUsageAt: new Date().toISOString(),
+      }, ...prev]);
+    }
+    setSelectedPhone(finalPhone);
+    setShowNewChatModal(false);
+    setNewChatPhone('');
+    setNewChatName('');
+  }
+
+  async function handleSendNewTestTemplate() {
+    if (!newChatPhone) return;
+    setSendingNewTemplate(true);
+    try {
+      const phone = newChatPhone.replace(/\D/g, '').trim();
+      const finalPhone = phone.startsWith('56') ? phone : (phone.length === 9 && phone.startsWith('9') ? '56' + phone : phone);
+      const res = await fetch('/api/admin/ia/send-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: finalPhone }),
+      });
+      const data = await res.json();
+      if (!data?.success) throw new Error(data?.error || 'No se pudo enviar la plantilla');
+      showToast('success', 'Plantilla enviada exitosamente');
+      handleCreateNewChat();
+    } catch (error: any) {
+      showToast('error', error?.message || 'No se pudo enviar la plantilla');
+    } finally {
+      setSendingNewTemplate(false);
     }
   }
 
@@ -695,6 +759,11 @@ export default function AdminIAWhatsAppPage() {
               </div>
             </div>
             <div style={{ display:'flex', gap:4 }}>
+              <button onClick={() => setShowNewChatModal(true)} title="Nuevo Chat" style={{ width:36, height:36, borderRadius:'50%', background:'transparent', border:'none', color:'#8696a0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background .15s' }}
+                onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.08)')}
+                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                <MessageSquarePlus className="h-5 w-5" />
+              </button>
               <button onClick={loadThreads as any} title="Actualizar" style={{ width:36, height:36, borderRadius:'50%', background:'transparent', border:'none', color:'#8696a0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background .15s' }}
                 onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.08)')}
                 onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
@@ -1456,6 +1525,44 @@ export default function AdminIAWhatsAppPage() {
           }}>
             {message.type === 'success' ? <CheckCheck className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
             {message.text}
+          </div>
+        </div>
+      )}
+      {/* New Chat Modal */}
+      {showNewChatModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+          onClick={() => setShowNewChatModal(false)}>
+          <div style={{ background:'#202c33', borderRadius:16, padding:'24px 20px', maxWidth:380, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.6)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+              <h3 style={{ margin:0, color:'#e9edef', fontSize:18, fontWeight:600 }}>Nuevo Chat / Prueba</h3>
+              <button onClick={() => setShowNewChatModal(false)} style={{ background:'none', border:'none', color:'#8696a0', cursor:'pointer' }}><X className="h-5 w-5" /></button>
+            </div>
+
+            <div style={{ marginBottom:16 }}>
+              <label style={{ display:'block', color:'#8696a0', fontSize:13, marginBottom:6 }}>Número de teléfono (con código de país)</label>
+              <input type="text" value={newChatPhone} onChange={e => setNewChatPhone(e.target.value)} placeholder="Ej: 56912345678"
+                style={{ width:'100%', background:'#2a3942', border:'none', borderRadius:8, padding:'10px 14px', color:'#d1d7db', fontSize:15, boxSizing:'border-box', outline:'none' }} />
+            </div>
+
+            <div style={{ marginBottom:24 }}>
+              <label style={{ display:'block', color:'#8696a0', fontSize:13, marginBottom:6 }}>Nombre del contacto (Opcional)</label>
+              <input type="text" value={newChatName} onChange={e => setNewChatName(e.target.value)} placeholder="Ej: Juan Perez"
+                style={{ width:'100%', background:'#2a3942', border:'none', borderRadius:8, padding:'10px 14px', color:'#d1d7db', fontSize:15, boxSizing:'border-box', outline:'none' }} />
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={handleCreateNewChat} disabled={!newChatPhone || newChatPhone.length < 8}
+                style={{ width:'100%', background:'#00a884', border:'none', borderRadius:10, padding:'12px', color:'white', fontSize:14, fontWeight:700, cursor:(!newChatPhone || newChatPhone.length < 8) ? 'not-allowed' : 'pointer', opacity:(!newChatPhone || newChatPhone.length < 8) ? 0.5 : 1 }}>
+                Crear chat y abrir panel
+              </button>
+              
+              <button onClick={handleSendNewTestTemplate} disabled={!newChatPhone || newChatPhone.length < 8 || sendingNewTemplate}
+                style={{ width:'100%', background:'#2a3942', border:'1px solid #374045', borderRadius:10, padding:'12px', color:'#d1d7db', fontSize:14, fontWeight:700, cursor:(!newChatPhone || newChatPhone.length < 8 || sendingNewTemplate) ? 'not-allowed' : 'pointer', opacity:(!newChatPhone || newChatPhone.length < 8 || sendingNewTemplate) ? 0.5 : 1, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                {sendingNewTemplate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Enviar plantilla de prueba directo
+              </button>
+            </div>
           </div>
         </div>
       )}
