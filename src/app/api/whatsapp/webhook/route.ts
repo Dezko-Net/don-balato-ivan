@@ -209,7 +209,7 @@ async function lookupRegisteredUser(phone: string): Promise<{ name: string; emai
 // Helper: send welcome menu as interactive list
 async function sendWelcomeMenu(phone: string, customerName: string, token: string) {
   const firstName = customerName.split(' ')[0] || customerName || 'bella';
-  const body = '¡Hola ' + firstName + '! 🌸 Soy Kenia, tu asesora personal de Kevin&Coco. Es mi primera vez interactuando contigo, así que aquí te cuento todo lo que puedo hacer por ti. Toca el botón de abajo para ver mis funciones 👇';
+  const body = 'Estas son las cosas que puedo hacer por ti, ' + firstName + ' 🌸 toca una opción para saber más:';
   await sendWhatsAppList(phone, {
     header: '✨ Bienvenida a Kenia',
     body,
@@ -382,9 +382,51 @@ export async function POST(req: NextRequest) {
     if (!isAdmin && !usage.welcomeShown && isGreeting(userText)) {
       const displayName = customerName || 'bella';
       await addToHistory(fromPhone, 'user', userText, msgId);
+
+      // Generate a short personalized greeting with Gemini (low tokens)
+      let welcomeGreeting = '';
+      try {
+        const welcomePrompt = `Eres Kenia, asesora de la tienda Kevin&Coco de maquillaje en Chile. Es tu PRIMERA vez interactuando con una clienta llamada "${displayName}". Genera un saludo de bienvenida MUY corto (máximo 2-3 líneas), cálida y carismática. Incluye su nombre de forma natural. Puedes añadir un dato curioso corto sobre maquillaje o belleza si quieres. NO uses más de 50 palabras. Termina con algo como "toca el botón de abajo para ver todo lo que puedo hacer por ti 👇". No uses markdown ni asteriscos. Ejemplo: "¡Hola María! 🌸 Me encanta tu nombre, ¿sabías que el labial rojo es el cosmético más vendido del mundo? Soy Kenia y estoy feliz de conocerte. Toca el botón de abajo para ver todo lo que puedo hacer por ti 👇"`;
+        const welcomeBody = {
+          system_instruction: { parts: [{ text: welcomePrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userText }] }],
+          generationConfig: { temperature: 0.8, maxOutputTokens: 150 },
+        };
+        for (const model of GEMINI_MODELS) {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(welcomeBody),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              welcomeGreeting = text.replace(/\*+/g, '').trim();
+              break;
+            }
+          }
+          if (res.status !== 503) break;
+        }
+      } catch (e) {
+        console.warn('[WhatsApp Webhook] Welcome greeting generation failed:', e);
+      }
+
+      // Fallback if AI failed
+      if (!welcomeGreeting) {
+        welcomeGreeting = `¡Hola ${displayName}! 🌸 Soy Kenia, tu asesora personal de Kevin&Coco. ¡Estoy feliz de conocerte! Toca el botón de abajo para ver todo lo que puedo hacer por ti 👇`;
+      }
+
+      // Send the AI greeting as a text message
+      await sendWhatsAppMessage(fromPhone, welcomeGreeting, WA_TOKEN);
+      await addToHistory(fromPhone, 'assistant', welcomeGreeting, msgId);
+
+      // Send the interactive list menu as a separate message
       await sendWelcomeMenu(fromPhone, displayName, WA_TOKEN);
       const menuSummary = 'Menú de bienvenida enviado (lista interactiva con 5 funciones).';
       await addToHistory(fromPhone, 'assistant', menuSummary);
+
       await recordKeniaUsage(fromPhone, { welcomeShown: true });
       return NextResponse.json({ status: 'welcome_menu_sent' });
     }
