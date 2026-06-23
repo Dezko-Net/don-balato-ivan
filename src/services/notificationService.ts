@@ -227,7 +227,7 @@ export async function notifyOrderStatusChange(
   if (!order.CUSTOMERPHONE) return;
   const msgId = `wa_order_${order.$id}_${newStatus}`;
   try {
-    const { getWhatsAppDocId, sendWhatsAppMessage, formatWhatsAppPhone, addToHistory } = await import('@/lib/whatsapp');
+    const { getWhatsAppDocId, sendWhatsAppTemplate, formatWhatsAppPhone, addToHistory } = await import('@/lib/whatsapp');
     const { serverGetDocument } = await import('@/lib/appwrite-server');
     const { ADMIN_CHAT_COLLECTION_ID } = await import('@/lib/appwrite-admin');
     
@@ -242,40 +242,46 @@ export async function notifyOrderStatusChange(
 
     if (!alreadySent) {
       const customerName = order.CUSTOMERNAME ? order.CUSTOMERNAME.split(' ')[0] : 'bella';
-      let waMessage = '';
+      
+      const STATUS_LABELS: Record<string, string> = {
+        pending: 'Pendiente de pago',
+        processing: 'Procesando',
+        paid: 'Pagado',
+        assembling: 'En preparación',
+        negotiation: 'En negociación / modificando',
+        preparing_shipping: 'Etiqueta Lista',
+        ready_to_ship: 'Listo para enviar',
+        shipped: 'Enviado',
+        delivered: 'Entregado',
+        cancelled: 'Cancelado'
+      };
+      
+      const statusLabel = STATUS_LABELS[newStatus] || newStatus;
+      
+      // Armamos la plantilla requerida por Meta
+      const templateName = 'estado_de_pedido';
+      const lang = 'es_CL'; // o "es" dependiendo de cómo se registró en Meta, usualmente es_CL
+      const components = [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: customerName },
+            { type: 'text', text: `#${code}` },
+            { type: 'text', text: statusLabel }
+          ]
+        }
+      ];
 
-      if (newStatus === 'paid') {
-        waMessage = `¡Súper noticias amor! ✨ Ya verificaron tu pago para el pedido #${code}. ¡Qué emoción! Las chicas ya empezaron a preparar todo. 💅💕`;
-      } else if (newStatus === 'assembling') {
-        waMessage = `¡Manos a la obra bella! 💄 Tu pedido #${code} ya se está armando. Nuestras chicas están recolectando todos tus tesoros. 🏃‍♀️💨`;
-      } else if (newStatus === 'negotiation') {
-        waMessage = `¡Ay amor nooo! 🥺 Resulta que algunas cositas de tu pedido #${code} volaron y se agotaron súper rápido. ¡Pero cero estrés! En cualquier momento te escribo por aquí para mostrarte opciones y cambiarlas por algo igual de hermoso. 💕`;
-      } else if (newStatus === 'stock_confirmed') {
-        waMessage = `¡Todo lissssto reina! ✨ Todo el stock de tu pedido #${code} ya fue separadito y confirmado. Lo estamos empacando y te aviso apenas salga volando hacia ti. 📦💖`;
-      } else if (newStatus === 'ready_to_ship') {
-        const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-        let actionTxt = isRetiro ? 'retirado por ti en tienda' : 'enviado a tus manos';
-        waMessage = `¡Yuhuuu bella! 🎉 Tu pedido #${code} ya está empaquetadito, hermoso y listo para ser ${actionTxt}.`;
+      const phone = formatWhatsAppPhone(order.CUSTOMERPHONE);
+      const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+      
+      if (WA_TOKEN) {
+        // 1. Enviamos la plantilla oficial a través de la API
+        await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
         
-        if (order.BOXPHOTOS) {
-          try {
-            const photos = JSON.parse(order.BOXPHOTOS);
-            if (Array.isArray(photos) && photos.length > 0) {
-              waMessage += `\n\nMira no más qué belleza cómo quedó tu paquetito: ${photos[0]} 😍📸`;
-            }
-          } catch(e){}
-        }
-      } else if (newStatus === 'shipped') {
-        waMessage = `¡Tus cositas están en camino amor! 🚚 Tu pedido #${code} acaba de salir de nuestra tienda. Chequea tu cuenta en la web si tienes número de seguimiento. ¡Espero que lo disfrutes muchísimo, te va a encantar! 🥰✨`;
-      }
-
-      if (waMessage) {
-        const phone = formatWhatsAppPhone(order.CUSTOMERPHONE);
-        const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
-        if (WA_TOKEN) {
-          await sendWhatsAppMessage(phone, waMessage, WA_TOKEN);
-          await addToHistory(phone, 'assistant', waMessage, msgId);
-        }
+        // 2. Guardamos en el historial una representación del mensaje para que Kenia sepa que se envió
+        const simulatedMessage = `[Plantilla Automática de Estado] ¡Hola, ${customerName}! 🌸 Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #${code} ya cambió de estado a: ${statusLabel} 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo!`;
+        await addToHistory(phone, 'assistant', simulatedMessage, msgId);
       }
     }
   } catch (e) {
