@@ -38,73 +38,126 @@ export default function BulkDeletePage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Get all products first to find by SKU (paginate to get everything)
-      let allProductsDocs: any[] = [];
-      let cursor: string | undefined = undefined;
-      let hasMore = true;
-
-      while (hasMore) {
-        const queries = [Query.limit(100)];
-        if (cursor) queries.push(Query.cursorAfter(cursor));
-
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-        allProductsDocs.push(...res.documents);
-
-        if (res.documents.length < 100) {
-          hasMore = false;
-        } else {
-          cursor = res.documents[res.documents.length - 1].$id;
-        }
-      }
-
       let deleted = 0;
       const notFound: string[] = [];
       const errors: string[] = [];
 
+      // 1. Bulk find products using chunked queries by sku, jumpseller_id, and TAGS
+      const foundProductsMap = new Map<string, any>();
+      const chunkSize = 25; // Safe chunk size for Appwrite queries
+      
+      for (let i = 0; i < skus.length; i += chunkSize) {
+        const chunk = skus.slice(i, i + chunkSize);
+        const variations = Array.from(new Set([
+          ...chunk,
+          ...chunk.map(s => s.toLowerCase()),
+          ...chunk.map(s => s.toUpperCase())
+        ]));
+
+        // Search by sku
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.equal('sku', variations),
+            Query.limit(100)
+          ]);
+          res.documents.forEach(p => foundProductsMap.set(p.$id, p));
+        } catch (e) {
+          console.error('Error bulk querying sku:', e);
+        }
+
+        // Search by jumpseller_id
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.equal('jumpseller_id', variations),
+            Query.limit(100)
+          ]);
+          res.documents.forEach(p => foundProductsMap.set(p.$id, p));
+        } catch (e) {
+          console.error('Error bulk querying jumpseller_id:', e);
+        }
+
+        // Search by TAGS
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.contains('TAGS', variations),
+            Query.limit(100)
+          ]);
+          res.documents.forEach(p => foundProductsMap.set(p.$id, p));
+        } catch (e) {
+          console.error('Error bulk querying TAGS:', e);
+        }
+      }
+
+      // Convert map to array for matching
+      const resolvedProducts = Array.from(foundProductsMap.values());
+
+      // 2. Process each SKU
       for (const sku of skus) {
         try {
-          // Find product by SKU (check FEATURES, TAGS, or jumpseller_id)
-          const product = allProductsDocs.find((p: any) => {
-            const features = p.FEATURES || '';
+          // A. Try to find it in our bulk-resolved products first
+          let product = resolvedProducts.find((p: any) => {
             const jumpId = p.jumpseller_id || '';
-            
-            // Check FEATURES for SKU pattern
-            const featMatch = typeof features === 'string' ? features.match(/SKU:\s*(.+)/i) : null;
-            if (featMatch && featMatch[1].trim() === sku) return true;
-            
-            // Check TAGS for SKU
+            const skuVal = p.sku || p.SKU || ''; // check both just in case
+
+            // Check SKU direct field
+            if (skuVal.toLowerCase() === sku.toLowerCase()) return true;
+
+            // Check jumpseller_id
+            if (jumpId.toLowerCase() === sku.toLowerCase()) return true;
+
+            // Check TAGS
             let tagParts: string[] = [];
             if (Array.isArray(p.TAGS)) {
-              tagParts = p.TAGS.map((t: any) => String(t).trim());
+              tagParts = p.TAGS.map((t: any) => String(t).trim().toLowerCase());
             } else if (typeof p.TAGS === 'string') {
-              tagParts = p.TAGS.split(',').map((t: string) => t.trim());
+              tagParts = p.TAGS.split(',').map((t: string) => t.trim().toLowerCase());
             }
-            if (tagParts.includes(sku)) return true;
-            
-            // Check jumpseller_id
-            if (jumpId === sku) return true;
-            
-            // Check direct SKU field if it exists
-            if (p.SKU === sku) return true;
-            
+            if (tagParts.includes(sku.toLowerCase())) return true;
+
+            // Check FEATURES
+            const features = p.FEATURES || '';
+            const featMatch = typeof features === 'string' ? features.match(/SKU:\s*(.+)/i) : null;
+            if (featMatch && featMatch[1].trim().toLowerCase() === sku.toLowerCase()) return true;
+
             return false;
           });
 
+          // B. Fallback: If not found in bulk, do a targeted query for FEATURES contains
+          if (!product) {
+            try {
+              const featRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+                Query.contains('FEATURES', sku),
+                Query.limit(5)
+              ]);
+              product = featRes.documents.find((p: any) => {
+                const features = p.FEATURES || '';
+                const featMatch = typeof features === 'string' ? features.match(/SKU:\s*(.+)/i) : null;
+                return featMatch && featMatch[1].trim().toLowerCase() === sku.toLowerCase();
+              });
+            } catch (e) {
+              console.error(`Error querying FEATURES for sku ${sku}:`, e);
+            }
+          }
+
+          // C. If still not found, add to notFound list
           if (!product) {
             notFound.push(sku);
-            // Add small delay even for not found to maintain rhythm
             await new Promise(r => setTimeout(r, 100));
             continue;
           }
 
+          // D. Delete the document
           await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION_ID, product.$id);
           deleted++;
           
+          // Remove from resolved list to avoid duplicate deletion matches
+          const idx = resolvedProducts.findIndex(p => p.$id === product.$id);
+          if (idx !== -1) resolvedProducts.splice(idx, 1);
+
           // Add delay to avoid rate limit
           await new Promise(r => setTimeout(r, 200));
         } catch (e: any) {
           errors.push(`${sku}: ${e.message}`);
-          // Add delay even on error
           await new Promise(r => setTimeout(r, 200));
         }
       }
