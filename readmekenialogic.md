@@ -73,3 +73,22 @@ Kenia utiliza una serie de "comandos secretos" formateados que el Webhook interc
 
 ---
 *Hecho por Antigravity (IA) para Kevin&Coco - 2026*
+
+## 6. 🧠 Refinamiento de Comportamiento y Anti-Alucinaciones
+Para mantener la profesionalidad sin perder la frescura:
+- **Estados de Pedido Nativos**: Kenia NUNCA recibe los estados de Appwrite en inglés crudo (`pending`, `paid`). El sistema los traduce a español (`Pendiente de pago`, `Pagado`) ANTES de inyectarlos al contexto, asegurando respuestas 100% orgánicas.
+- **Cierre Tajante de Conversación**: Se le ordenó bajo reglas estrictas que **JAMÁS** deje la conversación abierta con preguntas tipo *"¿Te ayudo en algo más?"* o *"¿Cuéntame?"*. Kenia responde puntualmente a lo que se le pide y despide amablemente para ahorrar tokens y mantener el flujo ágil.
+- **Cero Inventos (Anti-Hallucination)**: Tiene terminantemente prohibido inventar números de pedido, estados de envío o razones por las que un pedido no avanza. Si la información no está explícita en su contexto, debe invocar `[ACTION:ASK_ADMIN]` inmediatamente.
+
+---
+
+## 7. 🔗 Integración Profunda Meta API & Appwrite Webhooks
+- **Formateo de Teléfonos Chilenos (La pesadilla del '9')**: 
+  - Para responder mensajes regulares, la API de Meta acepta el prefijo `+56 9...`. 
+  - **PERO** para enviar plantillas (Templates) que inician conversaciones, Meta arroja `Invalid parameter` si el número lleva el `9`. 
+  - Se implementó en `formatWhatsAppPhone` un formateador automático que elimina el `9` exclusivamente al enviar plantillas a móviles chilenos (ej: `569...` pasa a `563...`), cumpliendo con la estricta regulación de telecomunicaciones de Meta.
+- **Webhook de Creación de Pedidos (`/api/webhooks/appwrite/orders`)**: 
+  - Puesto que los pedidos se crean desde el frontend (React), el servidor no se enteraba al instante. 
+  - Se configuró un Webhook en Appwrite atado al evento `databases.*.collections.orders.documents.*.create`. 
+  - Al dispararse, este webhook envía **automáticamente** la plantilla oficial de WhatsApp (`estado_de_pedido`) al cliente informando que el pedido fue recibido (Pendiente de pago). 
+  - **Filtro de Admin**: Para evitar saturar el WhatsApp del Administrador, el webhook **NO** le notifica cuando se crean pedidos en estado *Pendiente*. Solo notificará cuando el estado sea diferente (ej. Pagado).
