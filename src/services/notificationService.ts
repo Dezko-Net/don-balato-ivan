@@ -245,28 +245,28 @@ export async function notifyOrderStatusChange(
       let waMessage = '';
 
       if (newStatus === 'paid') {
-        waMessage = `¡Buenas noticias ${customerName}! ✨ Ya verificaron tu pago para el pedido #${code}. ¡Qué emoción! Empezaremos a prepararlo pronto.`;
+        waMessage = `¡Súper noticias amor! ✨ Ya verificaron tu pago para el pedido #${code}. ¡Qué emoción! Las chicas ya empezaron a preparar todo. 💅💕`;
       } else if (newStatus === 'assembling') {
-        waMessage = `¡Manos a la obra! 💄 Tu pedido #${code} ya se encuentra armándose y las chicas están recolectando tus productos.`;
+        waMessage = `¡Manos a la obra bella! 💄 Tu pedido #${code} ya se está armando. Nuestras chicas están recolectando todos tus tesoros. 🏃‍♀️💨`;
       } else if (newStatus === 'negotiation') {
-        waMessage = `Oh no 🥺 Lamentablemente hubo algunos productos de tu pedido #${code} que se agotaron súper rápido y no se llegaron a encontrar. Pero no te preocupes para nada, en cualquier momento me comunicaré contigo por aquí para ayudarte a cambiarlos por algo igual de hermoso. 💕`;
+        waMessage = `¡Ay amor nooo! 🥺 Resulta que algunas cositas de tu pedido #${code} volaron y se agotaron súper rápido. ¡Pero cero estrés! En cualquier momento te escribo por aquí para mostrarte opciones y cambiarlas por algo igual de hermoso. 💕`;
       } else if (newStatus === 'stock_confirmed') {
-        waMessage = `¡Todo listo! ✨ Todo el stock de tu pedido #${code} ya fue confirmado, se está cerrando y te avisaré apenas salga a la agencia.`;
+        waMessage = `¡Todo lissssto reina! ✨ Todo el stock de tu pedido #${code} ya fue separadito y confirmado. Lo estamos empacando y te aviso apenas salga volando hacia ti. 📦💖`;
       } else if (newStatus === 'ready_to_ship') {
         const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-        let actionTxt = isRetiro ? 'retirado en tienda' : 'enviado';
-        waMessage = `¡Yuhuuu! 🎉 Tu pedido #${code} ya se encuentra empaquetado y listo para ser ${actionTxt}.`;
+        let actionTxt = isRetiro ? 'retirado por ti en tienda' : 'enviado a tus manos';
+        waMessage = `¡Yuhuuu bella! 🎉 Tu pedido #${code} ya está empaquetadito, hermoso y listo para ser ${actionTxt}.`;
         
         if (order.BOXPHOTOS) {
           try {
             const photos = JSON.parse(order.BOXPHOTOS);
             if (Array.isArray(photos) && photos.length > 0) {
-              waMessage += `\n\nAquí tienes una foto de cómo quedó tu paquetito hermoso: ${photos[0]}`;
+              waMessage += `\n\nMira no más qué belleza cómo quedó tu paquetito: ${photos[0]} 😍📸`;
             }
           } catch(e){}
         }
       } else if (newStatus === 'shipped') {
-        waMessage = `¡Tu paquetito está en camino! 🚚 Tu pedido #${code} acaba de salir de nuestra tienda. Si tienes número de seguimiento, lo podrás revisar desde tu cuenta en la web. ¡Espero que lo disfrutes muchísimo! 🥰`;
+        waMessage = `¡Tus cositas están en camino amor! 🚚 Tu pedido #${code} acaba de salir de nuestra tienda. Chequea tu cuenta en la web si tienes número de seguimiento. ¡Espero que lo disfrutes muchísimo, te va a encantar! 🥰✨`;
       }
 
       if (waMessage) {

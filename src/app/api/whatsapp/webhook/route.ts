@@ -342,13 +342,13 @@ export async function POST(req: NextRequest) {
     if (!isAdmin && interactiveId) {
       let interceptReply = '';
       if (interactiveId === 'func_pedido') {
-        interceptReply = '📦 *Sobre el estado de tu pedido*\n\nTe notificaré de manera automática cada vez que tu pedido avance al siguiente estado, para que no tengas que preocuparte por nada:\n\n1️⃣ *Validación de Pago*: Cuando nuestro equipo verifique tu pago.\n2️⃣ *Armado*: Cuando estemos recolectando y empacando tus productos.\n3️⃣ *Confirmación de Stock*: Te avisaremos si todo está correcto o si falta algo.\n4️⃣ *Despacho*: Apenas esté listo para ser enviado o retirado.\n\nSi deseas consultar un pedido en específico ahora mismo, dímelo y lo revisaré por ti. ✨';
+        interceptReply = '📦 *¡Tu pedido, reina!*\n\nNo te estreses, yo te aviso de todito automáticamente:\n1️⃣ *Pago*: Cuando las chicas validen tus moneditas.\n2️⃣ *Armado*: Cuando estemos juntando tus tesoros.\n3️⃣ *Stock*: Si falta alguito te chismeo altiro.\n4️⃣ *Despacho*: Cuando salga volando hacia ti 🏃‍♀️💨\n\nSi quieres saber de un pedido específico AHORA, solo dímelo y lo busco amor. ✨';
       } else if (interactiveId === 'func_comprobante') {
-        interceptReply = '🧾 *Sobre tus comprobantes*\n\nCuando realices el pago, debes subir la foto del comprobante directamente desde los detalles de tu pedido en nuestra página web. Una vez lo subas, te notificaré automáticamente por aquí en cuanto el pago sea verificado por nuestro equipo financiero. ¡Es muy sencillo y seguro! 🥰';
+        interceptReply = '🧾 *Tus comprobantes bella*\n\n¡Súper fácil! Entra a tu pedido en la web y sube la fotito del comprobante ahí. Yo lo veo al instante y te aviso por aquí apenas finanzas lo valide. ¡Cero estrés! 🥰💸';
       } else if (interactiveId === 'func_ofertas') {
-        interceptReply = '🔥 *Nuestras Ofertas*\n\nMe aseguraré de avisarte por este medio cuando tengamos descuentos exclusivos, promociones de temporada o remates especiales de productos. ¡Así serás de las primeras en aprovechar las mejores oportunidades! 💄🏃‍♀️';
+        interceptReply = '🔥 *¡Ofertas y Remates!*\n\nUy amor, prepárate. Cuando tengamos cositas a precio de infarto o el jefe se vuelva loco con los descuentos, serás la primera en saberlo por aquí. ¡A cazar gangas se ha dicho! 💄🛍️';
       } else if (interactiveId === 'func_negociacion') {
-        interceptReply = '🔄 *Cambio de productos faltantes*\n\nSi al armar tu pedido nos damos cuenta de que algún producto se agotó rápidamente, no hay de qué preocuparse: te escribiré por aquí mismo para informarte y ofrecerte alternativas igual de hermosas para que puedas elegir tu favorita y completemos tu compra con éxito. 💕';
+        interceptReply = '🔄 *¿Falta algo? ¡Ni te estreses!*\n\nSi justo se nos agotó ese labial que querías, te voy a escribir rapidísimo para mostrarte otras opciones súper bellas para que elijas. ¡Te prometo que no te quedas sin tus regalitos! 💅💕';
       } else if (interactiveId === 'func_humano') {
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
         const alertMsg = `🚨 *ASISTENCIA REQUERIDA*\n\nEl cliente +${fromPhone} presionó el botón de "Hablar con persona".\n🔗 ${process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl'}/admin/ia/whatsapp`;
@@ -427,17 +427,17 @@ export async function POST(req: NextRequest) {
       // Generate a vibrant personalized greeting with Gemini
       let welcomeGreeting = '';
       try {
-        const welcomePrompt = `Eres Kenia, la experta asesora de belleza de Kevin&Coco. Tienes una personalidad elegante, sumamente amable, simpática y hablas con mucha vida, pero de forma profesional y educada (nada de jerga ni modismos regionales o "chilenismos", usa un español neutro y sofisticado).
+        const welcomePrompt = `Eres Kenia, la súper mejor amiga virtual y asesora estrella de Kevin&Coco. Tienes una vibra SÚPER viva, atrevida, graciosa y llena de picardía. Eres la típica amiga amante del maquillaje. Cero formal, cero aburrida.
 
-Es tu PRIMERA vez interactuando con "${displayName}". Escribe un mensaje de bienvenida SIMPLE, divertido y profesional.
+Es tu PRIMERA vez hablando con "${displayName}". Escribe un saludo SIMPLE, divertidísimo y cortito.
 REGLAS:
-1. Usa solo un diminutivo cariñoso de su primer nombre (Ej: si es Janpol di Jan, si es Eduardo di Edu, si es Guadalupe di Lupe).
-2. Preséntate como Kenia de Kevin&Coco de forma cordial y entusiasta.
-3. OPCIONAL Y SOLO SI TIENE SENTIDO: Menciona un dato curioso súper breve y encantador sobre su nombre relacionado con la belleza o elegancia. Si su nombre es raro, omite el dato curioso. ¡Nada de la historia del rímel!
-4. Explícale elegantemente que le notificarás y ayudarás con sus compras, ofertas y estado de pedidos.
-5. Invítalo a tocar el botón de abajo usando emojis femeninos y delicados.
+1. Usa un diminutivo cariñoso de su primer nombre (Ej: Janpol -> Jan, Guadalupe -> Lupe).
+2. Preséntate como Kenia con muchísima energía. Trátala de "amor", "bella" o "cariño".
+3. OPCIONAL Y SOLO SI TIENE SENTIDO: Lánzate un dato curioso o piropo gracioso y muy corto sobre su nombre o el maquillaje. Si su nombre es raro, sáltatelo. ¡Cero cosas aburridas o técnicas!
+4. Dile rapidito que estás para chismearle de sus pedidos, ofertas y ayudarla en todo.
+5. Invítala a tocar el botón de abajo usando emojis muy femeninos y expresivos (💅💋✨).
 
-Escribe con mucha confianza, amabilidad profesional y empatía.`;
+Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
         const welcomeBody = {
           system_instruction: { parts: [{ text: welcomePrompt }] },
           contents: [{ role: 'user', parts: [{ text: userText }] }],
@@ -1105,7 +1105,7 @@ ${products.join('\n') || 'Sin productos.'}`;
       if (askAdminMatch) {
         const questionSummary = askAdminMatch[1]?.trim() || "Tiene una duda que no puedo responder";
         const customerNameDisp = customerName ? `${customerName} (+${fromPhone})` : `+${fromPhone}`;
-        const alertMsg = `🚨 *KENIA NECESITA AYUDA*\n\nJan, el cliente ${customerNameDisp} preguntó:\n"${questionSummary}"\n\n¿Qué debería responderle? (Dime "dile que..." y le mandaré tu respuesta al cliente)`;
+        const alertMsg = `🚨 *KENIA NECESITA AYUDA*\n\n¡Amor! El cliente ${customerNameDisp} me preguntó esto y no sé qué decirle:\n"${questionSummary}"\n\n¿Qué le digo? (Respóndeme "dile que..." y yo le paso el chisme tal cual 🏃‍♀️)`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
       } else if (escalateRegex.test(rawText)) {
         // Fallback for old prompt structure
