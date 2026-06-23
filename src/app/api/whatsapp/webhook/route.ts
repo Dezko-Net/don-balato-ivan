@@ -1023,6 +1023,25 @@ ${products.join('\n') || 'Sin productos.'}`;
       }
     }
 
+    // ── Action Parsing & Execution (REPLY_CUSTOMER) ──────────────────────────────
+    const replyCustomerRegex = /\[ACTION:REPLY_CUSTOMER\]([\s\S]*?)\[\/ACTION\]/;
+    const replyCustomerMatch = rawText.match(replyCustomerRegex);
+    if (replyCustomerMatch && isAdmin) {
+      try {
+        const actionData = JSON.parse(replyCustomerMatch[1]);
+        const { phone, message } = actionData;
+        if (phone && message) {
+          const cleanPhone = phone.replace(/\D/g, '');
+          await sendWhatsAppMessage(cleanPhone, message, WA_TOKEN);
+          await addToHistory(cleanPhone, 'assistant', message, `admin-reply-${Date.now()}`);
+          aiReply += `\n\n✅ Mensaje enviado al cliente (+${cleanPhone}).`;
+          console.log(`[WhatsApp Webhook] Sent admin reply to ${cleanPhone}: ${message}`);
+        }
+      } catch (err) {
+        console.error('[WhatsApp Webhook] REPLY_CUSTOMER parsing error:', err);
+      }
+    }
+
     // Save assistant reply to history
     await addToHistory(fromPhone, 'assistant', aiReply, msgId);
 
@@ -1045,14 +1064,20 @@ ${products.join('\n') || 'Sin productos.'}`;
     // ── Report to main admin if from customer ────────────────────────────────
     if (!isAdmin) {
       const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+      const askAdminRegex = /\[ACTION:ASK_ADMIN\]([\s\S]*?)\[\/ACTION\]/;
+      const askAdminMatch = rawText.match(askAdminRegex);
       const escalateRegex = /\[ACTION:ESCALATE_ADMIN\]([\s\S]*?)\[\/ACTION\]/;
       
-      if (escalateRegex.test(rawText)) {
-        // Auto-bloquear Kenia para este cliente y marcar como escalado
+      if (askAdminMatch) {
+        const questionSummary = askAdminMatch[1]?.trim() || "Tiene una duda que no puedo responder";
+        const customerNameDisp = customerName ? `${customerName} (+${fromPhone})` : `+${fromPhone}`;
+        const alertMsg = `🚨 *KENIA NECESITA AYUDA*\n\nJan, el cliente ${customerNameDisp} preguntó:\n"${questionSummary}"\n\n¿Qué debería responderle? (Dime "dile que..." y le mandaré tu respuesta al cliente)`;
+        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
+      } else if (escalateRegex.test(rawText)) {
+        // Fallback for old prompt structure
         await setKeniaBlocked(fromPhone, true, 'admin_takeover');
         await recordKeniaUsage(fromPhone, { escalated: true });
 
-        // Enviar alerta rica al admin con contexto y link al panel
         const lastMsgs = (await getHistory(fromPhone)).slice(-4).map(m =>
           `${m.role === 'user' ? '👤' : '🤖'} ${m.content.slice(0, 120)}`
         ).join('\n');
