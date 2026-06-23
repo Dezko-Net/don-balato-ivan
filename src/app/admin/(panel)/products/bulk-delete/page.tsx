@@ -70,7 +70,7 @@ export default function BulkDeletePage() {
             const jumpId = p.jumpseller_id || '';
             
             // Check FEATURES for SKU pattern
-            const featMatch = features.match(/SKU:\s*(.+)/i);
+            const featMatch = typeof features === 'string' ? features.match(/SKU:\s*(.+)/i) : null;
             if (featMatch && featMatch[1].trim() === sku) return true;
             
             // Check TAGS for SKU
