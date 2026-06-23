@@ -6,11 +6,15 @@ let cachedUsageData: any = null;
 let lastCachedTime = 0;
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
   const now = Date.now();
+  const { searchParams } = new URL(req.url);
+  const force = searchParams.get('force') === '1';
   
-  // Return cached data if still valid
-  if (cachedUsageData && (now - lastCachedTime < CACHE_TTL)) {
+  // Return cached data if still valid and not forced
+  if (!force && cachedUsageData && (now - lastCachedTime < CACHE_TTL)) {
     return NextResponse.json({ ...cachedUsageData, cached: true });
   }
 
