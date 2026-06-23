@@ -8,6 +8,7 @@ import {
   hydratePrompt,
   recordKeniaUsage,
   setKeniaBlocked,
+  resetKeniaUsage,
 } from '@/lib/kenia-runtime';
 import {
   PRODUCTS_COLLECTION_ID,
@@ -445,6 +446,7 @@ export async function POST(req: NextRequest) {
     // Handle "limpiar historial" command
     if (userText.toLowerCase().includes('limpiar historial')) {
       await clearHistory(fromPhone);
+      await resetKeniaUsage(fromPhone);
       await setKeniaBlocked(fromPhone, false);
       await sendWhatsAppMessage(fromPhone, '🗑️ Historial borrado y sistema desbloqueado. ¡Empezamos de cero!', WA_TOKEN);
       return NextResponse.json({ status: 'history_cleared' });
