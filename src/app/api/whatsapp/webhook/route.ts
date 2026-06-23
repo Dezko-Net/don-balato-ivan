@@ -214,16 +214,16 @@ async function sendWelcomeMenu(phone: string, customerName: string, token: strin
     header: '✨ Bienvenida a Kenia',
     body,
     footer: 'Kevin&Coco · Tu tienda de belleza',
-    buttonText: 'Descubre qué hago por ti 🌸',
+    buttonText: 'Opciones de Ayuda 🌸',
     sections: [
       {
         title: 'Mis funciones',
         rows: [
-          { id: 'func_pedido', title: '📦 Estado de mi pedido', description: 'Te notifico desde que se confirma el pago hasta que sale de tienda' },
-          { id: 'func_comprobante', title: '🧾 Mis comprobantes', description: 'Te envío el comprobante de pago ni bien se suba a tu cuenta' },
-          { id: 'func_ofertas', title: '🔥 Ofertas y remates', description: 'Te aviso de ofertas y cuando el jefe remata productos' },
-          { id: 'func_negociacion', title: '🔄 Cambio de faltantes', description: 'Si faltan productos te aviso y te sugiero reemplazos' },
-          { id: 'func_humano', title: '👤 Hablar con persona', description: 'Te conecto con alguien del equipo si lo necesitas' },
+          { id: 'func_pedido', title: '📦 Ver mi pedido', description: 'Conoce el estado exacto de tu compra' },
+          { id: 'func_comprobante', title: '🧾 Subir comprobante', description: 'Avisa que ya realizaste el pago' },
+          { id: 'func_ofertas', title: '🔥 Saber de ofertas', description: 'Entérate de nuestros remates' },
+          { id: 'func_negociacion', title: '🔄 Reemplazar faltantes', description: 'Cambia productos agotados' },
+          { id: 'func_humano', title: '👤 Hablar con asesor', description: 'Comunícate con una persona del equipo' },
         ],
       },
     ],
@@ -342,13 +342,13 @@ export async function POST(req: NextRequest) {
     if (!isAdmin && interactiveId) {
       let interceptReply = '';
       if (interactiveId === 'func_pedido') {
-        interceptReply = '📦 *Estado de tu pedido*\n\nTe mantendré al tanto de cada paso:\n1️⃣ *Confirmación*: Te aviso apenas validemos tu pago.\n2️⃣ *Preparación*: Cuando armemos tu paquetito en tienda.\n3️⃣ *Envío*: Te mando el número de seguimiento apenas salga hacia la agencia de despacho (normalmente de 1 a 2 días).\n\n¡Así no te pierdes de nada! ✨';
+        interceptReply = '📦 *Sobre el estado de tu pedido*\n\nTe notificaré de manera automática cada vez que tu pedido avance al siguiente estado, para que no tengas que preocuparte por nada:\n\n1️⃣ *Validación de Pago*: Cuando nuestro equipo verifique tu pago.\n2️⃣ *Armado*: Cuando estemos recolectando y empacando tus productos.\n3️⃣ *Confirmación de Stock*: Te avisaremos si todo está correcto o si falta algo.\n4️⃣ *Despacho*: Apenas esté listo para ser enviado o retirado.\n\nSi deseas consultar un pedido en específico ahora mismo, dímelo y lo revisaré por ti. ✨';
       } else if (interactiveId === 'func_comprobante') {
-        interceptReply = '🧾 *Tus comprobantes*\n\nCuando pagues, solo tienes que subir la foto del comprobante desde los detalles de tu pedido en la página. Yo lo detectaré al instante y te confirmaré por aquí que ya lo recibimos para empezar a armar tu paquete. ¡Súper fácil! 🥰';
+        interceptReply = '🧾 *Sobre tus comprobantes*\n\nCuando realices el pago, debes subir la foto del comprobante directamente desde los detalles de tu pedido en nuestra página web. Una vez lo subas, te notificaré automáticamente por aquí en cuanto el pago sea verificado por nuestro equipo financiero. ¡Es muy sencillo y seguro! 🥰';
       } else if (interactiveId === 'func_ofertas') {
-        interceptReply = '🔥 *Ofertas y Remates*\n\n¡Uuuh! Esta es mi parte favorita. Te mandaré mensajitos cuando tengamos descuentos exclusivos, rebajas de temporada o cuando el jefe se vuelva loco y remate productos a precio de costo. ¡Prepárate para cazar gangas! 💄🏃‍♀️';
+        interceptReply = '🔥 *Nuestras Ofertas*\n\nMe aseguraré de avisarte por este medio cuando tengamos descuentos exclusivos, promociones de temporada o remates especiales de productos. ¡Así serás de las primeras en aprovechar las mejores oportunidades! 💄🏃‍♀️';
       } else if (interactiveId === 'func_negociacion') {
-        interceptReply = '🔄 *Cambio de faltantes*\n\nA veces algún producto se nos agota súper rápido. Si eso pasa con tu pedido, no te preocupes: te escribiré de inmediato para mostrarte otras opciones súper lindas del mismo valor o características para que elijas tu favorita y no te quedes sin tus cositas. 💕';
+        interceptReply = '🔄 *Cambio de productos faltantes*\n\nSi al armar tu pedido nos damos cuenta de que algún producto se agotó rápidamente, no hay de qué preocuparse: te escribiré por aquí mismo para informarte y ofrecerte alternativas igual de hermosas para que puedas elegir tu favorita y completemos tu compra con éxito. 💕';
       } else if (interactiveId === 'func_humano') {
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
         const alertMsg = `🚨 *ASISTENCIA REQUERIDA*\n\nEl cliente +${fromPhone} presionó el botón de "Hablar con persona".\n🔗 ${process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl'}/admin/ia/whatsapp`;
@@ -427,17 +427,17 @@ export async function POST(req: NextRequest) {
       // Generate a vibrant personalized greeting with Gemini
       let welcomeGreeting = '';
       try {
-        const welcomePrompt = `Eres Kenia, asesora de ventas de maquillaje de Kevin&Coco en Chile. Eres súper carismática, graciosa, desenvuelta y hablas con mucha vida y energía, sin sonar para nada formal ni como un bot. Hablas en español chileno natural.
+        const welcomePrompt = `Eres Kenia, la experta asesora de belleza de Kevin&Coco. Tienes una personalidad elegante, sumamente amable, simpática y hablas con mucha vida, pero de forma profesional y educada (nada de jerga ni modismos regionales o "chilenismos", usa un español neutro y sofisticado).
 
-Es tu PRIMERA vez interactuando con "${displayName}". Escribe un mensaje de bienvenida SIMPLE, divertido y vibrante.
+Es tu PRIMERA vez interactuando con "${displayName}". Escribe un mensaje de bienvenida SIMPLE, divertido y profesional.
 REGLAS:
 1. Usa solo un diminutivo cariñoso de su primer nombre (Ej: si es Janpol di Jan, si es Eduardo di Edu, si es Guadalupe di Lupe).
-2. Preséntate como Kenia de Kevin&Coco de forma entusiasta.
-3. OPCIONAL Y SOLO SI TIENE SENTIDO: Menciona un dato curioso súper breve y gracioso sobre su nombre relacionado con la belleza o algo divertido. Si su nombre es raro o no se te ocurre algo natural, sáltate el dato curioso. ¡Cero historia de rímel aburrido!
-4. Explícale rápido que le puedes ayudar con sus compras, ofertas y estado de pedidos.
-5. Invítalo a tocar el botón de abajo usando emojis.
+2. Preséntate como Kenia de Kevin&Coco de forma cordial y entusiasta.
+3. OPCIONAL Y SOLO SI TIENE SENTIDO: Menciona un dato curioso súper breve y encantador sobre su nombre relacionado con la belleza o elegancia. Si su nombre es raro, omite el dato curioso. ¡Nada de la historia del rímel!
+4. Explícale elegantemente que le notificarás y ayudarás con sus compras, ofertas y estado de pedidos.
+5. Invítalo a tocar el botón de abajo usando emojis femeninos y delicados.
 
-Escribe con mucha confianza, humor y vida.`;
+Escribe con mucha confianza, amabilidad profesional y empatía.`;
         const welcomeBody = {
           system_instruction: { parts: [{ text: welcomePrompt }] },
           contents: [{ role: 'user', parts: [{ text: userText }] }],

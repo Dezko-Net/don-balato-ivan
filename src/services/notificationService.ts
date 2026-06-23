@@ -222,6 +222,65 @@ export async function notifyOrderStatusChange(
     link: `/cuenta/pedidos`,
     refKey,
   });
+
+  // ── 2. Send Automatic WhatsApp Notification ──
+  if (!order.CUSTOMERPHONE) return;
+  const msgId = `wa_order_${order.$id}_${newStatus}`;
+  try {
+    const { getWhatsAppDocId, sendWhatsAppMessage, formatWhatsAppPhone, addToHistory } = await import('@/lib/whatsapp');
+    const { serverGetDocument } = await import('@/lib/appwrite-server');
+    const { ADMIN_CHAT_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+    
+    const docId = getWhatsAppDocId(msgId, 'assistant');
+    let alreadySent = false;
+    try {
+      await serverGetDocument(ADMIN_CHAT_COLLECTION_ID, docId);
+      alreadySent = true;
+    } catch {
+      alreadySent = false;
+    }
+
+    if (!alreadySent) {
+      const customerName = order.CUSTOMERNAME ? order.CUSTOMERNAME.split(' ')[0] : 'bella';
+      let waMessage = '';
+
+      if (newStatus === 'paid') {
+        waMessage = `¡Buenas noticias ${customerName}! ✨ Ya verificaron tu pago para el pedido #${code}. ¡Qué emoción! Empezaremos a prepararlo pronto.`;
+      } else if (newStatus === 'assembling') {
+        waMessage = `¡Manos a la obra! 💄 Tu pedido #${code} ya se encuentra armándose y las chicas están recolectando tus productos.`;
+      } else if (newStatus === 'negotiation') {
+        waMessage = `Oh no 🥺 Lamentablemente hubo algunos productos de tu pedido #${code} que se agotaron súper rápido y no se llegaron a encontrar. Pero no te preocupes para nada, en cualquier momento me comunicaré contigo por aquí para ayudarte a cambiarlos por algo igual de hermoso. 💕`;
+      } else if (newStatus === 'stock_confirmed') {
+        waMessage = `¡Todo listo! ✨ Todo el stock de tu pedido #${code} ya fue confirmado, se está cerrando y te avisaré apenas salga a la agencia.`;
+      } else if (newStatus === 'ready_to_ship') {
+        const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+        let actionTxt = isRetiro ? 'retirado en tienda' : 'enviado';
+        waMessage = `¡Yuhuuu! 🎉 Tu pedido #${code} ya se encuentra empaquetado y listo para ser ${actionTxt}.`;
+        
+        if (order.BOXPHOTOS) {
+          try {
+            const photos = JSON.parse(order.BOXPHOTOS);
+            if (Array.isArray(photos) && photos.length > 0) {
+              waMessage += `\n\nAquí tienes una foto de cómo quedó tu paquetito hermoso: ${photos[0]}`;
+            }
+          } catch(e){}
+        }
+      } else if (newStatus === 'shipped') {
+        waMessage = `¡Tu paquetito está en camino! 🚚 Tu pedido #${code} acaba de salir de nuestra tienda. Si tienes número de seguimiento, lo podrás revisar desde tu cuenta en la web. ¡Espero que lo disfrutes muchísimo! 🥰`;
+      }
+
+      if (waMessage) {
+        const phone = formatWhatsAppPhone(order.CUSTOMERPHONE);
+        const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+        if (WA_TOKEN) {
+          await sendWhatsAppMessage(phone, waMessage, WA_TOKEN);
+          await addToHistory(phone, 'assistant', waMessage, msgId);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[notifyOrderStatusChange] WhatsApp notif error:', e);
+  }
 }
 
 /** Oferta activa — broadcast a todos los usuarios logueados. */
