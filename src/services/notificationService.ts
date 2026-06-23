@@ -246,44 +246,60 @@ export async function notifyOrderStatusChange(
 
     if (!alreadySent) {
       const customerName = order.CUSTOMERNAME ? order.CUSTOMERNAME.split(' ')[0] : 'bella';
-      
-      const STATUS_LABELS: Record<string, string> = {
-        pending: 'Pendiente de pago',
-        processing: 'Procesando',
-        paid: 'Pagado',
-        assembling: 'En preparación',
-        negotiation: 'En negociación / modificando',
-        preparing_shipping: 'Etiqueta Lista',
-        ready_to_ship: 'Listo para enviar',
-        shipped: 'Enviado',
-        delivered: 'Entregado',
-        cancelled: 'Cancelado'
-      };
-      
-      const statusLabel = STATUS_LABELS[newStatus] || newStatus;
-      
-      // Armamos la plantilla requerida por Meta
-      const templateName = 'estado_de_pedido';
-      const lang = 'es_CL'; // o "es" dependiendo de cómo se registró en Meta, usualmente es_CL
-      const components = [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: customerName },
-            { type: 'text', text: `#${code}` },
-            { type: 'text', text: statusLabel }
-          ]
-        }
-      ];
-
       const phone = formatWhatsAppPhone(order.CUSTOMERPHONE);
       const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
-      
-      if (WA_TOKEN) {
-        // 1. Enviamos la plantilla oficial a través de la API
+      const lang = 'es_CL';
+
+      if (!WA_TOKEN) return;
+
+      if (newStatus === 'pending') {
+        // ── Plantilla "pedido_recibido" — para pedidos nuevos (status pending) ──
+        // Template aprobada por Meta con 2 variables: {{1}} nombre, {{2}} código pedido
+        const templateName = 'pedido_recibido';
+        const components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: customerName },
+              { type: 'text', text: `#${code}` }
+            ]
+          }
+        ];
+
         await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
-        
-        // 2. Guardamos en el historial una representación del mensaje para que Kenia sepa que se envió
+
+        const simulatedMessage = `[Plantilla Automática - Pedido Recibido] ¡Hola, ${customerName}! 🛍️✨ Hemos recibido tu pedido ${code} con éxito. Pronto te avisaremos cuando cambie de estado. ¡Gracias por confiar en Kevin&Coco Chile! 🇨🇱💖`;
+        await addToHistory(phone, 'assistant', simulatedMessage, msgId);
+
+      } else {
+        // ── Plantilla "estado_de_pedido" — para cambios de estado (paid, shipped, etc.) ──
+        const STATUS_LABELS: Record<string, string> = {
+          processing: 'Procesando',
+          paid: 'Pagado',
+          assembling: 'En preparación',
+          negotiation: 'En negociación / modificando',
+          preparing_shipping: 'Etiqueta Lista',
+          ready_to_ship: 'Listo para enviar',
+          shipped: 'Enviado',
+          delivered: 'Entregado',
+          cancelled: 'Cancelado'
+        };
+
+        const statusLabel = STATUS_LABELS[newStatus] || newStatus;
+        const templateName = 'estado_de_pedido';
+        const components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: customerName },
+              { type: 'text', text: `#${code}` },
+              { type: 'text', text: statusLabel }
+            ]
+          }
+        ];
+
+        await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
+
         const simulatedMessage = `[Plantilla Automática de Estado] ¡Hola, ${customerName}! 🌸 Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #${code} ya cambió de estado a: ${statusLabel} 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo!`;
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
       }

@@ -10,18 +10,22 @@ export async function POST(req: NextRequest) {
 
     console.log('[Webhook Orders] Event:', events, '| Order ID:', body.$id);
 
-    // Identificar si es creación
+    // Identificar tipo de evento
     const isCreate = events.includes('.create');
+    const isUpdate = events.includes('.update');
 
-    if (isCreate) {
+    if (isCreate || isUpdate) {
       // 1. Notificar al Cliente
-      // Forzamos el envío de WhatsApp llamando a notifyOrderStatusChange
-      // Pasamos 'undefined' como oldStatus para asegurarnos de que lo tome como nuevo
+      // 'existsByRefKey' adentro de la función previene envíos duplicados para el mismo estado
       await notifyOrderStatusChange(body, undefined, body.STATUS);
 
       // 2. Notificar al Admin
       // El usuario pidió NO notificar al admin si está en pendiente, solo si está pagado u otros
-      if (body.STATUS !== 'pending') {
+      if (isCreate && body.STATUS !== 'pending') {
+        const itemsCount = body.ITEMS ? Object.keys(body.ITEMS).length : 0;
+        await notifyNewOrder(body.ORDERCODE || body.$id, body.CUSTOMERNAME || 'Cliente', body.TOTAL || 0, itemsCount);
+      } else if (isUpdate && body.STATUS === 'paid') {
+        // Notificar al admin cuando un pedido cambia a pagado
         const itemsCount = body.ITEMS ? Object.keys(body.ITEMS).length : 0;
         await notifyNewOrder(body.ORDERCODE || body.$id, body.CUSTOMERNAME || 'Cliente', body.TOTAL || 0, itemsCount);
       }
