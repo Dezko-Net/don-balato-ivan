@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerConfig, getHeaders } from '@/lib/appwrite-server';
 
 // Server-side cache to avoid calling Appwrite too frequently
