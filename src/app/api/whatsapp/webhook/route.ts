@@ -445,7 +445,8 @@ export async function POST(req: NextRequest) {
     // Handle "limpiar historial" command
     if (userText.toLowerCase().includes('limpiar historial')) {
       await clearHistory(fromPhone);
-      await sendWhatsAppMessage(fromPhone, '🗑️ Historial borrado. ¡Empezamos de cero!', WA_TOKEN);
+      await setKeniaBlocked(fromPhone, false);
+      await sendWhatsAppMessage(fromPhone, '🗑️ Historial borrado y sistema desbloqueado. ¡Empezamos de cero!', WA_TOKEN);
       return NextResponse.json({ status: 'history_cleared' });
     }
 
@@ -916,6 +917,12 @@ ${products.join('\n') || 'Sin productos.'}`;
         const blockedReply = '¡Ay bella! 🌸 Dame un momentito cortito que estoy confirmando unos detalles en el sistema para poder ayudarte bien rápido 🏃‍♀️💨. ¡En un ratito te respondo!';
         await addToHistory(fromPhone, 'assistant', blockedReply, msgId);
         await sendWhatsAppMessage(fromPhone, blockedReply, WA_TOKEN);
+        
+        // Notificar al admin que el cliente bloqueado sigue escribiendo
+        const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+        const adminNotifBlocked = `⚠️ *Cliente pausado intentando hablar*\nEl usuario +${fromPhone} intentó escribir a la IA, pero está en pausa automática.\nSu mensaje: "${userText}"\n\n🔗 Atiéndelo en: ${SITE_URL}/admin/ia/whatsapp`;
+        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotifBlocked, WA_TOKEN);
+        
         return NextResponse.json({ status: 'blocked' });
       }
     }
