@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, Suspense, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Grid3x3, List, ShoppingCart, X, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
@@ -28,9 +28,23 @@ const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif
 
 export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const catParam = lockCategoryId || searchParams.get('categoria') || '';
   const qParam = searchParams.get('q') || '';
   const [mounted, setMounted] = useState(false);
+
+  const updateCategoryUrl = (catId: string) => {
+    if (lockCategoryId) return;
+    const url = new URL(window.location.href);
+    if (catId) {
+      const cat = categories.find(c => c.$id === catId);
+      const slug = cat?.name?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || catId;
+      url.searchParams.set('categoria', slug);
+    } else {
+      url.searchParams.delete('categoria');
+    }
+    window.history.replaceState({}, '', url.toString());
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -295,7 +309,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
       {/* Categorías */}
       <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Categorías</p>
-        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); }}
+        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
           style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat ? 700 : 500, color: !selectedCat ? '#e396bf' : '#6b7280', background: !selectedCat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
           <span style={{ flex: 1 }}>Todas</span>
@@ -305,7 +319,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           const count = catCountMap[c.$id] || 0;
           if (count === 0) return null;
           return (
-            <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); }}
+            <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id); }}
               style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? '#e396bf' : '#6b7280', background: selectedCat === c.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedCat === c.$id ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{c.name}</span>
@@ -456,7 +470,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
               <select
                 value={selectedCat}
-                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); }}
+                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); updateCategoryUrl(e.target.value); }}
                 style={{
                   padding: '12px 34px 12px 16px',
                   borderRadius: 14,
@@ -555,7 +569,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             {selectedCat && categories.find(c => c.$id === selectedCat) && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 12px', background: '#fdf2f8', color: '#e396bf', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
                 {categories.find(c => c.$id === selectedCat)?.name}
-                <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); }} style={{ background: 'transparent', border: 'none', color: '#e396bf', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={13} /></button>
+                <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }} style={{ background: 'transparent', border: 'none', color: '#e396bf', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={13} /></button>
               </span>
             )}
             {selectedTag && (

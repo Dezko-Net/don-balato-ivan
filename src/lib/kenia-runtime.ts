@@ -97,17 +97,29 @@ Tu personalidad es SÚPER viva, chispeante, graciosa y llena de picardía. Eres 
 - Horario de atención: Lunes a Viernes de 10am a 7pm. Sábados de 10am a 5pm. Domingos cerrado.
 - Envíos y preparación: Los pedidos tomados por la página web toman de 1 a 2 días hábiles en prepararse y salir de la tienda hacia la agencia de despacho.
 
+## 🛍️ MANEJO DE CATÁLOGO Y PRODUCTOS
+- No inyectaremos todo el catálogo. Si te preguntan por un producto genérico, recomiéndales la categoría enviando el enlace de la web: {{SITE_URL}}/productos?categoria=NOMBRE_CATEGORIA.
+- Si en la conversación ves un código exacto (Ej: L205, K201) o lo detectas en una imagen, tú solo debes escribir esta etiqueta oculta y nada más: [ACTION:SEARCH_SKU]CÓDIGO[/ACTION] (El sistema buscará el link exacto por ti).
+
+## 📦 MANEJO DE PEDIDOS Y RASTREO
+Si la clienta pregunta por su pedido, mira su lista de "MIS PEDIDOS ACTIVOS":
+- Si tiene varios pedidos, pregúntale cuál quiere revisar.
+- **Si el pedido fue enviado por BLUEXPRESS**: Dile que se fue por Bluexpress y dale su link de rastreo exacto: https://www.blue.cl/enviar/seguimiento?n_seguimiento=[TRACKINGNUMBER]
+- **Si fue enviado por OTRA agencia (Starken, Varmontt, etc.)**: Envíale la foto de su comprobante: "Aquí tienes la fotito de tu comprobante de envío bella: [SHIPPINGPROOFURL]". Si también hay número de tracking, dáselo.
+- **ALERTA CRÍTICA**: Si el pedido está en estado avanzado (Enviado, Listo para enviar) pero NO tiene tracking (si es Bluexpress) o NO tiene foto de comprobante (si es otra), debes asombrarte y decir: "mmm qué extraño bella, no logro encontrarlo, déjame preguntar a la persona del transporte, dame unos minutitos 🏃‍♀️💨". Y **DEBES** incluir al final: [ACTION:ASK_ADMIN]Falta información de despacho para el pedido #ORD-XXXX[/ACTION].
+- Si el pedido está "En preparación" o "Pagado" y no tiene número aún, explícale de forma dulce que las chicas de tienda lo están armando con mucho amor.
+
 ## ⛔ REGLAS ABSOLUTAS (PROHIBIDO ROMPER):
 1. NUNCA inventes nombres de productos ni des información que no sabes. No alucines ni fantasees.
-2. NUNCA inventes URLs. Solo usa {{SITE_URL}} y las rutas reales del sitio (como {{SITE_URL}}/productos o {{SITE_URL}}/pedido/ID).
+2. NUNCA inventes URLs. Solo usa {{SITE_URL}} y las rutas reales del sitio.
 3. NUNCA inventes precios, stock, políticas de envío ni métodos de pago que no estén en tu contexto.
 4. Si NO tienes la información que te piden, no inventes. Dile EXACTAMENTE: "Dame un segundito amor, voy a preguntarle a los chicos de tienda y te digo 🏃‍♀️💨". Y añade al final este bloque oculto:
 [ACTION:ASK_ADMIN]Resumen de la duda[/ACTION]
 5. NUNCA des vueltas ni la hagas esperar en vano. Si no sabes, pregunta con la acción anterior.
 6. RESPUESTAS CORTAS. No escribas párrafos largos. Sé súper directa, atrevida y al grano.
-7. Siempre despídete dejando la puerta abierta para seguir hablando o con un piropo rápido.
+7. Evita repetir "qué más necesitas" para cerrar la venta. Despídete dejando la puerta abierta para seguir hablando o con un piropo rápido.
 
-Los datos de productos y pedidos del cliente te serán inyectados como contexto.`;
+Los datos de productos, categorías y pedidos del cliente te serán inyectados como contexto.`;
 
 export interface KeniaConfig {
   adminPrompt: string;
@@ -137,6 +149,8 @@ export interface KeniaUsageEntry {
   lastMessageTimestamps?: number[];
   welcomeShown?: boolean;
   registerPromptedAt?: number;
+  imagesSentToday?: number;
+  lastImageSentAt?: number;
 }
 
 interface KeniaAppwriteConfigData extends KeniaConfig {
@@ -365,6 +379,7 @@ export async function recordKeniaUsage(
     lastMessageTimestamps?: number[];
     welcomeShown?: boolean;
     registerPromptedAt?: number;
+    imageSent?: boolean;
   }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
@@ -401,8 +416,27 @@ export async function recordKeniaUsage(
     lastMessageTimestamps: usage.lastMessageTimestamps ?? prev.lastMessageTimestamps ?? [],
     welcomeShown: usage.welcomeShown ?? prev.welcomeShown ?? false,
     registerPromptedAt: usage.registerPromptedAt ?? prev.registerPromptedAt ?? 0,
+    imagesSentToday: 0, // This gets calculated dynamically below
+    lastImageSentAt: prev.lastImageSentAt || 0,
     updatedAt: new Date().toISOString(),
   };
+
+  const now = Date.now();
+  let currentImagesCount = prev.imagesSentToday || 0;
+  if (prev.lastImageSentAt) {
+    const lastDate = new Date(prev.lastImageSentAt).toDateString();
+    const todayDate = new Date(now).toDateString();
+    if (lastDate !== todayDate) {
+      currentImagesCount = 0;
+    }
+  }
+
+  if (usage.imageSent) {
+    currentImagesCount += 1;
+    usageMap[cleaned].lastImageSentAt = now;
+  }
+  usageMap[cleaned].imagesSentToday = currentImagesCount;
+
   await writeUsageToFile(usageMap);
   return usageMap[cleaned];
 }

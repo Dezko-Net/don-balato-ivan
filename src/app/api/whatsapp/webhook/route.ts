@@ -9,10 +9,10 @@ import {
   recordKeniaUsage,
   setKeniaBlocked,
 } from '@/lib/kenia-runtime';
-import {
   PRODUCTS_COLLECTION_ID,
   ORDERS_COLLECTION_ID,
   USERS_COLLECTION_ID,
+  CATEGORIES_COLLECTION_ID,
 } from '@/lib/appwrite-admin';
 
 // ─── Config ────────────────────────────────────────────────────────────────────
@@ -266,6 +266,7 @@ export async function POST(req: NextRequest) {
 
     let userText = '';
     let interactiveId = '';
+    let inlineDataParts: any[] = [];
 
     if (msgType === 'text') {
       userText = (msg.text?.body as string || '').trim();
@@ -277,13 +278,61 @@ export async function POST(req: NextRequest) {
         userText = (msg.interactive.button_reply?.title as string || '').trim();
         interactiveId = msg.interactive.button_reply?.id as string;
       }
+    } else if (msgType === 'image') {
+      const mediaId = msg.image?.id;
+      userText = (msg.image?.caption as string || '').trim();
+      if (!userText) {
+         userText = "Aquí tienes una imagen que te envío para que me ayudes a identificar productos o resolver dudas.";
+      }
+      
+      if (mediaId && WA_TOKEN) {
+        // Track usage
+        const usageRes = await recordKeniaUsage(fromPhone, { imageSent: true });
+        if ((usageRes.imagesSentToday || 0) > 5) {
+          await setKeniaBlocked(fromPhone, true);
+          await sendWhatsAppMessage(
+            fromPhone,
+            '🚨 Has superado el límite diario de fotos permitidas. He pausado el asistente virtual y un asesor humano se pondrá en contacto contigo muy pronto. ¡Gracias por tu paciencia! ❤️',
+            WA_TOKEN
+          );
+          // Notify admin
+          const notifyText = `🚨 *LÍMITE DE FOTOS SUPERADO*\nEl usuario +${fromPhone} intentó enviar más de 5 fotos hoy.\nSe ha bloqueado la IA para este usuario.`;
+          for (const admin of ADMIN_PHONES) {
+            await sendWhatsAppMessage(admin, notifyText, WA_TOKEN);
+          }
+          return NextResponse.json({ status: 'limit_exceeded' });
+        }
+
+        // Fetch image
+        try {
+          const mediaRes = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, {
+            headers: { Authorization: `Bearer ${WA_TOKEN}` }
+          });
+          const mediaData = await mediaRes.json();
+          if (mediaData.url) {
+            const dlRes = await fetch(mediaData.url, {
+              headers: { Authorization: `Bearer ${WA_TOKEN}` }
+            });
+            const buffer = await dlRes.arrayBuffer();
+            const base64 = Buffer.from(buffer).toString('base64');
+            inlineDataParts.push({
+              inline_data: {
+                mime_type: msg.image?.mime_type || 'image/jpeg',
+                data: base64
+              }
+            });
+          }
+        } catch (e) {
+          console.error('[WhatsApp Webhook] Failed to download media:', e);
+        }
+      }
     }
 
-    if (!userText && !interactiveId) {
-      if (msgType !== 'text' && msgType !== 'interactive') {
+    if (!userText && !interactiveId && inlineDataParts.length === 0) {
+      if (msgType !== 'text' && msgType !== 'interactive' && msgType !== 'image') {
         await sendWhatsAppMessage(
           fromPhone,
-          '¡Hola! 👋 Por ahora solo puedo procesar mensajes de texto. Escríbeme tu consulta y te ayudo enseguida.',
+          '¡Hola! 👋 Por ahora solo puedo procesar mensajes de texto o imágenes. Escríbeme tu consulta y te ayudo enseguida.',
           WA_TOKEN
         );
       }
@@ -435,7 +484,7 @@ REGLAS:
 2. Preséntate como Kenia con muchísima energía. Trátala de "amor", "bella" o "cariño".
 3. OPCIONAL Y SOLO SI TIENE SENTIDO: Lánzate un dato curioso o piropo gracioso y muy corto sobre su nombre o el maquillaje. Si su nombre es raro, sáltatelo. ¡Cero cosas aburridas o técnicas!
 4. Dile rapidito que estás para chismearle de sus pedidos, ofertas y ayudarla en todo.
-5. Invítala a tocar el botón de abajo usando emojis muy femeninos y expresivos (💅💋✨).
+5. Dile que si necesita más información le dé al botón de abajo, y si no, que te pregunte lo que quiera. Usa emojis femeninos (💅💋✨).
 
 Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
         const welcomeBody = {
@@ -466,7 +515,7 @@ Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
 
       // Fallback if AI failed
       if (!welcomeGreeting) {
-        welcomeGreeting = `¡Hola ${displayName}! 🌸 ¡Qué emoción conocerte! Soy Kenia, tu asesora personal de Kevin&Coco, y estoy feliz de ayudarte. Abajo tienes todas las cosas que puedo hacer por ti, ¡solo toca el botón! �`;
+        welcomeGreeting = `¡Hola ${displayName}! 🌸 ¡Qué emoción conocerte! Soy Kenia, tu asesora personal de Kevin&Coco. Si necesitas más información dale al botón de abajo, sino pregúntame lo que quieras. ✨`;
       }
 
       // Send the AI greeting fused into the interactive list menu (single message)
@@ -684,7 +733,10 @@ ${products.join('\n') || 'Sin productos.'}`;
                   missingText = `\n  ⚠️ PRODUCTOS FALTANTES: ${missingItems.map((it: any) => `${it.qty}x ${it.name}`).join(', ')}`;
                 }
               } catch (e) {}
-              return `- Pedido #${code} (ID: ${id}) | Total: $${o.TOTAL} | Estado: ${status}${missingText}`;
+              const agency = o.SHIPPINGAGENCY ? ` | Agencia: ${o.SHIPPINGAGENCY}` : '';
+              const tracking = o.TRACKINGNUMBER ? ` | Seguimiento: ${o.TRACKINGNUMBER}` : '';
+              const proof = o.SHIPPINGPROOFURL ? ` | Comprobante: ${o.SHIPPINGPROOFURL}` : '';
+              return `- Pedido #${code} (ID: ${id}) | Total: $${o.TOTAL} | Estado: ${status}${agency}${tracking}${proof}${missingText}`;
             });
             customerOrdersText = `\n\n## 📦 MIS PEDIDOS ACTIVOS:\n${ordersFormatted.join('\n')}`;
           }
@@ -757,14 +809,15 @@ ${products.join('\n') || 'Sin productos.'}`;
           }
         }
 
-        // Default products fallback if search yielded no results or was not run
-        if (relevantProducts.length === 0) {
+        // Default fallback: if no products were found via search, we load CATEGORIES instead of 50 products
+        let categoriesList: string[] = [];
+        if (relevantProducts.length === 0 && suggestedProducts.length === 0) {
           try {
-            const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
-            const productsRes = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit50]);
-            relevantProducts = productsRes.documents || [];
+            const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
+            const catRes = await serverListDocuments(CATEGORIES_COLLECTION_ID, [qLimit100]);
+            categoriesList = (catRes.documents || []).map((c: any) => `- ${c.name} (ID: ${c.$id})`);
           } catch (e) {
-            console.error('[WhatsApp Webhook] Fallback products query failed:', e);
+            console.error('[WhatsApp Webhook] Categories query failed:', e);
           }
         }
 
@@ -776,21 +829,28 @@ ${products.join('\n') || 'Sin productos.'}`;
           }
         });
 
-        // Format products with WHOLESALEPRICE if available
-        const productList = finalProducts.slice(0, 20).map((p: any) => {
-          const price = p.CURRENTPRICE || p.PRICE || 0;
-          const wholesalePrice = p.WHOLESALEPRICE || 0;
-          const stock = p.STOCK ?? 0;
-          const stockLabel = stock > 0 ? `✅ Disponible (${stock} uds)` : '❌ Sin stock';
-          
-          let priceText = `$${Number(price).toLocaleString('es-CL')}`;
-          if (wholesalePrice > 0) {
-            priceText += ` (Precio por mayor: $${Number(wholesalePrice).toLocaleString('es-CL')})`;
-          }
-          return `• *${p.NAME}* — ${priceText} | ${stockLabel}`;
-        });
+        let contextBlockAdditions = '';
+        if (finalProducts.length > 0) {
+          const productList = finalProducts.slice(0, 20).map((p: any) => {
+            const price = p.CURRENTPRICE || p.PRICE || 0;
+            const wholesalePrice = p.WHOLESALEPRICE || 0;
+            const stock = p.STOCK ?? 0;
+            const stockLabel = stock > 0 ? `✅ Disponible (${stock} uds)` : '❌ Sin stock';
+            
+            let priceText = `$${Number(price).toLocaleString('es-CL')}`;
+            if (wholesalePrice > 0) {
+              priceText += ` (Precio por mayor: $${Number(wholesalePrice).toLocaleString('es-CL')})`;
+            }
+            return `• *${p.NAME}* — ${priceText} | ${stockLabel}`;
+          });
+          contextBlockAdditions = `## 🛍️ PRODUCTOS BUSCADOS (${finalProducts.length} encontrados):\n${productList.join('\n')}`;
+        } else if (categoriesList.length > 0) {
+          contextBlockAdditions = `## 📁 CATEGORÍAS DISPONIBLES:\n(Recomienda estas categorías enviando el enlace de la tienda según el nombre)\n${categoriesList.join('\n')}`;
+        } else {
+          contextBlockAdditions = `No se encontraron productos ni categorías.`;
+        }
 
-        contextBlock = `${customerOrdersText}\n\n## 🛍️ CATÁLOGO DISPONIBLE (${finalProducts.length} productos en contexto):\n${productList.join('\n') || 'No se encontraron productos en el catálogo.'}\n\nSitio web: ${SITE_URL}`;
+        contextBlock = `${customerOrdersText}\n\n${contextBlockAdditions}\n\nSitio web: ${SITE_URL}`;
       }
     } catch (dbErr) {
       console.warn('[WhatsApp] DB context error:', dbErr);
@@ -870,7 +930,7 @@ ${products.join('\n') || 'Sin productos.'}`;
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }],
       })),
-      { role: 'user', parts: [{ text: userText }] },
+      { role: 'user', parts: [{ text: userText }, ...inlineDataParts] },
     ];
 
     const geminiBody = {
@@ -1073,6 +1133,37 @@ ${products.join('\n') || 'Sin productos.'}`;
         }
       } catch (err) {
         console.error('[WhatsApp Webhook] REPLY_CUSTOMER parsing error:', err);
+      }
+    }
+
+    // ── Action Parsing & Execution (SEARCH_SKU) ──────────────────────────────
+    if (!isAdmin) {
+      const searchSkuRegex = /\[ACTION:SEARCH_SKU\]([\s\S]*?)\[\/ACTION\]/;
+      const searchSkuMatch = rawText.match(searchSkuRegex);
+      if (searchSkuMatch) {
+        const skuCode = searchSkuMatch[1]?.trim()?.toUpperCase();
+        if (skuCode) {
+          try {
+            const qCode = JSON.stringify({ method: 'equal', attribute: 'SKU', values: [skuCode] });
+            const qName = JSON.stringify({ method: 'search', attribute: 'NAME', values: [skuCode] });
+            const resSku = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qCode, JSON.stringify({ method: 'limit', values: [1] })]);
+            let foundProd = resSku.documents?.[0];
+            
+            if (!foundProd) {
+               const resName = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qName, JSON.stringify({ method: 'limit', values: [1] })]);
+               foundProd = resName.documents?.[0];
+            }
+
+            if (foundProd) {
+              const prodLink = `${SITE_URL}/producto/${foundProd.$id}`;
+              aiReply = `¡Aquí tienes el producto que buscas amor! ✨\n*${foundProd.NAME}*\n🔗 ${prodLink}\n\n${aiReply}`.trim();
+            } else {
+              aiReply = `Mmm, busqué el código ${skuCode} amor, pero no logro encontrar el link exacto 🥺. ${aiReply}`.trim();
+            }
+          } catch (e) {
+            console.error('[WhatsApp Webhook] SEARCH_SKU intercept error:', e);
+          }
+        }
       }
     }
 

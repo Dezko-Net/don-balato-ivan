@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Product, Category } from '@/types';
 import { normalizeProductImages } from '@/lib/product-images';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
@@ -70,7 +70,20 @@ export default function CollectionAll5() {
   const { settings: apertura } = useAperturaPromotion();
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [selectedCat, setSelectedCat] = useState<string | null>(searchParams.get('categoria'));
+
+  const updateCategoryUrl = (catId: string | null) => {
+    const url = new URL(window.location.href);
+    if (catId) {
+      const cat = categories.find(c => c.$id === catId);
+      const slug = cat?.name?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || catId;
+      url.searchParams.set('categoria', slug);
+    } else {
+      url.searchParams.delete('categoria');
+    }
+    window.history.replaceState({}, '', url.toString());
+  };
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [priceRangeMounts, setPriceRangeMounts] = useState<HTMLElement[]>([]);
@@ -230,11 +243,13 @@ export default function CollectionAll5() {
       
       if (target.checked && matchedCategory) {
         setSelectedCat(matchedCategory.$id);
+        updateCategoryUrl(matchedCategory.$id);
         catInputs.forEach(other => {
           if (other !== target) (other as HTMLInputElement).checked = false;
         });
       } else {
         setSelectedCat(null);
+        updateCategoryUrl(null);
       }
     };
 
@@ -616,7 +631,7 @@ export default function CollectionAll5() {
         <div style={{ position: 'relative' }}>
           <select
             value={selectedCat || ''}
-            onChange={e => { setSelectedCat(e.target.value || null); }}
+            onChange={e => { const val = e.target.value || null; setSelectedCat(val); updateCategoryUrl(val); }}
             style={{
               padding: '10px 36px 10px 16px',
               borderRadius: 8,
