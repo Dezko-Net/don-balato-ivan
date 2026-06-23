@@ -266,6 +266,31 @@ export async function POST(req: NextRequest) {
     const msgId     = msg.id as string;
     const msgType   = msg.type as string;
 
+    // ── PREVENT WHATSAPP RETRIES (Duplicate msgId lock) ──
+    try {
+      const lockDocId = msgId.substring(0, 36); // Appwrite ID limit is 36 chars
+      const { serverGetDocument, serverCreateDocument } = await import('@/lib/appwrite-server');
+      const { ADMIN_CHAT_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+      
+      try {
+        await serverGetDocument(ADMIN_CHAT_COLLECTION_ID, `lk_${lockDocId}`);
+        // If found, this is a retry from WhatsApp. Ignore it.
+        console.log(`[WhatsApp] Ignoring duplicate webhook retry for msgId: ${msgId}`);
+        return NextResponse.json({ status: 'duplicate_ignored' });
+      } catch {
+        // Create lock
+        await serverCreateDocument(ADMIN_CHAT_COLLECTION_ID, `lk_${lockDocId}`, {
+           userId: `system:lock`,
+           senderRole: 'admin',
+           message: msgId,
+           readByUser: true,
+           readByAdmin: true
+        });
+      }
+    } catch (e) {
+      console.warn('[WhatsApp] Failed to process lock:', e);
+    }
+
     let userText = '';
     let interactiveId = '';
     let inlineDataParts: any[] = [];
