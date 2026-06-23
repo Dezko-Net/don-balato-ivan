@@ -53,6 +53,7 @@ export function getNotificationLink(doc: Record<string, unknown>): string | unde
 }
 
 const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
+  'pending',
   'processing',
   'paid',
   'assembling',
@@ -71,7 +72,10 @@ const ORDER_STATUS_COPY: Record<
   OrderStatus,
   { title: string; buildMessage: (code: string) => string } | null
 > = {
-  pending: null,
+  pending: {
+    title: 'Pedido Recibido',
+    buildMessage: (c) => `¡Hemos recibido tu pedido ${c}! Estamos a la espera del pago.`,
+  },
   processing: {
     title: 'Pago a verificar',
     buildMessage: (c) => `Tu pago del pedido ${c} está siendo verificado.`,
