@@ -196,6 +196,7 @@ export default function AdminIAWhatsAppPage() {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingTemplate, setSendingTemplate] = useState(false);
   const [savingBlock, setSavingBlock] = useState(false);
   const [promptTab, setPromptTab] = useState<'customer' | 'admin'>('customer');
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
@@ -409,6 +410,27 @@ export default function AdminIAWhatsAppPage() {
       showToast('error', error?.message || 'No se pudo enviar el mensaje');
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleSendTestTemplate(phone: string) {
+    if (!phone) return;
+    setSendingTemplate(true);
+    try {
+      const res = await fetch('/api/admin/ia/send-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!data?.success) throw new Error(data?.error || 'No se pudo enviar la plantilla');
+      await loadThread(phone);
+      await loadThreads(true);
+      showToast('success', 'Plantilla de prueba enviada');
+    } catch (error: any) {
+      showToast('error', error?.message || 'No se pudo enviar la plantilla');
+    } finally {
+      setSendingTemplate(false);
     }
   }
 
@@ -1321,6 +1343,16 @@ export default function AdminIAWhatsAppPage() {
                       <RefreshCw className="h-4 w-4" style={{ flexShrink:0 }} />
                       <span>Borrar historial de chat</span>
                     </div>
+                  </button>
+
+                  <button className="wa-action-btn active-green"
+                    onClick={() => handleSendTestTemplate(selectedPhone)}
+                    disabled={sendingTemplate}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+                      <Send className="h-4 w-4" style={{ flexShrink:0 }} />
+                      <span>Enviar plantilla de prueba</span>
+                    </div>
+                    {sendingTemplate && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   </button>
 
                   <button className="wa-action-btn active-red"
