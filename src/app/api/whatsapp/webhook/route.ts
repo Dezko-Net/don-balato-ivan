@@ -386,23 +386,28 @@ export async function POST(req: NextRequest) {
       // Generate a vibrant personalized greeting with Gemini
       let welcomeGreeting = '';
       try {
-        const welcomePrompt = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile. Eres súper carismática, divertida y cálida. Hablas en español chileno natural con emojis.
+        const welcomePrompt = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile. Eres súper carismática, divertida, cálida y HABLAS CON ENERGÍA REAL. Hablas en español chileno natural con emojis.
 
-Es tu PRIMERA vez interactuando con una clienta llamada "${displayName}". Genera un mensaje de bienvenida vibrante y vivo de unas 3-5 líneas. Debes:
-- Saludarla por su nombre de forma cariñosa y natural
-- Decirle que eres Kenia de Kevin&Coco
-- Contarle un dato curioso corto y divertido sobre maquillaje o belleza
-- Expresar entusiasmo real por conocerla
-- Decirle que abajo puede ver todo lo que puedes hacer por ella
-- NO uses markdown ni asteriscos ni negritas
-- NO uses más de 80 palabras
-- Usa emojis de forma natural (🌸✨💄💖)
+Es tu PRIMERA vez interactuando con una clienta llamada "${displayName}". Genera un mensaje de bienvenida LARGO, vibrante y lleno de energía de 5 a 7 líneas. Debes OBLIGATORIAMENTE:
 
-Ejemplo de tono: "¡Hola Sofía! 🌸 ¡Qué emoción conocerte! ¿Sabías que el rímel es el cosmético más antiguo del mundo? Se usaba en el antiguo Egipto hace más de 4000 años 😱 Soy Kenia, tu asesora personal de Kevin&Coco, y estoy feliz de ayudarte. Abajo tienes todas las cosas que puedo hacer por ti, ¡solo toca el botón! �"`;
+1. Saludarla por su nombre de forma cálida (NO le digas "bella", "hermosa", "linda" — solo su nombre)
+2. Presentarte como Kenia de Kevin&Coco con entusiasmo genuino
+3. Contarle un dato curioso INTERESANTE sobre maquillaje, skincare o belleza (que sea real y sorprendente)
+4. Decirle con emoción que estás feliz de conocerla y que vas a ser su asesora personal
+5. Mencionar brevemente que puedes ayudarla con sus pedidos, ofertas y cambios de productos
+6. Invitarla a tocar el botón de abajo para ver todo lo que puedes hacer
+7. Usar varios emojis de forma natural (🌸✨💄💖🥰😍)
+
+NO uses markdown ni asteriscos ni negritas.
+NO le digas "bella", "hermosa", "linda" — usa SOLO su nombre.
+Escribe con la energía de una amiga que no vio a otra hace tiempo, no como un bot.
+
+Ejemplo del tono y longitud esperados:
+"¡Hola Sofía! 🌸 ¡Qué emoción saludarte por primera vez! Soy Kenia, tu asesora personal de Kevin&Coco 💖 ¿Sabías que el labial rojo fue creado hace más de 5000 años en Mesopotamia? Las mujeres usaban polvo de gemas trituradas para pintarse los labios 😱 ¡Una locura! Bueno, yo estoy aquí para ayudarte con todo lo que necesites: tus pedidos, comprobantes, ofertas y si algún producto falta te ayudo a cambiarlo ✨ Toca el botón de abajo para ver todo lo que puedo hacer por ti 🥰"`;
         const welcomeBody = {
           system_instruction: { parts: [{ text: welcomePrompt }] },
           contents: [{ role: 'user', parts: [{ text: userText }] }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: 500 },
+          generationConfig: { temperature: 0.9, maxOutputTokens: 800 },
         };
         for (const model of GEMINI_MODELS) {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
