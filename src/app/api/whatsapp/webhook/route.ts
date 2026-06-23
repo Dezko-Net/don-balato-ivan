@@ -214,7 +214,7 @@ async function sendWelcomeMenu(phone: string, customerName: string, token: strin
     header: '✨ Bienvenida a Kenia',
     body,
     footer: 'Kevin&Coco · Tu tienda de belleza',
-    buttonText: 'Ver mis funciones 🌸',
+    buttonText: 'Descubre qué hago por ti 🌸',
     sections: [
       {
         title: 'Mis funciones',
@@ -264,18 +264,31 @@ export async function POST(req: NextRequest) {
     const msgId     = msg.id as string;
     const msgType   = msg.type as string;
 
-    // Only handle text messages for now
-    if (msgType !== 'text') {
-      await sendWhatsAppMessage(
-        fromPhone,
-        '¡Hola! 👋 Por ahora solo puedo procesar mensajes de texto. Escríbeme tu consulta y te ayudo enseguida.',
-        WA_TOKEN
-      );
-      return NextResponse.json({ status: 'non_text_ignored' });
+    let userText = '';
+    let interactiveId = '';
+
+    if (msgType === 'text') {
+      userText = (msg.text?.body as string || '').trim();
+    } else if (msgType === 'interactive') {
+      if (msg.interactive?.type === 'list_reply') {
+        userText = (msg.interactive.list_reply?.title as string || '').trim();
+        interactiveId = msg.interactive.list_reply?.id as string;
+      } else if (msg.interactive?.type === 'button_reply') {
+        userText = (msg.interactive.button_reply?.title as string || '').trim();
+        interactiveId = msg.interactive.button_reply?.id as string;
+      }
     }
 
-    const userText = (msg.text?.body as string || '').trim();
-    if (!userText) return NextResponse.json({ status: 'empty_text' });
+    if (!userText && !interactiveId) {
+      if (msgType !== 'text' && msgType !== 'interactive') {
+        await sendWhatsAppMessage(
+          fromPhone,
+          '¡Hola! 👋 Por ahora solo puedo procesar mensajes de texto. Escríbeme tu consulta y te ayudo enseguida.',
+          WA_TOKEN
+        );
+      }
+      return NextResponse.json({ status: 'non_text_ignored' });
+    }
 
     // Deduplication check
     try {
@@ -323,6 +336,34 @@ export async function POST(req: NextRequest) {
     // Si está en modo cliente, tratamos a este administrador como un cliente normal
     if (testAsClient) {
       isAdmin = false;
+    }
+
+    // Intercept interactive options before AI
+    if (!isAdmin && interactiveId) {
+      let interceptReply = '';
+      if (interactiveId === 'func_pedido') {
+        interceptReply = '📦 *Estado de tu pedido*\n\nTe mantendré al tanto de cada paso:\n1️⃣ *Confirmación*: Te aviso apenas validemos tu pago.\n2️⃣ *Preparación*: Cuando armemos tu paquetito en tienda.\n3️⃣ *Envío*: Te mando el número de seguimiento apenas salga hacia la agencia de despacho (normalmente de 1 a 2 días).\n\n¡Así no te pierdes de nada! ✨';
+      } else if (interactiveId === 'func_comprobante') {
+        interceptReply = '🧾 *Tus comprobantes*\n\nCuando pagues, solo tienes que subir la foto del comprobante desde los detalles de tu pedido en la página. Yo lo detectaré al instante y te confirmaré por aquí que ya lo recibimos para empezar a armar tu paquete. ¡Súper fácil! 🥰';
+      } else if (interactiveId === 'func_ofertas') {
+        interceptReply = '🔥 *Ofertas y Remates*\n\n¡Uuuh! Esta es mi parte favorita. Te mandaré mensajitos cuando tengamos descuentos exclusivos, rebajas de temporada o cuando el jefe se vuelva loco y remate productos a precio de costo. ¡Prepárate para cazar gangas! 💄🏃‍♀️';
+      } else if (interactiveId === 'func_negociacion') {
+        interceptReply = '🔄 *Cambio de faltantes*\n\nA veces algún producto se nos agota súper rápido. Si eso pasa con tu pedido, no te preocupes: te escribiré de inmediato para mostrarte otras opciones súper lindas del mismo valor o características para que elijas tu favorita y no te quedes sin tus cositas. 💕';
+      } else if (interactiveId === 'func_humano') {
+        const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+        const alertMsg = `🚨 *ASISTENCIA REQUERIDA*\n\nEl cliente +${fromPhone} presionó el botón de "Hablar con persona".\n🔗 ${process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl'}/admin/ia/whatsapp`;
+        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
+        
+        await setKeniaBlocked(fromPhone, true, 'admin_takeover');
+        interceptReply = '👤 *Hablar con una persona*\n\n¡Entendido! Acabo de notificar a alguien del equipo para que te atienda personalmente. Por favor dame un momentito mientras se conectan y te responden por aquí mismo. 🌸';
+      }
+
+      if (interceptReply) {
+        await sendWhatsAppMessage(fromPhone, interceptReply, WA_TOKEN);
+        await addToHistory(fromPhone, 'user', userText, msgId);
+        await addToHistory(fromPhone, 'assistant', interceptReply, `intercept-${Date.now()}`);
+        return NextResponse.json({ status: 'interactive_intercepted' });
+      }
     }
 
     // Mark as read
@@ -386,24 +427,17 @@ export async function POST(req: NextRequest) {
       // Generate a vibrant personalized greeting with Gemini
       let welcomeGreeting = '';
       try {
-        const welcomePrompt = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile. Eres súper carismática, divertida, cálida y HABLAS CON ENERGÍA REAL. Hablas en español chileno natural con emojis.
+        const welcomePrompt = `Eres Kenia, asesora de ventas de maquillaje de Kevin&Coco en Chile. Eres súper carismática, graciosa, desenvuelta y hablas con mucha vida y energía, sin sonar para nada formal ni como un bot. Hablas en español chileno natural.
 
-Es tu PRIMERA vez interactuando con una clienta llamada "${displayName}". Genera un mensaje de bienvenida LARGO, vibrante y lleno de energía de 5 a 7 líneas. Debes OBLIGATORIAMENTE:
+Es tu PRIMERA vez interactuando con "${displayName}". Escribe un mensaje de bienvenida SIMPLE, divertido y vibrante.
+REGLAS:
+1. Usa solo un diminutivo cariñoso de su primer nombre (Ej: si es Janpol di Jan, si es Eduardo di Edu, si es Guadalupe di Lupe).
+2. Preséntate como Kenia de Kevin&Coco de forma entusiasta.
+3. OPCIONAL Y SOLO SI TIENE SENTIDO: Menciona un dato curioso súper breve y gracioso sobre su nombre relacionado con la belleza o algo divertido. Si su nombre es raro o no se te ocurre algo natural, sáltate el dato curioso. ¡Cero historia de rímel aburrido!
+4. Explícale rápido que le puedes ayudar con sus compras, ofertas y estado de pedidos.
+5. Invítalo a tocar el botón de abajo usando emojis.
 
-1. Saludarla por su nombre de forma cálida (NO le digas "bella", "hermosa", "linda" — solo su nombre)
-2. Presentarte como Kenia de Kevin&Coco con entusiasmo genuino
-3. Contarle un dato curioso INTERESANTE sobre maquillaje, skincare o belleza (que sea real y sorprendente)
-4. Decirle con emoción que estás feliz de conocerla y que vas a ser su asesora personal
-5. Mencionar brevemente que puedes ayudarla con sus pedidos, ofertas y cambios de productos
-6. Invitarla a tocar el botón de abajo para ver todo lo que puedes hacer
-7. Usar varios emojis de forma natural (🌸✨💄💖🥰😍)
-
-NO uses markdown ni asteriscos ni negritas.
-NO le digas "bella", "hermosa", "linda" — usa SOLO su nombre.
-Escribe con la energía de una amiga que no vio a otra hace tiempo, no como un bot.
-
-Ejemplo del tono y longitud esperados:
-"¡Hola Sofía! 🌸 ¡Qué emoción saludarte por primera vez! Soy Kenia, tu asesora personal de Kevin&Coco 💖 ¿Sabías que el labial rojo fue creado hace más de 5000 años en Mesopotamia? Las mujeres usaban polvo de gemas trituradas para pintarse los labios 😱 ¡Una locura! Bueno, yo estoy aquí para ayudarte con todo lo que necesites: tus pedidos, comprobantes, ofertas y si algún producto falta te ayudo a cambiarlo ✨ Toca el botón de abajo para ver todo lo que puedo hacer por ti 🥰"`;
+Escribe con mucha confianza, humor y vida.`;
         const welcomeBody = {
           system_instruction: { parts: [{ text: welcomePrompt }] },
           contents: [{ role: 'user', parts: [{ text: userText }] }],
