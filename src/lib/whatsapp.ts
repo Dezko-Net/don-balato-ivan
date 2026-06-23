@@ -266,12 +266,27 @@ function splitText(text: string, maxLen: number): string[] {
 }
 
 export function formatWhatsAppPhone(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '').trim();
+  let cleaned = phone.replace(/\D/g, '').trim();
+  
+  // Meta's WhatsApp API for Chile (56) requires dropping the '9' for mobile numbers
+  // Example: +56 9 3659 9658 MUST be 5636599658, otherwise Meta throws "Invalid parameter"
+  if (cleaned.startsWith('569') && cleaned.length === 11) {
+    return '56' + cleaned.substring(3);
+  }
+  
   if (cleaned.startsWith('56')) {
     return cleaned;
   }
+  
   if (cleaned.length === 9 && cleaned.startsWith('9')) {
+    // Local Chilean number without country code
+    return '56' + cleaned.substring(1);
+  }
+  
+  if (cleaned.length === 8) {
+    // Local Chilean number without country code and without 9
     return '56' + cleaned;
   }
+  
   return cleaned;
 }
