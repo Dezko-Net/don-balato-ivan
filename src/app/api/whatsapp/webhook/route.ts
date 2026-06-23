@@ -962,9 +962,13 @@ ${products.join('\n') || 'Sin productos.'}`;
       }
     }
 
-    const basePrompt = isAdmin
+    let basePrompt = isAdmin
       ? (keniaConfig.adminPrompt || ADMIN_PROMPT)
       : hydratePrompt(keniaConfig.customerPrompt || CUSTOMER_PROMPT, SITE_URL);
+
+    if (!isAdmin) {
+      basePrompt += `\n\n## ⚠️ REGLA ESTRICTA DE ANTI-ALUCINACIÓN PARA PEDIDOS:\nSi la clienta pregunta por su pedido y la sección "MIS PEDIDOS ACTIVOS" está vacía o no existe en tu contexto, **TIENES ESTRICTAMENTE PROHIBIDO INVENTAR ENLACES O FALTANTES DE STOCK**. Debes responder EXACTAMENTE: "Uy hermosa, estoy buscando con tu numerito pero no logro encontrar tu pedido activo en el sistema 🥺. Déjame pedirle ayuda a las chicas para que lo busquen manualmente, ¡dame unos minutitos! 🏃‍♀️💨" y luego **AÑADIR OBLIGATORIAMENTE** al final de tu respuesta: [ACTION:ASK_ADMIN]El cliente pregunta por su pedido pero no encuentro ninguno activo en la base de datos.[/ACTION].`;
+    }
     const customerNameBlock = (!isAdmin && customerName) ? '\n\n## 👤 DATOS DEL CLIENTE:\nNombre: ' + customerName + '\n(Usa su nombre real para saludarla. Usa expresiones como "bella", "hermosa", "linda" solo ocasionalmente, no en cada frase.)' : '';
     const systemPrompt = basePrompt + timeBlock + contextBlock + customerNameBlock;
 
