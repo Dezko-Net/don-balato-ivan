@@ -207,9 +207,9 @@ async function lookupRegisteredUser(phone: string): Promise<{ name: string; emai
 }
 
 // Helper: send welcome menu as interactive list
-async function sendWelcomeMenu(phone: string, customerName: string, token: string) {
+async function sendWelcomeMenu(phone: string, customerName: string, token: string, customBody?: string) {
   const firstName = customerName.split(' ')[0] || customerName || 'bella';
-  const body = 'Estas son las cosas que puedo hacer por ti, ' + firstName + ' 🌸 toca una opción para saber más:';
+  const body = customBody || ('Estas son las cosas que puedo hacer por ti, ' + firstName + ' 🌸 toca una opción para saber más:');
   await sendWhatsAppList(phone, {
     header: '✨ Bienvenida a Kenia',
     body,
@@ -383,14 +383,26 @@ export async function POST(req: NextRequest) {
       const displayName = customerName || 'bella';
       await addToHistory(fromPhone, 'user', userText, msgId);
 
-      // Generate a short personalized greeting with Gemini (low tokens)
+      // Generate a vibrant personalized greeting with Gemini
       let welcomeGreeting = '';
       try {
-        const welcomePrompt = `Eres Kenia, asesora de la tienda Kevin&Coco de maquillaje en Chile. Es tu PRIMERA vez interactuando con una clienta llamada "${displayName}". Genera un saludo de bienvenida MUY corto (máximo 2-3 líneas), cálida y carismática. Incluye su nombre de forma natural. Puedes añadir un dato curioso corto sobre maquillaje o belleza si quieres. NO uses más de 50 palabras. Termina con algo como "toca el botón de abajo para ver todo lo que puedo hacer por ti 👇". No uses markdown ni asteriscos. Ejemplo: "¡Hola María! 🌸 Me encanta tu nombre, ¿sabías que el labial rojo es el cosmético más vendido del mundo? Soy Kenia y estoy feliz de conocerte. Toca el botón de abajo para ver todo lo que puedo hacer por ti 👇"`;
+        const welcomePrompt = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile. Eres súper carismática, divertida y cálida. Hablas en español chileno natural con emojis.
+
+Es tu PRIMERA vez interactuando con una clienta llamada "${displayName}". Genera un mensaje de bienvenida vibrante y vivo de unas 3-5 líneas. Debes:
+- Saludarla por su nombre de forma cariñosa y natural
+- Decirle que eres Kenia de Kevin&Coco
+- Contarle un dato curioso corto y divertido sobre maquillaje o belleza
+- Expresar entusiasmo real por conocerla
+- Decirle que abajo puede ver todo lo que puedes hacer por ella
+- NO uses markdown ni asteriscos ni negritas
+- NO uses más de 80 palabras
+- Usa emojis de forma natural (🌸✨💄💖)
+
+Ejemplo de tono: "¡Hola Sofía! 🌸 ¡Qué emoción conocerte! ¿Sabías que el rímel es el cosmético más antiguo del mundo? Se usaba en el antiguo Egipto hace más de 4000 años 😱 Soy Kenia, tu asesora personal de Kevin&Coco, y estoy feliz de ayudarte. Abajo tienes todas las cosas que puedo hacer por ti, ¡solo toca el botón! �"`;
         const welcomeBody = {
           system_instruction: { parts: [{ text: welcomePrompt }] },
           contents: [{ role: 'user', parts: [{ text: userText }] }],
-          generationConfig: { temperature: 0.8, maxOutputTokens: 150 },
+          generationConfig: { temperature: 0.9, maxOutputTokens: 500 },
         };
         for (const model of GEMINI_MODELS) {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
@@ -415,17 +427,12 @@ export async function POST(req: NextRequest) {
 
       // Fallback if AI failed
       if (!welcomeGreeting) {
-        welcomeGreeting = `¡Hola ${displayName}! 🌸 Soy Kenia, tu asesora personal de Kevin&Coco. ¡Estoy feliz de conocerte! Toca el botón de abajo para ver todo lo que puedo hacer por ti 👇`;
+        welcomeGreeting = `¡Hola ${displayName}! 🌸 ¡Qué emoción conocerte! Soy Kenia, tu asesora personal de Kevin&Coco, y estoy feliz de ayudarte. Abajo tienes todas las cosas que puedo hacer por ti, ¡solo toca el botón! �`;
       }
 
-      // Send the AI greeting as a text message
-      await sendWhatsAppMessage(fromPhone, welcomeGreeting, WA_TOKEN);
+      // Send the AI greeting fused into the interactive list menu (single message)
+      await sendWelcomeMenu(fromPhone, displayName, WA_TOKEN, welcomeGreeting);
       await addToHistory(fromPhone, 'assistant', welcomeGreeting, msgId);
-
-      // Send the interactive list menu as a separate message
-      await sendWelcomeMenu(fromPhone, displayName, WA_TOKEN);
-      const menuSummary = 'Menú de bienvenida enviado (lista interactiva con 5 funciones).';
-      await addToHistory(fromPhone, 'assistant', menuSummary);
 
       await recordKeniaUsage(fromPhone, { welcomeShown: true });
       return NextResponse.json({ status: 'welcome_menu_sent' });
