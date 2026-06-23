@@ -738,16 +738,24 @@ ${products.join('\n') || 'Sin productos.'}`;
         let customerOrdersText = '';
         let myOrders: any[] = [];
         try {
-          // Some basic normalizations to find the phone in DB
-          let normalizedPhone = cleanedFrom;
-          if (normalizedPhone.startsWith('56') && normalizedPhone.length > 9) {
-             normalizedPhone = normalizedPhone.substring(2);
-          }
-          const qPhone = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERPHONE', values: [cleanedFrom, `+${cleanedFrom}`, fromPhone, normalizedPhone, `+56${normalizedPhone}`, `56${normalizedPhone}`] });
+          // Fetch recent orders and filter by phone in-memory to bypass formatting issues (spaces, +, etc)
           const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-          const qLimit5 = JSON.stringify({ method: 'limit', values: [5] });
-          const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qPhone, qOrderDesc, qLimit5]);
-          myOrders = resOrders.documents || [];
+          const qLimit500 = JSON.stringify({ method: 'limit', values: [500] });
+          const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit500]);
+          
+          myOrders = (resOrders.documents || [])
+            .filter((o: any) => {
+              const oPhone = String(o.CUSTOMERPHONE || '');
+              if (!oPhone) return false;
+              // using phonesMatch logic (last 8 digits)
+              const cleanA = oPhone.replace(/\D/g, '');
+              const cleanB = fromPhone.replace(/\D/g, '');
+              if (cleanA === cleanB) return true;
+              const tailA = cleanA.slice(-8);
+              const tailB = cleanB.slice(-8);
+              return tailA.length === 8 && tailA === tailB;
+            })
+            .slice(0, 5);
           
           if (myOrders.length > 0) {
             const ordersFormatted = myOrders.map((o: any) => {
