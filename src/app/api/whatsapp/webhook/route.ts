@@ -172,27 +172,33 @@ function phonesMatch(a: string, b: string): boolean {
 async function lookupRegisteredUser(phone: string): Promise<{ name: string; email: string } | null> {
   try {
     const cleaned = phone.replace(/\D/g, '');
-    const tail8 = cleaned.slice(-8);
-    // Try exact match first
-    const qPhone = JSON.stringify({ method: 'equal', attribute: 'phone', values: [cleaned, '+' + cleaned, '56' + tail8, '+56' + tail8, '9' + tail8, '+569' + tail8] });
-    const qLimit = JSON.stringify({ method: 'limit', values: [10] });
-    const res = await serverListDocuments(USERS_COLLECTION_ID, [qPhone, qLimit]);
-    if (res.documents && res.documents.length > 0) {
-      const doc = res.documents[0] as any;
-      return { name: doc.name || doc.NAME || '', email: doc.email || doc.EMAIL || '' };
-    }
-    // Fallback: fetch recent users and match by last 8 digits
-    const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+    console.log('[WhatsApp Webhook] lookupRegisteredUser: searching for phone:', cleaned);
+
+    // Fetch recent users (up to 500) and match by phone in-memory
+    // This avoids Appwrite query format/index issues with the phone attribute
+    const qLimit500 = JSON.stringify({ method: 'limit', values: [500] });
     const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-    const resAll = await serverListDocuments(USERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
-    const match = (resAll.documents || []).find((doc: any) => {
-      const docPhone = String(doc.phone || doc.PHONE || '');
-      return docPhone && phonesMatch(docPhone, cleaned);
-    });
-    if (match) {
-      const m = match as any;
-      return { name: m.name || m.NAME || '', email: m.email || m.EMAIL || '' };
+    const res = await serverListDocuments(USERS_COLLECTION_ID, [qOrderDesc, qLimit500]);
+    const docs = res.documents || [];
+    console.log('[WhatsApp Webhook] lookupRegisteredUser: fetched', docs.length, 'users from collection');
+
+    // Search for a matching phone
+    for (const doc of docs as any[]) {
+      const docPhone = String(doc.phone || '').replace(/\D/g, '');
+      if (!docPhone) continue;
+      if (phonesMatch(docPhone, cleaned)) {
+        const name = doc.name || '';
+        const email = doc.email || '';
+        console.log('[WhatsApp Webhook] lookupRegisteredUser: MATCH FOUND! name:', name, 'phone:', docPhone);
+        return { name, email };
+      }
     }
+
+    console.log('[WhatsApp Webhook] lookupRegisteredUser: no match found among', docs.length, 'users');
+    // Log some sample phones for debugging
+    const samplePhones = docs.slice(0, 10).map((d: any) => d.phone || '(empty)');
+    console.log('[WhatsApp Webhook] lookupRegisteredUser: sample phones in DB:', samplePhones);
+
     return null;
   } catch (e) {
     console.warn('[WhatsApp Webhook] lookupRegisteredUser error:', e);
