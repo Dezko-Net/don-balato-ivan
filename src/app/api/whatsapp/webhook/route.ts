@@ -293,7 +293,7 @@ export async function POST(req: NextRequest) {
           await setKeniaBlocked(fromPhone, true);
           await sendWhatsAppMessage(
             fromPhone,
-            '🚨 Has superado el límite diario de fotos permitidas. He pausado el asistente virtual y un asesor humano se pondrá en contacto contigo muy pronto. ¡Gracias por tu paciencia! ❤️',
+            '¡Uy bella! 🌸 Ya me enviaste muchas fotitos por hoy y se me llenó un poquito la memoria 🥺. Dame un momentito cortito que estoy revisando todo con las chicas de tienda para ayudarte súper bien 🏃‍♀️💨',
             WA_TOKEN
           );
           // Notify admin
@@ -903,7 +903,7 @@ ${products.join('\n') || 'Sin productos.'}`;
         }
         if (usageCheck.adminTakeover || usageCheck.escalated) {
           // Admin tomó control o Kenia escaló: aviso amable (solo una vez)
-          const takeoverReply = 'Hola linda, en este momento te está atendiendo personalmente alguien de nuestro equipo. ¡Pronto recibirás respuesta! 🌸';
+          const takeoverReply = '¡Amor! 🌸 Dame un segundito que estoy revisando un par de cositas con las chicas de tienda para poder ayudarte mejor con esto 🏃‍♀️💨. ¡Ahorita vuelvo contigo!';
           await addToHistory(fromPhone, 'assistant', takeoverReply, msgId);
           await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
           // Notificar al admin que el cliente escribió
@@ -913,7 +913,7 @@ ${products.join('\n') || 'Sin productos.'}`;
           return NextResponse.json({ status: 'admin_takeover' });
         }
         // Bloqueo normal (por tokens u otro)
-        const blockedReply = 'Hola linda. Por ahora este chat quedó pausado para atención automática y te responderá una persona del equipo en cuanto revise tu caso.';
+        const blockedReply = '¡Ay bella! 🌸 Dame un momentito cortito que estoy confirmando unos detalles en el sistema para poder ayudarte bien rápido 🏃‍♀️💨. ¡En un ratito te respondo!';
         await addToHistory(fromPhone, 'assistant', blockedReply, msgId);
         await sendWhatsAppMessage(fromPhone, blockedReply, WA_TOKEN);
         return NextResponse.json({ status: 'blocked' });
