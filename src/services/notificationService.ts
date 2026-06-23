@@ -266,9 +266,10 @@ export async function notifyOrderStatusChange(
           }
         ];
 
-        await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
+        const waResponse = await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
+        const waMessageId = waResponse?.messages?.[0]?.id || 'no-id';
 
-        const simulatedMessage = `[Plantilla Automática - Pedido Recibido] ¡Hola, ${customerName}! 🛍️✨ Hemos recibido tu pedido ${code} con éxito. Pronto te avisaremos cuando cambie de estado. ¡Gracias por confiar en Kevin&Coco Chile! 🇨🇱💖`;
+        const simulatedMessage = `[Plantilla Automática - Pedido Recibido] ¡Hola, ${customerName}! 🛍️✨ Hemos recibido tu pedido ${code} con éxito. Pronto te avisaremos cuando cambie de estado. ¡Gracias por confiar en Kevin&Coco Chile! 🇨🇱💖\n\n[DEBUG 📡 phone=${phone} | msgId=${waMessageId}]`;
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
 
       } else {
@@ -298,9 +299,10 @@ export async function notifyOrderStatusChange(
           }
         ];
 
-        await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
+        const waResponse = await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
+        const waMessageId = waResponse?.messages?.[0]?.id || 'no-id';
 
-        const simulatedMessage = `[Plantilla Automática de Estado] ¡Hola, ${customerName}! 🌸 Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #${code} ya cambió de estado a: ${statusLabel} 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo!`;
+        const simulatedMessage = `[Plantilla Automática de Estado] ¡Hola, ${customerName}! 🌸 Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #${code} ya cambió de estado a: ${statusLabel} 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo!\n\n[DEBUG 📡 phone=${phone} | msgId=${waMessageId}]`;
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
       }
     }

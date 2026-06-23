@@ -124,7 +124,7 @@ export async function sendWhatsAppTemplate(
   languageCode: string,
   components: any[],
   token: string
-): Promise<void> {
+): Promise<any> {
   if (!token || !WA_PHONE_NUMBER_ID) {
     throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
   }
@@ -144,6 +144,8 @@ export async function sendWhatsAppTemplate(
     },
   };
 
+  console.log('[WhatsApp] Sending template to:', to, '| template:', templateName, '| lang:', languageCode);
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -161,6 +163,7 @@ export async function sendWhatsAppTemplate(
 
   const data = await res.json();
   console.log('[WhatsApp] Template sent successfully. Response:', JSON.stringify(data));
+  return data;
 }
 
 // ─── Send an Interactive List message (menu) ───────────────────────────────────
@@ -268,10 +271,11 @@ function splitText(text: string, maxLen: number): string[] {
 export function formatWhatsAppPhone(phone: string): string {
   let cleaned = phone.replace(/\D/g, '').trim();
   
-  // Meta's WhatsApp API for Chile (56) requires dropping the '9' for mobile numbers
-  // Example: +56 9 3659 9658 MUST be 5636599658, otherwise Meta throws "Invalid parameter"
+  // E.164 for Chile mobile: 569XXXXXXXX (11 digits, WITH the 9 mobile prefix)
+  // WhatsApp stores numbers in E.164 format — the 9 MUST be included
+  // Previously we dropped the 9 which caused templates to go to a non-existent number
   if (cleaned.startsWith('569') && cleaned.length === 11) {
-    return '56' + cleaned.substring(3);
+    return cleaned; // Already in correct E.164 format: 569XXXXXXXX
   }
   
   if (cleaned.startsWith('56')) {
@@ -279,12 +283,12 @@ export function formatWhatsAppPhone(phone: string): string {
   }
   
   if (cleaned.length === 9 && cleaned.startsWith('9')) {
-    // Local Chilean number without country code
-    return '56' + cleaned.substring(1);
+    // Local Chilean mobile without country code: 9XXXXXXXX → 569XXXXXXXX
+    return '56' + cleaned;
   }
   
   if (cleaned.length === 8) {
-    // Local Chilean number without country code and without 9
+    // Local Chilean landline without country code or mobile prefix
     return '56' + cleaned;
   }
   
