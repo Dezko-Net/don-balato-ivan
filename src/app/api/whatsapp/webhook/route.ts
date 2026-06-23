@@ -324,22 +324,25 @@ export async function POST(req: NextRequest) {
 
     // Check if Kenia is globally disabled
     if (keniaConfig.isEnabled === false) {
-      // Si el admin está en modo cliente, permite bypass del mantenimiento
-      if (!testAsClient) {
-        if (!isAdmin) {
-          // Cliente real: enviar aviso de mantenimiento una sola vez
-          const usageMaint = await getKeniaUsage(fromPhone);
-          if (!usageMaint.maintenanceNotified) {
-            const maintenanceReply = 'Hola linda. Por el momento nuestro asistente virtual de WhatsApp se encuentra desactivado. Responderemos tu consulta de forma manual a la brevedad. ¡Muchas gracias por tu paciencia! 🌸';
-            await addToHistory(fromPhone, 'assistant', maintenanceReply, msgId);
-            await sendWhatsAppMessage(fromPhone, maintenanceReply, WA_TOKEN);
-            await recordKeniaUsage(fromPhone, { maintenanceNotified: true });
+      // Debug phone bypasses maintenance when debugMode is active
+      if (!(debugMode && cleanedFrom === DEBUG_PHONE)) {
+        // Si el admin está en modo cliente, permite bypass del mantenimiento
+        if (!testAsClient) {
+          if (!isAdmin) {
+            // Cliente real: enviar aviso de mantenimiento una sola vez
+            const usageMaint = await getKeniaUsage(fromPhone);
+            if (!usageMaint.maintenanceNotified) {
+              const maintenanceReply = 'Hola linda. Por el momento nuestro asistente virtual de WhatsApp se encuentra desactivado. Responderemos tu consulta de forma manual a la brevedad. ¡Muchas gracias por tu paciencia! 🌸';
+              await addToHistory(fromPhone, 'assistant', maintenanceReply, msgId);
+              await sendWhatsAppMessage(fromPhone, maintenanceReply, WA_TOKEN);
+              await recordKeniaUsage(fromPhone, { maintenanceNotified: true });
+            }
+            return NextResponse.json({ status: 'maintenance' });
           }
-          return NextResponse.json({ status: 'maintenance' });
+          // Admin normal (sin modo cliente): pasa libremente, no se bloquea
         }
-        // Admin normal (sin modo cliente): pasa libremente, no se bloquea
+        // testAsClient === true: bypass total del mantenimiento
       }
-      // testAsClient === true: bypass total del mantenimiento
     }
 
     // Handle "limpiar historial" command
