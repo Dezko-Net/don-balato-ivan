@@ -284,8 +284,14 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanedFrom = fromPhone.replace(/\D/g, '').trim();
+    const keniaConfig = await getKeniaConfig();
+    const debugMode = keniaConfig.debugMode === true;
+    const DEBUG_PHONE = '56992139185';
     let isAdmin = ADMIN_PHONES.includes(cleanedFrom);
-    console.log(`[WhatsApp Webhook] Msg from: ${fromPhone} (cleaned: ${cleanedFrom}) | isAdmin: ${isAdmin} | Admin list:`, ADMIN_PHONES);
+    if (debugMode && cleanedFrom === DEBUG_PHONE) {
+      isAdmin = false;
+    }
+    console.log(`[WhatsApp Webhook] Msg from: ${fromPhone} (cleaned: ${cleanedFrom}) | isAdmin: ${isAdmin} | debugMode: ${debugMode} | Admin list:`, ADMIN_PHONES);
 
     // Obtener uso actual del remitente
     const usage = await getKeniaUsage(fromPhone);
@@ -312,8 +318,6 @@ export async function POST(req: NextRequest) {
     if (testAsClient) {
       isAdmin = false;
     }
-
-    const keniaConfig = await getKeniaConfig();
 
     // Mark as read
     await markAsRead(msgId, WA_TOKEN);

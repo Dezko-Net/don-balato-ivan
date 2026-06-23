@@ -118,6 +118,7 @@ export interface KeniaConfig {
   messageThresholdForPause: number;
   updatedAt: string;
   isEnabled: boolean;
+  debugMode?: boolean;
 }
 
 export interface KeniaUsageEntry {
@@ -157,6 +158,7 @@ function getDefaultConfig(): KeniaConfig {
     messageThresholdForPause: 10,
     updatedAt: new Date().toISOString(),
     isEnabled: true,
+    debugMode: false,
   };
 }
 
@@ -174,6 +176,7 @@ async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
         messageThresholdForPause: parsed.messageThresholdForPause || 10,
         updatedAt: parsed.updatedAt || new Date().toISOString(),
         isEnabled: parsed.isEnabled !== false,
+        debugMode: parsed.debugMode === true,
         blockedPhones: Array.isArray(parsed.blockedPhones) ? parsed.blockedPhones : [],
       };
     }
@@ -251,6 +254,7 @@ export async function getKeniaConfig(): Promise<KeniaConfig> {
     messageThresholdForPause: dbConfig.messageThresholdForPause,
     updatedAt: dbConfig.updatedAt,
     isEnabled: dbConfig.isEnabled,
+    debugMode: dbConfig.debugMode,
   };
 }
 
@@ -265,6 +269,7 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
     smartNotifications: partial.smartNotifications ?? dbConfig.smartNotifications,
     messageThresholdForPause: Math.max(1, Number(partial.messageThresholdForPause ?? dbConfig.messageThresholdForPause) || dbConfig.messageThresholdForPause),
     isEnabled: partial.isEnabled ?? dbConfig.isEnabled,
+    debugMode: partial.debugMode ?? dbConfig.debugMode ?? false,
     updatedAt: new Date().toISOString(),
   };
   await saveConfigToAppwrite(nextConfig);
@@ -276,6 +281,7 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
     smartNotifications: nextConfig.smartNotifications,
     messageThresholdForPause: nextConfig.messageThresholdForPause,
     isEnabled: nextConfig.isEnabled,
+    debugMode: nextConfig.debugMode,
     updatedAt: nextConfig.updatedAt,
   };
 }
@@ -401,6 +407,13 @@ export async function recordKeniaUsage(
   return usageMap[cleaned];
 }
 
+export async function resetKeniaUsage(phone: string): Promise<void> {
+  const cleaned = normalizePhone(phone);
+  const usageMap = await readUsageFromFile();
+  delete usageMap[cleaned];
+  await writeUsageToFile(usageMap);
+}
+
 export async function getKeniaRuntimeSnapshot(): Promise<{ config: KeniaConfig; usage: Record<string, KeniaUsageEntry> }> {
   const dbConfig = await fetchConfigFromAppwrite();
   const usageMap = await readUsageFromFile();
@@ -424,13 +437,6 @@ export async function getKeniaRuntimeSnapshot(): Promise<{ config: KeniaConfig; 
     },
     usage: hydratedUsage,
   };
-}
-
-export async function resetKeniaUsage(phone: string): Promise<void> {
-  const cleaned = normalizePhone(phone);
-  const usageMap = await readUsageFromFile();
-  delete usageMap[cleaned];
-  await writeUsageToFile(usageMap);
 }
 
 export async function deleteKeniaPhone(phone: string): Promise<void> {

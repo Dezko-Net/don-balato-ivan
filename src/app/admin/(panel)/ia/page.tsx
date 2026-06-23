@@ -5,11 +5,14 @@ import Link from 'next/link';
 import {
   AlertTriangle,
   Bot,
+  Bug,
   CheckCheck,
   ChevronRight,
+  Eraser,
   Loader2,
   MessageCircle,
   Phone,
+  PlayCircle,
   RefreshCw,
   Save,
   Shield,
@@ -33,6 +36,7 @@ type KeniaConfig = {
   messageThresholdForPause: number;
   updatedAt: string;
   isEnabled: boolean;
+  debugMode?: boolean;
 };
 
 type ThreadStats = {
@@ -86,6 +90,10 @@ export default function AdminIAPage() {
   const [promptTab, setPromptTab] = useState<'customer' | 'admin'>('customer');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<{ messageCount: number; welcomeShown: boolean; blocked: boolean } | null>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
+  const [debugResult, setDebugResult] = useState<string | null>(null);
 
   const loadConfig = useCallback(async () => {
     setLoadingConfig(true);
@@ -105,10 +113,54 @@ export default function AdminIAPage() {
     } finally { setLoadingThreads(false); }
   }, []);
 
+  const loadDebugInfo = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/ia/debug', { cache: 'no-store' });
+      const data = await res.json();
+      if (data?.success) {
+        setDebugMode(data.debugMode || false);
+        setDebugInfo({
+          messageCount: data.usage?.messageCount || 0,
+          welcomeShown: data.usage?.welcomeShown || false,
+          blocked: data.usage?.blocked || false,
+        });
+      }
+    } catch {}
+  }, []);
+
+  async function handleDebugAction(action: string) {
+    setDebugLoading(true);
+    setDebugResult(null);
+    try {
+      const res = await fetch('/api/admin/ia/debug', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        if (action === 'toggleDebug') {
+          setDebugMode(data.debugMode);
+          showToast('success', data.debugMode ? 'Modo depuración activado' : 'Modo depuración desactivado');
+        } else if (action === 'resetUser') {
+          showToast('success', 'Usuario 56992139185 reseteado');
+        } else if (action === 'simulateRegisterClick') {
+          setDebugResult(data.message || '');
+        }
+        await loadDebugInfo();
+      } else {
+        showToast('error', data?.error || 'Error');
+      }
+    } catch {
+      showToast('error', 'Error de conexion');
+    } finally { setDebugLoading(false); }
+  }
+
   useEffect(() => {
     loadConfig();
     loadThreads();
-  }, [loadConfig, loadThreads]);
+    loadDebugInfo();
+  }, [loadConfig, loadThreads, loadDebugInfo]);
 
   function showToast(type: 'success' | 'error', text: string) {
     setMessage({ type, text });
@@ -421,6 +473,56 @@ export default function AdminIAPage() {
                     <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{item.value}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* ═══ DEPURACION ═══ */}
+            <div className="ia-card" style={{ padding: '18px 20px', border: debugMode ? '2px solid #f59e0b' : '1px solid #e2e8f0', background: debugMode ? '#fffbeb' : '#fff' }}>
+              <p className="ia-section-title" style={{ color: debugMode ? '#d97706' : '#94a3b8' }}>
+                <Bug style={{ width: 13, height: 13 }} /> Depuracion
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: debugMode ? '#fef3c7' : '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 14px' }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Modo depuracion</p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>56992139185 deja de ser admin</p>
+                  </div>
+                  <div style={{ position: 'relative', width: 44, height: 24, flexShrink: 0 }}>
+                    <input type="checkbox" checked={debugMode} onChange={() => handleDebugAction('toggleDebug')} disabled={debugLoading} style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
+                    <div onClick={() => !debugLoading && handleDebugAction('toggleDebug')} style={{ position: 'absolute', inset: 0, borderRadius: 12, background: debugMode ? '#f59e0b' : '#cbd5e1', cursor: debugLoading ? 'not-allowed' : 'pointer', transition: 'background .2s' }}>
+                      <div style={{ position: 'absolute', top: 2, left: debugMode ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left .2s' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {debugInfo && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#f1f5f9', color: '#475569' }}>Mensajes: {debugInfo.messageCount}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: debugInfo.welcomeShown ? '#dcfce7' : '#f1f5f9', color: debugInfo.welcomeShown ? '#16a34a' : '#475569' }}>
+                      {debugInfo.welcomeShown ? 'Bienvenida mostrada' : 'Bienvenida pendiente'}
+                    </span>
+                    {debugInfo.blocked && <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#fee2e2', color: '#dc2626' }}>Bloqueado</span>}
+                  </div>
+                )}
+
+                <button onClick={() => handleDebugAction('resetUser')} disabled={debugLoading}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '10px 14px', borderRadius: 12, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', fontSize: 13, fontWeight: 700, cursor: debugLoading ? 'not-allowed' : 'pointer', transition: 'all .15s' }}>
+                  {debugLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Eraser style={{ width: 14, height: 14 }} />}
+                  Resetear 56992139185
+                </button>
+
+                <button onClick={() => handleDebugAction('simulateRegisterClick')} disabled={debugLoading}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '10px 14px', borderRadius: 12, border: '1px solid #c7d2fe', background: '#eef2ff', color: '#4f46e5', fontSize: 13, fontWeight: 700, cursor: debugLoading ? 'not-allowed' : 'pointer', transition: 'all .15s' }}>
+                  {debugLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <PlayCircle style={{ width: 14, height: 14 }} />}
+                  Simular click "Registrate con Kenia"
+                </button>
+
+                {debugResult && (
+                  <div style={{ marginTop: 4, padding: '12px 14px', borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: 12.5, color: '#166534', lineHeight: 1.5 }}>
+                    {debugResult}
+                  </div>
+                )}
               </div>
             </div>
 
