@@ -66,7 +66,6 @@ export default function BulkDeletePage() {
           // Find product by SKU (check FEATURES, TAGS, or jumpseller_id)
           const product = allProductsDocs.find((p: any) => {
             const features = p.FEATURES || '';
-            const tags = p.TAGS || '';
             const jumpId = p.jumpseller_id || '';
             
             // Check FEATURES for SKU pattern
@@ -74,7 +73,12 @@ export default function BulkDeletePage() {
             if (featMatch && featMatch[1].trim() === sku) return true;
             
             // Check TAGS for SKU
-            const tagParts = tags.split(',').map((t: string) => t.trim());
+            let tagParts: string[] = [];
+            if (Array.isArray(p.TAGS)) {
+              tagParts = p.TAGS.map((t: any) => String(t).trim());
+            } else if (typeof p.TAGS === 'string') {
+              tagParts = p.TAGS.split(',').map((t: string) => t.trim());
+            }
             if (tagParts.includes(sku)) return true;
             
             // Check jumpseller_id
