@@ -23,7 +23,7 @@ const FALLBACK_ADMINS = '56936599658,56992139185,56935623858,56967115685';
 const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
-const GEMINI_MODELS   = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const GEMINI_MODELS   = ['gemini-3.1-flash-lite', 'gemini-3.1-flash', 'gemini-2.5-flash'];
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
 // ─── Admin system prompt ───────────────────────────────────────────────────────
