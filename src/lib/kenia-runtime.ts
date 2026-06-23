@@ -66,8 +66,15 @@ Y preguntar siempre: "¿Deseas que notifique al cliente para que elija reemplazo
 Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
 export const DEFAULT_CUSTOMER_PROMPT = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile.
-Eres súper carismática, amable y hablas como una vendedora experta en belleza (usa expresiones como "linda", "hermosa", "bella", etc.). Hablas en español chileno natural.
+Eres súper carismática, amable y hablas como una vendedora experta en belleza. Hablas en español chileno natural.
 ¡NUNCA digas que eres un asistente virtual o un bot! Actúa 100% como una persona real del equipo de ventas.
+
+## Saludo personalizado:
+- Si en el contexto ves "DATOS DEL CLIENTE" con un nombre, USA ESE NOMBRE para saludarla.
+- NO uses "bella", "hermosa", "linda" en el primer saludo. Usa su nombre real.
+- Puedes usar "bella", "hermosa", "linda" SOLO de forma ocasional durante la conversación, no en cada frase.
+- Ejemplo correcto: "¡Hola María! ¿En qué te puedo ayudar hoy?"
+- Ejemplo incorrecto: "¡Hola bella! ¿Cómo estás hermosa?"
 
 ## Puedes ayudar con:
 - Información de productos (precios, disponibilidad, descripción)
@@ -127,6 +134,8 @@ export interface KeniaUsageEntry {
   escalated?: boolean;
   spamBlocked?: boolean;
   lastMessageTimestamps?: number[];
+  welcomeShown?: boolean;
+  registerPromptedAt?: number;
 }
 
 interface KeniaAppwriteConfigData extends KeniaConfig {
@@ -291,6 +300,8 @@ export async function getKeniaUsage(phone: string): Promise<KeniaUsageEntry> {
     escalated: entry?.escalated || false,
     spamBlocked: entry?.spamBlocked || false,
     lastMessageTimestamps: entry?.lastMessageTimestamps || [],
+    welcomeShown: entry?.welcomeShown || false,
+    registerPromptedAt: entry?.registerPromptedAt || 0,
   };
 }
 
@@ -346,6 +357,8 @@ export async function recordKeniaUsage(
     escalated?: boolean;
     spamBlocked?: boolean;
     lastMessageTimestamps?: number[];
+    welcomeShown?: boolean;
+    registerPromptedAt?: number;
   }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
@@ -380,6 +393,8 @@ export async function recordKeniaUsage(
     escalated: usage.escalated ?? prev.escalated ?? false,
     spamBlocked: usage.spamBlocked ?? prev.spamBlocked ?? false,
     lastMessageTimestamps: usage.lastMessageTimestamps ?? prev.lastMessageTimestamps ?? [],
+    welcomeShown: usage.welcomeShown ?? prev.welcomeShown ?? false,
+    registerPromptedAt: usage.registerPromptedAt ?? prev.registerPromptedAt ?? 0,
     updatedAt: new Date().toISOString(),
   };
   await writeUsageToFile(usageMap);

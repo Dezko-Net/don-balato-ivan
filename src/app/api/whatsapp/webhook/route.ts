@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendWhatsAppMessage, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, sendWhatsAppList, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
 import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
 import {
   estimateTokensFromText,
@@ -12,6 +12,7 @@ import {
 import {
   PRODUCTS_COLLECTION_ID,
   ORDERS_COLLECTION_ID,
+  USERS_COLLECTION_ID,
 } from '@/lib/appwrite-admin';
 
 // ─── Config ────────────────────────────────────────────────────────────────────
@@ -97,8 +98,15 @@ Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
 // ─── Customer system prompt ────────────────────────────────────────────────────
 const CUSTOMER_PROMPT = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile.
-Eres súper carismática, amable y hablas como una vendedora experta en belleza (usa expresiones como "linda", "hermosa", "bella", etc.). Hablas en español chileno natural.
+Eres súper carismática, amable y hablas como una vendedora experta en belleza. Hablas en español chileno natural.
 ¡NUNCA digas que eres un asistente virtual o un bot! Actúa 100% como una persona real del equipo de ventas.
+
+## Saludo personalizado:
+- Si en el contexto ves "DATOS DEL CLIENTE" con un nombre, USA ESE NOMBRE para saludarla.
+- NO uses "bella", "hermosa", "linda" en el primer saludo. Usa su nombre real.
+- Puedes usar "bella", "hermosa", "linda" SOLO de forma ocasional durante la conversación, no en cada frase.
+- Ejemplo correcto: "¡Hola María! ¿En qué te puedo ayudar hoy?"
+- Ejemplo incorrecto: "¡Hola bella! ¿Cómo estás hermosa?"
 
 ## Puedes ayudar con:
 - Información de productos (precios, disponibilidad, descripción)
@@ -140,6 +148,80 @@ function needsDbContext(text: string): boolean {
 
   const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+kenia|kenia|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
   return !pureChitchat.test(cleaned);
+}
+
+// Helper: detect if a text is a greeting
+function isGreeting(text: string): boolean {
+  const cleaned = text.toLowerCase().trim();
+  return /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|hey|hi|holi|hola\s+kenia|holaa|hola+a|ola|ola\s+kenia)\b/i.test(cleaned)
+    || /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|hey|hi|holi|holaa|ola)$/i.test(cleaned);
+}
+
+// Helper: match two phone numbers by comparing last 8 digits
+function phonesMatch(a: string, b: string): boolean {
+  const cleanA = a.replace(/\D/g, '');
+  const cleanB = b.replace(/\D/g, '');
+  if (!cleanA || !cleanB) return false;
+  if (cleanA === cleanB) return true;
+  const tailA = cleanA.slice(-8);
+  const tailB = cleanB.slice(-8);
+  return tailA.length === 8 && tailA === tailB;
+}
+
+// Helper: look up a registered user by phone in the users collection
+async function lookupRegisteredUser(phone: string): Promise<{ name: string; email: string } | null> {
+  try {
+    const cleaned = phone.replace(/\D/g, '');
+    const tail8 = cleaned.slice(-8);
+    // Try exact match first
+    const qPhone = JSON.stringify({ method: 'equal', attribute: 'phone', values: [cleaned, '+' + cleaned, '56' + tail8, '+56' + tail8, '9' + tail8, '+569' + tail8] });
+    const qLimit = JSON.stringify({ method: 'limit', values: [10] });
+    const res = await serverListDocuments(USERS_COLLECTION_ID, [qPhone, qLimit]);
+    if (res.documents && res.documents.length > 0) {
+      const doc = res.documents[0] as any;
+      return { name: doc.name || doc.NAME || '', email: doc.email || doc.EMAIL || '' };
+    }
+    // Fallback: fetch recent users and match by last 8 digits
+    const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+    const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+    const resAll = await serverListDocuments(USERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
+    const match = (resAll.documents || []).find((doc: any) => {
+      const docPhone = String(doc.phone || doc.PHONE || '');
+      return docPhone && phonesMatch(docPhone, cleaned);
+    });
+    if (match) {
+      const m = match as any;
+      return { name: m.name || m.NAME || '', email: m.email || m.EMAIL || '' };
+    }
+    return null;
+  } catch (e) {
+    console.warn('[WhatsApp Webhook] lookupRegisteredUser error:', e);
+    return null;
+  }
+}
+
+// Helper: send welcome menu as interactive list
+async function sendWelcomeMenu(phone: string, customerName: string, token: string) {
+  const firstName = customerName.split(' ')[0] || customerName || 'bella';
+  const body = '¡Hola ' + firstName + '! 🌸 Soy Kenia, tu asesora personal de Kevin&Coco. Es mi primera vez interactuando contigo, así que aquí te cuento todo lo que puedo hacer por ti. Toca el botón de abajo para ver mis funciones 👇';
+  await sendWhatsAppList(phone, {
+    header: '✨ Bienvenida a Kenia',
+    body,
+    footer: 'Kevin&Coco · Tu tienda de belleza',
+    buttonText: 'Ver mis funciones 🌸',
+    sections: [
+      {
+        title: 'Mis funciones',
+        rows: [
+          { id: 'func_pedido', title: '📦 Estado de mi pedido', description: 'Te notifico desde que se confirma el pago hasta que sale de tienda' },
+          { id: 'func_comprobante', title: '🧾 Mis comprobantes', description: 'Te envío el comprobante de pago ni bien se suba a tu cuenta' },
+          { id: 'func_ofertas', title: '🔥 Ofertas y remates', description: 'Te aviso de ofertas y cuando el jefe remata productos' },
+          { id: 'func_negociacion', title: '🔄 Cambio de faltantes', description: 'Si faltan productos te aviso y te sugiero reemplazos' },
+          { id: 'func_humano', title: '👤 Hablar con persona', description: 'Te conecto con alguien del equipo si lo necesitas' },
+        ],
+      },
+    ],
+  }, token);
 }
 
 // ─── Webhook verification (GET) ────────────────────────────────────────────────
@@ -261,6 +343,37 @@ export async function POST(req: NextRequest) {
       await clearHistory(fromPhone);
       await sendWhatsAppMessage(fromPhone, '🗑️ Historial borrado. ¡Empezamos de cero!', WA_TOKEN);
       return NextResponse.json({ status: 'history_cleared' });
+    }
+
+    // ── Registration check for non-admin users ─────────────────────────────────
+    let customerName = '';
+    if (!isAdmin) {
+      const registeredUser = await lookupRegisteredUser(fromPhone);
+      if (!registeredUser) {
+        // Not registered: prompt to register (once per 24h to avoid spam)
+        const now = Date.now();
+        const lastPrompted = usage.registerPromptedAt || 0;
+        if (now - lastPrompted > 24 * 60 * 60 * 1000) {
+          const registerMsg = '¡Hola hermosa! 🌸 Mis sistemas me indican que aún no estás registrada en nuestra página web. Para poder atenderte de forma más personalizada y no estar pidiéndote tus datitos todo el tiempo 😅 necesito solamente que te registres aquí 👇\n\n' + SITE_URL + '/login?tab=register\n\nLuego vuelve, escríbeme y te atenderé como una reina se merece 👑✨';
+          await addToHistory(fromPhone, 'user', userText, msgId);
+          await addToHistory(fromPhone, 'assistant', registerMsg);
+          await sendWhatsAppMessage(fromPhone, registerMsg, WA_TOKEN);
+          await recordKeniaUsage(fromPhone, { registerPromptedAt: now });
+        }
+        return NextResponse.json({ status: 'not_registered' });
+      }
+      customerName = registeredUser.name || '';
+    }
+
+    // ── First interaction welcome menu for registered customers ─────────────────
+    if (!isAdmin && !usage.welcomeShown && isGreeting(userText)) {
+      const displayName = customerName || 'bella';
+      await addToHistory(fromPhone, 'user', userText, msgId);
+      await sendWelcomeMenu(fromPhone, displayName, WA_TOKEN);
+      const menuSummary = 'Menú de bienvenida enviado (lista interactiva con 5 funciones).';
+      await addToHistory(fromPhone, 'assistant', menuSummary);
+      await recordKeniaUsage(fromPhone, { welcomeShown: true });
+      return NextResponse.json({ status: 'welcome_menu_sent' });
     }
 
     // ── Fetch context from DB ──────────────────────────────────────────────────
@@ -648,7 +761,8 @@ ${products.join('\n') || 'Sin productos.'}`;
     const basePrompt = isAdmin
       ? (keniaConfig.adminPrompt || ADMIN_PROMPT)
       : hydratePrompt(keniaConfig.customerPrompt || CUSTOMER_PROMPT, SITE_URL);
-    const systemPrompt = basePrompt + timeBlock + contextBlock;
+    const customerNameBlock = (!isAdmin && customerName) ? '\n\n## 👤 DATOS DEL CLIENTE:\nNombre: ' + customerName + '\n(Usa su nombre real para saludarla. Usa expresiones como "bella", "hermosa", "linda" solo ocasionalmente, no en cada frase.)' : '';
+    const systemPrompt = basePrompt + timeBlock + contextBlock + customerNameBlock;
 
     const contents = [
       ...history.map(m => ({
