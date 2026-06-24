@@ -4,7 +4,7 @@ import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 
 const DOC_ID = 'ofertas_section';
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
 const getCachedOfertas = unstable_cache(
   async () => {

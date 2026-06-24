@@ -3,7 +3,7 @@ import { getServices, getAppwriteConfig, HOTSPOT_PANELS_COLLECTION } from '@/lib
 import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
 let memoryCacheHotspots: any[] | null = null;
 let memoryCacheHotspotsTime = 0;

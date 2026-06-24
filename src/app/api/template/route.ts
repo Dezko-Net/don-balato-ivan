@@ -68,7 +68,7 @@ async function writeKey(key: string, value: number): Promise<boolean> {
     return false;
   }
 }
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 import { unstable_cache } from 'next/cache';
 
 const getCachedTemplates = unstable_cache(
@@ -85,7 +85,7 @@ const getCachedTemplates = unstable_cache(
     return { template: global, sections: result };
   },
   ['templates-cache'],
-  { revalidate: 300, tags: ['templates'] } // Cache for 5 minutes globally in Vercel
+  { revalidate: 3600, tags: ['templates'] } // Cache for 1 hour globally in Vercel
 );
 
 /**

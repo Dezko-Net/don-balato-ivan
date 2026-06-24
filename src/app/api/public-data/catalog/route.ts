@@ -3,7 +3,7 @@ import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, TIMED_OFFERS_COL
 import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
 let memoryCacheCatalog: any = null;
 let memoryCacheCatalogTime = 0;

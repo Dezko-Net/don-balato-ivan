@@ -5,7 +5,7 @@ import { unstable_cache } from 'next/cache';
 import { normalizeProductImages } from '@/lib/product-images';
 
 // Configurar el entorno para que sea estático pero revalide en base a ISR (o cache interno)
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
 // Caché en memoria de respaldo para cold starts
 let memoryCacheHome: any = null;
@@ -14,7 +14,7 @@ let memoryCacheHomeTime = 0;
 const getCachedHomeData = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheHome && (now - memoryCacheHomeTime < 60000)) {
+    if (memoryCacheHome && (now - memoryCacheHomeTime < 300000)) {
       return memoryCacheHome;
     }
 

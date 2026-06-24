@@ -4,7 +4,7 @@ import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 import { normalizeProductImages } from '@/lib/product-images';
 
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
 const getCachedProductDetail = unstable_cache(
   async (id: string) => {

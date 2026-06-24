@@ -8,7 +8,7 @@ const DATABASE_ID = '6a0a58ca001798410d86';
 const COLLECTION_ID = 'shipping_agencies';
 const API_KEY = process.env.APPWRITE_API_KEY || '';
 
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
 const client = new Client()
   .setEndpoint(APPWRITE_ENDPOINT)
