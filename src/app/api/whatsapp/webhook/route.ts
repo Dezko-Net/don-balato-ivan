@@ -672,8 +672,13 @@ export async function POST(req: NextRequest) {
       let registeredUser = null;
       let isGuestWithOrders = false;
 
-      if (usage.isRegistered) {
+      if (usage.isRegistered === true) {
          customerName = usage.customerName || 'bella';
+      } else if (usage.isRegistered === false) {
+         // Ya revisamos en esta sesión que no está registrado
+         if (usage.isGuestWithOrders === true) {
+             isGuestWithOrders = true;
+         }
       } else {
          registeredUser = await lookupRegisteredUser(fromPhone);
          
@@ -681,8 +686,12 @@ export async function POST(req: NextRequest) {
             await recordKeniaUsage(fromPhone, { isRegistered: true, customerName: registeredUser.name });
             customerName = registeredUser.name;
          } else {
-            if (usage.isGuestWithOrders) {
+            // Guardar que no está registrado para no consultar Appwrite de nuevo por este número en esta sesión
+            await recordKeniaUsage(fromPhone, { isRegistered: false });
+            if (usage.isGuestWithOrders === true) {
                isGuestWithOrders = true;
+            } else if (usage.isGuestWithOrders === false) {
+               isGuestWithOrders = false;
             } else {
                // Fallback: check if they have any orders as a guest
                try {
@@ -699,6 +708,8 @@ export async function POST(req: NextRequest) {
                  if (myOrders.length > 0) {
                    isGuestWithOrders = true;
                    await recordKeniaUsage(fromPhone, { isGuestWithOrders: true });
+                 } else {
+                   await recordKeniaUsage(fromPhone, { isGuestWithOrders: false });
                  }
                } catch (e) {
                  console.warn('[WhatsApp Webhook] Failed to check guest orders', e);
