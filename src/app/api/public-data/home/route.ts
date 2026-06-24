@@ -33,8 +33,8 @@ const getCachedHomeData = unstable_cache(
       
       databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
         Query.greaterThan('STOCK', 0),
-        Query.orderDesc('$createdAt'),
-        Query.limit(100)
+        Query.orderDesc('SOLDQUANTITY'),
+        Query.limit(80)
       ]).catch(() => ({ documents: [] })),
       
       databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
@@ -58,26 +58,17 @@ const getCachedHomeData = unstable_cache(
       
       databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
         Query.greaterThan('STOCK', 0),
+        Query.equal('ISACTIVE', true),
         Query.orderAsc('PRICE'),
-        Query.limit(100)
+        Query.limit(12)
       ]).catch(() => ({ documents: [] }))
     ]);
-
-    const activeProducts = pRes.documents
-      .filter((p: any) => p.ISACTIVE !== false)
-      .slice(0, 80)
-      .map((p: any) => normalizeProductImages(p));
-
-    const activeCheapestProducts = cheapRes.documents
-      .filter((p: any) => p.ISACTIVE !== false)
-      .slice(0, 12)
-      .map((p: any) => normalizeProductImages(p));
 
     const result = {
       categories: cRes.documents,
       subcategories: scRes.documents,
-      products: activeProducts,
-      cheapestProducts: activeCheapestProducts,
+      products: pRes.documents.map((p: any) => normalizeProductImages(p)),
+      cheapestProducts: cheapRes.documents.map((p: any) => normalizeProductImages(p)),
       destacadoTemporal: dtRes.documents.length > 0 ? dtRes.documents[0] : null,
       packTimer: ptRes.documents.length > 0 ? ptRes.documents[0] : null,
       timedOffers: toRes.documents
@@ -87,8 +78,8 @@ const getCachedHomeData = unstable_cache(
     memoryCacheHomeTime = Date.now();
     return result;
   },
-  ['yaxsell-home-data-v3'],
-  { revalidate: 60, tags: ['home', 'products', 'offers'] }
+  ['yaxsell-home-data-v1'],
+  { revalidate: 86400, tags: ['home', 'products', 'offers'] }
 );
 
 export async function GET() {

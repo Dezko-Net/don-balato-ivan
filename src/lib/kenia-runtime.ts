@@ -153,6 +153,9 @@ export interface KeniaUsageEntry {
   lastImageSentAt?: number;
   awaitingComprobante?: boolean;
   pendingOrderId?: string;
+  isRegistered?: boolean;
+  customerName?: string;
+  isGuestWithOrders?: boolean;
 }
 
 interface KeniaAppwriteConfigData extends KeniaConfig {
@@ -324,6 +327,9 @@ export async function getKeniaUsage(phone: string): Promise<KeniaUsageEntry> {
     lastMessageTimestamps: entry?.lastMessageTimestamps || [],
     welcomeShown: entry?.welcomeShown || false,
     registerPromptedAt: entry?.registerPromptedAt || 0,
+    isRegistered: entry?.isRegistered,
+    customerName: entry?.customerName,
+    isGuestWithOrders: entry?.isGuestWithOrders,
   };
 }
 
@@ -384,6 +390,9 @@ export async function recordKeniaUsage(
     imageSent?: boolean;
     awaitingComprobante?: boolean;
     pendingOrderId?: string;
+    isRegistered?: boolean;
+    customerName?: string;
+    isGuestWithOrders?: boolean;
   }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
@@ -424,6 +433,9 @@ export async function recordKeniaUsage(
     lastImageSentAt: prev.lastImageSentAt || 0,
     awaitingComprobante: usage.awaitingComprobante ?? prev.awaitingComprobante ?? false,
     pendingOrderId: usage.pendingOrderId ?? prev.pendingOrderId,
+    isRegistered: usage.isRegistered ?? prev.isRegistered,
+    customerName: usage.customerName ?? prev.customerName,
+    isGuestWithOrders: usage.isGuestWithOrders ?? prev.isGuestWithOrders,
     updatedAt: new Date().toISOString(),
   };
 

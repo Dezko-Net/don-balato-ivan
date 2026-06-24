@@ -667,32 +667,47 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Registration check for non-admin users ─────────────────────────────────
-    let customerName = '';
+    let customerName = usage.customerName || '';
     if (!isAdmin) {
-      const registeredUser = await lookupRegisteredUser(fromPhone);
+      let registeredUser = null;
       let isGuestWithOrders = false;
-      if (!registeredUser) {
-        // Fallback: check if they have any orders as a guest
-        try {
-          const { serverListDocuments } = await import('@/lib/appwrite-server');
-          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
-          const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-          const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
-          const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
-          const myOrders = (resOrders.documents || []).filter((o: any) => {
-             const oPhone = String(o.CUSTOMERPHONE || '');
-             if (!oPhone) return false;
-             return phonesMatch(oPhone, fromPhone);
-          });
-          if (myOrders.length > 0) {
-            isGuestWithOrders = true;
-          }
-        } catch (e) {
-          console.warn('[WhatsApp Webhook] Failed to check guest orders', e);
-        }
+
+      if (usage.isRegistered) {
+         customerName = usage.customerName || 'bella';
+      } else {
+         registeredUser = await lookupRegisteredUser(fromPhone);
+         
+         if (registeredUser) {
+            await recordKeniaUsage(fromPhone, { isRegistered: true, customerName: registeredUser.name });
+            customerName = registeredUser.name;
+         } else {
+            if (usage.isGuestWithOrders) {
+               isGuestWithOrders = true;
+            } else {
+               // Fallback: check if they have any orders as a guest
+               try {
+                 const { serverListDocuments } = await import('@/lib/appwrite-server');
+                 const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+                 const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+                 const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
+                 const myOrders = (resOrders.documents || []).filter((o: any) => {
+                    const oPhone = String(o.CUSTOMERPHONE || '');
+                    if (!oPhone) return false;
+                    return phonesMatch(oPhone, fromPhone);
+                 });
+                 if (myOrders.length > 0) {
+                   isGuestWithOrders = true;
+                   await recordKeniaUsage(fromPhone, { isGuestWithOrders: true });
+                 }
+               } catch (e) {
+                 console.warn('[WhatsApp Webhook] Failed to check guest orders', e);
+               }
+            }
+         }
       }
 
-      if (!registeredUser && !isGuestWithOrders) {
+      if (!usage.isRegistered && !registeredUser && !isGuestWithOrders) {
         // If the user is specifically asking for human help while blocked:
         const userTextLower = userText.toLowerCase().trim();
         if (userTextLower.includes('ayuda') || userTextLower.includes('humano') || userTextLower.includes('asesor') || userTextLower.includes('persona')) {
@@ -720,7 +735,9 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ status: 'not_registered' });
       }
-      customerName = registeredUser?.name || 'bella';
+      if (!customerName && registeredUser) {
+        customerName = registeredUser.name || 'bella';
+      }
     }
 
     // ── First interaction welcome menu for registered customers ─────────────────
