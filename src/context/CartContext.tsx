@@ -50,7 +50,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('yaxsel_cart');
-      if (stored) setItems(JSON.parse(stored));
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          // Filter out corrupted or old schema items
+          const valid = parsed.filter(item => item && item.product && typeof item.product === 'object' && item.product.$id);
+          setItems(valid);
+        }
+      }
     } catch {}
   }, []);
 

@@ -18,6 +18,15 @@ export default function ClientFetchCache() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Clean up any stale service workers to prevent cached chunk loading errors (white screen of death)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      }).catch((err) => console.warn('[ServiceWorker] Clean up failed:', err));
+    }
+
     // Prevent double initializing
     if ((window as any).__fetchCacheInitialized) return;
     (window as any).__fetchCacheInitialized = true;
