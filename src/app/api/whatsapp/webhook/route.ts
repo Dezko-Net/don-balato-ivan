@@ -393,9 +393,9 @@ export async function POST(req: NextRequest) {
             }
 
             if (pendingOrderId) {
-              const fileId = `comprobante_${Date.now()}`;
-              await serverUploadFile(MEDIA_BUCKET_ID, buffer, `${fileId}.jpg`);
-              const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, fileId);
+              const fileName = `comprobante_${Date.now()}.jpg`;
+              const uploadRes = await serverUploadFile(MEDIA_BUCKET_ID, buffer, fileName);
+              const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, uploadRes.$id);
               
               await serverUpdateDocument(ORDERS_COLLECTION_ID, pendingOrderId, {
                 PAYMENTPROOFURL: fileUrl,
