@@ -69,9 +69,16 @@ export function getServices() {
         const promise = (async () => {
           try {
             const qStr = encodeURIComponent(JSON.stringify(queries || []));
-            const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
-            if (res.ok) {
-              return await res.json();
+            // Retry proxy up to 2 times before falling back to direct Appwrite
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
+                if (res.ok) {
+                  return await res.json();
+                }
+              } catch {
+                // retry on network error
+              }
             }
           } catch (e) {
             console.warn('[CachedAppwrite] Proxy failed for listDocuments, falling back to direct Appwrite', e);
@@ -99,9 +106,15 @@ export function getServices() {
         
         const promise = (async () => {
           try {
-            const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}`);
-            if (res.ok) {
-              return await res.json();
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}`);
+                if (res.ok) {
+                  return await res.json();
+                }
+              } catch {
+                // retry on network error
+              }
             }
           } catch (e) {
             console.warn('[CachedAppwrite] Proxy failed for getDocument, falling back to direct Appwrite', e);

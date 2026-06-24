@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { unstable_cache } from 'next/cache';
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,24 +16,33 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Try exact match first
-    const res = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
-      `equal("NAME", ["${name}"])`,
-    ]);
-    let docs = (res as any).documents || [];
-
-    // Fallback: search with Query.search if exact match fails
-    if (docs.length === 0) {
-      try {
-        const res2 = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
-          `search("NAME", ["${name}"])`,
-          `limit(${limit})`
+    const getCachedSearch = unstable_cache(
+      async () => {
+        // Try exact match first
+        const res = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+          `equal("NAME", ["${name}"])`,
         ]);
-        docs = (res2 as any).documents || [];
-      } catch (err) {
-        console.error('Error on fulltext search fallback:', err);
-      }
-    }
+        let docs = (res as any).documents || [];
+
+        // Fallback: search with Query.search if exact match fails
+        if (docs.length === 0) {
+          try {
+            const res2 = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+              `search("NAME", ["${name}"])`,
+              `limit(${limit})`
+            ]);
+            docs = (res2 as any).documents || [];
+          } catch (err) {
+            console.error('Error on fulltext search fallback:', err);
+          }
+        }
+        return docs;
+      },
+      ['product-search', name, String(limit)],
+      { revalidate: 300, tags: ['products'] }
+    )();
+
+    const docs = await getCachedSearch;
 
     const products = docs.map((d: any) => ({
       $id: d.$id,

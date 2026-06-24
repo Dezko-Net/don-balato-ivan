@@ -5062,20 +5062,26 @@ export default function HomePage1() {
       try {
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
-        // Cargar categorías seleccionadas
-        const catsRes = await Promise.all(
-          catIds.map(id => databases.getDocument(databaseId, CATEGORIES_COLLECTION, id).catch(() => null))
-        );
-        const cats = catsRes.filter(Boolean) as unknown as Category[];
-        // Cargar productos por cada categoría
-        const productsPerCat = await Promise.all(
-          cats.map(c =>
-            databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-              Query.equal('CATEGORYID', c.$id),
-              Query.greaterThan('STOCK', 0),
-              Query.limit(perCat),
-            ]).then(r => r.documents as unknown as Product[]).catch(() => [] as Product[])
-          )
+        // Cargar todas las categorías seleccionadas en 1 sola llamada
+        const catBatchRes = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
+          Query.equal('$id', catIds),
+          Query.limit(100),
+        ]).catch(() => ({ documents: [] }));
+        const cats = (catBatchRes.documents as unknown as Category[]).filter(Boolean);
+        // Cargar productos de todas las categorías en 1 sola llamada
+        const catIdList = cats.map(c => c.$id);
+        let allProducts: Product[] = [];
+        if (catIdList.length > 0) {
+          const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.equal('CATEGORYID', catIdList),
+            Query.greaterThan('STOCK', 0),
+            Query.limit(500),
+          ]).catch(() => ({ documents: [] }));
+          allProducts = prodRes.documents as unknown as Product[];
+        }
+        // Agrupar productos por categoría en memoria
+        const productsPerCat = cats.map(c =>
+          allProducts.filter(p => p.CATEGORYID === c.$id).slice(0, perCat)
         );
         if (!alive) return;
 
@@ -5813,18 +5819,28 @@ export default function HomePage1() {
     window.addEventListener('resize', applyFeaturedMobileLayout);
 
     // Auto-fetch product counts from Appwrite for categories missing productCount
+    // Single batch call instead of N calls per category
     (async () => {
+      const itemsNeedingCount = items.filter(it => it.productCount === undefined && it.categoryId);
+      if (itemsNeedingCount.length === 0) return;
       const { databaseId } = getAppwriteConfig();
       const { databases } = getServices();
-      for (let idx = 0; idx < items.length; idx++) {
-        const item = items[idx];
-        if (item.productCount !== undefined || !item.categoryId) continue;
-        try {
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-            Query.equal('CATEGORYID', item.categoryId),
-            Query.limit(1),
-          ]);
-          const count = res.total;
+      const catIdsToCount = itemsNeedingCount.map(it => it.categoryId!);
+      try {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+          Query.equal('CATEGORYID', catIdsToCount),
+          Query.greaterThan('STOCK', 0),
+          Query.limit(500),
+        ]);
+        const counts: Record<string, number> = {};
+        for (const doc of res.documents) {
+          const cat = (doc as any).CATEGORYID;
+          counts[cat] = (counts[cat] || 0) + 1;
+        }
+        for (let idx = 0; idx < items.length; idx++) {
+          const item = items[idx];
+          if (item.productCount !== undefined || !item.categoryId) continue;
+          const count = counts[item.categoryId] || 0;
           if (idx < slides.length) {
             const details = slides[idx].querySelector('.product-details') as HTMLElement;
             if (details) {
@@ -5838,8 +5854,8 @@ export default function HomePage1() {
               badge.style.display = 'inline-flex';
             }
           }
-        } catch { /* ignore */ }
-      }
+        }
+      } catch { /* ignore */ }
     })();
 
     return () => {
