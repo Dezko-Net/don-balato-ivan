@@ -181,12 +181,19 @@ function getDefaultConfig(): KeniaConfig {
   };
 }
 
+let _configCache: { data: KeniaAppwriteConfigData; ts: number } | null = null;
+const CONFIG_CACHE_TTL = 60000; // 60 seconds
+
 async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
+  const now = Date.now();
+  if (_configCache && (now - _configCache.ts < CONFIG_CACHE_TTL)) {
+    return _configCache.data;
+  }
   try {
     const doc = await serverGetDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID);
     if (doc && doc.config) {
       const parsed = JSON.parse(doc.config as string);
-      return {
+      const data: KeniaAppwriteConfigData = {
         adminPrompt: parsed.adminPrompt || DEFAULT_ADMIN_PROMPT,
         customerPrompt: parsed.customerPrompt || DEFAULT_CUSTOMER_PROMPT,
         adminAlertPhone: parsed.adminAlertPhone || '',
@@ -198,6 +205,8 @@ async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
         debugMode: parsed.debugMode === true,
         blockedPhones: Array.isArray(parsed.blockedPhones) ? parsed.blockedPhones : [],
       };
+      _configCache = { data, ts: now };
+      return data;
     }
   } catch (e: any) {
     if (String(e?.message || e).includes('not found') || e?.code === 404) {
@@ -211,6 +220,7 @@ async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
           NAME: 'kenia_config',
           config: JSON.stringify(data),
         });
+        _configCache = { data, ts: now };
         return data;
       } catch (err) {
         console.error('[KeniaConfig] Failed to auto-create config document in Appwrite:', err);
@@ -219,7 +229,9 @@ async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
       console.error('[KeniaConfig] Failed to fetch config from Appwrite:', e);
     }
   }
-  return { ...getDefaultConfig(), blockedPhones: [] };
+  const fallback = { ...getDefaultConfig(), blockedPhones: [] };
+  _configCache = { data: fallback, ts: now };
+  return fallback;
 }
 
 async function saveConfigToAppwrite(config: KeniaAppwriteConfigData) {
@@ -227,6 +239,7 @@ async function saveConfigToAppwrite(config: KeniaAppwriteConfigData) {
     await serverUpdateDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID, {
       config: JSON.stringify(config),
     });
+    _configCache = { data: config, ts: Date.now() };
   } catch (e) {
     console.error('[KeniaConfig] Failed to save config to Appwrite:', e);
   }
