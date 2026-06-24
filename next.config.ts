@@ -17,13 +17,13 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0, s-maxage=300, stale-while-revalidate=300',
+            value: 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
           },
         ],
       },
       {
         // API routes — nunca cachear, excepto las optimizadas para Edge Caching público
-        source: '/api/((?!appwrite-proxy|public-data|version|template|store-settings|theme-config).*)',
+        source: '/api/((?!appwrite-proxy|public-data|version|template|store-settings|theme-config|ofertas|agencies).*)',
         headers: [
           {
             key: 'Cache-Control',

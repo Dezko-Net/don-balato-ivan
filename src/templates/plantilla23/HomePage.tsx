@@ -3957,7 +3957,7 @@ export default function HomePage23() {
     }
 
     root.dataset.navInjected = '1';
-  }, [categories, subcategories, products, isAppwriteLoaded, unlimitedStock]);
+  }, [categories, subcategories, products, cheapestProducts, isAppwriteLoaded, unlimitedStock]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {

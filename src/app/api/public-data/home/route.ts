@@ -33,7 +33,7 @@ const getCachedHomeData = unstable_cache(
       
       databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
         Query.greaterThan('STOCK', 0),
-        Query.orderDesc('SOLDQUANTITY'),
+        Query.orderDesc('$createdAt'),
         Query.limit(80)
       ]).catch(() => ({ documents: [] })),
       
@@ -58,7 +58,6 @@ const getCachedHomeData = unstable_cache(
       
       databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
         Query.greaterThan('STOCK', 0),
-        Query.equal('ISACTIVE', true),
         Query.orderAsc('PRICE'),
         Query.limit(12)
       ]).catch(() => ({ documents: [] }))
@@ -78,7 +77,7 @@ const getCachedHomeData = unstable_cache(
     memoryCacheHomeTime = Date.now();
     return result;
   },
-  ['yaxsell-home-data-v1'],
+  ['yaxsell-home-data-v3'],
   { revalidate: 86400, tags: ['home', 'products', 'offers'] }
 );
 
