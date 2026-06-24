@@ -14,7 +14,9 @@ const getCachedKeniaStatus = unstable_cache(
 export async function GET() {
   try {
     const status = await getCachedKeniaStatus();
-    return NextResponse.json(status);
+    return NextResponse.json(status, {
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' }
+    });
   } catch (e: any) {
     return NextResponse.json({ isEnabled: true });
   }

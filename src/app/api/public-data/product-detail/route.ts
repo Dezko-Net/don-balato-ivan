@@ -141,7 +141,9 @@ export async function GET(request: NextRequest) {
     // In Next.js unstable_cache, the arguments passed to the function are automatically included in the cache key.
     
     const data = await getCachedProductDetail(id);
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400' }
+    });
   } catch (error: any) {
     console.error('[API public-data/product-detail] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

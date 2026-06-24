@@ -85,7 +85,9 @@ const getCachedHomeData = unstable_cache(
 export async function GET() {
   try {
     const data = await getCachedHomeData();
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400' }
+    });
   } catch (error: any) {
     console.error('[API public-data/home] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

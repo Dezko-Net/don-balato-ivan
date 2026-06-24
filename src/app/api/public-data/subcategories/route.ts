@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
     if (!categoryId) return NextResponse.json({ subcategories: [] });
 
     const subcategories = await getCachedSubcategories(categoryId);
-    return NextResponse.json({ subcategories });
+    return NextResponse.json({ subcategories }, {
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' }
+    });
   } catch (error: any) {
     console.error('[API public-data/subcategories] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
