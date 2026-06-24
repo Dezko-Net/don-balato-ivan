@@ -59,7 +59,6 @@ export function useProductsCache({
 
   // Poll version endpoint to react to changes on database
   const { data: versionData } = useSWR(isClient ? '/api/public-data/version' : null, fetcher, {
-    refreshInterval: 15000, // Check every 15 seconds
     revalidateOnFocus: true,
   });
   const version = versionData?.version || '1';
