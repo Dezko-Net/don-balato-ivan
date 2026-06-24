@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsAppMessage, sendWhatsAppList, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
-import { serverListDocuments, serverUpdateDocument, serverGetDocument, serverUploadFile } from '@/lib/appwrite-server';
+import { serverListDocuments, serverUpdateDocument, serverGetDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
 import { notifyPaymentUploaded } from '@/lib/notify-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 import {
