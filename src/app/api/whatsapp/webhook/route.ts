@@ -360,29 +360,56 @@ export async function POST(req: NextRequest) {
             });
             const buffer = await dlRes.arrayBuffer();
             
-            // Check if user is awaiting comprobante upload
+            // Dynamically check if user has a pending order (fixes volatile tmpdir usageState)
             const usageState = await getKeniaUsage(fromPhone);
-            if (usageState.awaitingComprobante && usageState.pendingOrderId) {
+            let pendingOrderId = usageState.awaitingComprobante ? usageState.pendingOrderId : null;
+            let orderCode = pendingOrderId || '';
+
+            if (!pendingOrderId) {
+              const { serverListDocuments } = await import('@/lib/appwrite-server');
+              const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+              const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+              const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+              try {
+                const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
+                const myOrders = (resOrders.documents || []).filter((o: any) => {
+                  const oPhone = String(o.CUSTOMERPHONE || '');
+                  if (!oPhone) return false;
+                  const cleanA = oPhone.replace(/\D/g, '');
+                  const cleanB = fromPhone.replace(/\D/g, '');
+                  if (cleanA === cleanB) return true;
+                  const tailA = cleanA.slice(-8);
+                  const tailB = cleanB.slice(-8);
+                  return tailA.length === 8 && tailA === tailB;
+                });
+                const pending = myOrders.find((o: any) => o.STATUS === 'pending');
+                if (pending) {
+                  pendingOrderId = String(pending.$id);
+                  orderCode = String(pending.ORDERCODE || pending.$id);
+                }
+              } catch (e) {
+                console.warn('[WhatsApp Webhook] Failed to fetch orders for image comprobante check', e);
+              }
+            }
+
+            if (pendingOrderId) {
               const fileId = `comprobante_${Date.now()}`;
               await serverUploadFile(MEDIA_BUCKET_ID, buffer, `${fileId}.jpg`);
               const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, fileId);
               
-              await serverUpdateDocument(ORDERS_COLLECTION_ID, usageState.pendingOrderId, {
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, pendingOrderId, {
                 PAYMENTPROOFURL: fileUrl,
                 STATUS: 'processing'
               });
               
-              // Find order code for notification
-              let orderCode = usageState.pendingOrderId;
-              try {
-                const doc = await serverGetDocument(ORDERS_COLLECTION_ID, usageState.pendingOrderId);
-                if (doc.ORDERCODE) orderCode = String(doc.ORDERCODE);
-              } catch (e) {
-                console.warn('[WhatsApp Webhook] Failed to fetch order code for notification:', e);
+              if (!orderCode || orderCode === pendingOrderId) {
+                try {
+                  const doc = await serverGetDocument(ORDERS_COLLECTION_ID, pendingOrderId);
+                  if (doc.ORDERCODE) orderCode = String(doc.ORDERCODE);
+                } catch (e) {}
               }
               
               await notifyPaymentUploaded(orderCode, 'Cliente (vía WhatsApp)');
-              
               await recordKeniaUsage(fromPhone, { awaitingComprobante: false, pendingOrderId: undefined });
               
               const reply = `¡Listo bella! 💖 Recibí tu comprobante y se ha guardado en tu pedido #${orderCode}. Apenas finanzas lo valide, te avisaremos para continuar con el envío. ¡Muchas gracias! 🥰💸`;
