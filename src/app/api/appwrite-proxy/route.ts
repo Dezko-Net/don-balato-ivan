@@ -3,21 +3,21 @@ import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
 import { PUBLIC_CACHEABLE_COLLECTIONS } from '@/lib/appwrite';
 import { unstable_cache } from 'next/cache';
 
-const getCachedList = unstable_cache(
-  async (colId: string, parsedQueries: string[]) => {
+const getCachedList = (colId: string, parsedQueries: string[]) => unstable_cache(
+  async () => {
     return await serverListDocuments(colId, parsedQueries);
   },
-  ['appwrite-list-documents'],
+  ['appwrite-list-documents', colId, JSON.stringify(parsedQueries)],
   { revalidate: 86400, tags: ['appwrite-proxy'] }
-);
+)();
 
-const getCachedDoc = unstable_cache(
-  async (colId: string, docId: string) => {
+const getCachedDoc = (colId: string, docId: string) => unstable_cache(
+  async () => {
     return await serverGetDocument(colId, docId);
   },
-  ['appwrite-get-document'],
+  ['appwrite-get-document', colId, docId],
   { revalidate: 86400, tags: ['appwrite-proxy'] }
-);
+)();
 
 export async function GET(req: Request) {
   try {
