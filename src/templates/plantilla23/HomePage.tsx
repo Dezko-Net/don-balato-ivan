@@ -143,6 +143,141 @@ const FONT_FACE_CSS = `
 }
 `;
 
+const BUNDLE_PACK_PRODUCTS: Product[] = [
+  {
+    $id: '6a1b22f10009f64aefa2',
+    NAME: 'SET DE RIMEL + DELINEADOR OCEAN CAT',
+    DESCRIPTION: 'SET DE RIMEL + DELINEADOR OCEAN CAT',
+    PRICE: 2250,
+    STOCK: 99995,
+    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/bf19acb0e8b6c9e019b4a635b6977ca3.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1371'
+  },
+  {
+    $id: '6a1a4d96000c6fd8e4f5',
+    NAME: 'Set Lip Combo Sweet Hearth',
+    DESCRIPTION: 'Set Lip Combo Sweet Hearth',
+    PRICE: 2200,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella.qianji.us./be/api/resource/thumbnail?id=5366',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1016'
+  },
+  {
+    $id: '6a3c615e000b35db0f3b',
+    NAME: 'BROCHA',
+    DESCRIPTION: 'BROCHA',
+    PRICE: 1150,
+    STOCK: 30,
+    IMAGEURL: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: '1028'
+  },
+  {
+    $id: '6a1a4da50015b9ebbd58',
+    NAME: 'PALETA DE 4 RUBORES',
+    DESCRIPTION: 'PALETA DE 4 RUBORES',
+    PRICE: 3000,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/83dc0de25ec30d42e5e65eb5fb97da88.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1328'
+  },
+  {
+    $id: '6a2b4ef50018fb3a8c64',
+    NAME: 'Base De Maquillaje Raspberry Tart Party',
+    DESCRIPTION: 'Base De Maquillaje Raspberry Tart Party',
+    PRICE: 2800,
+    STOCK: 30,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/db022e6a4a8df69271f73f86efae795e.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1307'
+  },
+  {
+    $id: '6a1a4da70009d16509de',
+    NAME: 'CORRECTOR DE OJERAS CLEAR SKIN',
+    DESCRIPTION: 'CORRECTOR DE OJERAS CLEAR SKIN',
+    PRICE: 1600,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/7002e6ad9dcf769cabb007487e530180.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1403'
+  },
+  {
+    $id: '6a23384e0005993581fe',
+    NAME: 'Paleta de Sombras Serie Ghost Music de 18 Colores',
+    DESCRIPTION: 'Paleta de Sombras Serie Ghost Music de 18 Colores',
+    PRICE: 4350,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/61ea8b265d8a2ea7a67c8627a792c50c.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1817'
+  },
+  {
+    $id: '6a1a4da2000dd909a12a',
+    NAME: 'ILUMINADORES',
+    DESCRIPTION: 'ILUMINADORES',
+    PRICE: 1450,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/4164f83c116f25162a627a5e464a9e41.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1277'
+  },
+  {
+    $id: '6a287c100036e5592ea7',
+    NAME: 'POLVO SUELTO BIG KIDS',
+    DESCRIPTION: 'POLVO SUELTO BIG KIDS',
+    PRICE: 2200,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/a73f3086e5d3fdf141c9291048fb5baf.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1439'
+  },
+  {
+    $id: '6a3c6094003ceef0b1ec',
+    NAME: 'Toallitas Desmaquillantes',
+    DESCRIPTION: 'Toallitas Desmaquillantes',
+    PRICE: 950,
+    STOCK: 14,
+    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/17c9eb3a00e9748b0a1d0c6da54a3244.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1048'
+  },
+  {
+    $id: '6a3c60e0003076a9db08',
+    NAME: 'Contornos Liquidos Roses And Love',
+    DESCRIPTION: 'Contornos Liquidos Roses And Love',
+    PRICE: 1800,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/207ad865cbdbd0f47697c44cb3b22680.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1199'
+  },
+  {
+    $id: '6a3c611f002b9f64732a',
+    NAME: 'Paleta de Sombras Cherry Face de 72 colores con rubor, corrector e iluminador',
+    DESCRIPTION: 'Paleta de Sombras Cherry Face de 72 colores con rubor, corrector e iluminador',
+    PRICE: 8340,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/f2edceb3b965b194108070a99d3bfd05.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1240'
+  }
+];
+
 export default function HomePage23() {
   // ═══ CONFIGURACIÓN MANUAL DEL HERO BANNER (EDITAR AQUÍ DIRECTAMENTE) ═══
   // Si deseas cambiar las imágenes o textos de los banners, edítalos aquí:
@@ -2060,8 +2195,19 @@ export default function HomePage23() {
       // (En el HTML original queda más abajo; el cliente lo quiere justo debajo del hero.)
       let anchor: Element = heroBannerSection;
       const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
+      const bundleSection = tempDiv.querySelector('[id*="bundle_products"]') as HTMLElement | null;
+      if (bundleSection) {
+        bundleSection.style.display = 'none'; // Ocultar temporalmente
+      }
+      console.log("[Plantilla23 Debug] heroBannerSection:", !!heroBannerSection, "countdownSection:", !!countdownSection, "bundleSection:", !!bundleSection);
       if (countdownSection) {
-        heroBannerSection.insertAdjacentElement('afterend', countdownSection);
+        if (bundleSection) {
+          console.log("[Plantilla23 Debug] Reordering bundleSection before countdownSection");
+          heroBannerSection.insertAdjacentElement('afterend', bundleSection);
+          bundleSection.insertAdjacentElement('afterend', countdownSection);
+        } else {
+          heroBannerSection.insertAdjacentElement('afterend', countdownSection);
+        }
         anchor = countdownSection;
       }
 
@@ -2089,9 +2235,121 @@ export default function HomePage23() {
       block.innerHTML = '';
     });
 
+    // Remove hotspots from bundle products section as requested by user
+    tempDiv.querySelectorAll('.bundle-products__hotspot').forEach(el => el.remove());
+
+    // Replace background image in bundle products section
+    const bgDiv = tempDiv.querySelector('.bundle-products__background');
+    if (bgDiv) {
+      bgDiv.innerHTML = `
+        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782341290873-pegada-1782341289319.png" alt="Background image" class="object-cover w-full h-full pointer-events-none" />
+      `;
+    }
+
+    // Hydrate bundle products with the 12 selected products
+    const bundleTitle = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list h2 span');
+    if (bundleTitle) {
+      bundleTitle.textContent = 'Mega Pack Favoritos (12 Productos)';
+    }
+
+    const bundleListWrapper = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list ul');
+    if (bundleListWrapper) {
+      const bundleHtml = BUNDLE_PACK_PRODUCTS.map(p => `
+        <li class="product-list__product-info flex gap-3 py-5 flex-wrap border-b-1 border-current/10" data-product-id="${p.$id}">
+          <div class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)]">
+            <a href="/productos/${p.$id}" aria-label="${p.NAME}" title="${p.NAME}" class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)]" tabindex="-1">
+              <div class="product-list__product-image-wrapper w-full pt-[100%] relative hover-zoom-image-wrapper" style="position:relative;">
+                <div class="product-list__product-image placeholder absolute w-full h-full top-0 left-0">
+                  <hover-zoom-image class="w-full h-full">
+                    <img src="${p.IMAGEURL}" alt="${p.NAME}" loading="lazy" class="object-cover w-full h-full pointer-events-none" />
+                  </hover-zoom-image>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="product-list__product-content py-3">
+            <a href="/productos/${p.$id}" aria-label="${p.NAME}" title="${p.NAME}" class="block max-w-max">
+              <h3 class="heading pt-2 pb-1 h6 max-w-max"><span class="link-hover-animation">${p.NAME}</span></h3>
+            </a>
+            <div class="variant pb-2 text-current/70" data-loading="false">
+              <div class="flex gap-[5px] items-center justify-between pr-2">
+                <span class="text-[0.9em]">Precio Unitario</span>
+              </div>
+              <form method="post" action="/cart/add" id="product-form-bundle-${p.$id}" accept-charset="UTF-8" class="shopify-product-form" enctype="multipart/form-data">
+                <input type="hidden" name="form_type" value="product" />
+                <input type="hidden" name="id" value="${p.$id}">
+                <input type="hidden" name="quantity" value="1" min="1">
+                <div class="error text-[0.8em]" role="alert"><small></small></div>
+              </form>
+            </div>
+            <div class="price flex gap-[5px] flex-wrap">
+              <div class="price__regular">
+                <span class="price-item">$${p.PRICE.toLocaleString()} CLP</span>
+              </div>
+            </div>
+          </div>
+        </li>
+      `).join('');
+      bundleListWrapper.innerHTML = bundleHtml;
+    }
+
+    // Update bundle prices data script and total labels
+    const bundleDataScript = tempDiv.querySelector('.section-bundle-products .bundle-products__products-data');
+    if (bundleDataScript) {
+      const bundleData = {
+        products: BUNDLE_PACK_PRODUCTS.map(p => ({ id: p.$id, price: p.PRICE, available: true })),
+        total_price: 32090,
+        saving_percentage: 15
+      };
+      bundleDataScript.innerHTML = JSON.stringify(bundleData);
+    }
+
+    const subtotalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--subtotal .value');
+    if (subtotalEl) {
+      subtotalEl.textContent = '$32.090 CLP';
+    }
+    const saveEl = tempDiv.querySelector('.section-bundle-products .item-total-price--save .value');
+    if (saveEl) {
+      saveEl.textContent = '$4.814 CLP';
+    }
+    const totalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--total .value');
+    if (totalEl) {
+      totalEl.textContent = '$27.276 CLP';
+    }
+
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
     setHtmlInjected(true);
+
+    // Setup Click listener to Bundle buy button
+    const bundleCartBtn = containerRef.current.querySelector('.section-bundle-products .button-cart');
+    if (bundleCartBtn) {
+      bundleCartBtn.classList.remove('disabled', 'pointer-events-none');
+      const texts = bundleCartBtn.querySelectorAll('.link-hover-animation');
+      texts.forEach(t => t.textContent = 'Añadir Pack al Carrito ($27.276)');
+      
+      // Clone it to strip native Shopify listeners
+      const clonedBtn = bundleCartBtn.cloneNode(true);
+      bundleCartBtn.parentNode?.replaceChild(clonedBtn, bundleCartBtn);
+      
+      clonedBtn.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Add all 12 products to cart
+        BUNDLE_PACK_PRODUCTS.forEach(p => {
+          addItem(p, 1);
+        });
+        
+        // Open the Cart drawer
+        const cartDrawer = document.querySelector('cart-drawer');
+        if (cartDrawer) {
+          cartDrawer.setAttribute('data-hidden', 'false');
+          cartDrawer.removeAttribute('inert');
+          document.body.classList.add('cart-drawer-open', 'overflow-hidden');
+        }
+      });
+    }
 
     // ═══ CUSTOM HERO CONFIG OVERRIDES (MANUAL DESDE CÓDIGO) ═══
     
