@@ -273,42 +273,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       .map(x => x.p);
   }, [isPaquetes, isEmbalajes, allActiveProducts]);
 
-  // Productos del Live Shopping (importados hoy desde 5PM o ayer) — 20% off por 1 semana
-  const liveShoppingProducts = useMemo(() => {
-    if (isPaquetes || isEmbalajes) return [];
-    const threshold = getLiveShoppingThreshold().getTime();
-    return allActiveProducts
-      .filter(p => {
-        if (!isLiveShoppingProduct(p)) return false;
-        return new Date(p.$createdAt!).getTime() >= threshold;
-      })
-      .sort((a, b) => {
-        const ta = new Date(b.$createdAt!).getTime();
-        const tb = new Date(a.$createdAt!).getTime();
-        return ta - tb; // más recientes primero
-      })
-      .slice(0, 20);
-  }, [isPaquetes, isEmbalajes, allActiveProducts]);
-
-  // Productos de ayer (live shopping anterior) — siguen con descuento si no ha pasado domingo
-  const yesterdayLiveProducts = useMemo(() => {
-    if (isPaquetes || isEmbalajes) return [];
-    const threshold = getLiveShoppingThreshold().getTime();
-    const twoDaysAgo = threshold - 24 * 60 * 60 * 1000;
-    return allActiveProducts
-      .filter(p => {
-        if (!isLiveShoppingProduct(p)) return false;
-        const importedTime = new Date(p.$createdAt!).getTime();
-        return importedTime >= twoDaysAgo && importedTime < threshold;
-      })
-      .sort((a, b) => {
-        const ta = new Date(b.$createdAt!).getTime();
-        const tb = new Date(a.$createdAt!).getTime();
-        return ta - tb;
-      })
-      .slice(0, 20);
-  }, [isPaquetes, isEmbalajes, allActiveProducts]);
-
   const heroBadgeText = isPaquetes ? 'Paquetes Especiales' : (isEmbalajes ? 'Embalajes Profesionales' : (lockCategoryId ? 'Categoría' : 'Nuestra tienda'));
   const heroTitleText = isPaquetes ? 'Paquetes Mayoristas' : (isEmbalajes ? 'Sección Embalaje' : (catalogCover.title || lockedCategory?.name || 'Productos'));
   const heroSubtitleText = isPaquetes ? 'Comprá en cantidad y ahorrá con nuestros precios mayoristas exclusivos por paquete.' : (isEmbalajes ? 'Cajas y embalajes de alta calidad para tus envíos y productos.' : (catalogCover.subtitle || (lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Explorá nuestro catálogo de productos exclusivos')));
@@ -319,37 +283,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       setZoomImage({ src: imgSrc, alt: p.NAME });
     }
   };
-
-  // Load live shopping history dates (derived from allActiveProducts)
-  const liveDatesAvailable = useMemo(() => {
-    if (isPaquetes || isEmbalajes) return [];
-    const dates = new Set<string>();
-    allActiveProducts.forEach(p => {
-      if (!isLiveShoppingProduct(p)) return;
-      const d = new Date(p.$createdAt!);
-      // Format as YYYY-MM-DD
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      dates.add(dateStr);
-    });
-    return Array.from(dates).sort((a, b) => b.localeCompare(a));
-  }, [isPaquetes, isEmbalajes, allActiveProducts]);
-
-  // Load products for a specific live date
-  const loadLiveHistoryForDate = useCallback(async (dateStr: string) => {
-    setLiveHistoryLoading(true);
-    setLiveHistorySelectedDate(dateStr);
-    try {
-      const res = await fetch(`/api/public-data/products?live=true&date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLiveHistoryProducts(data.products || []);
-      }
-    } catch (e) {
-      console.error('Error loading live history:', e);
-    } finally {
-      setLiveHistoryLoading(false);
-    }
-  }, []);
 
   // Load catalog categories & offers once on mount
   useEffect(() => {
@@ -392,7 +325,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         if (subRes.ok) {
           const subData = await subRes.json();
           setSubcategories([
-            { $id: 'ofertas-temporales', name: '🛍️ OFERTAS DE LIVE SHOPPING', categoryId: cidToUse } as Subcategory,
             ...(subData.subcategories as Subcategory[])
           ]);
         } else {
@@ -461,12 +393,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat && !selectedSubcat ? primaryColor : '#d1d5db', flexShrink: 0 }} />
           <span style={{ flex: 1 }}>Todas</span>
           <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{products.length}</span>
-        </button>
-        <button onClick={() => { setSelectedCat(''); setSelectedSubcat('ofertas-temporales'); }}
-          style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedSubcat === 'ofertas-temporales' && !selectedCat ? 700 : 500, color: selectedSubcat === 'ofertas-temporales' && !selectedCat ? primaryColor : '#6b7280', background: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#f8f9fa' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 14 }}>🛍️</span>
-          <span style={{ flex: 1 }}>OFERTAS DE LIVE SHOPPING</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#e5e7eb' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{allActiveProducts.filter(p => isLiveShoppingProduct(p) && new Date(p.$createdAt!).getTime() >= oneWeekAgo && (p.STOCK || 0) > 0).length}</span>
         </button>
         {categories.map(c => {
           const count = catCountMap[c.$id] || 0;
@@ -620,122 +546,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           </div>
         </div>
 
-        {/* OFERTAS DEL DÍA — visible tanto en paquetes como en unidad */}
-        {offersDayProducts.length > 0 && (isPaquetes || (!isPaquetes && !isEmbalajes)) && (() => {
-          const bannerBorderColor = isPaquetes ? '#e8dcc8' : '#fce7f3';
-          const bannerRadial = isPaquetes ? 'rgba(198,139,89,0.07)' : 'rgba(227,150,191,0.06)';
-          const badgeBg = isPaquetes ? 'linear-gradient(90deg,#c68b59,#d4a574)' : 'linear-gradient(90deg,#db2777,#e396bf)';
-          const badgeShadow = isPaquetes ? 'rgba(198,139,89,0.35)' : 'rgba(219,39,119,0.35)';
-          const textColor = isPaquetes ? '#8b6f4e' : '#db2777';
-          const buttonGradient = isPaquetes ? 'linear-gradient(135deg,#d4c4a8,#c9b896)' : 'linear-gradient(135deg,#db2777,#e396bf)';
-          const buttonShadow = isPaquetes ? 'rgba(198,139,89,0.25)' : 'rgba(219,39,119,0.35)';
-          const cardBorderUrgent = isPaquetes ? '#e8dcc8' : '#fbcfe8';
-          const cardBorderNormal = isPaquetes ? '#e8dcc8' : '#fce7f3';
-          const cardShadowUrgent = isPaquetes ? 'rgba(198,139,89,0.12)' : 'rgba(219,39,119,0.12)';
-          const cardShadowNormal = isPaquetes ? 'rgba(198,139,89,0.10)' : 'rgba(219,39,119,0.10)';
-          const btnBg = isPaquetes ? '#faf6f0' : '#fdf2f8';
-          const countdownBgUrgent = isPaquetes ? 'rgba(198,139,89,0.08)' : 'rgba(219,39,119,0.08)';
-          const countdownBgNormal = isPaquetes ? 'rgba(198,139,89,0.08)' : 'rgba(219,39,119,0.08)';
-          const countdownBorderUrgent = isPaquetes ? 'rgba(198,139,89,0.25)' : 'rgba(219,39,119,0.25)';
-          const countdownBorderNormal = isPaquetes ? 'rgba(198,139,89,0.2)' : 'rgba(219,39,119,0.2)';
-
-          return (
-            <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: '#ffffff', border: `1.5px solid ${bannerBorderColor}`, boxShadow: `0 10px 40px ${isPaquetes ? 'rgba(249,115,22,0.10)' : 'rgba(219,39,119,0.10)'}` }}>
-              <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(120% 80% at 0% 0%, ${bannerRadial}, transparent 60%)`, pointerEvents: 'none' }} />
-              <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', position: 'relative' }}>
-                <div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: badgeBg, color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: 11, fontWeight: 900, marginBottom: 8, letterSpacing: '0.06em', boxShadow: `0 4px 14px ${badgeShadow}`, animation: 'pkFlash 1.4s ease-in-out infinite' }}>
-                    ⚡ OFERTAS DEL DÍA
-                  </div>
-                  <h2 style={{ fontSize: 23, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', fontFamily: FF }}>Precio especial por tiempo limitado</h2>
-                  <p style={{ fontSize: 13, color: textColor, margin: '4px 0 0', fontWeight: 700 }}>{isPaquetes ? 'Solo por hoy — comprá en paquetes al mejor precio' : 'Solo por hoy — comprá al mejor precio por unidad'}</p>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: -268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: `1px solid ${isPaquetes ? '#ffd9b3' : '#fce7f3'}`, background: btnBg, color: textColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: 268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: `1px solid ${isPaquetes ? '#ffd9b3' : '#fce7f3'}`, background: btnBg, color: textColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-              <div ref={offerCarouselRef} className="pk-carousel-no-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 24px', overflowX: 'auto', scrollbarWidth: 'none', position: 'relative' }}>
-                {offersDayProducts.map(p => {
-                  const isPack = isPaquetes;
-                  const displayPrice = isPack ? (p.PACK_OFFER_PRICE!) : (p.CURRENTPRICE!);
-                  const originalPrice = isPack ? (p.WHOLESALEPRICE || p.PRICE) : p.PRICE;
-
-                  const offerTotalDisplay = isPack ? displayPrice * (p.PACKQTY || 1) : displayPrice;
-                  const regularTotalDisplay = isPack ? originalPrice * (p.PACKQTY || 1) : originalPrice;
-
-                  const discPct = regularTotalDisplay > offerTotalDisplay ? Math.round((1 - offerTotalDisplay / regularTotalDisplay) * 100) : 0;
-                  const expiresAt = isPack ? p.PACK_OFFER_EXPIRES_AT! : p.UNIT_OFFER_EXPIRES_AT!;
-                  const secsLeft = Math.max(0, Math.floor((expiresAt - now) / 1000));
-                  const hh = Math.floor(secsLeft / 3600);
-                  const mm = Math.floor((secsLeft % 3600) / 60);
-                  const ss = secsLeft % 60;
-                  const fmt = (n: number) => String(n).padStart(2, '0');
-                  const isUrgent = secsLeft < 3600;
-
-                  const stockAvailable = isPack ? packStockAvailable(p) : (p.STOCK || 0);
-                  const qtyToAdd = isPack ? (p.PACKQTY || 1) : 1;
-                  const unitOfferPrice = isPack ? p.PACK_OFFER_PRICE! : p.CURRENTPRICE!;
-                  const oFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
-                  const oTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
-                  const oSku = getSkuFromFeatures(oFeatures, oTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
-
-                  return (
-                    <div key={p.$id} style={{ minWidth: 238, maxWidth: 256, flex: '0 0 auto', background: '#ffffff', borderRadius: 20, border: `1.5px solid ${isUrgent ? cardBorderUrgent : cardBorderNormal}`, overflow: 'hidden', boxShadow: `0 6px 24px ${isUrgent ? cardShadowUrgent : cardShadowNormal}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                      {discPct > 0 && (
-                        <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: isPack ? 'linear-gradient(135deg,#ef4444,#b91c1c)' : 'linear-gradient(135deg,#db2777,#e396bf)', color: '#fff', borderRadius: 999, fontSize: 12, fontWeight: 900, padding: '4px 10px', boxShadow: `0 2px 8px ${isPack ? 'rgba(239,68,68,0.4)' : 'rgba(219,39,119,0.4)'}` }}>-{discPct}%</div>
-                      )}
-                      {isPack && p.PACK_OFFER_MIN_PACKS && p.PACK_OFFER_MIN_PACKS > 1 && (
-                        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 2, background: btnBg, color: textColor, border: `1px solid ${isPaquetes ? '#fed7aa' : '#fbcfe8'}`, borderRadius: 999, fontSize: 10, fontWeight: 800, padding: '2px 8px' }}>
-                          Mín {p.PACK_OFFER_MIN_PACKS} paq.
-                        </div>
-                      )}
-                      <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8fafc', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
-                        {getProductImageUrl(p) ? (
-                          <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="256px" unoptimized />
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42 }}>🔥</div>
-                        )}
-                      </div>
-                      <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                        {oSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {oSku}</div>}
-                        <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
-                          <p style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 38 }}>{p.NAME}</p>
-                        </Link>
-                        {isPack && p.PACKQTY && p.PACKQTY > 1 && <span style={{ fontSize: 11, fontWeight: 800, color: textColor }}>{p.PACKQTY} UNIDADES / PAQUETE</span>}
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
-                          <span style={{ fontSize: 22, fontWeight: 900, color: textColor, letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(offerTotalDisplay)}</span>
-                          {discPct > 0 && <span style={{ fontSize: 12, color: '#94a3b8', textDecoration: 'line-through' }}>{formatPrice(regularTotalDisplay)}</span>}
-                        </div>
-                        {isPack && <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>{formatPrice(p.PACK_OFFER_PRICE!)} por unidad</div>}
-                        {/* Countdown */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: isUrgent ? countdownBgUrgent : countdownBgNormal, borderRadius: 8, padding: '5px 8px', border: `1px solid ${isUrgent ? countdownBorderUrgent : countdownBorderNormal}` }}>
-                          <Clock size={11} color={isUrgent ? '#ef4444' : textColor} />
-                          <span style={{ fontSize: 12, fontWeight: 900, color: isUrgent ? '#ef4444' : textColor, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}>
-                            {hh > 0 ? `${fmt(hh)}:` : ''}{fmt(mm)}:{fmt(ss)}
-                          </span>
-                          {isUrgent && <span style={{ fontSize: 9, color: '#ef4444', fontWeight: 800 }}>¡ÚLTIMAS HORAS!</span>}
-                        </div>
-                        <button
-                          onClick={() => stockAvailable > 0 && addItem(p, qtyToAdd, undefined, expiresAt, unitOfferPrice, true)}
-                          disabled={stockAvailable <= 0}
-                          style={{ marginTop: 'auto', padding: '10px 12px', borderRadius: 12, border: 'none', background: stockAvailable <= 0 ? '#f1f5f9' : buttonGradient, color: stockAvailable <= 0 ? '#94a3b8' : '#fff', fontSize: 12, fontWeight: 800, cursor: stockAvailable <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF, boxShadow: stockAvailable <= 0 ? 'none' : `0 4px 14px ${buttonShadow}`, letterSpacing: '0.01em' }}
-                        >
-                          <ShoppingCart size={13} /> {stockAvailable <= 0 ? 'Sin stock' : '¡Quiero esta oferta!'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <style>{`@keyframes pkFlash { 0%,100% { opacity:1; } 50% { opacity:0.7; } }`}</style>
-            </div>
-          );
-        })()}
 
 
         {/* Carousel hero para paquetes */}
@@ -1386,74 +1196,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       {/* Image Zoom Modal */}
       {zoomImage && <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />}
 
-      {/* Live Shopping History Modal */}
-      {showLiveHistory && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowLiveHistory(false)}>
-          <div style={{ background: '#fff', borderRadius: 24, maxWidth: 900, width: '100%', maxHeight: '85vh', overflow: 'auto', padding: 0 }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-              <div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', margin: 0, fontFamily: FF }}>📅 Historial de Live Shopping</h3>
-                <p style={{ fontSize: 12, color: '#9ca3af', margin: '4px 0 0' }}>Selecciona una fecha para ver los productos de ese live</p>
-              </div>
-              <button onClick={() => setShowLiveHistory(false)} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: '#f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#6b7280' }}>×</button>
-            </div>
-            <div style={{ padding: '20px 24px' }}>
-              {/* Date chips */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                {liveHistoryDates.map(dateStr => {
-                  const isSelected = liveHistorySelectedDate === dateStr;
-                  const [y, m, d] = dateStr.split('-').map(Number);
-                  const dateObj = new Date(y, m - 1, d);
-                  const dayName = dateObj.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
-                  return (
-                    <button key={dateStr} onClick={() => loadLiveHistoryForDate(dateStr)}
-                      style={{ padding: '8px 14px', borderRadius: 12, border: `1.5px solid ${isSelected ? '#e94560' : '#fecdd3'}`, background: isSelected ? '#e94560' : '#fff', color: isSelected ? '#fff' : '#e94560', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: FF, whiteSpace: 'nowrap' }}>
-                      {dayName}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Products for selected date */}
-              {liveHistoryLoading ? (
-                <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>Cargando productos...</div>
-              ) : liveHistorySelectedDate && liveHistoryProducts.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
-                  {liveHistoryProducts.map(p => {
-                    const pricing = resolveProductDisplayPrice(p, apertura);
-                    const stock = p.STOCK || 0;
-                    const discountPct = isLiveShoppingProduct(p) ? getLiveShoppingDiscountPercent(p.$createdAt!) : 20;
-                    return (
-                      <div key={p.$id} style={{ background: '#fff', borderRadius: 16, border: '1px solid #f3f4f6', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8fafc', cursor: 'pointer' }} onClick={() => handleCardImageClick(p)}>
-                          {getProductImageUrl(p) ? (
-                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="160px" unoptimized />
-                          ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 32 }}>📦</div>
-                          )}
-                          <div style={{ position: 'absolute', top: 6, left: 6, background: 'linear-gradient(135deg,#e94560,#ff6b6b)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 900, padding: '3px 8px' }}>-{discountPct}%</div>
-                        </div>
-                        <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
-                            <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 32 }}>{p.NAME}</p>
-                          </Link>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                            <span style={{ fontSize: 16, fontWeight: 900, color: '#e94560', fontFamily: FF }}>{formatPrice(pricing.displayPrice)}</span>
-                            {pricing.originalPrice != null && <span style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : liveHistorySelectedDate ? (
-                <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>No hay productos para esta fecha</div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>Selecciona una fecha arriba para ver los productos</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       <style>{`
         :root {
