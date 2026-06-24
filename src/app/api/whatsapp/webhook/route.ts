@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsAppMessage, sendWhatsAppList, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
+
+export const maxDuration = 60;
 import { serverListDocuments, serverUpdateDocument, serverGetDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
 import { notifyPaymentUploaded } from '@/lib/notify-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
@@ -27,7 +29,7 @@ const FALLBACK_ADMINS = '56936599658,56992139185,56935623858,56967115685';
 const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
-const GEMINI_MODELS   = ['gemini-3.1-flash-lite', 'gemini-3.1-flash', 'gemini-2.5-flash'];
+const GEMINI_MODELS   = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
 // ─── Admin system prompt ───────────────────────────────────────────────────────
@@ -178,13 +180,24 @@ async function lookupRegisteredUser(phone: string): Promise<{ name: string; emai
     const cleaned = phone.replace(/\D/g, '');
     console.log('[WhatsApp Webhook] lookupRegisteredUser: searching for phone:', cleaned);
 
-    // Fetch recent users (up to 500) and match by phone in-memory
-    // This avoids Appwrite query format/index issues with the phone attribute
-    const qLimit500 = JSON.stringify({ method: 'limit', values: [500] });
-    const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-    const res = await serverListDocuments(USERS_COLLECTION_ID, [qOrderDesc, qLimit500]);
-    const docs = res.documents || [];
-    console.log('[WhatsApp Webhook] lookupRegisteredUser: fetched', docs.length, 'users from collection');
+    let docs: any[] = [];
+    try {
+      const qPhone1 = cleaned;
+      const qPhone2 = cleaned.startsWith('569') ? cleaned.slice(2) : `56${cleaned}`;
+      const qPhone3 = `+${cleaned}`;
+      const qPhone = JSON.stringify({ method: 'equal', attribute: 'phone', values: [qPhone1, qPhone2, qPhone3] });
+      const qLimit = JSON.stringify({ method: 'limit', values: [5] });
+      const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+      const res = await serverListDocuments(USERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit]);
+      docs = res.documents || [];
+      console.log('[WhatsApp Webhook] lookupRegisteredUser: fetched by phone query', docs.length);
+    } catch (e) {
+      console.warn('[WhatsApp Webhook] lookupRegisteredUser query failed, falling back to 20 limit:', e);
+      const qLimit20 = JSON.stringify({ method: 'limit', values: [20] });
+      const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+      const res = await serverListDocuments(USERS_COLLECTION_ID, [qOrderDesc, qLimit20]);
+      docs = res.documents || [];
+    }
 
     // Search for a matching phone
     for (const doc of docs as any[]) {
@@ -270,18 +283,19 @@ export async function POST(req: NextRequest) {
 
     // ── PREVENT WHATSAPP RETRIES (Duplicate msgId lock) ──
     try {
-      const lockDocId = msgId.substring(0, 36); // Appwrite ID limit is 36 chars
+      // getWhatsAppDocId returns u_<hash> (34 chars). We replace u_ with l_ for the lock
+      const lockDocId = getWhatsAppDocId(msgId, 'user').replace('u_', 'l_'); 
       const { serverGetDocument, serverCreateDocument } = await import('@/lib/appwrite-server');
       const { ADMIN_CHAT_COLLECTION_ID } = await import('@/lib/appwrite-admin');
       
       try {
-        await serverGetDocument(ADMIN_CHAT_COLLECTION_ID, `lk_${lockDocId}`);
+        await serverGetDocument(ADMIN_CHAT_COLLECTION_ID, lockDocId);
         // If found, this is a retry from WhatsApp. Ignore it.
         console.log(`[WhatsApp] Ignoring duplicate webhook retry for msgId: ${msgId}`);
         return NextResponse.json({ status: 'duplicate_ignored' });
       } catch {
         // Create lock
-        await serverCreateDocument(ADMIN_CHAT_COLLECTION_ID, `lk_${lockDocId}`, {
+        await serverCreateDocument(ADMIN_CHAT_COLLECTION_ID, lockDocId, {
            userId: `system:lock`,
            senderRole: 'admin',
            message: msgId,
@@ -820,10 +834,23 @@ ${products.join('\n') || 'Sin productos.'}`;
         let customerOrdersText = '';
         let myOrders: any[] = [];
         try {
-          // Fetch recent orders and filter by phone in-memory to bypass formatting issues (spaces, +, etc)
-          const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-          const qLimit500 = JSON.stringify({ method: 'limit', values: [500] });
-          const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit500]);
+          let resOrders;
+          try {
+            const cleanB = fromPhone.replace(/\D/g, '');
+            const qPhone1 = cleanB;
+            const qPhone2 = cleanB.startsWith('569') ? cleanB.slice(2) : `56${cleanB}`;
+            const qPhone3 = `+${cleanB}`;
+            const qPhone4 = `+${qPhone2}`;
+            const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+            const qPhone = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERPHONE', values: [qPhone1, qPhone2, qPhone3, qPhone4] });
+            const qLimit = JSON.stringify({ method: 'limit', values: [10] });
+            resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit]);
+          } catch (e) {
+            console.warn('[WhatsApp] Order query by phone failed, falling back to 20 limit:', e);
+            const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+            const qLimit20 = JSON.stringify({ method: 'limit', values: [20] });
+            resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit20]);
+          }
           
           myOrders = (resOrders.documents || [])
             .filter((o: any) => {

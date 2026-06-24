@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const maxDuration = 60;
 import { notifyOrderStatusChange } from '@/services/notificationService';
 import { notifyNewOrder } from '@/lib/notify-admin';
 import type { Order } from '@/types/admin';
