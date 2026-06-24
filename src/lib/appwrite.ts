@@ -37,6 +37,21 @@ export function getServices() {
   const { endpoint, projectId } = getConfig();
   if (!_client) {
     _client = new Client().setEndpoint(endpoint).setProject(projectId);
+
+    // 🔒 SERVER-ONLY: autenticar con la API key para que las lecturas funcionen
+    // aunque las colecciones NO sean de lectura pública (read("any")).
+    // En el cliente, process.env.APPWRITE_API_KEY es undefined y Next NO lo incluye
+    // en el bundle (no es NEXT_PUBLIC), así que la key jamás se expone al navegador.
+    // El navegador sigue leyendo vía el proxy cacheado /api/appwrite-proxy.
+    if (typeof window === 'undefined' && process.env.APPWRITE_API_KEY) {
+      try {
+        (_client as any).headers = {
+          ...((_client as any).headers || {}),
+          'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
+        };
+      } catch { /* noop */ }
+    }
+
     _databases = new Databases(_client);
     _account = new Account(_client);
     _storage = new Storage(_client);

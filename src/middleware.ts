@@ -47,6 +47,17 @@ export function middleware(request: NextRequest) {
     response.cookies.set('user_country', country, { path: '/' });
   }
 
+  // ── Monitor de requests: identifica QUÉ pega a la app (sobre todo de noche).
+  // Loguea /api/* (los que pueden disparar lecturas a Appwrite). Filtra en Vercel por "[REQ]".
+  // Silenciar con env LOG_REQ=0.
+  if (process.env.LOG_REQ !== '0') {
+    const path = request.nextUrl.pathname;
+    if (path.startsWith('/api/') && !path.startsWith('/api/assets') && !path.startsWith('/api/image')) {
+      const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '?';
+      console.log(`[REQ] ${path}${request.nextUrl.search} | ip:${ip} | ua:${(request.headers.get('user-agent') || '').slice(0, 70)}`);
+    }
+  }
+
   return response;
 }
 
