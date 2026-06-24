@@ -28,9 +28,10 @@ const cachedAppwriteGet = (path: string, searchParams: string) => unstable_cache
   { revalidate: 300, tags: ['appwrite-proxy-v1'] }
 )();
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) {
   try {
-    const path = params.path ? params.path.join('/') : '';
+    const { path: pathParam } = await params;
+    const path = pathParam ? pathParam.join('/') : '';
     
     // Security check: Only allow GET requests to databases/collections/documents
     // We must prevent users from accessing secure collections (like users or admin settings)
@@ -65,11 +66,12 @@ export async function GET(req: NextRequest, { params }: { params: { path: string
 }
 
 // Pass-through other methods directly to Appwrite (NO CACHE)
-async function passThrough(req: NextRequest, method: string, { params }: { params: { path: string[] } }) {
+async function passThrough(req: NextRequest, method: string, { params }: { params: Promise<{ path?: string[] }> }) {
   try {
     const { endpoint } = getServerConfig();
     const headers = getHeaders();
-    const path = params.path ? params.path.join('/') : '';
+    const { path: pathParam } = await params;
+    const path = pathParam ? pathParam.join('/') : '';
     const { searchParams } = new URL(req.url);
     const queryStr = searchParams.toString();
     
@@ -96,7 +98,7 @@ async function passThrough(req: NextRequest, method: string, { params }: { param
   }
 }
 
-export async function POST(req: NextRequest, ctx: any) { return passThrough(req, 'POST', ctx); }
-export async function PUT(req: NextRequest, ctx: any) { return passThrough(req, 'PUT', ctx); }
-export async function PATCH(req: NextRequest, ctx: any) { return passThrough(req, 'PATCH', ctx); }
-export async function DELETE(req: NextRequest, ctx: any) { return passThrough(req, 'DELETE', ctx); }
+export async function POST(req: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) { return passThrough(req, 'POST', { params }); }
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) { return passThrough(req, 'PUT', { params }); }
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) { return passThrough(req, 'PATCH', { params }); }
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) { return passThrough(req, 'DELETE', { params }); }
