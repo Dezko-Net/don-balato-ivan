@@ -595,7 +595,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     </div>
                     <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {cSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {cSku}</div>}
-                      <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
+                      <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
                       </Link>
                       {p.PACKQTY && p.PACKQTY > 1 ? (
@@ -896,7 +896,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             <AnimHeart filled={fav} size={20} />
                           </button>
                         </div>
-                        <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
+                        <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
@@ -1010,7 +1010,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {cardSku && <div className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
-                        <Link href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
+                        <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
                         {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: packQtyColor, fontWeight: 800, marginBottom: 6 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}

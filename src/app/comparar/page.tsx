@@ -127,7 +127,7 @@ export default function CompararPage() {
                     <div style={{ width: 120, height: 120, margin: '0 auto 10px', position: 'relative', background: '#f9f9f9', borderRadius: 4 }}>
                       {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 8 }} sizes="120px" /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>📦</span>}
                     </div>
-                    <Link href={`/productos/${p.$id}`} style={{ fontSize: 13, color: '#333', fontWeight: 600, textDecoration: 'none', display: 'block', marginBottom: 6, lineHeight: 1.3 }}>{p.NAME}</Link>
+                    <Link prefetch={false} href={`/productos/${p.$id}`} style={{ fontSize: 13, color: '#333', fontWeight: 600, textDecoration: 'none', display: 'block', marginBottom: 6, lineHeight: 1.3 }}>{p.NAME}</Link>
                     <p style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 300, color: '#333' }}>{formatPrice(price)}</p>
                     <button onClick={() => addItem(p)} disabled={(p.STOCK ?? 0) === 0}
                       style={{ width: '100%', padding: '8px 0', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: (p.STOCK ?? 0) === 0 ? 0.4 : 1 }}>

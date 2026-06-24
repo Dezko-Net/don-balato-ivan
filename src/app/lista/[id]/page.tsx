@@ -74,7 +74,7 @@ export default function SharedListPage() {
               const hasDisc = !!(p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE);
               return (
                 <div key={p.$id} style={{ background: '#fff', borderRadius: 8, display: 'flex', gap: 16, padding: 16, alignItems: 'center' }}>
-                  <Link href={`/productos/${p.$id}`} style={{ flexShrink: 0, position: 'relative', width: 90, height: 90, borderRadius: 6, background: '#f9f9f9', overflow: 'hidden' }}>
+                  <Link prefetch={false} href={`/productos/${p.$id}`} style={{ flexShrink: 0, position: 'relative', width: 90, height: 90, borderRadius: 6, background: '#f9f9f9', overflow: 'hidden' }}>
                     {p.IMAGEURL ? (
                       <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 6 }} sizes="90px" />
                     ) : (
@@ -87,7 +87,7 @@ export default function SharedListPage() {
                     )}
                   </Link>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                    <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                       <p style={{ margin: '0 0 4px', fontSize: 14, color: '#333', fontWeight: 500, lineHeight: 1.3 }}>{p.NAME}</p>
                     </Link>
                     {hasDisc && <p style={{ margin: '0 0 2px', fontSize: 13, color: '#999', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</p>}

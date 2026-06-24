@@ -344,7 +344,7 @@ export default function ProductVotesPage() {
                   <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
                   <p style={{ fontSize: 11, color: '#6b7280', margin: '0 0 8px' }}>{catMap[p.CATEGORYID || ''] || 'Sin categoría'}{p.sku ? ` · SKU: ${p.sku}` : ''}</p>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <Link href={`/productos/${p.$id}`} target="_blank" style={{ flex: 1, padding: '6px 0', background: '#f1f5f9', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#333', textDecoration: 'none', textAlign: 'center' }}>Ver</Link>
+                    <Link prefetch={false} href={`/productos/${p.$id}`} target="_blank" style={{ flex: 1, padding: '6px 0', background: '#f1f5f9', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#333', textDecoration: 'none', textAlign: 'center' }}>Ver</Link>
                     <button onClick={() => handleEditImage(p)} disabled={editingImage?.productId === p.$id} style={{ flex: 1, padding: '6px 0', background: editingImage?.productId === p.$id ? '#e5e7eb' : '#dbeafe', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#2563eb', cursor: editingImage?.productId === p.$id ? 'not-allowed' : 'pointer' }}>Imagen</button>
                     <button onClick={() => handleRemoveComingSoon(p.$id)} style={{ flex: 1, padding: '6px 0', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#dc2626', cursor: 'pointer' }}>Quitar</button>
                   </div>

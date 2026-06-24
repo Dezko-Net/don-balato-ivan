@@ -2053,7 +2053,7 @@ export default function HomePage2() {
                           </div>
 
                           {/* Title */}
-                          <Link href={`/productos/${mainOffer.targetId}`} style={{ textDecoration: 'none' }}>
+                          <Link prefetch={false} href={`/productos/${mainOffer.targetId}`} style={{ textDecoration: 'none' }}>
                             <h3 className="offer-title" style={{ margin: '0 0 12px', fontSize: 20, fontWeight: 700, color: '#111', lineHeight: 1.3, letterSpacing: '-0.4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{mainOffer.productName || mainOffer.title}</h3>
                           </Link>
 
@@ -2084,7 +2084,7 @@ export default function HomePage2() {
                                 <ShoppingCart size={16} /> Agregar al carrito
                               </button>
                             )}
-                            <Link href={`/productos/${mainOffer.targetId}`} className="offer-details-btn" style={{ padding: '12px 22px', background: 'transparent', color: '#3483fa', border: '1.5px solid #3483fa', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .2s', position: 'relative', overflow: 'hidden' }}>
+                            <Link prefetch={false} href={`/productos/${mainOffer.targetId}`} className="offer-details-btn" style={{ padding: '12px 22px', background: 'transparent', color: '#3483fa', border: '1.5px solid #3483fa', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .2s', position: 'relative', overflow: 'hidden' }}>
                               Ver detalles <ChevronRight size={14} style={{ transition: 'transform .2s' }} />
                             </Link>
                           </div>
@@ -2292,7 +2292,7 @@ export default function HomePage2() {
                               <FavoriteButton productId={p.$id} design={favDesign} />
                             </div>
                             {/* ── Image area with hover swap ── */}
-                            <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
                               <div className="pc-img-wrap" style={{ position: 'relative', height: imgH, overflow: 'hidden', background: '#f8f8f8' }}>
                                 <div className="card-img pc-img-primary" style={{ position: 'absolute', inset: 0, zIndex: 1, transition: 'opacity .45s cubic-bezier(.4,0,.2,1), transform .5s cubic-bezier(.4,0,.2,1)' }}>
                                   {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, color: '#ccc' }}>📦</span>}
@@ -2364,7 +2364,7 @@ export default function HomePage2() {
                               <button className="qv-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); setQuickViewProduct(p); }} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', padding: 0, opacity: 0, transition: 'all .25s cubic-bezier(.4,0,.2,1)', transform: 'translateY(-4px)' }}><Eye size={13} color="#444" strokeWidth={2.2} /></button>
                               <FavoriteButton productId={p.$id} design={favDesign} />
                             </div>
-                            <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
                               <div className="pc-img-wrap" style={{ position: 'relative', height: imgH, overflow: 'hidden', background: '#f8f8f8' }}>
                                 <div className="card-img pc-img-primary" style={{ position: 'absolute', inset: 0, zIndex: 1, transition: 'opacity .45s cubic-bezier(.4,0,.2,1), transform .5s cubic-bezier(.4,0,.2,1)' }}>
                                   {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, color: '#ccc' }}>📦</span>}
@@ -3278,7 +3278,7 @@ export default function HomePage2() {
             <div className="hs-tag" style={{ position: 'relative' }}>
               {/* Product image header */}
               {prod.IMAGEURL && (
-                <Link href={`/productos/${prod.$id}`}>
+                <Link prefetch={false} href={`/productos/${prod.$id}`}>
                   <img className="hs-tag-img" src={prod.IMAGEURL} alt={prod.NAME} />
                 </Link>
               )}
@@ -3292,7 +3292,7 @@ export default function HomePage2() {
                 </div>
               )}
               <div className="hs-tag-body">
-                <Link href={`/productos/${prod.$id}`} style={{ textDecoration: 'none' }}>
+                <Link prefetch={false} href={`/productos/${prod.$id}`} style={{ textDecoration: 'none' }}>
                   <div className="hs-tag-name">{prod.NAME}</div>
                 </Link>
                 <div>
@@ -3309,7 +3309,7 @@ export default function HomePage2() {
                   >
                     <ShoppingCart size={12} /> Agregar
                   </button>
-                  <Link href={`/productos/${prod.$id}`} style={{ flex: 1, textDecoration: 'none' }}>
+                  <Link prefetch={false} href={`/productos/${prod.$id}`} style={{ flex: 1, textDecoration: 'none' }}>
                     <button className="hs-tag-btn" style={{ background: 'transparent', color: '#111', border: '1.5px solid #e0e0e0', width: '100%' }}>
                       Comprar
                     </button>

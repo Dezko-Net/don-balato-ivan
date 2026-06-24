@@ -157,8 +157,7 @@ export default function ProductCardPreview({ product, onClose }: Props) {
           >
             <ShoppingCart size={18} /> {outOfStock ? 'Sin stock' : 'Comprar ahora'}
           </button>
-          <Link
-            href={`/productos/${product.$id}`}
+          <Link prefetch={false} href={`/productos/${product.$id}`}
             onClick={close}
             style={{
               display: 'block', width: '100%', padding: 13, borderRadius: 14, textAlign: 'center',

@@ -158,7 +158,7 @@ export default function ClipsPage() {
 
         {/* Product card */}
         {clip.PRODUCTID && (
-          <Link href={`/productos/${clip.PRODUCTID}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.12)', borderRadius: 10, textDecoration: 'none', backdropFilter: 'blur(10px)' }}>
+          <Link prefetch={false} href={`/productos/${clip.PRODUCTID}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.12)', borderRadius: 10, textDecoration: 'none', backdropFilter: 'blur(10px)' }}>
             {clip.PRODUCTIMAGEURL && (
               <div style={{ width: 44, height: 44, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#fff' }}>
                 <img src={clip.PRODUCTIMAGEURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />

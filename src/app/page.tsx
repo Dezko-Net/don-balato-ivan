@@ -324,7 +324,7 @@ export default function HomePage() {
               const discPct = hasDiscount ? Math.round(((p.PRICE - p.CURRENTPRICE!) / p.PRICE) * 100) : 0;
               return (
                 <div key={p.$id} className="glass rounded-2xl overflow-hidden card-hover group">
-                  <Link href={`/productos/${p.$id}`}>
+                  <Link prefetch={false} href={`/productos/${p.$id}`}>
                     <div className="relative h-48 bg-white/5">
                       {p.IMAGEURL ? (
                         <Image src={p.IMAGEURL} alt={p.NAME} fill sizes="100vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -342,7 +342,7 @@ export default function HomePage() {
                     </div>
                   </Link>
                   <div className="p-4">
-                    <Link href={`/productos/${p.$id}`}>
+                    <Link prefetch={false} href={`/productos/${p.$id}`}>
                       <h3 className="font-medium text-sm mb-1 truncate hover:text-purple-300 transition-colors">{p.NAME}</h3>
                     </Link>
                     <div className="flex items-center gap-2 mb-3">

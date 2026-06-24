@@ -217,7 +217,7 @@ export default function QuickView({ product, onClose }: Props) {
                     {added ? <><Check size={17} strokeWidth={3} /> ¡Agregado!</> : <><ShoppingCart size={17} /> Agregar al carrito — {formatPrice(currentPrice * qty)}</>}
                   </button>
                 )}
-                <Link href={`/productos/${product.$id}`} onClick={handleClose}
+                <Link prefetch={false} href={`/productos/${product.$id}`} onClick={handleClose}
                   style={{ width: '100%', padding: '11px 0', background: '#fff', color: '#3483fa', border: '1.5px solid #3483fa', borderRadius: 10, fontSize: 13, fontWeight: 600, textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all .2s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#3483fa'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.color = '#3483fa'; }}

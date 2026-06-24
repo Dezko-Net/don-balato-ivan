@@ -155,8 +155,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
               width: '90vw', maxWidth: 400,
             }}
           >
-            <Link
-              href={`/productos/${p.$id}`}
+            <Link prefetch={false} href={`/productos/${p.$id}`}
               onClick={() => setZoomSrc(null)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,

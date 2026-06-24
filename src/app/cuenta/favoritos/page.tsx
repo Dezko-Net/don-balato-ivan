@@ -168,7 +168,7 @@ export default function FavoritosPage() {
             return (
               <div key={p.$id} className="fav-card">
                 <div className="fav-card-inner">
-                  <Link href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
+                  <Link prefetch={false} href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
                     <div style={{ height: 160, background: '#fafafa', overflow: 'hidden' }}>
                       {p.IMAGEURL
                         ? <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 10 }} />
@@ -181,7 +181,7 @@ export default function FavoritosPage() {
                   </Link>
 
                   <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                    <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                       <p style={{ margin: '0 0 4px', fontSize: 13, color: '#333', fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
                     </Link>
 

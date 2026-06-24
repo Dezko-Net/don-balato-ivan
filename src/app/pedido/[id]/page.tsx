@@ -1165,6 +1165,24 @@ export default function PedidoPage() {
           </div>
         )}
 
+        {/* ── WhatsApp Link Section ── */}
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40 mb-4">
+          <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-2">
+            <MessageSquare size={18} className="text-[#25D366]" /> Recibir notificaciones
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Conecta tu pedido a nuestro WhatsApp para recibir actualizaciones automáticas. Si escribiste mal tu número en el carrito, haz click aquí para corregirlo.
+          </p>
+          <a
+            href={`https://wa.me/56999149712?text=vincular_pedido%20${order.$id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-2xl font-bold text-sm transition shadow-sm"
+          >
+            <MessageSquare size={16} /> Conectar WhatsApp
+          </a>
+        </div>
+
         {/* ── Order items ── */}
         <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
           <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">

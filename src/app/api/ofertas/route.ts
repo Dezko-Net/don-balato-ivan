@@ -3,6 +3,7 @@ import { getServices, getAppwriteConfig, THEME_CONFIG_COLLECTION } from '@/lib/a
 import { Query } from 'appwrite';
 
 const DOC_ID = 'ofertas_section';
+export const revalidate = 60; // Cache for 60 seconds at Edge/Server level
 
 // GET - Get list of selected product IDs
 export async function GET() {

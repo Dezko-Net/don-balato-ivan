@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Phone, CreditCard, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, User, Phone, CreditCard, Loader2, Check, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getServices } from '@/lib/appwrite';
 
@@ -153,12 +153,30 @@ export default function InfoPage() {
         </div>
 
         {/* Info card */}
-        <div style={{ background: '#fff', borderRadius: 12, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,.08)' }}>
+        <div style={{ background: '#fff', borderRadius: 12, padding: '16px', marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,.08)' }}>
           <p style={{ margin: 0, fontSize: 13, color: '#666', lineHeight: 1.5 }}>
             💡 <strong>Tip:</strong> Al guardar tu teléfono y RUT, estos datos se rellenarán automáticamente en tus futuras compras, ahorrándote tiempo en el checkout.
           </p>
         </div>
 
+        {/* WhatsApp Link Section */}
+        <div style={{ background: '#fff', borderRadius: 12, padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,.08)', border: '1.5px solid #dcfce7' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <MessageCircle size={22} color="#25D366" />
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111' }}>Conectar WhatsApp</h3>
+          </div>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: '#555', lineHeight: 1.5 }}>
+            ¿Escribiste mal tu número al registrarte? Haz click aquí para vincular tu WhatsApp actual a Kenia y recibir notificaciones.
+          </p>
+          <a
+            href={`https://wa.me/56999149712?text=vincular_cuenta%20${user.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#25D366', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: 15, transition: 'all .2s' }}
+          >
+            <MessageCircle size={18} /> Vincular mi WhatsApp
+          </a>
+        </div>
       </div>
 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

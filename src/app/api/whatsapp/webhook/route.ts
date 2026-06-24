@@ -493,6 +493,72 @@ export async function POST(req: NextRequest) {
       isAdmin = false;
     }
 
+    // ── Deep Linking / Auto-Linking Interceptors ──
+    const userTextLower = userText.toLowerCase().trim();
+    if (userTextLower.startsWith('vincular_pedido ')) {
+      const orderId = userText.substring('vincular_pedido '.length).trim();
+      if (orderId) {
+        try {
+          const { serverUpdateDocument, serverGetDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const order = await serverGetDocument(ORDERS_COLLECTION_ID, orderId);
+          if (order) {
+            const currentPhone = String(order.CUSTOMERPHONE || '');
+            const cleanCurrent = currentPhone.replace(/\D/g, '');
+            if (cleanCurrent !== cleanedFrom) {
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+                CUSTOMERPHONE: `+${cleanedFrom}`
+              });
+            }
+            await markAsRead(msgId, WA_TOKEN);
+            await clearHistory(fromPhone);
+            await resetKeniaUsage(fromPhone);
+            await setKeniaBlocked(fromPhone, false);
+
+            const replyMsg = `¡Listo hermosa! 💖 Ya corregí tu número y vinculé tu WhatsApp a tu pedido *#${order.ORDERCODE || orderId}*. Ahora sí estamos conectadas y te avisaré de cualquier novedad de tu compra. 🥰`;
+            await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', replyMsg, `link-order-${Date.now()}`);
+            return NextResponse.json({ status: 'order_linked' });
+          }
+        } catch (e) {
+          console.error('[WhatsApp Webhook] Error vincular_pedido:', e);
+        }
+      }
+    }
+
+    if (userTextLower.startsWith('vincular_cuenta ')) {
+      const userId = userText.substring('vincular_cuenta '.length).trim();
+      if (userId) {
+        try {
+          const { serverUpdateDocument, serverGetDocument } = await import('@/lib/appwrite-server');
+          const { USERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const userDoc = await serverGetDocument(USERS_COLLECTION_ID, userId);
+          if (userDoc) {
+            const currentPhone = String(userDoc.phone || '');
+            const cleanCurrent = currentPhone.replace(/\D/g, '');
+            if (cleanCurrent !== cleanedFrom) {
+              await serverUpdateDocument(USERS_COLLECTION_ID, userId, {
+                phone: `+${cleanedFrom}`
+              });
+            }
+            await markAsRead(msgId, WA_TOKEN);
+            await clearHistory(fromPhone);
+            await resetKeniaUsage(fromPhone);
+            await setKeniaBlocked(fromPhone, false);
+
+            const replyMsg = `¡Listo ${userDoc.name || 'bella'}! 💖 Ya corregí tu número y vinculé tu WhatsApp a tu cuenta. Ahora sí estamos conectadas y te ayudaré con lo que necesites. 🥰`;
+            await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', replyMsg, `link-account-${Date.now()}`);
+            return NextResponse.json({ status: 'account_linked' });
+          }
+        } catch (e) {
+          console.error('[WhatsApp Webhook] Error vincular_cuenta:', e);
+        }
+      }
+    }
+
     // Intercept interactive options before AI
     if (!isAdmin && interactiveId) {
       let interceptReply = '';
@@ -627,11 +693,26 @@ export async function POST(req: NextRequest) {
       }
 
       if (!registeredUser && !isGuestWithOrders) {
+        // If the user is specifically asking for human help while blocked:
+        const userTextLower = userText.toLowerCase().trim();
+        if (userTextLower.includes('ayuda') || userTextLower.includes('humano') || userTextLower.includes('asesor') || userTextLower.includes('persona')) {
+          await setKeniaBlocked(fromPhone, true);
+          const helpMsg = '👤 Entiendo hermosa. He notificado a nuestro equipo de atención al cliente. Por favor espera un momentito y una persona real te ayudará por aquí mismo para revisar tu caso. 🌸';
+          await addToHistory(fromPhone, 'user', userText, msgId);
+          await addToHistory(fromPhone, 'assistant', helpMsg);
+          await sendWhatsAppMessage(fromPhone, helpMsg, WA_TOKEN);
+          
+          // Notify Admin
+          const adminMsg = `🚨 *ASISTENCIA REQUERIDA (USUARIO NO REGISTRADO)*\nEl número +${fromPhone} no está registrado en la base de datos pero está pidiendo ayuda manual. Es posible que haya ingresado mal su número al registrarse.\n\nMensaje original: "${userText}"`;
+          await sendWhatsAppMessage(ADMIN_PHONES[0], adminMsg, WA_TOKEN);
+          return NextResponse.json({ status: 'admin_notified' });
+        }
+
         // Not registered and no orders: prompt to register (once per 24h to avoid spam)
         const now = Date.now();
         const lastPrompted = usage.registerPromptedAt || 0;
         if (now - lastPrompted > 24 * 60 * 60 * 1000) {
-          const registerMsg = '¡Hola hermosa! 🌸 Mis sistemas me indican que aún no estás registrada en nuestra página web. Para poder atenderte de forma más personalizada y no estar pidiéndote tus datitos todo el tiempo 😅 necesito solamente que te registres aquí 👇\n\n' + SITE_URL + '/login?tab=register\n\nLuego vuelve, escríbeme y te atenderé como una reina se merece 👑✨';
+          const registerMsg = '¡Hola hermosa! 🌸 Mis sistemas me indican que aún no estás registrada en nuestra página web. Para poder atenderte de forma más personalizada y no estar pidiéndote tus datitos todo el tiempo 😅 necesito solamente que te registres aquí 👇\n\n' + SITE_URL + '/login?tab=register\n\n💡 *¿Ya hiciste un pedido o tienes cuenta pero pusiste mal tu número?* ¡No te preocupes! Inicia sesión en la web y busca el botón *"Conectar WhatsApp"* en tu perfil o en tu pedido, o busca el link en tu correo electrónico.\n\n👩‍💻 *¿Necesitas ayuda de un humano para arreglarlo?* Simplemente escribe la palabra *Ayuda* y una asesora real te atenderá.\n\nLuego vuelve, escríbeme y te atenderé como una reina se merece 👑✨';
           await addToHistory(fromPhone, 'user', userText, msgId);
           await addToHistory(fromPhone, 'assistant', registerMsg);
           await sendWhatsAppMessage(fromPhone, registerMsg, WA_TOKEN);
@@ -1144,13 +1225,38 @@ ${products.join('\n') || 'Sin productos.'}`;
     const customerNameBlock = (!isAdmin && customerName) ? '\n\n## 👤 DATOS DEL CLIENTE:\nNombre: ' + customerName + '\n(Usa su nombre real para saludarla. Usa expresiones como "bella", "hermosa", "linda" solo ocasionalmente, no en cada frase.)' : '';
     const systemPrompt = basePrompt + timeBlock + contextBlock + customerNameBlock;
 
-    const contents = [
+    const rawContents = [
       ...history.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
+        parts: [{ text: m.content || '...' }],
       })),
-      { role: 'user', parts: [{ text: userText }, ...inlineDataParts] },
+      { role: 'user', parts: [{ text: userText || '...' }, ...inlineDataParts] },
     ];
+
+    // Fix Gemini history strict alternating rules (must start with user, must alternate user/model)
+    const contents: any[] = [];
+    for (const msg of rawContents) {
+      if (contents.length === 0) {
+        if (msg.role === 'model') {
+          // Prepend a dummy user message so it starts with user
+          contents.push({ role: 'user', parts: [{ text: 'Hola' }] });
+        }
+        contents.push(msg);
+      } else {
+        const last = contents[contents.length - 1];
+        if (last.role === msg.role) {
+          // Combine consecutive messages of the same role
+          const lastText = last.parts[0]?.text || '';
+          const newText = msg.parts[0]?.text || '';
+          last.parts[0].text = lastText + '\n\n' + newText;
+          if (msg.parts.length > 1) {
+            last.parts.push(...msg.parts.slice(1));
+          }
+        } else {
+          contents.push(msg);
+        }
+      }
+    }
 
     const geminiBody = {
       system_instruction: { parts: [{ text: systemPrompt }] },

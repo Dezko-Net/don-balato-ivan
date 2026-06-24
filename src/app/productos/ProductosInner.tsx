@@ -677,7 +677,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                             <AnimHeart filled={fav} size={20} />
                           </button>
                         </div>
-                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
@@ -726,7 +726,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {cardSku && <div className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
-                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
                         {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginBottom: 4 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}

@@ -1475,31 +1475,7 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
   if (pendingConfigPromise) return pendingConfigPromise;
   
   pendingConfigPromise = (async () => {
-    // Intentar leer del API server-side (que usa API key)
-    try {
-      const res = await fetch(API_ENDPOINT);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.sections) {
-          const parsed: SectionConfig[] = typeof data.sections === 'string' ? JSON.parse(data.sections) : data.sections;
-          // Accept any array, even empty, to avoid forced reset to defaults if user intentionally has few sections
-          if (Array.isArray(parsed)) {
-            const merged = mergeWithDefaults(parsed);
-            cachedConfig = merged;
-            cacheTimestamp = Date.now();
-            // Sincronizar localStorage como backup
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch {}
-            return merged;
-          }
-        }
-      }
-    } catch (err) {
-      console.log('[section-config] API no disponible, usando localStorage:', err);
-    } finally {
-      pendingConfigPromise = null;
-    }
-    
-    // Fallback a localStorage
+    pendingConfigPromise = null;
     return getSectionConfigSync();
   })();
   

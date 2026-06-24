@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   CheckCircle2, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package,
   Truck, Shield, FileText, Sparkles, Building2, User, CreditCard, Mail,
-  Hash, ChevronRight, PartyPopper,
+  Hash, ChevronRight, PartyPopper, MessageCircle
 } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice, ID } from '@/lib/appwrite';
 import { Order, OrderItem } from '@/types';
@@ -389,6 +389,24 @@ function ConfirmadoInner() {
             )}
           </div>
         )}
+
+        {/* ── WhatsApp Link Section ── */}
+        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #fce7f3', marginBottom: 16 }}>
+          <h2 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
+            <MessageCircle size={18} color="#25D366" /> Recibir notificaciones
+          </h2>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
+            Conecta tu pedido a nuestro WhatsApp para recibir actualizaciones automáticas. Si escribiste mal tu número en el carrito, haz click aquí para corregirlo.
+          </p>
+          <a
+            href={`https://wa.me/56999149712?text=vincular_pedido%20${order.$id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#25D366', color: '#fff', borderRadius: 14, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(37,211,102,0.2)' }}
+          >
+            <MessageCircle size={18} /> Conectar WhatsApp
+          </a>
+        </div>
 
         {/* ── Order items ── */}
         <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #fce7f3', marginBottom: 16 }}>
