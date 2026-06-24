@@ -604,8 +604,30 @@ export async function POST(req: NextRequest) {
     let customerName = '';
     if (!isAdmin) {
       const registeredUser = await lookupRegisteredUser(fromPhone);
+      let isGuestWithOrders = false;
       if (!registeredUser) {
-        // Not registered: prompt to register (once per 24h to avoid spam)
+        // Fallback: check if they have any orders as a guest
+        try {
+          const { serverListDocuments } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+          const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+          const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
+          const myOrders = (resOrders.documents || []).filter((o: any) => {
+             const oPhone = String(o.CUSTOMERPHONE || '');
+             if (!oPhone) return false;
+             return phonesMatch(oPhone, fromPhone);
+          });
+          if (myOrders.length > 0) {
+            isGuestWithOrders = true;
+          }
+        } catch (e) {
+          console.warn('[WhatsApp Webhook] Failed to check guest orders', e);
+        }
+      }
+
+      if (!registeredUser && !isGuestWithOrders) {
+        // Not registered and no orders: prompt to register (once per 24h to avoid spam)
         const now = Date.now();
         const lastPrompted = usage.registerPromptedAt || 0;
         if (now - lastPrompted > 24 * 60 * 60 * 1000) {
@@ -617,7 +639,7 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ status: 'not_registered' });
       }
-      customerName = registeredUser.name || '';
+      customerName = registeredUser?.name || 'bella';
     }
 
     // ── First interaction welcome menu for registered customers ─────────────────
