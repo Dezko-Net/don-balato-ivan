@@ -19,6 +19,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Disable automatic cron to prevent 1 Appwrite read per minute (1440/day)
+    if (!targetOrderId) {
+      return NextResponse.json({ status: 'disabled', message: 'Cron automático desactivado para ahorrar consumo de Appwrite.' });
+    }
+
     // 1. Fetch orders in negotiation
     let activeOrders: any[] = [];
     if (targetOrderId) {

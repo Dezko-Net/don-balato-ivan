@@ -1475,8 +1475,14 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
   if (pendingConfigPromise) return pendingConfigPromise;
   
   pendingConfigPromise = (async () => {
-    pendingConfigPromise = null;
-    return getSectionConfigSync();
+    try {
+      return getSectionConfigSync();
+    } catch (err) {
+      console.log('[section-config] API no disponible, usando localStorage:', err);
+      return getSectionConfigSync();
+    } finally {
+      pendingConfigPromise = null;
+    }
   })();
   
   return pendingConfigPromise;
