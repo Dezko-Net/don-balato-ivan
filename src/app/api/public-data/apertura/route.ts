@@ -51,7 +51,7 @@ const getCachedAperturaSettings = unstable_cache(
     return result;
   },
   ['apertura-settings-cache-v1'],
-  { revalidate: 60, tags: ['apertura_settings'] }
+  { revalidate: 300, tags: ['apertura_settings'] }
 );
 
 export async function GET() {
@@ -59,7 +59,7 @@ export async function GET() {
     const data = await getCachedAperturaSettings();
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60'
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
       }
     });
   } catch (error: any) {

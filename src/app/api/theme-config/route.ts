@@ -7,8 +7,6 @@ const COLLECTION_ID = 'theme_config';
 const DOC_ID = 'homepage_sections';
 const API_KEY = process.env.APPWRITE_API_KEY || '';
 
-export const revalidate = 60; // Cache for 60 seconds on the edge/server
-
 const headers = {
   'Content-Type': 'application/json',
   'X-Appwrite-Project': PROJECT_ID,
@@ -32,7 +30,7 @@ export async function GET() {
       const doc = await res.json();
       return NextResponse.json(
         { success: true, sections: doc.SECTIONS || doc.sections },
-        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } },
+        { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400' } },
       );
     }
 
