@@ -6,19 +6,6 @@ import { resolveProductDisplayPrice, fetchAperturaSettings } from '@/lib/apertur
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { normalizeProductImages } from '@/lib/product-images';
 
-// Helper to get threshold for live shopping (5PM)
-function getLiveShoppingThreshold(): Date {
-  const now = new Date();
-  const today5Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
-  if (now.getTime() >= today5Pm.getTime()) {
-    return today5Pm;
-  } else {
-    const yesterday5Pm = new Date(today5Pm);
-    yesterday5Pm.setDate(yesterday5Pm.getDate() - 1);
-    return yesterday5Pm;
-  }
-}
-
 // Module-level in-memory cache fallbacks (safe-guard in case unstable_cache is bypassed or server restarts)
 let memoryCacheAllProducts: any[] | null = null;
 let memoryCacheAllProductsTime = 0;
@@ -29,7 +16,6 @@ let memoryCacheActiveOffersTime = 0;
 let memoryCacheAperturaSettings: any = null;
 let memoryCacheAperturaSettingsTime = 0;
 
-let memoryCacheLiveProducts: Record<string, { data: any[]; timestamp: number }> = {};
 
 // Cache all active products for 60 seconds
 const getCachedAllProducts = unstable_cache(
@@ -119,92 +105,9 @@ const getCachedAperturaSettings = unstable_cache(
   { revalidate: 3600, tags: ['settings'] }
 );
 
-// Cache live products for a specific "live day" (date 5PM → next day 5PM local).
-let memoryCacheLiveProductsByDate: Record<string, { data: any[]; timestamp: number }> = {};
-const getCachedLiveProductsByDate = unstable_cache(
-  async (dateStr: string) => {
-    const now = Date.now();
-    const cached = memoryCacheLiveProductsByDate[dateStr];
-    if (cached && (now - cached.timestamp < 60000)) {
-      return cached.data;
-    }
-    const [y, m, d] = dateStr.split('-').map(n => parseInt(n, 10));
-    const start = new Date(y, (m - 1), d, 17, 0, 0, 0);
-    const end = new Date(y, (m - 1), d + 1, 17, 0, 0, 0);
-
-    const { databases } = getServices();
-    const { databaseId } = getAppwriteConfig();
-    const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-      Query.greaterThanEqual('$createdAt', start.toISOString()),
-      Query.lessThan('$createdAt', end.toISOString()),
-      Query.greaterThanEqual('STOCK', 0),
-      Query.orderDesc('$createdAt'),
-      Query.limit(500),
-    ]);
-    const normalized = res.documents.map(p => normalizeProductImages(p as any));
-    memoryCacheLiveProductsByDate[dateStr] = { data: normalized, timestamp: Date.now() };
-    return normalized;
-  },
-  ['live-products-by-date-cache-v1'],
-  { revalidate: 86400, tags: ['products', 'live'] }
-);
-
-// Cache live products for 60 seconds
-const getCachedLiveProducts = unstable_cache(
-  async (thresholdIso: string) => {
-    const now = Date.now();
-    const cached = memoryCacheLiveProducts[thresholdIso];
-    if (cached && (now - cached.timestamp < 60000)) {
-      return cached.data;
-    }
-
-    const { databases } = getServices();
-    const { databaseId } = getAppwriteConfig();
-    const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-      Query.greaterThanEqual('$createdAt', thresholdIso),
-      Query.greaterThanEqual('STOCK', 0),
-      Query.orderDesc('$createdAt'),
-      Query.limit(500),
-    ]);
-    const normalized = res.documents.map(p => normalizeProductImages(p as any));
-    memoryCacheLiveProducts[thresholdIso] = {
-      data: normalized,
-      timestamp: Date.now()
-    };
-    return normalized;
-  },
-  ['live-products-cache-v3'],
-  { revalidate: 86400, tags: ['products', 'live'] }
-);
-
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const isLive = searchParams.get('live') === 'true';
-
-    // 1. Live Shopping (Real-time DB query with 60s cache)
-    if (isLive) {
-      // Optional: products of a specific past "live day" (YYYY-MM-DD).
-      const dateParam = searchParams.get('date');
-      if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-        const normalizedByDate = await getCachedLiveProductsByDate(dateParam);
-        return NextResponse.json(
-          { products: normalizedByDate },
-          { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60' } }
-        );
-      }
-      const threshold = getLiveShoppingThreshold();
-      const normalized = await getCachedLiveProducts(threshold.toISOString());
-      return NextResponse.json(
-        { products: normalized },
-        {
-          headers: {
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
-          },
-        }
-      );
-    }
-
     const idsParam = searchParams.get('ids');
     if (idsParam) {
       const ids = idsParam.split(',').filter(Boolean);

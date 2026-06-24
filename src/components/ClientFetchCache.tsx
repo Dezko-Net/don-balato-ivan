@@ -55,9 +55,7 @@ export default function ClientFetchCache() {
 
       if (matchedPath && isGet) {
         let ttl = CACHE_RULES[matchedPath];
-        if (urlString.includes('live=true')) {
-          ttl = 30000; // 30 seconds for live shopping
-        }
+
 
         const cacheKey = urlString;
         const cached = cacheMap.get(cacheKey);

@@ -10,7 +10,6 @@ import { Product, Category, Banner, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import DynamicHomePage from '@/components/DynamicHomePage';
 import { cached, TTL } from '@/lib/cache';
-import RecentProductsSection from '@/components/RecentProductsSection';
 
 
 declare global { interface Window { __homeFirstMount?: boolean; } }
@@ -229,9 +228,6 @@ export default function HomePage() {
           </div>
         </section>
       )}
-
-      {/* RECENT PRODUCTS */}
-      <RecentProductsSection />
 
 
       {/* TIMED OFFER BANNER — debajo de categorías, estilo app */}

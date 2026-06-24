@@ -57,19 +57,14 @@ export function useProductsCache({
 
   const limit = isMobile ? 50 : 100;
 
-  // Poll version endpoint to react to changes on database
-  const { data: versionData } = useSWR(isClient ? '/api/public-data/version' : null, fetcher, {
-    revalidateOnFocus: true,
-  });
-  const version = versionData?.version || '1';
-
-  // Global SWR Key: Fetch EVERYTHING once.
-  const globalKey = isClient ? `/api/public-data/products?limit=10000&v=${version}` : null;
+  // Global SWR Key: Fetch EVERYTHING exactly once per session.
+  const globalKey = isClient ? `/api/public-data/products?limit=10000` : null;
 
   const { data, error, isValidating, mutate } = useSWR(globalKey, fetcher, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
-    dedupingInterval: 10000, 
+    revalidateOnReconnect: false,
+    dedupingInterval: 86400000, // 24 hours deduping (essentially cached for the entire session)
   });
 
   // Keep loading true until both data arrives AND the minimum premium delay has passed

@@ -14,7 +14,6 @@
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import RecentProductsSection from '@/components/RecentProductsSection';
 import LatestProductsCarousel from '@/components/LatestProductsCarousel';
 import WholesaleOffersSection from '@/components/WholesaleOffersSection';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
@@ -162,7 +161,7 @@ export default function HomePage23() {
   const [timedOffers, setTimedOffers] = useState<any[]>([]);
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [liveShoppingContainer, setLiveShoppingContainer] = useState<Element | null>(null);
+
   const [htmlInjected, setHtmlInjected] = useState(false);
   const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
@@ -2508,10 +2507,6 @@ export default function HomePage23() {
       setLatestProductsContainer(latestProductsEl);
     }
 
-    const liveShoppingEl = document.getElementById('yaxsell-live-shopping-root');
-    if (liveShoppingEl) {
-      setLiveShoppingContainer(liveShoppingEl);
-    }
 
     // Remove leftover Shopify elements
     const root = containerRef.current;
@@ -5318,10 +5313,6 @@ export default function HomePage23() {
         latestProductsContainer
       )}
 
-      {liveShoppingContainer && createPortal(
-        <RecentProductsSection />,
-        liveShoppingContainer
-      )}
     </>
   );
 }
