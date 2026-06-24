@@ -68,6 +68,25 @@ async function writeKey(key: string, value: number): Promise<boolean> {
     return false;
   }
 }
+export const dynamic = 'force-dynamic';
+import { unstable_cache } from 'next/cache';
+
+const getCachedTemplates = unstable_cache(
+  async () => {
+    const global = await readKey(TEMPLATE_KEY) || 1;
+    const sections = ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] as const;
+    const result: Record<string, number> = { landing: global, collections: global, catalog: global, productDetail: global, cart: global, checkout: global };
+
+    for (const sec of sections) {
+      const val = await readKey(`${TEMPLATE_KEY}_${sec}`);
+      if (val) result[sec] = val;
+    }
+
+    return { template: global, sections: result };
+  },
+  ['templates-cache'],
+  { revalidate: 300, tags: ['templates'] } // Cache for 5 minutes globally in Vercel
+);
 
 /**
  * GET /api/template
@@ -77,30 +96,15 @@ async function writeKey(key: string, value: number): Promise<boolean> {
 export async function GET(req: NextRequest) {
   try {
     const section = req.nextUrl.searchParams.get('section');
-    const now = Date.now();
-
-    // Populate or refresh the cache if expired
-    if (!memoryCacheAllTemplates || (now - memoryCacheAllTemplatesTime >= TEMPLATE_CACHE_TTL)) {
-      const global = await readKey(TEMPLATE_KEY) || 1;
-      const sections = ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] as const;
-      const result: Record<string, number> = { landing: global, collections: global, catalog: global, productDetail: global, cart: global, checkout: global };
-
-      for (const sec of sections) {
-        const val = await readKey(`${TEMPLATE_KEY}_${sec}`);
-        if (val) result[sec] = val;
-      }
-
-      memoryCacheAllTemplates = { template: global, sections: result };
-      memoryCacheAllTemplatesTime = now;
-    }
+    const templates = await getCachedTemplates();
 
     if (section) {
-      const global = memoryCacheAllTemplates.template;
-      const val = memoryCacheAllTemplates.sections[section] || global;
-      return NextResponse.json({ template: val, section });
+      const global = templates.template;
+      const val = templates.sections[section] || global;
+      return NextResponse.json({ template: val, section }, { headers: noStoreHeaders });
     }
 
-    return NextResponse.json(memoryCacheAllTemplates);
+    return NextResponse.json(templates, { headers: noStoreHeaders });
   } catch (error: any) {
     console.error('[API template] Exception:', error);
     return NextResponse.json({ template: 1, sections: { landing: 1, collections: 1, catalog: 1, productDetail: 1, cart: 1, checkout: 1 }, error: error.message }, { status: 200 });
