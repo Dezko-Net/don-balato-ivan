@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsAppMessage, sendWhatsAppList, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
-import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
+import { serverListDocuments, serverUpdateDocument, serverGetDocument, serverUploadFile } from '@/lib/appwrite-server';
+import { notifyPaymentUploaded } from '@/lib/notify-admin';
+import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 import {
   estimateTokensFromText,
   getKeniaConfig,
@@ -305,6 +307,8 @@ export async function POST(req: NextRequest) {
         userText = (msg.interactive.button_reply?.title as string || '').trim();
         interactiveId = msg.interactive.button_reply?.id as string;
       }
+    } else if (msgType === 'button') {
+      userText = (msg.button?.text as string || '').trim();
     } else if (msgType === 'image') {
       const mediaId = msg.image?.id;
       userText = (msg.image?.caption as string || '').trim();
@@ -341,6 +345,40 @@ export async function POST(req: NextRequest) {
               headers: { Authorization: `Bearer ${WA_TOKEN}` }
             });
             const buffer = await dlRes.arrayBuffer();
+            
+            // Check if user is awaiting comprobante upload
+            const usageState = await getKeniaUsage(fromPhone);
+            if (usageState.awaitingComprobante && usageState.pendingOrderId) {
+              const fileId = `comprobante_${Date.now()}`;
+              await serverUploadFile(MEDIA_BUCKET_ID, buffer, `${fileId}.jpg`);
+              const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, fileId);
+              
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, usageState.pendingOrderId, {
+                PAYMENTPROOFURL: fileUrl,
+                STATUS: 'processing'
+              });
+              
+              // Find order code for notification
+              let orderCode = usageState.pendingOrderId;
+              try {
+                const doc = await serverGetDocument(ORDERS_COLLECTION_ID, usageState.pendingOrderId);
+                if (doc.ORDERCODE) orderCode = String(doc.ORDERCODE);
+              } catch (e) {
+                console.warn('[WhatsApp Webhook] Failed to fetch order code for notification:', e);
+              }
+              
+              await notifyPaymentUploaded(orderCode, 'Cliente (vía WhatsApp)');
+              
+              await recordKeniaUsage(fromPhone, { awaitingComprobante: false, pendingOrderId: undefined });
+              
+              const reply = `¡Listo bella! 💖 Recibí tu comprobante y se ha guardado en tu pedido #${orderCode}. Apenas finanzas lo valide, te avisaremos para continuar con el envío. ¡Muchas gracias! 🥰💸`;
+              await sendWhatsAppMessage(fromPhone, reply, WA_TOKEN);
+              await addToHistory(fromPhone, 'user', '[Imagen Comprobante]', msgId);
+              await addToHistory(fromPhone, 'assistant', reply, `comprobante-${Date.now()}`);
+              
+              return NextResponse.json({ status: 'comprobante_uploaded' });
+            }
+
             const base64 = Buffer.from(buffer).toString('base64');
             inlineDataParts.push({
               inline_data: {
@@ -356,7 +394,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!userText && !interactiveId && inlineDataParts.length === 0) {
-      if (msgType !== 'text' && msgType !== 'interactive' && msgType !== 'image') {
+      if (msgType !== 'text' && msgType !== 'interactive' && msgType !== 'image' && msgType !== 'button') {
         await sendWhatsAppMessage(
           fromPhone,
           '¡Hola! 👋 Por ahora solo puedo procesar mensajes de texto o imágenes. Escríbeme tu consulta y te ayudo enseguida.',
@@ -439,6 +477,50 @@ export async function POST(req: NextRequest) {
         await addToHistory(fromPhone, 'user', userText, msgId);
         await addToHistory(fromPhone, 'assistant', interceptReply, `intercept-${Date.now()}`);
         return NextResponse.json({ status: 'interactive_intercepted' });
+      }
+    }
+
+    // Intercept "Enviar comprobante" button from Meta templates
+    if (!isAdmin && msgType === 'button' && userText.toLowerCase().includes('comprobante')) {
+      try {
+        const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+        const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+        const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
+        
+        const myOrders = (resOrders.documents || []).filter((o: any) => {
+          const oPhone = String(o.CUSTOMERPHONE || '');
+          if (!oPhone) return false;
+          const cleanA = oPhone.replace(/\D/g, '');
+          const cleanB = fromPhone.replace(/\D/g, '');
+          if (cleanA === cleanB) return true;
+          const tailA = cleanA.slice(-8);
+          const tailB = cleanB.slice(-8);
+          return tailA.length === 8 && tailA === tailB;
+        });
+
+        const pendingOrder = myOrders.find((o: any) => o.STATUS === 'pending');
+        
+        if (pendingOrder) {
+          const orderId = pendingOrder.$id;
+          const link = `${SITE_URL}/pedido/${orderId}`;
+          const interceptReply = `¡Súper bella! 🛍️✨\n\nAquí tienes el link directo a tu pedido donde encontrarás los datos de transferencia y podrás subir el comprobante:\n🔗 ${link}\n\nO si prefieres, **puedes enviarme la foto del comprobante de transferencia directamente por aquí mismo** y yo lo adjunto a tu pedido. ¿Qué te parece más fácil? 🥰`;
+          
+          await recordKeniaUsage(fromPhone, { awaitingComprobante: true, pendingOrderId: orderId });
+          
+          await sendWhatsAppMessage(fromPhone, interceptReply, WA_TOKEN);
+          await addToHistory(fromPhone, 'user', userText, msgId);
+          await addToHistory(fromPhone, 'assistant', interceptReply, `intercept-comp-${Date.now()}`);
+          return NextResponse.json({ status: 'comprobante_link_sent' });
+        } else {
+           // No pending order found
+           const interceptReply = `Uy bella, busqué en mis registros pero no encontré un pedido pendiente de pago a tu nombre 🥺. Si ya lo pagaste o tienes dudas, dímelo y te ayudo.`;
+           await sendWhatsAppMessage(fromPhone, interceptReply, WA_TOKEN);
+           await addToHistory(fromPhone, 'user', userText, msgId);
+           await addToHistory(fromPhone, 'assistant', interceptReply, `intercept-comp-${Date.now()}`);
+           return NextResponse.json({ status: 'no_pending_order_found' });
+        }
+      } catch (e) {
+         console.error('[WhatsApp] Failed to process comprobante button:', e);
       }
     }
 
