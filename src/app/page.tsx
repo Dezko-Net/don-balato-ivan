@@ -53,19 +53,7 @@ function CountdownTimer({ offer }: { offer: TimedOffer }) {
 }
 
 export default function HomePage() {
-  // Force full reload when navigating back to / via SPA (Next.js router)
-  // On hard page load: document.readyState starts as 'loading' → no reload
-  // On SPA re-navigation: document is already 'complete' → force reload
-  useEffect(() => {
-    // Small delay to let StrictMode double-invocation settle
-    const timer = setTimeout(() => {
-      if (document.readyState === 'complete' && window.__homeFirstMount) {
-        window.location.reload();
-      }
-      window.__homeFirstMount = true;
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);

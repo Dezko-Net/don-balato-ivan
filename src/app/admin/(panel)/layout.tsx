@@ -503,7 +503,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-      <Link key={`${item.href}-${item.label}`} href={item.href}
+      <Link key={`${item.href}-${item.label}`} href={item.href} prefetch={false}
         onClick={() => setSidebarOpen(false)}
         className="sf-nav-item"
         style={{

@@ -144,7 +144,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
                   const isActive = pathname === href || (href !== '/cuenta' && pathname.startsWith(href));
                   const isRegalos = label === 'Regalos';
                   return (
-                    <Link key={label} href={href} className={`sb-link ${isActive ? 'active' : ''}`}>
+                    <Link key={label} href={href} prefetch={false} className={`sb-link ${isActive ? 'active' : ''}`}>
                       <div className="sb-link-content" style={{ position: 'relative' }}>
                         <Icon size={20} strokeWidth={2} />
                         <span>{label}</span>
