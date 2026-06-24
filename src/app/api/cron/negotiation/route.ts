@@ -42,10 +42,11 @@ export async function GET(req: NextRequest) {
     for (const order of activeOrders) {
       const orderId = order.$id;
       const orderCode = order.ORDERCODE || String(orderId).slice(-6).toUpperCase();
+      const additionalInfo = (order.ADDITIONALINFO as string) || '';
       const adminNotes = (order.adminNotes as string) || '';
 
       // Skip if already notified by WA (only during automatic cron scan, not manual trigger)
-      if (!targetOrderId && adminNotes.includes('[negot_wa_notified]')) {
+      if (!targetOrderId && (adminNotes.includes('[negot_wa_notified]') || additionalInfo.includes('[negot_wa_notified]'))) {
         continue;
       }
 
@@ -215,17 +216,20 @@ export async function GET(req: NextRequest) {
       const timestamp = new Date().toISOString().slice(0, 10);
       const isFailed = sendErrors.some(e => e.startsWith(orderCode));
       const marker = isFailed ? '[negot_wa_notified]' : '[negot_wa_notified]'; // Use the same marker so the cron query skips it
-      const updatedNotes = adminNotes 
-        ? `${adminNotes}\n${marker}`
+      
+      const currentNotes = (order.ADDITIONALINFO as string) || '';
+      const updatedNotes = currentNotes 
+        ? `${currentNotes}\n${marker}`
         : `${marker}`;
 
       try {
         await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-          adminNotes: updatedNotes,
+          ADDITIONALINFO: updatedNotes,
           UPDATEDAT: Date.now()
         });
+        console.log(`[Cron Negotiation] Successfully marked ${orderCode} with ${marker} in ADDITIONALINFO`);
       } catch (noteErr: any) {
-        console.warn(`[Cron Negotiation] Could not update adminNotes for ${orderCode} (attribute may not exist):`, noteErr.message);
+        console.error(`[Cron Negotiation] Could not update ADDITIONALINFO for ${orderCode}:`, noteErr.message);
       }
     }
 
