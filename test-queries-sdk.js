@@ -29,6 +29,19 @@ async function testSDK() {
   } catch (e) {
     console.error("Test 4 error:", e.message);
   }
+
+  // Test 5: Query orders in negotiation
+  try {
+    const res5 = await databases.listDocuments(DATABASE_ID, 'orders', [
+      Query.equal('STATUS', 'negotiation')
+    ]);
+    console.log(`Orders in negotiation: ${res5.total}`);
+    for(const doc of res5.documents) {
+      console.log(`Order ${doc.ORDERCODE} - AdditionalInfo: ${doc.ADDITIONALINFO}`);
+    }
+  } catch (e) {
+    console.error("Test 5 error:", e.message);
+  }
 }
 
 testSDK();

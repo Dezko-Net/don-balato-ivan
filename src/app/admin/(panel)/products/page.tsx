@@ -1418,7 +1418,7 @@ export default function ProductsPage() {
   const activeFiltersCount = [Boolean(search), Boolean(catFilter), Boolean(subCatFilter), noImageOnly, brokenOnly, stockFilter !== 'instock'].filter(Boolean).length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" style={{ background: '#f3e8ff', minHeight: '100%', padding: '20px', borderRadius: 12 }}>
 
       {/* ═══════════════════════════════════════════════════════════════
           FULL-PAGE PRODUCT EDITOR (replaces table when modal is active)

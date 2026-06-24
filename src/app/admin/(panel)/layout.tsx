@@ -878,6 +878,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Flogo.png?alt=media&token=3c24b115-53b7-4603-badf-1af26b586a6a"
               alt="Yaxsel"
               fill
+              sizes="200px"
               style={{ objectFit: 'contain' }}
               priority
             />
