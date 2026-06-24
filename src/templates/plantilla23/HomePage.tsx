@@ -144,6 +144,25 @@ const FONT_FACE_CSS = `
 `;
 
 export default function HomePage23() {
+  // ═══ CONFIGURACIÓN MANUAL DEL HERO BANNER (EDITAR AQUÍ DIRECTAMENTE) ═══
+  // Si deseas cambiar las imágenes o textos de los banners, edítalos aquí:
+  const MANUAL_HERO_CONFIG = {
+    hero1: {
+      // Reemplaza estas URLs de imagen si quieres cambiar el banner de entrada (Hero 1).
+      // Si las dejas vacías (''), se usará el video original de la plantilla.
+      desktopImg: '', 
+      mobileImg: '',
+      title: 'Poderosamente Bella',
+      btnText: 'Tienda',
+      btnLink: '/productos',
+    },
+    hero2: {
+      // Reemplaza estas URLs si quieres cambiar la imagen de Kenia (Hero 2).
+      desktopImg: 'https://nyc.cloud.appwrite.io/v1/storage/buckets/products/files/6a39bd67000f28163657/view?project=6a0a4e8d0032177f3f90&impersonateuserid=&mode=admin',
+      mobileImg: 'https://nyc.cloud.appwrite.io/v1/storage/buckets/products/files/6a39d12200270cb291d4/view?project=6a0a4e8d0032177f3f90&impersonateuserid=&mode=admin',
+    }
+  };
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -2077,11 +2096,10 @@ export default function HomePage23() {
     containerRef.current.dataset.htmlSet = '1';
     setHtmlInjected(true);
 
-    // ═══ CUSTOM HERO CONFIG OVERRIDES (FROM ADMIN) ═══
-    const heroConfig = themeSections.find(s => s.id === 'tpl1_hero')?.settings || {};
+    // ═══ CUSTOM HERO CONFIG OVERRIDES (MANUAL DESDE CÓDIGO) ═══
     
     // 1. Desktop Image override
-    if (heroConfig.tpl23Hero1DesktopImg) {
+    if (MANUAL_HERO_CONFIG.hero1.desktopImg) {
       const vidDesktop = containerRef.current.querySelector('#hero1-video-desktop') as HTMLVideoElement | null;
       if (vidDesktop) {
         vidDesktop.style.display = 'none'; // Ocultar video por defecto
@@ -2093,12 +2111,12 @@ export default function HomePage23() {
           customImg.style.opacity = '1';
           vidDesktop.parentElement?.insertBefore(customImg, vidDesktop);
         }
-        customImg.src = heroConfig.tpl23Hero1DesktopImg;
+        customImg.src = MANUAL_HERO_CONFIG.hero1.desktopImg;
       }
     }
 
     // 2. Mobile Image override
-    if (heroConfig.tpl23Hero1MobileImg) {
+    if (MANUAL_HERO_CONFIG.hero1.mobileImg) {
       const vidMobile = containerRef.current.querySelector('#hero1-video-mobile') as HTMLVideoElement | null;
       if (vidMobile) {
         vidMobile.style.display = 'none'; // Ocultar video por defecto
@@ -2110,23 +2128,23 @@ export default function HomePage23() {
           customImg.style.opacity = '1';
           vidMobile.parentElement?.insertBefore(customImg, vidMobile);
         }
-        customImg.src = heroConfig.tpl23Hero1MobileImg;
+        customImg.src = MANUAL_HERO_CONFIG.hero1.mobileImg;
       }
     }
 
     // 3. Text & Button override
-    if (heroConfig.tpl23Hero1Title) {
+    if (MANUAL_HERO_CONFIG.hero1.title) {
       const headingSpan = containerRef.current.querySelector('giant-heading h2 span.leading-none');
-      if (headingSpan) headingSpan.textContent = heroConfig.tpl23Hero1Title;
+      if (headingSpan) headingSpan.textContent = MANUAL_HERO_CONFIG.hero1.title;
     }
-    if (heroConfig.tpl23Hero1BtnText) {
+    if (MANUAL_HERO_CONFIG.hero1.btnText) {
       const splitHero = containerRef.current.querySelector('split-hero');
       if (splitHero) {
         const btn = splitHero.querySelector('a.button--primary');
         if (btn) {
-           btn.textContent = heroConfig.tpl23Hero1BtnText;
-           if (heroConfig.tpl23Hero1BtnLink) {
-             (btn as HTMLAnchorElement).href = heroConfig.tpl23Hero1BtnLink;
+           btn.textContent = MANUAL_HERO_CONFIG.hero1.btnText;
+           if (MANUAL_HERO_CONFIG.hero1.btnLink) {
+             (btn as HTMLAnchorElement).href = MANUAL_HERO_CONFIG.hero1.btnLink;
            }
         }
       }
@@ -2144,8 +2162,8 @@ export default function HomePage23() {
         const DEFAULT_KENIA_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758588825-pegada-1781758586654.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XuK0ff%2FaOBtzwSnfof24jryXdgHqvpnnFpt41fhV7HXSqq%2FsLtXBdxn1EeoICl6hOqGuAI8p2OEjm1v%2BItCsAfedWAJL9DdZAOgD9ax0YS7GUFnwGi%2Blugbq%2F52eS4Xf3M0PY9il9TikeU6BMNgqRoOVc5wsYcgUHLHI5bHkn3vMSaZty9kBmi%2BZlhXir7eM%2F5RGBD9yBJWDQsw19lA3qp8fEo5p8Wn%2FbrGMv9NXIELdqG2%2Bv0HvURo1zJsNcD%2B0TCsoLGVkuK7ojYLl6f8hB6yCLdAFH2LgICS%2B800QecmCHs3kJQeOG%2FlXlpvF9T11vamgc24ZptjcwlmmVzwyTw%3D%3D';
         const DEFAULT_KENIA_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758310444-pegada-1781758308350.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=GjfIQEBUtw%2F4U6GjdNN4ECU4wcqITqFei2LBBSdASIQyNI%2FRs2M0%2BH%2Fd8OTLaGhjmG%2B6eWQfFTXBoCdmhkyo%2Fd1H9kvIeAlzmDkUY%2BPzS35yTsjelnVXlTvt77zKpsUQfYYR9u5eYIDN%2FfdSEFY98Wb5rlPJOFt2FXneYQqnqfyJA8OhSGnHYKmfxfymlsZakUv6GmiiZGewHQ%2FbTABTHHz4cSgI5rlEISwoPGnDzEsait9CHZoszRscjCeocczr34Vbnd15CJsxrDl%2BaDIijdHSC7JPvAdt14rW6kxp6q1QAbNfxxdUmeIawwAP4tPI2a7EAg8Vna5RIr171OqYtg%3D%3D';
 
-        const KENIA_IMG_PC = heroConfig.tpl23Hero2DesktopImg || DEFAULT_KENIA_PC;
-        const KENIA_IMG_MOBILE = heroConfig.tpl23Hero2MobileImg || DEFAULT_KENIA_MOBILE;
+        const KENIA_IMG_PC = MANUAL_HERO_CONFIG.hero2.desktopImg || DEFAULT_KENIA_PC;
+        const KENIA_IMG_MOBILE = MANUAL_HERO_CONFIG.hero2.mobileImg || DEFAULT_KENIA_MOBILE;
 
         const heroBg = heroSec.querySelector('.slideshow__background') as HTMLElement | null;
         if (heroBg) {
