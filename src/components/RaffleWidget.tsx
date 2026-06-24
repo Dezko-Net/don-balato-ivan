@@ -95,26 +95,12 @@ export default function RaffleWidget({ liveStreamId }: Props) {
   // Realtime usa WebSocket - 0 lecturas adicionales mientras está conectado.
   useEffect(() => {
     loadRaffle();
-    
-    // En lugar de usar WebSockets (que satura las conexiones simultáneas)
-    // o un polling agresivo, actualizamos suavemente cada 60 segundos
-    const interval = setInterval(() => {
-      loadRaffle();
-    }, 60000);
-
-    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveStreamId]);
 
   useEffect(() => {
     if (!raffle) return;
-    
-    // Refresco de participantes cada 60 segundos también
-    const interval = setInterval(() => {
-      loadParticipants(raffle.$id);
-    }, 60000);
-
-    return () => clearInterval(interval);
+    loadParticipants(raffle.$id);
   }, [raffle, loadParticipants]);
 
   async function handleJoin() {

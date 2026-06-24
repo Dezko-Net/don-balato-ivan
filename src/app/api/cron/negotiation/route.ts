@@ -196,25 +196,9 @@ export async function GET(req: NextRequest) {
             } else {
               console.log(`[Cron Negotiation] WhatsApp message sent successfully to ${formattedPhone} for order ${orderCode}`);
             }
-            
-            // 5. Update order notes to mark as notified
-            const timestamp = new Date().toISOString().slice(0, 10);
-            const updatedNotes = adminNotes 
-              ? `${adminNotes}\n[negot_wa_notified: ${timestamp}]`
-              : `[negot_wa_notified: ${timestamp}]`;
-
-            try {
-              await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-                adminNotes: updatedNotes,
-                UPDATEDAT: Date.now()
-              });
-            } catch (noteErr: any) {
-              console.warn(`[Cron Negotiation] Could not update adminNotes for ${orderCode} (attribute may not exist):`, noteErr.message);
-            }
-
             processedOrders.push(orderCode);
           } catch (postErr: any) {
-            console.error(`[Cron Negotiation] Failed to save history/update order for ${orderCode}:`, postErr);
+            console.error(`[Cron Negotiation] Failed to save history for ${orderCode}:`, postErr);
             sendErrors.push(`${orderCode}: ${postErr.message}`);
           }
         } else {
@@ -225,6 +209,23 @@ export async function GET(req: NextRequest) {
         console.warn(`[Cron Negotiation] Could not send message to order ${orderCode}: ${reason}.`);
         sendErrors.push(`${orderCode}: ${reason}`);
         debugInfo.push({ orderCode, rawPhone, formattedPhone, hasToken: !!WA_TOKEN });
+      }
+
+      // ALWAYS update order notes to prevent infinite retries
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const isFailed = sendErrors.some(e => e.startsWith(orderCode));
+      const marker = isFailed ? '[negot_wa_notified]' : '[negot_wa_notified]'; // Use the same marker so the cron query skips it
+      const updatedNotes = adminNotes 
+        ? `${adminNotes}\n${marker}`
+        : `${marker}`;
+
+      try {
+        await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+          adminNotes: updatedNotes,
+          UPDATEDAT: Date.now()
+        });
+      } catch (noteErr: any) {
+        console.warn(`[Cron Negotiation] Could not update adminNotes for ${orderCode} (attribute may not exist):`, noteErr.message);
       }
     }
 
