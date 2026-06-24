@@ -501,7 +501,7 @@ export async function POST(req: NextRequest) {
         const pendingOrder = myOrders.find((o: any) => o.STATUS === 'pending');
         
         if (pendingOrder) {
-          const orderId = pendingOrder.$id;
+          const orderId = String(pendingOrder.$id);
           const link = `${SITE_URL}/pedido/${orderId}`;
           const interceptReply = `¡Súper bella! 🛍️✨\n\nAquí tienes el link directo a tu pedido donde encontrarás los datos de transferencia y podrás subir el comprobante:\n🔗 ${link}\n\nO si prefieres, **puedes enviarme la foto del comprobante de transferencia directamente por aquí mismo** y yo lo adjunto a tu pedido. ¿Qué te parece más fácil? 🥰`;
           
