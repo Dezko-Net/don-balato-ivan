@@ -170,7 +170,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/public-data/product-detail?id=${id}`, { cache: 'no-store' });
+        const res = await fetch(`/api/public-data/product-detail?id=${id}`);
         if (!res.ok) throw new Error('Error fetching product data');
         const data = await res.json();
         
