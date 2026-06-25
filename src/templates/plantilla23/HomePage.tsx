@@ -2226,7 +2226,10 @@ export default function HomePage23() {
 
     // Clear mockup product listings to prevent flashing native Shopify products (but keep container elements for hydration selectors)
     tempDiv.querySelectorAll('.featured-collection__products').forEach(section => {
-      // Keep wrappers but clear their contents if needed, or don't clear them here to ensure selectors are present in the innerHTML
+      const firstWrapper = section.querySelector('.featured-collection__first-product-wrapper');
+      if (firstWrapper) firstWrapper.innerHTML = '';
+      const swiperWrapper = section.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
+      if (swiperWrapper) swiperWrapper.innerHTML = '';
     });
     tempDiv.querySelectorAll('.product-columns-block .swiper-container .swiper-wrapper, product-columns .swiper-container .swiper-wrapper').forEach(wrapper => {
       wrapper.innerHTML = '';
