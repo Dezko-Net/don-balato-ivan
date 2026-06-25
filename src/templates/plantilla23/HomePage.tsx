@@ -4121,6 +4121,12 @@ export default function HomePage23() {
           vendor.textContent = brand.toLowerCase() === 'yaxsell' ? 'Kevin & Coco' : brand;
         }
       });
+
+      // Force in-view on all animation elements inside featured-collection that were created dynamically
+      // This is critical for mobile where the IntersectionObserver may not fire for off-screen elements
+      root.querySelectorAll('.featured-collection .animation-element').forEach(el => {
+        el.classList.add('in-view');
+      });
       }, 50); // End of heavy hydration timeout
 
       // Intersection Observer for Hero Scroll Videos
@@ -5518,6 +5524,17 @@ export default function HomePage23() {
           .featured-collection__first-product-wrapper {
             max-width: 100% !important;
             width: 100% !important;
+          }
+          /* Force slide visibility even if swiper hasn't initialized */
+          .featured-collection .swiper-container:not(.swiper-container--product-card) .swiper-slide {
+            visibility: visible !important;
+          }
+          /* Ensure featured-collection products are always visible on mobile */
+          .featured-collection .featured-collection__products {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            position: relative !important;
           }
         }
 
