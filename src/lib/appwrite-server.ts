@@ -1,3 +1,5 @@
+import { trackRead } from './appwrite-read-tracker';
+
 /**
  * Appwrite server-side (API key) — para crear notificaciones y operaciones privilegiadas.
  */
@@ -41,7 +43,9 @@ export async function serverListDocuments(
   collectionId: string,
   queries: string[] = []
 ): Promise<{ documents: Record<string, unknown>[]; total: number }> {
-  logRead('list', collectionId, `q=${queries.join('|').slice(0, 100)}`);
+  const detail = `q=${queries.join('|').slice(0, 100)}`;
+  logRead('list', collectionId, detail);
+  trackRead('list', collectionId, detail, new Error().stack || '');
   const q = queries.length ? `?${queries.map((x, i) => `queries[${i}]=${encodeURIComponent(x)}`).join('&')}` : '';
   const res = await fetch(
     `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${collectionId}/documents${q}`,
@@ -58,7 +62,9 @@ export async function serverGetDocument(
   collectionId: string,
   documentId: string
 ): Promise<Record<string, unknown>> {
-  logRead('get', collectionId, `id=${documentId}`);
+  const detail = `id=${documentId}`;
+  logRead('get', collectionId, detail);
+  trackRead('get', collectionId, detail, new Error().stack || '');
   const res = await fetch(
     `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${collectionId}/documents/${documentId}`,
     { headers: headers() }

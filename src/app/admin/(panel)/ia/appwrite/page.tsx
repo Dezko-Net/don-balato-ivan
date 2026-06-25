@@ -38,6 +38,13 @@ type UsageData = {
   error?: string;
 };
 
+type ReadSourceSummary = {
+  bySource: { source: string; count: number; collections: string[] }[];
+  byCollection: { collectionId: string; count: number; sources: string[] }[];
+  total: number;
+  ops: Record<string, number>;
+};
+
 /* ─── Helpers ─── */
 function secondsSinceMidnightUTC(): number {
   const now = new Date();
@@ -85,6 +92,7 @@ function BarChart({ data, color = '#6366f1', height = 80 }: { data: number[]; co
 /* ─── Component ─── */
 export default function AppwriteMonitorPage() {
   const [data, setData] = useState<UsageData | null>(null);
+  const [sources, setSources] = useState<ReadSourceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [elapsed, setElapsed] = useState(secondsSinceMidnightUTC());
@@ -108,11 +116,17 @@ export default function AppwriteMonitorPage() {
     else setLoading(true);
     try {
       const url = force ? '/api/admin/appwrite-usage?force=1' : '/api/admin/appwrite-usage';
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
+      const [usageRes, sourcesRes] = await Promise.all([
+        fetch(url, { cache: 'no-store' }),
+        fetch('/api/admin/read-sources', { cache: 'no-store' }),
+      ]);
+      if (!usageRes.ok) throw new Error(`HTTP ${usageRes.status}`);
+      const json = await usageRes.json();
       if (json.error && !json.databaseReadsTotal) throw new Error(json.error);
       setData(json);
+      if (sourcesRes.ok) {
+        setSources(await sourcesRes.json());
+      }
     } catch (e: any) {
       showToast('error', e?.message || 'Error al cargar datos');
     } finally {
@@ -377,6 +391,65 @@ export default function AppwriteMonitorPage() {
                 ))}
               </div>
             </div>
+
+            {/* ─── Top Read Sources ─── */}
+            {sources && sources.total > 0 && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                    <Server className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">Top Origen de Lecturas Appwrite</h2>
+                    <p className="text-xs text-slate-400 font-medium">Últimos 30 minutos · {fmt(sources.total)} lecturas rastreadas</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Ruta / Componente</h3>
+                    <div className="space-y-3">
+                      {sources.bySource.slice(0, 10).map((s, i) => {
+                        const max = sources.bySource[0]?.count || 1;
+                        const pct = (s.count / max) * 100;
+                        return (
+                          <div key={i}>
+                            <div className="flex justify-between items-end mb-1">
+                              <span className="text-sm font-medium text-slate-700 truncate max-w-[70%]" title={s.source}>{s.source}</span>
+                              <span className="text-sm font-black text-slate-900">{fmt(s.count)}</span>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">{s.collections.join(', ')}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Colección</h3>
+                    <div className="space-y-3">
+                      {sources.byCollection.slice(0, 10).map((c, i) => {
+                        const max = sources.byCollection[0]?.count || 1;
+                        const pct = (c.count / max) * 100;
+                        return (
+                          <div key={i}>
+                            <div className="flex justify-between items-end mb-1">
+                              <span className="text-sm font-medium text-slate-700 truncate max-w-[70%]" title={c.collectionId}>{c.collectionId}</span>
+                              <span className="text-sm font-black text-slate-900">{fmt(c.count)}</span>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">{c.sources.slice(0, 3).join(', ')}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ─── Bottom Section: Charts & Details ─── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
