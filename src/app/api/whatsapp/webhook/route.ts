@@ -223,6 +223,126 @@ async function lookupRegisteredUser(phone: string): Promise<{ name: string; emai
   }
 }
 
+// Helper: detect an email address in a text message
+function extractEmail(text: string): string | null {
+  const match = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  return match ? match[0].toLowerCase().trim() : null;
+}
+
+// Helper: detect a Chilean RUT in a text message (formats: 12.345.678-9, 12345678-9, 123456789)
+function extractRut(text: string): string | null {
+  // Match XX.XXX.XXX-X or XXXXXXXX-X or XXXXXXXX
+  const match = text.match(/\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/i);
+  if (!match) return null;
+  // Normalize: remove dots, uppercase K, ensure dash
+  let rut = match[0].toUpperCase().replace(/\./g, '');
+  if (!rut.includes('-') && rut.length >= 2) {
+    rut = rut.slice(0, -1) + '-' + rut.slice(-1);
+  }
+  return rut;
+}
+
+// Helper: search orders by customer email
+async function findOrdersByEmail(email: string): Promise<any[]> {
+  try {
+    const qEmail = JSON.stringify({ method: 'equal', attribute: 'CUSTOMEREMAIL', values: [email, email.toLowerCase()] });
+    const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+    const qLimit = JSON.stringify({ method: 'limit', values: [10] });
+    const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qEmail, qLimit]);
+    return res.documents || [];
+  } catch (e) {
+    console.warn('[WhatsApp Webhook] findOrdersByEmail error:', e);
+    return [];
+  }
+}
+
+// Helper: search orders by customer RUT
+async function findOrdersByRut(rut: string): Promise<any[]> {
+  try {
+    // Try both with and without dots, normalized
+    const rutClean = rut.replace(/\./g, '').toUpperCase();
+    const rutWithDots = formatRutWithDots(rutClean);
+    const qRut = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERRUT', values: [rutClean, rutWithDots, rut] });
+    const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+    const qLimit = JSON.stringify({ method: 'limit', values: [10] });
+    const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qRut, qLimit]);
+    return res.documents || [];
+  } catch (e) {
+    console.warn('[WhatsApp Webhook] findOrdersByRut error:', e);
+    return [];
+  }
+}
+
+// Helper: format RUT with dots (12345678-9 → 12.345.678-9)
+function formatRutWithDots(rut: string): string {
+  const parts = rut.split('-');
+  if (parts.length !== 2) return rut;
+  const num = parts[0];
+  const dv = parts[1];
+  let formatted = '';
+  for (let i = num.length - 1, count = 0; i >= 0; i--, count++) {
+    if (count > 0 && count % 3 === 0) formatted = '.' + formatted;
+    formatted = num[i] + formatted;
+  }
+  return formatted + '-' + dv;
+}
+
+// Helper: search users by email
+async function findUserByEmail(email: string): Promise<any | null> {
+  try {
+    const qEmail = JSON.stringify({ method: 'equal', attribute: 'email', values: [email, email.toLowerCase()] });
+    const qLimit = JSON.stringify({ method: 'limit', values: [1] });
+    const res = await serverListDocuments(USERS_COLLECTION_ID, [qEmail, qLimit]);
+    return res.documents[0] || null;
+  } catch (e) {
+    console.warn('[WhatsApp Webhook] findUserByEmail error:', e);
+    return null;
+  }
+}
+
+// Helper: link a WhatsApp phone to found orders and optionally user account
+async function linkPhoneToOrdersAndUser(fromPhone: string, orders: any[], userDoc: any | null): Promise<{ linkedOrders: number; linkedUser: boolean }> {
+  const cleanedFrom = fromPhone.replace(/\D/g, '');
+  let linkedOrders = 0;
+
+  for (const order of orders) {
+    const currentPhone = String(order.CUSTOMERPHONE || '');
+    const cleanCurrent = currentPhone.replace(/\D/g, '');
+    if (cleanCurrent !== cleanedFrom) {
+      try {
+        await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
+          CUSTOMERPHONE: `+${cleanedFrom}`
+        });
+        linkedOrders++;
+      } catch (e) {
+        console.warn('[WhatsApp Webhook] Failed to link order', order.$id, e);
+      }
+    } else {
+      linkedOrders++; // Already linked
+    }
+  }
+
+  let linkedUser = false;
+  if (userDoc) {
+    const currentPhone = String(userDoc.phone || '');
+    const cleanCurrent = currentPhone.replace(/\D/g, '');
+    if (cleanCurrent !== cleanedFrom) {
+      try {
+        await serverUpdateDocument(USERS_COLLECTION_ID, userDoc.$id, {
+          phone: `+${cleanedFrom}`
+        });
+        linkedUser = true;
+      } catch (e) {
+        console.warn('[WhatsApp Webhook] Failed to link user', userDoc.$id, e);
+      }
+    } else {
+      linkedUser = true;
+    }
+  }
+
+  return { linkedOrders, linkedUser };
+}
+
 // Helper: send welcome menu as interactive list
 async function sendWelcomeMenu(phone: string, customerName: string, token: string, customBody?: string) {
   const firstName = customerName.split(' ')[0] || customerName || 'bella';
@@ -734,11 +854,67 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ status: 'admin_notified' });
         }
 
+        // ── Email/RUT auto-detection: try to find orders by email or RUT ──
+        const detectedEmail = extractEmail(userText);
+        const detectedRut = extractRut(userText);
+
+        if (detectedEmail || detectedRut) {
+          let foundOrders: any[] = [];
+          let foundUser: any | null = null;
+          let searchMethod = '';
+
+          if (detectedEmail) {
+            searchMethod = 'email';
+            foundOrders = await findOrdersByEmail(detectedEmail);
+            foundUser = await findUserByEmail(detectedEmail);
+          } else if (detectedRut) {
+            searchMethod = 'RUT';
+            foundOrders = await findOrdersByRut(detectedRut);
+          }
+
+          if (foundOrders.length > 0 || foundUser) {
+            // Link the WhatsApp phone to found orders and user account
+            const { linkedOrders, linkedUser } = await linkPhoneToOrdersAndUser(fromPhone, foundOrders, foundUser);
+
+            const customerNameFound = foundUser?.name || foundOrders[0]?.CUSTOMERNAME || '';
+            const orderCount = foundOrders.length;
+            const orderCodes = foundOrders.slice(0, 3).map((o: any) => `#${o.ORDERCODE || String(o.$id).slice(-6).toUpperCase()}`).join(', ');
+
+            let linkMsg = `¡Te encontré bella! 💖✨\n\n`;
+            if (customerNameFound) linkMsg += `Hola *${customerNameFound}* 👋\n\n`;
+            linkMsg += `Vinculé tu WhatsApp a ${linkedOrders} pedido${linkedOrders !== 1 ? 's' : ''} que tenías con nosotros`;
+            if (orderCodes) linkMsg += ` (${orderCodes}${orderCount > 3 ? ` y ${orderCount - 3} más` : ''})`;
+            linkMsg += `.\n\n`;
+            if (linkedUser) linkMsg += `También actualicé tu número en tu cuenta. 📱\n\n`;
+            linkMsg += `Ahora puedo avisarte sobre tus pedidos, ofertas y todo lo que necesites. ¿En qué te puedo ayudar? 🌸`;
+
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', linkMsg, `link-${searchMethod}-${Date.now()}`);
+            await sendWhatsAppMessage(fromPhone, linkMsg, WA_TOKEN);
+
+            // Mark as guest with orders so they don't get the register prompt again
+            await recordKeniaUsage(fromPhone, { isGuestWithOrders: true, isRegistered: !!foundUser, customerName: customerNameFound || undefined });
+            await clearHistory(fromPhone);
+            await resetKeniaUsage(fromPhone);
+            await setKeniaBlocked(fromPhone, false);
+
+            return NextResponse.json({ status: `linked_by_${searchMethod}` });
+          } else {
+            // Email/RUT not found in orders or users
+            const notFoundMsg = `Uy bella, busqué en mis registros con ese ${searchMethod} pero no lo encontré 🥺.\n\n¿Podrías revisarlo? A veces hay un pequeño error de tipeo. También puedes intentar con:\n• Tu *email* de compra (ej: tuemail@gmail.com)\n• Tu *RUT* (ej: 12.345.678-9)\n• El *código de tu pedido* (ej: ORD-00123)\n\nO si prefieres, escribe *Ayuda* y una asesora real te atenderá. 🌸`;
+
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', notFoundMsg, `not-found-${searchMethod}-${Date.now()}`);
+            await sendWhatsAppMessage(fromPhone, notFoundMsg, WA_TOKEN);
+            return NextResponse.json({ status: `${searchMethod}_not_found` });
+          }
+        }
+
         // Not registered and no orders: prompt to register (once per 24h to avoid spam)
         const now = Date.now();
         const lastPrompted = usage.registerPromptedAt || 0;
         if (now - lastPrompted > 24 * 60 * 60 * 1000) {
-          const registerMsg = '¡Hola hermosa! 🌸 Mis sistemas me indican que aún no estás registrada en nuestra página web. Para poder atenderte de forma más personalizada y no estar pidiéndote tus datitos todo el tiempo 😅 necesito solamente que te registres aquí 👇\n\n' + SITE_URL + '/login?tab=register\n\n💡 *¿Ya hiciste un pedido o tienes cuenta pero pusiste mal tu número?* ¡No te preocupes! Inicia sesión en la web y busca el botón *"Conectar WhatsApp"* en tu perfil o en tu pedido, o busca el link en tu correo electrónico.\n\n👩‍💻 *¿Necesitas ayuda de un humano para arreglarlo?* Simplemente escribe la palabra *Ayuda* y una asesora real te atenderá.\n\nLuego vuelve, escríbeme y te atenderé como una reina se merece 👑✨';
+          const registerMsg = '¡Hola hermosa! 🌸 Mis sistemas me indican que aún no estás registrada en nuestra página web. Para poder atenderte de forma más personalizada y no estar pidiéndote tus datitos todo el tiempo 😅 necesito solamente que te registres aquí 👇\n\n' + SITE_URL + '/login?tab=register\n\n💡 *¿Ya hiciste un pedido o tienes cuenta pero pusiste mal tu número?* ¡No te preocupes! Puedo buscarte por tu *email* o *RUT* de compra. Escríbeme cualquiera de los dos y te vinculo altiro. 📧🆔\n\n👩‍💻 *¿Necesitas ayuda de un humano?* Simplemente escribe la palabra *Ayuda* y una asesora real te atenderá.\n\nLuego vuelve, escríbeme y te atenderé como una reina se merece 👑✨';
           await addToHistory(fromPhone, 'user', userText, msgId);
           await addToHistory(fromPhone, 'assistant', registerMsg);
           await sendWhatsAppMessage(fromPhone, registerMsg, WA_TOKEN);
