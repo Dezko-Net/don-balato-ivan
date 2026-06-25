@@ -39,8 +39,12 @@ type UsageData = {
 };
 
 type ReadSourceSummary = {
-  bySource: { source: string; count: number; collections: string[] }[];
-  byCollection: { collectionId: string; count: number; sources: string[] }[];
+  bySource: { source: string; count: number; collections: string[]; ops: Record<string, number> }[];
+  byCollection: { collectionId: string; count: number; sources: string[]; ops: Record<string, number> }[];
+  bySourceFile: { file: string; line: number; count: number; source: string }[];
+  byMinute: { minute: string; count: number }[];
+  crossRef: { source: string; collection: string; count: number }[];
+  recent: { ts: number; op: string; collection: string; source: string; file: string; line: number }[];
   total: number;
   ops: Record<string, number>;
 };
@@ -392,62 +396,186 @@ export default function AppwriteMonitorPage() {
               </div>
             </div>
 
-            {/* ─── Top Read Sources ─── */}
+            {/* ─── Top Read Sources (Detailed) ─── */}
             {sources && sources.total > 0 && (
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
                     <Server className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h2 className="text-lg font-black text-slate-900">Top Origen de Lecturas Appwrite</h2>
-                    <p className="text-xs text-slate-400 font-medium">Últimos 30 minutos · {fmt(sources.total)} lecturas rastreadas</p>
+                    <p className="text-xs text-slate-400 font-medium">Últimos 30 minutos · {fmt(sources.total)} lecturas rastreadas · {Object.entries(sources.ops).map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
                   </div>
                 </div>
+
+                {/* Per-minute activity chart */}
+                {sources.byMinute.length > 1 && (
+                  <div className="mb-6 bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Actividad por Minuto</h3>
+                    <BarChart data={sources.byMinute.map(m => m.count)} color="#f43f5e" height={60} />
+                    <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                      <span>{sources.byMinute[0]?.minute}</span>
+                      <span className="text-rose-500">Ahora</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* By Source (API route) */}
                   <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Ruta / Componente</h3>
                     <div className="space-y-3">
                       {sources.bySource.slice(0, 10).map((s, i) => {
                         const max = sources.bySource[0]?.count || 1;
                         const pct = (s.count / max) * 100;
+                        const opsStr = Object.entries(s.ops).map(([k, v]) => `${k}:${v}`).join(' ');
                         return (
                           <div key={i}>
                             <div className="flex justify-between items-end mb-1">
-                              <span className="text-sm font-medium text-slate-700 truncate max-w-[70%]" title={s.source}>{s.source}</span>
+                              <span className="text-sm font-medium text-slate-700 truncate max-w-[60%]" title={s.source}>{s.source}</span>
                               <span className="text-sm font-black text-slate-900">{fmt(s.count)}</span>
                             </div>
                             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                               <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">{s.collections.join(', ')}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                              <span className="font-mono text-slate-500">{opsStr}</span> · {s.collections.join(', ')}
+                            </p>
                           </div>
                         );
                       })}
                     </div>
                   </div>
+
+                  {/* By Collection */}
                   <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Colección</h3>
                     <div className="space-y-3">
                       {sources.byCollection.slice(0, 10).map((c, i) => {
                         const max = sources.byCollection[0]?.count || 1;
                         const pct = (c.count / max) * 100;
+                        const opsStr = Object.entries(c.ops).map(([k, v]) => `${k}:${v}`).join(' ');
                         return (
                           <div key={i}>
                             <div className="flex justify-between items-end mb-1">
-                              <span className="text-sm font-medium text-slate-700 truncate max-w-[70%]" title={c.collectionId}>{c.collectionId}</span>
+                              <span className="text-sm font-medium text-slate-700 truncate max-w-[60%]" title={c.collectionId}>{c.collectionId}</span>
                               <span className="text-sm font-black text-slate-900">{fmt(c.count)}</span>
                             </div>
                             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                               <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">{c.sources.slice(0, 3).join(', ')}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                              <span className="font-mono text-slate-500">{opsStr}</span> · {c.sources.slice(0, 3).join(', ')}
+                            </p>
                           </div>
                         );
                       })}
                     </div>
                   </div>
                 </div>
+
+                {/* By Source File + Line */}
+                {sources.bySourceFile.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Archivo + Línea (Top 20)</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-slate-400 border-b border-slate-100">
+                            <th className="text-left py-2 px-2 font-bold">Archivo</th>
+                            <th className="text-right py-2 px-2 font-bold">Línea</th>
+                            <th className="text-left py-2 px-2 font-bold">Ruta</th>
+                            <th className="text-right py-2 px-2 font-bold">Lecturas</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sources.bySourceFile.map((f, i) => (
+                            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
+                              <td className="py-1.5 px-2 font-mono text-slate-700">{f.file}</td>
+                              <td className="py-1.5 px-2 text-right font-mono text-slate-500">:{f.line}</td>
+                              <td className="py-1.5 px-2 text-slate-400 truncate max-w-[200px]" title={f.source}>{f.source}</td>
+                              <td className="py-1.5 px-2 text-right font-black text-slate-900">{fmt(f.count)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cross-reference Source × Collection */}
+                {sources.crossRef.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Cruce Ruta × Colección (Top 30)</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-slate-400 border-b border-slate-100">
+                            <th className="text-left py-2 px-2 font-bold">Ruta</th>
+                            <th className="text-left py-2 px-2 font-bold">Colección</th>
+                            <th className="text-right py-2 px-2 font-bold">Lecturas</th>
+                            <th className="text-left py-2 px-2 font-bold w-24">Proporción</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sources.crossRef.map((cr, i) => {
+                            const max = sources.crossRef[0]?.count || 1;
+                            const pct = (cr.count / max) * 100;
+                            return (
+                              <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
+                                <td className="py-1.5 px-2 text-slate-700 truncate max-w-[180px]" title={cr.source}>{cr.source}</td>
+                                <td className="py-1.5 px-2 font-mono text-slate-500 truncate max-w-[160px]" title={cr.collection}>{cr.collection}</td>
+                                <td className="py-1.5 px-2 text-right font-black text-slate-900">{fmt(cr.count)}</td>
+                                <td className="py-1.5 px-2">
+                                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent individual entries */}
+                {sources.recent.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Últimas 50 Lecturas Individuales</h3>
+                    <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-white">
+                          <tr className="text-slate-400 border-b border-slate-100">
+                            <th className="text-left py-2 px-2 font-bold">Hora</th>
+                            <th className="text-left py-2 px-2 font-bold">Op</th>
+                            <th className="text-left py-2 px-2 font-bold">Colección</th>
+                            <th className="text-left py-2 px-2 font-bold">Ruta</th>
+                            <th className="text-left py-2 px-2 font-bold">Archivo:Linea</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sources.recent.map((r, i) => {
+                            const time = new Date(r.ts).toLocaleTimeString('es-CL', { hour12: false });
+                            return (
+                              <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
+                                <td className="py-1.5 px-2 font-mono text-slate-400">{time}</td>
+                                <td className="py-1.5 px-2">
+                                  <span className={`font-mono font-bold ${r.op === 'list' ? 'text-blue-600' : r.op === 'get' ? 'text-green-600' : r.op === 'create' ? 'text-amber-600' : r.op === 'update' ? 'text-orange-600' : 'text-red-600'}`}>{r.op}</span>
+                                </td>
+                                <td className="py-1.5 px-2 font-mono text-slate-500 truncate max-w-[140px]" title={r.collection}>{r.collection}</td>
+                                <td className="py-1.5 px-2 text-slate-700 truncate max-w-[160px]" title={r.source}>{r.source}</td>
+                                <td className="py-1.5 px-2 font-mono text-slate-400">{r.file}:{r.line}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
