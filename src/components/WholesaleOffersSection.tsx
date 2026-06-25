@@ -8,7 +8,7 @@ import { Tag, ShoppingCart, Check, Percent } from 'lucide-react';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 
-export default function WholesaleOffersSection() {
+export default function WholesaleOffersSection({ initialProducts }: { initialProducts?: Product[] } = {}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -29,6 +29,15 @@ export default function WholesaleOffersSection() {
           return;
         }
 
+        if (initialProducts && initialProducts.length > 0) {
+          const filtered = initialProducts.filter(
+            (p: Product) => productIds.includes(p.$id) && p.STOCK !== undefined && p.STOCK > 0
+          );
+          setProducts(filtered);
+          setLoading(false);
+          return;
+        }
+
         const prodRes = await fetch(`/api/public-data/products?ids=${productIds.join(',')}`);
         if (prodRes.ok) {
           const prodData = await prodRes.json();
@@ -45,7 +54,7 @@ export default function WholesaleOffersSection() {
     };
 
     fetchOffers();
-  }, []);
+  }, [initialProducts]);
 
   const handleAddToCart = (e: React.MouseEvent, product: Product, quantity: number) => {
     e.preventDefault();

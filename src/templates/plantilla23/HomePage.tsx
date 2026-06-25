@@ -5597,12 +5597,12 @@ export default function HomePage23() {
       </a>
 
       {wholesaleOffersContainer && createPortal(
-        <WholesaleOffersSection />,
+        <WholesaleOffersSection initialProducts={products} />,
         wholesaleOffersContainer
       )}
 
       {latestProductsContainer && createPortal(
-        <LatestProductsCarousel />,
+        <LatestProductsCarousel initialProducts={products} />,
         latestProductsContainer
       )}
 

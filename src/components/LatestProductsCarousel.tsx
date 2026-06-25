@@ -8,9 +8,9 @@ import { Sparkles, ShoppingCart, Check, ChevronLeft, ChevronRight, RefreshCw } f
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 
-export default function LatestProductsCarousel() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function LatestProductsCarousel({ initialProducts }: { initialProducts?: Product[] } = {}) {
+  const [products, setProducts] = useState<Product[]>(initialProducts || []);
+  const [loading, setLoading] = useState(!initialProducts);
   const [addingId, setAddingId] = useState<string | null>(null);
   const { addItem } = useCart();
   const { settings: apertura } = useAperturaPromotion();
@@ -42,12 +42,20 @@ export default function LatestProductsCarousel() {
   };
 
   useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) {
+      const sorted = [...initialProducts]
+        .filter((p: Product) => p.STOCK !== undefined && p.STOCK > 0)
+        .sort((a, b) => new Date(b.$updatedAt || b.$createdAt || 0).getTime() - new Date(a.$updatedAt || a.$createdAt || 0).getTime())
+        .slice(0, 24);
+      setProducts(sorted);
+      setLoading(false);
+      return;
+    }
     const loadNewest = async () => {
       try {
         const res = await fetch('/api/public-data/products?sortBy=updated&limit=24');
         if (res.ok) {
           const data = await res.json();
-          // Filter to show active products with stock
           const activeProducts = (data.products || []).filter((p: Product) => p.STOCK !== undefined && p.STOCK > 0);
           setProducts(activeProducts);
         }
@@ -59,7 +67,7 @@ export default function LatestProductsCarousel() {
     };
 
     loadNewest();
-  }, []);
+  }, [initialProducts]);
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
