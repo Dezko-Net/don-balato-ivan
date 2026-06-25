@@ -3727,9 +3727,10 @@ export default function HomePage23() {
         const catObj = categories.find(c => c.$id === product.CATEGORYID);
         const categoryName = catObj ? catObj.name : '';
 
-        const originalPrice = product.PRICE;
-        const currentPrice = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : originalPrice;
-        const hasDiscount = currentPrice < originalPrice;
+        const resolved = resolveProductDisplayPrice(product, apertura);
+        const originalPrice = resolved.originalPrice || product.PRICE;
+        const currentPrice = resolved.displayPrice;
+        const hasDiscount = resolved.hasDiscount;
 
         let priceHtml = '';
         if (hasDiscount) {
@@ -3803,8 +3804,8 @@ export default function HomePage23() {
         const tab1Products = [...cheapestProducts]
           .filter(p => p.STOCK === undefined || p.STOCK === null || p.STOCK > 0 || p.STOCK === 99999)
           .sort((a: any, b: any) => {
-            const priceA = a.CURRENTPRICE && a.CURRENTPRICE > 0 ? a.CURRENTPRICE : (a.PRICE || 0);
-            const priceB = b.CURRENTPRICE && b.CURRENTPRICE > 0 ? b.CURRENTPRICE : (b.PRICE || 0);
+            const priceA = resolveProductDisplayPrice(a, apertura).displayPrice;
+            const priceB = resolveProductDisplayPrice(b, apertura).displayPrice;
             return priceA - priceB;
           })
           .slice(0, 4);
