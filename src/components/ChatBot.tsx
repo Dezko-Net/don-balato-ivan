@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useKeniaStatus } from '@/hooks/useKeniaStatus';
 
 // Numero y datos de Kenia
 const KENIA_PHONE = '56936599658'; // +56 9 3659 9658
@@ -10,7 +11,7 @@ const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('RE
 export default function ChatBot() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [enabled, setEnabled] = useState(true);
+  const { isEnabled: enabled } = useKeniaStatus();
 
   const isHiddenRoute =
     pathname.startsWith('/admin') ||
@@ -19,14 +20,6 @@ export default function ChatBot() {
 
   useEffect(() => {
     setMounted(true);
-    fetch('/api/public-data/kenia-status')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && typeof data.isEnabled === 'boolean') {
-          setEnabled(data.isEnabled);
-        }
-      })
-      .catch((err) => console.error('Error fetching Kenia status:', err));
   }, []);
 
   if (isHiddenRoute || !mounted || !enabled) return null;

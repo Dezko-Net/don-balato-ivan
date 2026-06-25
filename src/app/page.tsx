@@ -9,6 +9,7 @@ import { Query } from 'appwrite';
 import { Product, Category, Banner, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import DynamicHomePage from '@/components/DynamicHomePage';
+import { useTemplate } from '@/context/TemplateContext';
 import { cached, TTL } from '@/lib/cache';
 
 
@@ -60,8 +61,14 @@ export default function HomePage() {
   const [bannerIdx, setBannerIdx] = useState(0);
   const [configError, setConfigError] = useState(false);
   const { addItem } = useCart();
+  const { getSectionTemplate, isLoading: templateLoading } = useTemplate();
 
   useEffect(() => {
+    // Skip fetching home data when a custom template handles its own data loading
+    if (templateLoading) return;
+    const tpl = getSectionTemplate('landing');
+    if (tpl !== 0 && tpl !== 1) return; // Only fetch for default/template 1
+
     async function load() {
       const { endpoint, projectId, databaseId } = getAppwriteConfig();
       if (!projectId || !endpoint || !databaseId) {
@@ -84,7 +91,7 @@ export default function HomePage() {
       }
     }
     load();
-  }, []);
+  }, [templateLoading, getSectionTemplate]);
 
   useEffect(() => {
     if (banners.length <= 1) return;

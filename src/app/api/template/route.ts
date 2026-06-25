@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { trackRead } from '@/lib/appwrite-read-tracker';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = '6a0a4e8d0032177f3f90';
@@ -34,6 +35,7 @@ const databases = new Databases(client);
 /** Helper: read a single key from sequences collection */
 async function readKey(key: string): Promise<number> {
   try {
+    trackRead('list', COLLECTION_ID, `key=${key}`, new Error().stack || '');
     const res = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [
       Query.equal("key", key),
       Query.limit(1)
@@ -75,12 +77,16 @@ const getCachedTemplates = unstable_cache(
   async () => {
     const global = await readKey(TEMPLATE_KEY) || 1;
     const sections = ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] as const;
+    
+    // Fetch all section templates in parallel (7 reads → 1 round-trip batch)
+    const sectionValues = await Promise.all(
+      sections.map(sec => readKey(`${TEMPLATE_KEY}_${sec}`))
+    );
+    
     const result: Record<string, number> = { landing: global, collections: global, catalog: global, productDetail: global, cart: global, checkout: global };
-
-    for (const sec of sections) {
-      const val = await readKey(`${TEMPLATE_KEY}_${sec}`);
-      if (val) result[sec] = val;
-    }
+    sections.forEach((sec, i) => {
+      if (sectionValues[i]) result[sec] = sectionValues[i];
+    });
 
     return { template: global, sections: result };
   },

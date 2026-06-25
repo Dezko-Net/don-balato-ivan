@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Client, Databases, Query } from 'node-appwrite';
 import { unstable_cache } from 'next/cache';
+import { trackRead } from '@/lib/appwrite-read-tracker';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = '6a0a4e8d0032177f3f90';
@@ -33,6 +34,7 @@ const getCachedAperturaSettings = unstable_cache(
       return memoryCacheApertura;
     }
 
+    trackRead('list', COLLECTION_ID, 'limit=1', new Error().stack || '');
     const response = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [Query.limit(1)]);
 
     let result = { ...DEFAULT_SETTINGS };

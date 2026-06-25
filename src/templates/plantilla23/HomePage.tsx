@@ -27,6 +27,7 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { useKeniaStatus } from '@/hooks/useKeniaStatus';
 import { getSectionConfigAsync, type SectionConfig } from '@/lib/section-config';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
@@ -319,20 +320,11 @@ export default function HomePage23() {
   const [htmlInjected, setHtmlInjected] = useState(false);
   const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
-  const [keniaEnabled, setKeniaEnabled] = useState(true);
+  const { isEnabled: keniaEnabled } = useKeniaStatus();
   const [themeSections, setThemeSections] = useState<SectionConfig[]>([]);
   const [isThemeConfigLoaded, setIsThemeConfigLoaded] = useState(false);
 
   useEffect(() => {
-    fetch('/api/public-data/kenia-status')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data.isEnabled === 'boolean') {
-          setKeniaEnabled(data.isEnabled);
-        }
-      })
-      .catch(() => {});
-
     getSectionConfigAsync()
       .then((cfg) => {
         setThemeSections(cfg);

@@ -19,6 +19,7 @@ import type { Product, TimedOffer, Category } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
+import { useKeniaStatus } from '@/hooks/useKeniaStatus';
 import { useNotifications } from '@/context/NotificationContext';
 import NotificationsOverlay from '@/components/NotificationsOverlay';
 import {
@@ -313,18 +314,7 @@ export default function HomePage1() {
   const [featuredProduct, setFeaturedProduct] = useState<Product | null>(null);
   const [countdownOffer, setCountdownOffer] = useState<TimedOffer | null>(null);
   const [countdownProduct, setCountdownProduct] = useState<Product | null>(null);
-  const [keniaEnabled, setKeniaEnabled] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/public-data/kenia-status')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data.isEnabled === 'boolean') {
-          setKeniaEnabled(data.isEnabled);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { isEnabled: keniaEnabled } = useKeniaStatus();
 
   /* ── Mark template attribute on document for CSS scoping ── */
   useEffect(() => {

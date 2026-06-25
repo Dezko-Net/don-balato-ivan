@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { trackRead } from '@/lib/appwrite-read-tracker';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = '6a0a4e8d0032177f3f90';
@@ -11,6 +12,7 @@ const API_KEY = process.env.APPWRITE_API_KEY || '';
 // Clients poll this to detect when admin has made changes
 export async function GET() {
   try {
+    trackRead('get', COLLECTION_ID, `id=${DOC_ID}`, new Error().stack || '');
     const res = await fetch(
       `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${DOC_ID}`,
       {

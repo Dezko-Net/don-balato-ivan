@@ -8,6 +8,7 @@ import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Receipt, LogOut, Pa
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { useKeniaStatus } from '@/hooks/useKeniaStatus';
 
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
 import { getSectionConfigAsync, getSectionConfig, type SectionConfig } from '@/lib/section-config';
@@ -54,23 +55,12 @@ export default function Navbar1() {
   const [fabOpen, setFabOpen] = useState(false);
   const [navLogoUrl, setNavLogoUrl] = useState<string>('');
   const [navStoreName, setNavStoreName] = useState<string>('');
-  const [keniaEnabled, setKeniaEnabled] = useState(true);
+  const { isEnabled: keniaEnabled } = useKeniaStatus();
   const lottieRef = useRef<HTMLDivElement>(null);
   const lottieAnimRef = useRef<any>(null);
 
   // Close FAB on route change
   useEffect(() => { setFabOpen(false); }, [pathname]);
-
-  useEffect(() => {
-    fetch('/api/public-data/kenia-status')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data.isEnabled === 'boolean') {
-          setKeniaEnabled(data.isEnabled);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   // Load Lottie animation for FAB button (dynamic import to avoid SSR)
   useEffect(() => {

@@ -2,6 +2,15 @@ import { Client, Databases, Account, Storage, ID, Query } from 'appwrite';
 
 export { ID, Query };
 
+// Server-side read tracker — no-op on client
+let trackRead: (op: string, collectionId: string, detail: string, stack: string) => void = () => {};
+if (typeof window === 'undefined') {
+  try {
+    const mod = require('./appwrite-read-tracker');
+    trackRead = mod.trackRead;
+  } catch { /* noop */ }
+}
+
 function getConfig() {
   if (typeof window !== 'undefined') {
     // Check both keys: admin uses 'yaxsel_appwrite_config', store uses 'appwrite_config'
@@ -91,6 +100,10 @@ export function getServices() {
         pendingListRequests.set(cacheKey, promise);
         return promise;
       }
+      // Server-side: track the read before calling Appwrite
+      if (typeof window === 'undefined') {
+        trackRead('list', colId, `q=${(queries || []).join('|').slice(0, 100)}`, new Error().stack || '');
+      }
       return originalListDocuments(dbId, colId, queries);
     };
 
@@ -126,6 +139,10 @@ export function getServices() {
         
         pendingGetRequests.set(cacheKey, promise);
         return promise;
+      }
+      // Server-side: track the read before calling Appwrite
+      if (typeof window === 'undefined') {
+        trackRead('get', colId, `id=${docId}`, new Error().stack || '');
       }
       return originalGetDocument(dbId, colId, docId, queries);
     };
