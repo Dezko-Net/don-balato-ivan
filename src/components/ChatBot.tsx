@@ -6,7 +6,7 @@ import { useKeniaStatus } from '@/hooks/useKeniaStatus';
 
 // Numero y datos de Kenia
 const KENIA_PHONE = '56936599658'; // +56 9 3659 9658
-const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
+const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('Hola Kenia! 👋 Te escribo desde la tienda, quiero hacer una consulta 🌸')}`;
 
 export default function ChatBot() {
   const pathname = usePathname();
@@ -106,7 +106,7 @@ export default function ChatBot() {
         target="_blank"
         rel="noopener noreferrer"
         className="kenia-fab"
-        aria-label="Registrate con Kenia por WhatsApp"
+        aria-label="Hablar con Kenia por WhatsApp"
       >
         <img
           src="/keniaavatar.jpg"
@@ -115,7 +115,7 @@ export default function ChatBot() {
         />
         <div className="kenia-fab__label">
           <span className="kenia-fab__name">Hola, soy Kenia 👋</span>
-          <span className="kenia-fab__action">REGISTRATE AQUI</span>
+          <span className="kenia-fab__action">Hablar con Kenia</span>
         </div>
         {/* WhatsApp icon */}
         <svg className="kenia-fab__wa-icon" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">

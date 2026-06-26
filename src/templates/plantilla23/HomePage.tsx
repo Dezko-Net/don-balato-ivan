@@ -2408,7 +2408,7 @@ export default function HomePage23() {
         heroSec.dataset.keniaBound = '1';
 
         const KENIA_PHONE = '56936599658';
-        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
+        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('Hola Kenia! 👋 Te escribo desde la tienda, quiero hacer una consulta 🌸')}`;
         const DEFAULT_KENIA_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758588825-pegada-1781758586654.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XuK0ff%2FaOBtzwSnfof24jryXdgHqvpnnFpt41fhV7HXSqq%2FsLtXBdxn1EeoICl6hOqGuAI8p2OEjm1v%2BItCsAfedWAJL9DdZAOgD9ax0YS7GUFnwGi%2Blugbq%2F52eS4Xf3M0PY9il9TikeU6BMNgqRoOVc5wsYcgUHLHI5bHkn3vMSaZty9kBmi%2BZlhXir7eM%2F5RGBD9yBJWDQsw19lA3qp8fEo5p8Wn%2FbrGMv9NXIELdqG2%2Bv0HvURo1zJsNcD%2B0TCsoLGVkuK7ojYLl6f8hB6yCLdAFH2LgICS%2B800QecmCHs3kJQeOG%2FlXlpvF9T11vamgc24ZptjcwlmmVzwyTw%3D%3D';
         const DEFAULT_KENIA_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758310444-pegada-1781758308350.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=GjfIQEBUtw%2F4U6GjdNN4ECU4wcqITqFei2LBBSdASIQyNI%2FRs2M0%2BH%2Fd8OTLaGhjmG%2B6eWQfFTXBoCdmhkyo%2Fd1H9kvIeAlzmDkUY%2BPzS35yTsjelnVXlTvt77zKpsUQfYYR9u5eYIDN%2FfdSEFY98Wb5rlPJOFt2FXneYQqnqfyJA8OhSGnHYKmfxfymlsZakUv6GmiiZGewHQ%2FbTABTHHz4cSgI5rlEISwoPGnDzEsait9CHZoszRscjCeocczr34Vbnd15CJsxrDl%2BaDIijdHSC7JPvAdt14rW6kxp6q1QAbNfxxdUmeIawwAP4tPI2a7EAg8Vna5RIr171OqYtg%3D%3D';
 
