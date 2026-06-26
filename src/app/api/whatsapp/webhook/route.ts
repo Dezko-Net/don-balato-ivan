@@ -32,6 +32,16 @@ const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GE
 const GEMINI_MODELS   = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
+// ── In-memory caches to reduce Appwrite calls ──────────────────────────────
+let _catCache: { data: any[]; ts: number } | null = null;
+const CAT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const _productSearchCache = new Map<string, { data: any[]; ts: number }>();
+const PROD_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+const _ordersCache = new Map<string, { data: any[]; ts: number }>();
+const ORDERS_CACHE_TTL = 60 * 1000; // 1 minute
+
 // ─── Admin system prompt ───────────────────────────────────────────────────────
 const ADMIN_PROMPT = `Eres Kenia IA, el asistente administrativo de Kevin&Coco por WhatsApp.
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
@@ -1303,39 +1313,46 @@ ${products.join('\n') || 'Sin productos.'}`;
         let customerOrdersText = '';
         let myOrders: any[] = [];
         try {
-          let resOrders;
-          try {
-            const cleanB = fromPhone.replace(/\D/g, '');
-            const qPhone1 = cleanB;
-            const qPhone2 = cleanB.startsWith('569') ? cleanB.slice(2) : `56${cleanB}`;
-            const qPhone3 = `+${cleanB}`;
-            const qPhone4 = `+${qPhone2}`;
-            const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-            const qPhone = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERPHONE', values: [qPhone1, qPhone2, qPhone3, qPhone4] });
-            const qLimit = JSON.stringify({ method: 'limit', values: [10] });
-            resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit]);
-          } catch (e) {
-            console.warn('[WhatsApp] Order query by phone failed, falling back to 20 limit:', e);
-            const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-            const qLimit20 = JSON.stringify({ method: 'limit', values: [20] });
-            resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit20]);
+          const now = Date.now();
+          const ordersCacheKey = fromPhone.replace(/\D/g, '');
+          const cachedOrders = _ordersCache.get(ordersCacheKey);
+          if (cachedOrders && (now - cachedOrders.ts < ORDERS_CACHE_TTL)) {
+            myOrders = cachedOrders.data;
+          } else {
+            let resOrders;
+            try {
+              const cleanB = fromPhone.replace(/\D/g, '');
+              const qPhone1 = cleanB;
+              const qPhone2 = cleanB.startsWith('569') ? cleanB.slice(2) : `56${cleanB}`;
+              const qPhone3 = `+${cleanB}`;
+              const qPhone4 = `+${qPhone2}`;
+              const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+              const qPhone = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERPHONE', values: [qPhone1, qPhone2, qPhone3, qPhone4] });
+              const qLimit = JSON.stringify({ method: 'limit', values: [10] });
+              resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit]);
+            } catch (e) {
+              console.warn('[WhatsApp] Order query by phone failed, falling back to 20 limit:', e);
+              const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+              const qLimit20 = JSON.stringify({ method: 'limit', values: [20] });
+              resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit20]);
+            }
+            myOrders = (resOrders.documents || [])
+              .filter((o: any) => {
+                const oPhone = String(o.CUSTOMERPHONE || '');
+                if (oPhone) {
+                  const cleanA = oPhone.replace(/\D/g, '');
+                  const cleanB = fromPhone.replace(/\D/g, '');
+                  if (cleanA === cleanB) return true;
+                  const tailA = cleanA.slice(-8);
+                  const tailB = cleanB.slice(-8);
+                  if (tailA.length === 8 && tailA === tailB) return true;
+                }
+                const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
+                return linked.some((p: string) => phonesMatch(p, fromPhone));
+              })
+              .slice(0, 5);
+            _ordersCache.set(ordersCacheKey, { data: myOrders, ts: now });
           }
-          
-          myOrders = (resOrders.documents || [])
-            .filter((o: any) => {
-              const oPhone = String(o.CUSTOMERPHONE || '');
-              if (oPhone) {
-                const cleanA = oPhone.replace(/\D/g, '');
-                const cleanB = fromPhone.replace(/\D/g, '');
-                if (cleanA === cleanB) return true;
-                const tailA = cleanA.slice(-8);
-                const tailB = cleanB.slice(-8);
-                if (tailA.length === 8 && tailA === tailB) return true;
-              }
-              const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
-              return linked.some((p: string) => phonesMatch(p, fromPhone));
-            })
-            .slice(0, 5);
           
           if (myOrders.length > 0) {
             const ordersFormatted = myOrders.map((o: any) => {
@@ -1416,23 +1433,32 @@ ${products.join('\n') || 'Sin productos.'}`;
             const searchKeywords = keywords.filter(k => !stopwords.includes(k));
             if (searchKeywords.length > 0) {
               const searchQuery = searchKeywords.join(' ');
-              const resSearch = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
-                `search("NAME", ["${searchQuery}"])`,
-                `limit(25)`
-              ]);
-              if (resSearch.documents && resSearch.documents.length > 0) {
-                relevantProducts = resSearch.documents;
+              const cacheKey = searchQuery.toLowerCase();
+              const now = Date.now();
+              const cached = _productSearchCache.get(cacheKey);
+              if (cached && (now - cached.ts < PROD_CACHE_TTL)) {
+                relevantProducts = cached.data;
                 searched = true;
               } else {
-                // Fallback to tags search
-                const resTags = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
-                  `search("TAGS", ["${searchQuery}"])`,
+                const resSearch = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+                  `search("NAME", ["${searchQuery}"])`,
                   `limit(25)`
                 ]);
-                if (resTags.documents && resTags.documents.length > 0) {
-                  relevantProducts = resTags.documents;
+                if (resSearch.documents && resSearch.documents.length > 0) {
+                  relevantProducts = resSearch.documents;
                   searched = true;
+                } else {
+                  // Fallback to tags search
+                  const resTags = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+                    `search("TAGS", ["${searchQuery}"])`,
+                    `limit(25)`
+                  ]);
+                  if (resTags.documents && resTags.documents.length > 0) {
+                    relevantProducts = resTags.documents;
+                    searched = true;
+                  }
                 }
+                _productSearchCache.set(cacheKey, { data: relevantProducts, ts: now });
               }
             }
           } catch (searchErr) {
@@ -1444,9 +1470,17 @@ ${products.join('\n') || 'Sin productos.'}`;
         let categoriesList: string[] = [];
         if (relevantProducts.length === 0 && suggestedProducts.length === 0) {
           try {
-            const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
-            const catRes = await serverListDocuments(CATEGORIES_COLLECTION_ID, [qLimit100]);
-            categoriesList = (catRes.documents || []).map((c: any) => `- ${c.name} (ID: ${c.$id})`);
+            const now = Date.now();
+            let catDocs: any[] = [];
+            if (_catCache && (now - _catCache.ts < CAT_CACHE_TTL)) {
+              catDocs = _catCache.data;
+            } else {
+              const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
+              const catRes = await serverListDocuments(CATEGORIES_COLLECTION_ID, [qLimit100]);
+              catDocs = catRes.documents || [];
+              _catCache = { data: catDocs, ts: now };
+            }
+            categoriesList = catDocs.map((c: any) => `- ${c.name} (ID: ${c.$id})`);
           } catch (e) {
             console.error('[WhatsApp Webhook] Categories query failed:', e);
           }
