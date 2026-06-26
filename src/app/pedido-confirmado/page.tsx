@@ -160,6 +160,13 @@ function ConfirmadoInner() {
     setTimeout(() => setCopied(null), 2000);
   }
 
+  // Lock body scroll on mount (prevents background scroll on mobile)
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = originalOverflow; };
+  }, []);
+
   if (isLoading) {
     return (
       <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fdf2f8 0%,#fff 280px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -215,25 +222,25 @@ function ConfirmadoInner() {
         </div>
       )}
 
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px calc(60px + 92px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="pk-confirm-container" style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px calc(70px + env(safe-area-inset-bottom, 0px))' }}>
         {/* ── Success header ── */}
-        <div style={{ background: '#fff', borderRadius: 24, padding: '40px 32px 32px', border: '1px solid #fce7f3', textAlign: 'center', boxShadow: '0 12px 48px rgba(227,150,191,0.1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+        <div className="pk-confirm-header" style={{ background: '#fff', borderRadius: 24, padding: '40px 32px 32px', border: '1px solid #fce7f3', textAlign: 'center', boxShadow: '0 12px 48px rgba(227,150,191,0.1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
           {/* Background decoration */}
           <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(227,150,191,0.08), transparent)' }} />
           <div style={{ position: 'absolute', bottom: -40, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(227,150,191,0.06), transparent)' }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 84, borderRadius: '50%', background: 'linear-gradient(135deg,#fce7f3,#fbcfe8)', marginBottom: 16, animation: 'pkPulse 2s ease-in-out infinite', boxShadow: '0 12px 40px rgba(227,150,191,0.2)' }}>
+            <div className="pk-confirm-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 84, borderRadius: '50%', background: 'linear-gradient(135deg,#fce7f3,#fbcfe8)', marginBottom: 16, animation: 'pkPulse 2s ease-in-out infinite', boxShadow: '0 12px 40px rgba(227,150,191,0.2)' }}>
               {isSuccess ? <CheckCircle2 size={44} color="#e396bf" strokeWidth={2.5} /> : <PartyPopper size={42} color="#e396bf" strokeWidth={2.2} />}
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fdf2f8', color: '#e396bf', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
               <Sparkles size={13} /> Pedido recibido
             </div>
-            <h1 style={{ margin: '0 0 8px', fontSize: 30, fontWeight: 900, color: '#111', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            <h1 className="pk-confirm-title" style={{ margin: '0 0 8px', fontSize: 30, fontWeight: 900, color: '#111', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               {isSuccess ? '¡Pedido confirmado!' : '¡Gracias por tu compra!'}
             </h1>
             {order.CUSTOMERNAME && (
-              <p style={{ margin: '0 0 16px', fontSize: 15, color: '#6b7280' }}>
+              <p className="pk-confirm-subtitle" style={{ margin: '0 0 16px', fontSize: 15, color: '#6b7280' }}>
                 Hola <strong style={{ color: '#111' }}>{order.CUSTOMERNAME}</strong>, te enviamos los detalles a tu correo.
               </p>
             )}
@@ -544,6 +551,56 @@ function ConfirmadoInner() {
         @keyframes pkConfetti {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        /* Mobile compact styles for checkout confirmation */
+        @media (max-width: 768px) {
+          .pk-confirm-container {
+            padding: 12px 12px calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+          }
+          .pk-confirm-header {
+            padding: 24px 16px 20px !important;
+            border-radius: 18px !important;
+            margin-bottom: 10px !important;
+          }
+          .pk-confirm-icon {
+            width: 60px !important;
+            height: 60px !important;
+            margin-bottom: 10px !important;
+          }
+          .pk-confirm-icon svg { width: 32px !important; height: 32px !important; }
+          .pk-confirm-title {
+            font-size: 22px !important;
+            margin-bottom: 4px !important;
+          }
+          .pk-confirm-subtitle {
+            font-size: 13px !important;
+            margin-bottom: 10px !important;
+          }
+          /* Compact all card sections on mobile */
+          .pk-confirm-container > div[style*="borderRadius: 20px"] {
+            border-radius: 16px !important;
+            padding: 16px 14px !important;
+            margin-bottom: 10px !important;
+          }
+          /* Compact bank detail buttons on mobile */
+          .pk-confirm-container button[style*="borderRadius: 12px"] {
+            padding: 10px 12px !important;
+          }
+          /* Compact order items on mobile */
+          .pk-confirm-container img[style*="60px"],
+          .pk-confirm-container div[style*="width: 60"] {
+            width: 44px !important;
+            height: 44px !important;
+          }
+          /* Smaller fonts on mobile */
+          .pk-confirm-container h2 {
+            font-size: 14px !important;
+          }
+          .pk-confirm-container p {
+            font-size: 12px !important;
+          }
+          /* Hide the bottom navbar on this page to prevent overlap */
+          .tpl1-bottom-nav { display: none !important; }
         }
       `}</style>
     </div>

@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { CheckCircle, Package, MessageCircle, Clock, ArrowRight } from 'lucide-react';
 
 const FF = '"DM Sans", system-ui, sans-serif';
@@ -11,8 +11,15 @@ function ConfirmacionMayoristaInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id') || '';
 
+  // Lock body scroll on mount (prevents background scroll on mobile)
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = originalOverflow; };
+  }, []);
+
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#fef9f4 0%,#fff 300px)', fontFamily: FF, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+    <div className="pk-mayorista-confirm" style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#fef9f4 0%,#fff 300px)', fontFamily: FF, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
         {/* Success icon */}
         <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#fef9f4,#eed9c4)', border: '2px solid #eed9c4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 8px 32px rgba(198,139,89,0.15)' }}>
@@ -68,6 +75,14 @@ function ConfirmacionMayoristaInner() {
           </Link>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .pk-mayorista-confirm { padding: 16px 12px calc(70px + env(safe-area-inset-bottom, 0px)) !important; }
+          .pk-mayorista-confirm h1 { font-size: 24px !important; }
+          .pk-mayorista-confirm > div { max-width: 100% !important; }
+          .tpl1-bottom-nav { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
