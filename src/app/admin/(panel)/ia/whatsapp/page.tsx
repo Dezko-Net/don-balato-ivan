@@ -200,6 +200,7 @@ export default function AdminIAWhatsAppPage() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingTemplate, setSendingTemplate] = useState(false);
+  const [interacting, setInteracting] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState('');
   const [newChatName, setNewChatName] = useState('');
@@ -417,6 +418,27 @@ export default function AdminIAWhatsAppPage() {
       showToast('error', error?.message || 'No se pudo enviar el mensaje');
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleInteract() {
+    if (!selectedPhone) return;
+    setInteracting(true);
+    try {
+      const res = await fetch('/api/admin/ia/interact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: selectedPhone }),
+      });
+      const data = await res.json();
+      if (!data?.success) throw new Error(data?.error || 'No se pudo interactuar');
+      await loadThread(selectedPhone);
+      await loadThreads(true);
+      showToast('success', 'Kenia leyó el contexto y respondió al cliente');
+    } catch (error: any) {
+      showToast('error', error?.message || 'No se pudo interactuar');
+    } finally {
+      setInteracting(false);
     }
   }
 
@@ -1278,6 +1300,10 @@ export default function AdminIAWhatsAppPage() {
                 <div className="wa-psec">
                   <p className="wa-plabel"><MessageCircle className="h-3.5 w-3.5" /> Conversación</p>
                   <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                    <button className="wa-btn" style={{ background:'linear-gradient(135deg,rgba(227,150,191,0.12),rgba(245,168,207,0.08))', border:'1.5px solid rgba(227,150,191,0.3)' }} onClick={handleInteract} disabled={!selectedPhone || interacting}>
+                      <Sparkles className="h-4 w-4" style={{ flexShrink:0, color:'#e396bf' }} /> <span>Kenia interactúe</span>
+                      {interacting && <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ marginLeft:'auto' }} />}
+                    </button>
                     <button className="wa-btn" onClick={() => selectedPhone && handleLoadOrders(selectedPhone)}>
                       <ShoppingBag className="h-4 w-4" style={{ flexShrink:0 }} /> <span>Ver pedidos del cliente</span>
                       {customerMap[selectedPhone]?.orderCount != null && customerMap[selectedPhone].orderCount > 0 && <span style={{ marginLeft:'auto', fontSize:10, background:'rgba(0,168,132,0.18)', color:'#047857', padding:'2px 8px', borderRadius:6, fontWeight:800 }}>{customerMap[selectedPhone].orderCount}</span>}
