@@ -513,26 +513,70 @@ export async function POST(req: NextRequest) {
               try {
                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
                 const myOrders = (resOrders.documents || []).filter((o: any) => {
-                  const oPhone = String(o.CUSTOMERPHONE || '');
-                  if (!oPhone) return false;
-                  const cleanA = oPhone.replace(/\D/g, '');
                   const cleanB = fromPhone.replace(/\D/g, '');
-                  if (cleanA === cleanB) return true;
-                  const tailA = cleanA.slice(-8);
-                  const tailB = cleanB.slice(-8);
-                  return tailA.length === 8 && tailA === tailB;
+                  const oPhone = String(o.CUSTOMERPHONE || '');
+                  if (oPhone) {
+                    const cleanA = oPhone.replace(/\D/g, '');
+                    if (cleanA === cleanB) return true;
+                    const tailA = cleanA.slice(-8);
+                    const tailB = cleanB.slice(-8);
+                    if (tailA.length === 8 && tailA === tailB) return true;
+                  }
+                  const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
+                  return linked.some((p: string) => {
+                    const lp = p.replace(/\D/g, '');
+                    if (lp === cleanB) return true;
+                    const lt = lp.slice(-8);
+                    return lt.length === 8 && lt === cleanB.slice(-8);
+                  });
                 });
-                const pending = myOrders.find((o: any) => o.STATUS === 'pending');
+                // First: pending orders without payment proof
+                const pending = myOrders.find((o: any) => o.STATUS === 'pending' && !o.PAYMENTPROOFURL);
                 if (pending) {
                   pendingOrderId = String(pending.$id);
                   orderCode = String(pending.ORDERCODE || pending.$id);
+                } else {
+                  // Also check processing orders without proof (client may have paid but not uploaded)
+                  const processingNoProof = myOrders.find((o: any) => o.STATUS === 'processing' && !o.PAYMENTPROOFURL);
+                  if (processingNoProof) {
+                    pendingOrderId = String(processingNoProof.$id);
+                    orderCode = String(processingNoProof.ORDERCODE || processingNoProof.$id);
+                  }
                 }
               } catch (e) {
                 console.warn('[WhatsApp Webhook] Failed to fetch orders for image comprobante check', e);
               }
             }
 
+            // Use Gemini Vision to verify the image is actually a payment receipt
+            let isComprobante = false;
             if (pendingOrderId) {
+              try {
+                const base64Check = Buffer.from(buffer).toString('base64');
+                const visionRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{
+                      parts: [
+                        { text: '¿Esta imagen es un comprobante de pago, transferencia bancaria, o recibo de pago? Responde solo "SI" o "NO".' },
+                        { inline_data: { mime_type: msg.image?.mime_type || 'image/jpeg', data: base64Check } }
+                      ]
+                    }],
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 10 }
+                  })
+                });
+                const visionData = await visionRes.json();
+                const visionText = String(visionData?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim().toUpperCase();
+                isComprobante = visionText.startsWith('SI');
+                console.log('[WhatsApp Webhook] Comprobante vision check:', visionText);
+              } catch (e) {
+                console.warn('[WhatsApp Webhook] Vision check failed, assuming comprobante:', e);
+                isComprobante = true; // Fallback: assume it is if we can't verify
+              }
+            }
+
+            if (pendingOrderId && isComprobante) {
               const fileName = `comprobante_${Date.now()}.jpg`;
               const uploadRes = await serverUploadFile(MEDIA_BUCKET_ID, buffer, fileName);
               const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, uploadRes.$id);
