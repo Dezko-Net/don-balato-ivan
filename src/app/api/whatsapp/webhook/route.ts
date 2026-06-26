@@ -453,7 +453,8 @@ export async function POST(req: NextRequest) {
       if (mediaId && WA_TOKEN) {
         // Track usage
         const usageRes = await recordKeniaUsage(fromPhone, { imageSent: true });
-        if ((usageRes.imagesSentToday || 0) > 5) {
+        const BAN_PROOF_PHONES = ['56992139185'];
+        if (!BAN_PROOF_PHONES.includes(fromPhone.replace(/\D/g, '')) && (usageRes.imagesSentToday || 0) > 5) {
           await setKeniaBlocked(fromPhone, true);
           await sendWhatsAppMessage(
             fromPhone,
@@ -764,9 +765,12 @@ export async function POST(req: NextRequest) {
             // Cliente real: enviar aviso de mantenimiento una sola vez
             const usageMaint = await getKeniaUsage(fromPhone);
             if (!usageMaint.maintenanceNotified) {
-              const maintenanceReply = 'Hola linda. Por el momento nuestro asistente virtual de WhatsApp se encuentra desactivado. Responderemos tu consulta de forma manual a la brevedad. ¡Muchas gracias por tu paciencia! 🌸';
-              await addToHistory(fromPhone, 'assistant', maintenanceReply, msgId);
-              await sendWhatsAppMessage(fromPhone, maintenanceReply, WA_TOKEN);
+              const customerFirstName = usageMaint.customerName ? usageMaint.customerName.split(' ')[0] : '';
+              const welcomeReply = customerFirstName
+                ? `¡Hola ${customerFirstName}! 🌸 Soy Kenia, tu asistente personal de Kevin&Coco Chile 🇨🇱✨\n\n¡Ya estoy activa! 💖 Puedo ayudarte con:\n\n🛍️ Información de productos y precios\n📦 Estado de tus pedidos\n💳 Datos para transferir\n🎁 Ofertas y novedades\n✨ Y mucho más\n\n¿En qué te puedo ayudar hoy, bella? �`
+                : `¡Hola bella! 🌸 Soy Kenia, tu asistente personal de Kevin&Coco Chile 🇨🇱✨\n\n¡Ya estoy activa! 💖 Puedo ayudarte con:\n\n🛍️ Información de productos y precios\n📦 Estado de tus pedidos\n💳 Datos para transferir\n🎁 Ofertas y novedades\n✨ Y mucho más\n\n¿En qué te puedo ayudar hoy? �`;
+              await addToHistory(fromPhone, 'assistant', welcomeReply, msgId);
+              await sendWhatsAppMessage(fromPhone, welcomeReply, WA_TOKEN);
               await recordKeniaUsage(fromPhone, { maintenanceNotified: true });
             }
             return NextResponse.json({ status: 'maintenance' });
@@ -1368,8 +1372,19 @@ ${products.join('\n') || 'Sin productos.'}`;
 - ${nowChileStr}
 (Usa esta fecha como referencia absoluta de "hoy" para determinar qué pedidos corresponden a "hoy", "ayer", etc.)`;
 
+    // Números admin que nunca pueden ser baneados/bloqueados (inmune incluso en MODO CLIENTE)
+    const BAN_PROOF_PHONES = ['56992139185'];
+    const isBanProof = BAN_PROOF_PHONES.includes(cleanedFrom);
+
     if (!isAdmin) {
       const usageCheck = await getKeniaUsage(fromPhone);
+
+      // Si es un número inmune (admin probando), auto-desbloquear si estaba bloqueado
+      if (isBanProof && (usageCheck.blocked || usageCheck.spamBlocked)) {
+        await setKeniaBlocked(fromPhone, false);
+        usageCheck.blocked = false;
+        usageCheck.spamBlocked = false;
+      }
 
       // ── Anti-spam: detectar más de 8 mensajes en 2 minutos ──
       const now = Date.now();
@@ -1379,7 +1394,7 @@ ${products.join('\n') || 'Sin productos.'}`;
       recentTimestamps.push(now);
       await recordKeniaUsage(fromPhone, { lastMessageTimestamps: recentTimestamps });
 
-      if (!usageCheck.spamBlocked && recentTimestamps.length > 8) {
+      if (!isBanProof && !usageCheck.spamBlocked && recentTimestamps.length > 8) {
         // Auto-bloquear por spam
         await setKeniaBlocked(fromPhone, true, 'spam');
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');

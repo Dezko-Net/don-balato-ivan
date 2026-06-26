@@ -406,7 +406,7 @@ function ConfirmadoInner() {
             Conecta tu pedido a nuestro WhatsApp para recibir actualizaciones automáticas. Si escribiste mal tu número en el carrito, haz click aquí para corregirlo.
           </p>
           <a
-            href={`https://wa.me/56999149712?text=vincular_pedido%20${order.$id}`}
+            href={`https://wa.me/56936599658?text=vincular_pedido%20${order.$id}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#25D366', color: '#fff', borderRadius: 14, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(37,211,102,0.2)' }}

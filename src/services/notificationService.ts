@@ -203,31 +203,31 @@ export async function notifyOrderStatusChange(
   if (!copy) return;
 
   const userId = await resolveUserIdFromOrder(order);
-  if (!userId) return;
 
   const code = order.ORDERCODE || order.$id || 'tu pedido';
   const refKey = `order:${order.$id}:${newStatus}`;
 
-  if (await existsByRefKey(refKey, userId)) return;
+  // In-app notification only for registered users (not guests)
+  if (userId && !(await existsByRefKey(refKey, userId))) {
+    let title = copy.title;
+    let message = copy.buildMessage(code);
 
-  let title = copy.title;
-  let message = copy.buildMessage(code);
+    if (newStatus === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') {
+      title = 'Listo para retirar';
+      message = `Tu pedido ${code} está listo para ser retirado en tienda.`;
+    }
 
-  if (newStatus === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') {
-    title = 'Listo para retirar';
-    message = `Tu pedido ${code} está listo para ser retirado en tienda.`;
+    await createNotificationClient({
+      title,
+      message,
+      type: 'order',
+      userId,
+      link: `/cuenta/pedidos`,
+      refKey,
+    });
   }
 
-  await createNotificationClient({
-    title,
-    message,
-    type: 'order',
-    userId,
-    link: `/cuenta/pedidos`,
-    refKey,
-  });
-
-  // ── 2. Send Automatic WhatsApp Notification ──
+  // ── 2. Send Automatic WhatsApp Notification (works for guests too) ──
   if (!order.CUSTOMERPHONE) return;
   const msgId = `wa_order_${order.$id}_${newStatus}`;
   try {
