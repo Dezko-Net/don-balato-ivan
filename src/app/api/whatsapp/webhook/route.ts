@@ -1484,7 +1484,7 @@ ${products.join('\n') || 'Sin productos.'}`;
     };
 
     // ── Call Gemini ────────────────────────────────────────────────────────────
-    let aiReply = '❌ Lo siento, no pude procesar tu mensaje en este momento. Intenta de nuevo.';
+    let aiReply = '¡Ay bella! 🌸 Tuve un problemita técnico para procesar tu mensaje ahora mismo 🥺. Dame un momentito cortito y vuelve a intentarlo, ¡pronto estaremos charlando! 💖';
     let rawText = '';
     let usageMetadata: any = null;
     for (const model of GEMINI_MODELS) {
@@ -1506,8 +1506,21 @@ ${products.join('\n') || 'Sin productos.'}`;
             .trim();
           break;
         }
+        console.warn(`[Gemini] Model ${model} returned OK but no text. Response:`, JSON.stringify(data).substring(0, 500));
+      } else {
+        const errBody = await res.text().catch(() => 'no body');
+        console.warn(`[Gemini] Model ${model} failed with status ${res.status}:`, errBody.substring(0, 300));
       }
       if (res.status !== 503) break;
+    }
+
+    // If all Gemini models failed, notify admin
+    if (!rawText && !isAdmin) {
+      try {
+        const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+        const failAlert = `⚠️ *KENIA: Error de Gemini*\n\nNo pude responder a +${fromPhone}. Todos los modelos fallaron.\n\nMensaje del cliente: "${userText.substring(0, 100)}"\n\nRevisa el log del servidor para más detalles.`;
+        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, failAlert, WA_TOKEN);
+      } catch {}
     }
 
     // ── Action Parsing & Execution (UPDATE_ORDER) ──────────────────────────────
