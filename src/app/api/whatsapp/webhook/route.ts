@@ -1556,16 +1556,24 @@ ${products.join('\n') || 'Sin productos.'}`;
             await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
             await recordKeniaUsage(fromPhone, { lastStallReplyTs: now });
           }
-          // Notificar al admin que el cliente escribió
-          const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
-          const adminNotif = `📩 *Cliente esperando respuesta*\n+${fromPhone} escribió: "${userText}"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
-          await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotif, WA_TOKEN);
+          // Notificar al admin que el cliente escribió (throttled)
+          if (now - lastStallTs > STALL_COOLDOWN_MS) {
+            const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+            const adminNotif = `📩 *Cliente esperando respuesta*\n+${fromPhone} escribió: "${userText}"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+            await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotif, WA_TOKEN);
+          }
           return NextResponse.json({ status: 'admin_takeover' });
         }
-        // Bloqueo normal (manual): NO responder nada, solo guardar mensaje y notificar admin
-        const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
-        const adminNotifBlocked = `⚠️ *Cliente pausado escribió*\n+${fromPhone}: "${userText}"\n\n🔗 Atiéndelo en: ${SITE_URL}/admin/ia/whatsapp`;
-        await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotifBlocked, WA_TOKEN);
+        // Bloqueo normal (manual): NO responder nada, solo guardar mensaje y notificar admin (throttled)
+        const nowBlocked = Date.now();
+        const lastBlockedTs = usageCheck.lastStallReplyTs || 0;
+        const BLOCKED_NOTIFY_COOLDOWN = 3 * 60 * 1000; // 3 min
+        if (nowBlocked - lastBlockedTs > BLOCKED_NOTIFY_COOLDOWN) {
+          const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
+          const adminNotifBlocked = `⚠️ *Cliente pausado escribió*\n+${fromPhone}: "${userText}"\n\n🔗 Atiéndelo en: ${SITE_URL}/admin/ia/whatsapp`;
+          await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotifBlocked, WA_TOKEN);
+          await recordKeniaUsage(fromPhone, { lastStallReplyTs: nowBlocked });
+        }
         
         return NextResponse.json({ status: 'blocked' });
       }

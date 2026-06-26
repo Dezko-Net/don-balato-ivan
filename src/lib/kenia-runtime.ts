@@ -414,15 +414,13 @@ export async function recordKeniaUsage(
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
   const usageMap = await readUsageFromFile();
-  const dbConfig = await fetchConfigFromAppwrite();
-  const isBlocked = dbConfig.blockedPhones.includes(cleaned);
   const prev = usageMap[cleaned] || {
     phone: cleaned,
     totalTokens: 0,
     promptTokens: 0,
     responseTokens: 0,
     messageCount: 0,
-    blocked: isBlocked,
+    blocked: false,
     updatedAt: '',
   };
   const promptTokens = Math.max(0, Number(usage.promptTokens || 0));
@@ -434,6 +432,7 @@ export async function recordKeniaUsage(
   );
   usageMap[cleaned] = {
     ...prev,
+    blocked: prev.blocked ?? false,
     promptTokens: prev.promptTokens + promptTokens,
     responseTokens: prev.responseTokens + responseTokens,
     totalTokens: prev.totalTokens + totalTokens,
@@ -446,7 +445,7 @@ export async function recordKeniaUsage(
     lastMessageTimestamps: usage.lastMessageTimestamps ?? prev.lastMessageTimestamps ?? [],
     welcomeShown: usage.welcomeShown ?? prev.welcomeShown ?? false,
     registerPromptedAt: usage.registerPromptedAt ?? prev.registerPromptedAt ?? 0,
-    imagesSentToday: 0, // This gets calculated dynamically below
+    imagesSentToday: 0,
     lastImageSentAt: prev.lastImageSentAt || 0,
     awaitingComprobante: usage.awaitingComprobante ?? prev.awaitingComprobante ?? false,
     pendingOrderId: usage.pendingOrderId ?? prev.pendingOrderId,

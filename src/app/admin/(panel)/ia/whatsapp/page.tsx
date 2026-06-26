@@ -300,8 +300,8 @@ export default function AdminIAWhatsAppPage() {
         } else if (currentSelected && !nextThreads.some((item) => item.phone === currentSelected)) {
           setSelectedPhone(nextThreads[0]?.phone || '');
         }
-        // Enrich threads with customer data from DB
-        if (nextThreads.length > 0) {
+        // Enrich threads with customer data from DB (only on initial load, not polling)
+        if (nextThreads.length > 0 && !keepSelection) {
           const phones = nextThreads
             .filter(t => t.segment === 'customer')
             .map(t => t.phone)
@@ -350,12 +350,12 @@ export default function AdminIAWhatsAppPage() {
     if (selectedPhone) loadThread(selectedPhone);
   }, [selectedPhone, loadThread]);
 
-  // Polling: refresh thread list and active thread every 15s
+  // Polling: refresh thread list and active thread every 30s
   useEffect(() => {
     const interval = setInterval(() => {
       loadThreads(true);
       if (selectedPhoneRef.current) loadThread(selectedPhoneRef.current);
-    }, 15000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [loadThreads, loadThread]);
 
