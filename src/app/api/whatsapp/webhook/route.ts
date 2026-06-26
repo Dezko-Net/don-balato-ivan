@@ -1218,7 +1218,7 @@ ${products.join('\n') || 'Sin productos.'}`;
                 preparing_shipping: 'Etiqueta Lista',
                 ready_to_ship: 'Listo para enviar',
                 shipped: 'Enviado',
-                delivered: 'Entregado',
+                delivered: 'Entregado a agencia de transporte',
                 cancelled: 'Cancelado'
               };
               const status = STATUS_LABELS[rawStatus] || rawStatus;
@@ -1232,8 +1232,9 @@ ${products.join('\n') || 'Sin productos.'}`;
               } catch (e) {}
               const agency = o.SHIPPINGAGENCY ? ` | Agencia: ${o.SHIPPINGAGENCY}` : '';
               const tracking = o.TRACKINGNUMBER ? ` | Seguimiento: ${o.TRACKINGNUMBER}` : '';
-              const proof = o.SHIPPINGPROOFURL ? ` | Comprobante: ${o.SHIPPINGPROOFURL}` : '';
-              return `- Pedido #${code} (ID: ${id}) | Total: $${o.TOTAL} | Estado: ${status}${agency}${tracking}${proof}${missingText}`;
+              const boxPhoto = o.SHIPPINGPROOFURL ? ` | Foto caja: ${o.SHIPPINGPROOFURL}` : '';
+              const agencyProof = o.PAYMENTPROOFURL ? ` | Comprobante agencia: ${o.PAYMENTPROOFURL}` : '';
+              return `- Pedido #${code} (ID: ${id}) | Total: $${o.TOTAL} | Estado: ${status}${agency}${tracking}${boxPhoto}${agencyProof}${missingText}`;
             });
             customerOrdersText = `\n\n## 📦 MIS PEDIDOS ACTIVOS:\n${ordersFormatted.join('\n')}`;
           }
@@ -1409,20 +1410,37 @@ ${products.join('\n') || 'Sin productos.'}`;
           return NextResponse.json({ status: 'spam_blocked' });
         }
         if (usageCheck.adminTakeover || usageCheck.escalated) {
-          // Admin tomó control o Kenia escaló: aviso amable (solo una vez)
-          const takeoverReply = '¡Amor! 🌸 Dame un segundito que estoy revisando un par de cositas con las chicas de tienda para poder ayudarte mejor con esto 🏃‍♀️💨. ¡Ahorita vuelvo contigo!';
-          await addToHistory(fromPhone, 'assistant', takeoverReply, msgId);
-          await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
+          // Admin tomó control o Kenia escaló: aviso amable (solo cada 5 min para no spamear)
+          const now = Date.now();
+          const lastStallTs = usageCheck.lastStallReplyTs || 0;
+          const STALL_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+          if (now - lastStallTs > STALL_COOLDOWN_MS) {
+            const takeoverReply = '¡Amor! 🌸 Dame un segundito que estoy revisando un par de cositas con las chicas de tienda para poder ayudarte mejor con esto 🏃‍♀️💨. ¡Ahorita vuelvo contigo!';
+            await addToHistory(fromPhone, 'assistant', takeoverReply, msgId);
+            await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
+            await recordKeniaUsage(fromPhone, { lastStallReplyTs: now });
+          } else {
+            // Dentro del cooldown: solo registrar el mensaje del cliente, no responder
+            await addToHistory(fromPhone, 'user', userText, msgId);
+          }
           // Notificar al admin que el cliente escribió
           const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
           const adminNotif = `📩 *Cliente esperando respuesta*\n+${fromPhone} escribió: "${userText}"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
           await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotif, WA_TOKEN);
           return NextResponse.json({ status: 'admin_takeover' });
         }
-        // Bloqueo normal (por tokens u otro)
-        const blockedReply = '¡Ay bella! 🌸 Dame un momentito cortito que estoy confirmando unos detalles en el sistema para poder ayudarte bien rápido 🏃‍♀️💨. ¡En un ratito te respondo!';
-        await addToHistory(fromPhone, 'assistant', blockedReply, msgId);
-        await sendWhatsAppMessage(fromPhone, blockedReply, WA_TOKEN);
+        // Bloqueo normal (por tokens u otro): también con cooldown de 5 min
+        const nowBlocked = Date.now();
+        const lastBlockedTs = usageCheck.lastStallReplyTs || 0;
+        const STALL_COOLDOWN_MS = 5 * 60 * 1000;
+        if (nowBlocked - lastBlockedTs > STALL_COOLDOWN_MS) {
+          const blockedReply = '¡Ay bella! 🌸 Dame un momentito cortito que estoy confirmando unos detalles en el sistema para poder ayudarte bien rápido 🏃‍♀️💨. ¡En un ratito te respondo!';
+          await addToHistory(fromPhone, 'assistant', blockedReply, msgId);
+          await sendWhatsAppMessage(fromPhone, blockedReply, WA_TOKEN);
+          await recordKeniaUsage(fromPhone, { lastStallReplyTs: nowBlocked });
+        } else {
+          await addToHistory(fromPhone, 'user', userText, msgId);
+        }
         
         // Notificar al admin que el cliente bloqueado sigue escribiendo
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
@@ -1440,6 +1458,7 @@ ${products.join('\n') || 'Sin productos.'}`;
     if (!isAdmin) {
       basePrompt += `\n\n## ⚠️ REGLA ESTRICTA DE ANTI-ALUCINACIÓN PARA PEDIDOS:\nSi la clienta pregunta por su pedido y la sección "MIS PEDIDOS ACTIVOS" está vacía o no existe en tu contexto, **TIENES ESTRICTAMENTE PROHIBIDO INVENTAR ENLACES O FALTANTES DE STOCK**. Debes responder EXACTAMENTE: "Uy hermosa, estoy buscando con tu numerito pero no logro encontrar tu pedido activo en el sistema 🥺. Déjame pedirle ayuda a las chicas para que lo busquen manualmente, ¡dame unos minutitos! 🏃‍♀️💨" y luego **AÑADIR OBLIGATORIAMENTE** al final de tu respuesta: [ACTION:ASK_ADMIN]El cliente pregunta por su pedido pero no encuentro ninguno activo en la base de datos.[/ACTION].`;
       basePrompt += `\n\n## 🔇 REGLA DE CIERRE DE CONVERSACIÓN:\n**NUNCA** hagas preguntas abiertas al final de tu respuesta (Ej: "¿te ayudo con algo más?", "¿qué más necesitas?", "¿cuéntame?"). Responde PUNTUALMENTE lo que te preguntaron y cierra el mensaje. Si la clienta no pregunta nada nuevo, la conversación termina ahí.`;
+      basePrompt += `\n\n## 📦 REGLA DE SEGUIMIENTO DE PEDIDOS:\nCuando una clienta pregunte por su pedido y este esté en estado "Entregado a agencia de transporte" o "Enviado":\n1. **PRIORIZA** el número de seguimiento si existe. Dile el número y el link de seguimiento de la agencia correspondiente.\n2. Si NO hay número de seguimiento pero hay "Foto caja" o "Comprobante agencia", dile que no tienes el número pero que le adjuntas la foto del comprobante.\n3. Si el estado es "Entregado a agencia de transporte", ACLARA SIEMPRE que significa que el pedido fue entregado a la agencia de transporte y va en camino, NO que fue entregado en su casa.\n4. Links de seguimiento por agencia:\n   - BluExpress: https://www.blue.cl/enviar/seguimiento?n_seguimiento=NUMERO\n   - Starken: https://www.starken.cl/seguimiento?n_seguimiento=NUMERO\n   - Chilexpress: https://www.chilexpress.cl/centro-de-ayuda/seguimiento-de-envios\n   - Retiro en tienda: diles que está listo para retirar en la tienda.`;
     }
     const customerNameBlock = (!isAdmin && customerName) ? '\n\n## 👤 DATOS DEL CLIENTE:\nNombre: ' + customerName + '\n(Usa su nombre real para saludarla. Usa expresiones como "bella", "hermosa", "linda" solo ocasionalmente, no en cada frase.)' : '';
     const systemPrompt = basePrompt + timeBlock + contextBlock + customerNameBlock;

@@ -156,6 +156,7 @@ export interface KeniaUsageEntry {
   isRegistered?: boolean;
   customerName?: string;
   isGuestWithOrders?: boolean;
+  lastStallReplyTs?: number;
 }
 
 interface KeniaAppwriteConfigData extends KeniaConfig {
@@ -406,6 +407,7 @@ export async function recordKeniaUsage(
     isRegistered?: boolean;
     customerName?: string;
     isGuestWithOrders?: boolean;
+    lastStallReplyTs?: number;
   }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
