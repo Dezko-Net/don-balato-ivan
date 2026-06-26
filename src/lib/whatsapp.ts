@@ -38,6 +38,29 @@ export async function getHistory(phone: string): Promise<{ role: 'user' | 'assis
   }
 }
 
+// ─── Get timestamp of last user message (to check 24h window) ─────────────────
+export async function getLastUserMessageTime(phone: string): Promise<number | null> {
+  try {
+    const qUserId = JSON.stringify({ method: 'equal', attribute: 'userId', values: [`whatsapp:${phone}`] });
+    const qSender = JSON.stringify({ method: 'equal', attribute: 'senderRole', values: ['user'] });
+    const qOrder = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+    const qLimit = JSON.stringify({ method: 'limit', values: [1] });
+
+    const res = await serverListDocuments(ADMIN_CHAT_COLLECTION_ID, [qUserId, qSender, qOrder, qLimit]);
+    const docs = res.documents || [];
+    if (docs.length === 0) return null;
+
+    const doc = docs[0] as any;
+    const createdAt = doc.$createdAt;
+    if (!createdAt) return null;
+
+    return new Date(createdAt).getTime();
+  } catch (err) {
+    console.error('[WhatsApp] getLastUserMessageTime error:', err);
+    return null;
+  }
+}
+
 export async function addToHistory(
   phone: string,
   role: 'user' | 'assistant',
@@ -115,6 +138,43 @@ export async function sendWhatsAppMessage(to: string, text: string, token: strin
     const data = await res.json();
     console.log('[WhatsApp] Message sent successfully. Response:', JSON.stringify(data));
   }
+}
+
+// ─── Send an Image message by URL ──────────────────────────────────────────────
+export async function sendWhatsAppImage(to: string, imageUrl: string, caption: string, token: string): Promise<void> {
+  if (!token || !WA_PHONE_NUMBER_ID) {
+    throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
+  }
+
+  const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;
+  const body = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'image',
+    image: {
+      link: imageUrl,
+      caption: caption || undefined,
+    },
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('[WhatsApp] sendImage error:', err);
+    throw new Error(`WhatsApp API Error: ${err}`);
+  }
+
+  const data = await res.json();
+  console.log('[WhatsApp] Image sent successfully. Response:', JSON.stringify(data));
 }
 
 // ─── Send a Template message ───────────────────────────────────────────────────

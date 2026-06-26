@@ -1412,7 +1412,36 @@ export default function OrderDetailPage() {
   const geoAddressMatches = !!detectedAddr && comunaMatches && regionMatches;
 
   const handleStatusChange = (newStatus: string) => {
-    if (newStatus === 'cancelled' && !confirm('¿Cancelar este pedido? El stock será devuelto.')) return;
+    if (newStatus === 'cancelled') {
+      if (!confirm('¿Cancelar este pedido? El stock será devuelto.')) return;
+      updateStatus(newStatus);
+      return;
+    }
+
+    // Prevenir estados hacia atrás
+    const currentIdx = STATUS_FLOW.indexOf(order.STATUS);
+    const newIdx = STATUS_FLOW.indexOf(newStatus);
+    if (currentIdx >= 0 && newIdx >= 0 && newIdx < currentIdx) {
+      alert(`No puedes volver a "${STATUS_CONFIG[newStatus]?.label}". El pedido ya pasó a "${STATUS_CONFIG[order.STATUS]?.label}".`);
+      return;
+    }
+
+    // Foto obligatoria antes de ready_to_ship
+    if (newStatus === 'ready_to_ship' && !orderIsPickup) {
+      if (!order.SHIPPINGPROOFURL) {
+        alert('⚠️ Debes subir la foto de la caja embalada antes de marcar como "Listo para Despachar".\n\nSube la foto en la sección "Comprobante de Envío" e inténtalo de nuevo.');
+        return;
+      }
+    }
+
+    // Foto obligatoria antes de delivered (comprobante de agencia)
+    if (newStatus === 'delivered' && !orderIsPickup && !orderIsBluexpress) {
+      if (!order.PAYMENTPROOFURL) {
+        alert('⚠️ Debes subir la foto del comprobante de la agencia antes de marcar como "Entregado a Agencia".\n\nSube la foto del comprobante (Starken, Chilexpress, etc.) e inténtalo de nuevo.');
+        return;
+      }
+    }
+
     updateStatus(newStatus);
   };
 
@@ -1563,6 +1592,18 @@ export default function OrderDetailPage() {
     !!order.SHIPPINGAGENCY && !orderIsPickup && !orderIsBluexpress &&
     !((order as any).TRACKINGNUMBER && (order as any).TRACKINGNUMBER.trim()) &&
     !(order.SHIPPINGPROOFURL && order.SHIPPINGPROOFURL.trim());
+
+  // Warn: falta foto de caja embalada antes de ready_to_ship (todas las agencias excepto retiro en tienda)
+  const boxPhotoPending =
+    !orderIsPickup &&
+    !order.SHIPPINGPROOFURL &&
+    ['stock_confirmed', 'packing', 'preparing_shipping'].includes(order.STATUS);
+
+  // Warn: falta comprobante de agencia antes de delivered (Starken, Chilexpress, etc. — no BluExpress)
+  const agencyProofPending =
+    !orderIsPickup && !orderIsBluexpress &&
+    !order.PAYMENTPROOFURL &&
+    ['ready_to_ship', 'shipped'].includes(order.STATUS);
   // Mostrar sección de fotos de cajas desde que está listo para despachar en adelante
   const showBoxPhotos = ['ready_to_ship', 'shipped', 'delivered'].includes(order.STATUS) && !orderIsPickup;
 
@@ -2356,6 +2397,36 @@ export default function OrderDetailPage() {
             <p className="text-sm font-bold text-amber-800">Seguimiento pendiente</p>
             <p className="text-xs text-amber-700 mt-0.5">
               Este pedido se despachó por <strong>{order.SHIPPINGAGENCY}</strong>. Falta cargar el <strong>N° de seguimiento</strong> o subir la <strong>foto del voucher</strong> que entrega la agencia. (BluExpress no lo requiere — la etiqueta se imprime antes.)
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Alerta: falta foto de caja embalada ── */}
+      {boxPhotoPending && (
+        <div className="no-print rounded-xl sm:rounded-2xl border border-orange-300 bg-orange-50 p-3 sm:p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-orange-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-orange-800">Falta foto de la caja embalada</p>
+            <p className="text-xs text-orange-700 mt-0.5">
+              Sube la foto del pedido embalado en la sección <strong>"Comprobante de Envío"</strong> antes de marcar como "Listo para Despachar". Es obligatorio.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Alerta: falta comprobante de agencia (Starken, Chilexpress, etc.) ── */}
+      {agencyProofPending && (
+        <div className="no-print rounded-xl sm:rounded-2xl border border-red-300 bg-red-50 p-3 sm:p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-red-800">Falta comprobante de agencia</p>
+            <p className="text-xs text-red-700 mt-0.5">
+              Sube la foto del comprobante que entrega <strong>{order.SHIPPINGAGENCY}</strong> antes de marcar como "Entregado a Agencia". Es obligatorio.
             </p>
           </div>
         </div>

@@ -54,18 +54,11 @@ export function getNotificationLink(doc: Record<string, unknown>): string | unde
 
 const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'pending',
-  'processing',
   'paid',
-  'assembling',
   'confirming_stock',
   'stock_confirmed',
-  'packing',
-  'negotiation',
-  'preparing_shipping',
   'ready_to_ship',
-  'shipped',
   'delivered',
-  'cancelled',
 ];
 
 const ORDER_STATUS_COPY: Record<
@@ -252,9 +245,56 @@ export async function notifyOrderStatusChange(
 
       if (!WA_TOKEN) return;
 
+      // ── Helper: generate AI-enhanced message for status ──
+      const STATUS_LABELS: Record<string, string> = {
+        paid: 'Pago Verificado',
+        confirming_stock: 'Confirmando Stock',
+        stock_confirmed: 'Stock Confirmado',
+        ready_to_ship: 'Listo para Despachar',
+        delivered: 'Entregado a Agencia',
+      };
+
+      const generateAIMessage = async (status: string, name: string, orderCode: string): Promise<string> => {
+        const fallbackMessages: Record<string, string> = {
+          paid: `¡Hola ${name}! 🌸 Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pago del pedido #${orderCode} fue verificado con éxito 💖 Ahora empezamos a preparar tu pedido con mucho cariño. ¡Pronto te avisaré del avance! 👑`,
+          confirming_stock: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} está en proceso 🔍 Estamos confirmando el stock de tus productos en bodega. Enseguida te cuento novedades 💖`,
+          stock_confirmed: `¡Hola ${name}! 🌸 ¡Buenas noticias! El stock de tu pedido #${orderCode} está confirmado ✔️ Todo está listo para empezar a embalar tu pedido con cariño 📦💖`,
+          ready_to_ship: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} ya está listo para despachar 📦✨ Mira qué hermoso quedó tu paquete 👇 ¡Pronto saldrá en camino! 🚚💖`,
+          delivered: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} fue entregado a la agencia de transporte 🚚💨 Te adjunto el comprobante para que puedas rastrear tu envío. ¡Pronto lo tendrás en tus manos! 👑💖`,
+        };
+
+        try {
+          const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
+          const GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+          const statusLabel = STATUS_LABELS[status] || status;
+          const prompt = `Eres Kenia, asistente de Kevin&Coco Chile (tienda de cosméticos). Escribe un mensaje corto (máx 3 líneas) para notificar a ${name} que su pedido #${orderCode} cambió de estado a: ${statusLabel}. Personalidad: cercana, femenina, usa emojis (🌸💖✨). No inventes información. Sé breve y alegre. Solo el mensaje, sin saludo separado.`;
+
+          for (const model of GEMINI_MODELS) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
+              }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) return text.replace(/\*+/g, '').trim();
+            }
+            if (res.status !== 503) break;
+          }
+        } catch (e) {
+          console.warn('[notifyOrderStatusChange] AI message generation failed:', e);
+        }
+
+        return fallbackMessages[status] || `¡Hola ${name}! 🌸 Tu pedido #${orderCode} cambió de estado a: ${STATUS_LABELS[status] || status} 💖`;
+      };
+
       if (newStatus === 'pending') {
         // ── Plantilla "pedido_recibido" — para pedidos nuevos (status pending) ──
-        // Template aprobada por Meta con 2 variables: {{1}} nombre, {{2}} código pedido
         const templateName = 'pedido_recibido';
         const components = [
           {
@@ -269,41 +309,79 @@ export async function notifyOrderStatusChange(
         const waResponse = await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
         const waMessageId = waResponse?.messages?.[0]?.id || 'no-id';
 
-        const simulatedMessage = `[Plantilla Automática - Pedido Recibido] ¡Hola, ${customerName}! 🛍️✨ Hemos recibido tu pedido ${code} con éxito. Pronto te avisaremos cuando cambie de estado. ¡Gracias por confiar en Kevin&Coco Chile! 🇨🇱💖\n\n[DEBUG 📡 phone=${phone} | msgId=${waMessageId}]`;
+        const simulatedMessage = `[Plantilla Automática - Pedido Recibido] ¡Hola, ${customerName}! 🛍️✨ Hemos recibido tu pedido ${code} con éxito. Pronto te avisaremos cuando cambie de estado. ¡Gracias por confiar en Kevin&Coco Chile! 🇨🇱💖`;
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
 
       } else {
-        // ── Plantilla "estado_de_pedido" — para cambios de estado (paid, shipped, etc.) ──
-        const STATUS_LABELS: Record<string, string> = {
-          processing: 'Procesando',
-          paid: 'Pagado',
-          assembling: 'En preparación',
-          negotiation: 'En negociación / modificando',
-          preparing_shipping: 'Etiqueta Lista',
-          ready_to_ship: 'Listo para enviar',
-          shipped: 'Enviado',
-          delivered: 'Entregado',
-          cancelled: 'Cancelado'
-        };
+        // ── Smart 24h window check ──
+        const { getLastUserMessageTime } = await import('@/lib/whatsapp');
+        const lastUserMsgTime = await getLastUserMessageTime(phone);
+        const now = Date.now();
+        const WINDOW_MS = 23 * 60 * 60 * 1000; // 23 hours (margin)
+        const needsTemplate = !lastUserMsgTime || (now - lastUserMsgTime) > WINDOW_MS;
 
-        const statusLabel = STATUS_LABELS[newStatus] || newStatus;
-        const templateName = 'estado_de_pedido';
-        const components = [
-          {
-            type: 'body',
-            parameters: [
-              { type: 'text', text: customerName },
-              { type: 'text', text: `#${code}` },
-              { type: 'text', text: statusLabel }
-            ]
+        // ── Generate AI-enhanced message ──
+        const aiMessage = await generateAIMessage(newStatus, customerName, code);
+
+        if (needsTemplate) {
+          // Outside 24h window: send template first (opens window), then AI message
+          const statusLabel = STATUS_LABELS[newStatus] || newStatus;
+          const templateName = 'estado_de_pedido';
+          const components = [
+            {
+              type: 'body',
+              parameters: [
+                { type: 'text', text: customerName },
+                { type: 'text', text: `#${code}` },
+                { type: 'text', text: statusLabel }
+              ]
+            }
+          ];
+
+          await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
+
+          // Send AI message after template (window now open)
+          try {
+            const { sendWhatsAppMessage } = await import('@/lib/whatsapp');
+            await sendWhatsAppMessage(phone, aiMessage, WA_TOKEN);
+          } catch (e) {
+            console.warn('[notifyOrderStatusChange] AI follow-up message failed:', e);
           }
-        ];
+        } else {
+          // Inside 24h window: send AI message directly (no template needed)
+          try {
+            const { sendWhatsAppMessage } = await import('@/lib/whatsapp');
+            await sendWhatsAppMessage(phone, aiMessage, WA_TOKEN);
+          } catch (e) {
+            console.warn('[notifyOrderStatusChange] AI direct message failed:', e);
+          }
+        }
 
-        const waResponse = await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
-        const waMessageId = waResponse?.messages?.[0]?.id || 'no-id';
-
-        const simulatedMessage = `[Plantilla Automática de Estado] ¡Hola, ${customerName}! 🌸 Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #${code} ya cambió de estado a: ${statusLabel} 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo!\n\n[DEBUG 📡 phone=${phone} | msgId=${waMessageId}]`;
+        const simulatedMessage = `[Notificación de Estado] ${aiMessage}`;
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
+
+        // ── Send photo for ready_to_ship (caja embalada = SHIPPINGPROOFURL) ──
+        if (newStatus === 'ready_to_ship' && order.SHIPPINGPROOFURL) {
+          try {
+            const { sendWhatsAppImage } = await import('@/lib/whatsapp');
+            const photoCaption = `¡Aquí está tu pedido #${code} todo embaladito y listo! 📦✨`;
+            await sendWhatsAppImage(phone, order.SHIPPINGPROOFURL, photoCaption, WA_TOKEN);
+          } catch (e) {
+            console.warn('[notifyOrderStatusChange] Photo send failed (ready_to_ship):', e);
+          }
+        }
+
+        // ── Send photo for delivered (comprobante de agencia = PAYMENTPROOFURL) ──
+        if (newStatus === 'delivered' && order.PAYMENTPROOFURL) {
+          try {
+            const { sendWhatsAppImage } = await import('@/lib/whatsapp');
+            const trackingInfo = (order as any).TRACKINGNUMBER ? `\n\n📋 N° de seguimiento: ${(order as any).TRACKINGNUMBER}` : '';
+            const photoCaption = `¡Tu pedido #${code} fue entregado a la agencia! 🚚💨 Aquí va el comprobante para que rastrees tu envío 👇${trackingInfo}`;
+            await sendWhatsAppImage(phone, order.PAYMENTPROOFURL, photoCaption, WA_TOKEN);
+          } catch (e) {
+            console.warn('[notifyOrderStatusChange] Photo send failed (delivered):', e);
+          }
+        }
       }
     }
   } catch (e) {
