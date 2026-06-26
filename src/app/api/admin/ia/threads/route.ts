@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const search = req.nextUrl.searchParams.get('q')?.toLowerCase().trim() || '';
     const qOrder = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-    const qLimit = JSON.stringify({ method: 'limit', values: [200] });
+    const qLimit = JSON.stringify({ method: 'limit', values: [50] });
     const res = await serverListDocuments(ADMIN_CHAT_COLLECTION_ID, [qOrder, qLimit]);
     const runtime = await getKeniaRuntimeSnapshot();
     const adminPhones = new Set(

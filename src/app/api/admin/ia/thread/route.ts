@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     const qUser = JSON.stringify({ method: 'equal', attribute: 'userId', values: [`whatsapp:${phone}`] });
     const qOrder = JSON.stringify({ method: 'orderAsc', attribute: '$createdAt' });
-    const qLimit = JSON.stringify({ method: 'limit', values: [300] });
+    const qLimit = JSON.stringify({ method: 'limit', values: [50] });
     const res = await serverListDocuments(ADMIN_CHAT_COLLECTION_ID, [qUser, qOrder, qLimit]);
 
     const unread = (res.documents || []).filter((doc: any) => doc.senderRole === 'user' && !doc.readByAdmin);
@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
       )
     );
 
-    const usage = await getKeniaUsage(phone);
     const config = await getKeniaConfig();
+    const usage = await getKeniaUsage(phone, config.blockedPhones);
     const messages = ((res.documents || []) as ChatDoc[]).map((doc) => ({
       id: doc.$id,
       role: doc.senderRole === 'admin' ? 'assistant' : 'user',

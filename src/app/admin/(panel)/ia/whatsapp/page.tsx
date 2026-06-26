@@ -355,7 +355,7 @@ export default function AdminIAWhatsAppPage() {
     const interval = setInterval(() => {
       loadThreads(true);
       if (selectedPhoneRef.current) loadThread(selectedPhoneRef.current);
-    }, 30000);
+    }, 60000);
     return () => clearInterval(interval);
   }, [loadThreads, loadThread]);
 
