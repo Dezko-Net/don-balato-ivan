@@ -1407,10 +1407,9 @@ ${products.join('\n') || 'Sin productos.'}`;
                     const prod = await serverGetDocument(PRODUCTS_COLLECTION_ID, item.id);
                     const categoryId = (prod as any).CATEGORYID || '';
                     if (categoryId) {
-                      const resSimilar = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
-                        `equal("CATEGORYID", ["${categoryId}"])`,
-                        `limit(8)`
-                      ]);
+                      const qCat = JSON.stringify({ method: 'equal', attribute: 'CATEGORYID', values: [categoryId] });
+                      const qLimit8 = JSON.stringify({ method: 'limit', values: [8] });
+                      const resSimilar = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qCat, qLimit8]);
                       if (resSimilar.documents && resSimilar.documents.length > 0) {
                         suggestedProducts = [...suggestedProducts, ...resSimilar.documents];
                       }
@@ -1440,19 +1439,16 @@ ${products.join('\n') || 'Sin productos.'}`;
                 relevantProducts = cached.data;
                 searched = true;
               } else {
-                const resSearch = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
-                  `search("NAME", ["${searchQuery}"])`,
-                  `limit(25)`
-                ]);
+                const qSearch = JSON.stringify({ method: 'search', attribute: 'NAME', values: [searchQuery] });
+                const qLimit25 = JSON.stringify({ method: 'limit', values: [25] });
+                const resSearch = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qSearch, qLimit25]);
                 if (resSearch.documents && resSearch.documents.length > 0) {
                   relevantProducts = resSearch.documents;
                   searched = true;
                 } else {
                   // Fallback to tags search
-                  const resTags = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
-                    `search("TAGS", ["${searchQuery}"])`,
-                    `limit(25)`
-                  ]);
+                  const qTags = JSON.stringify({ method: 'search', attribute: 'TAGS', values: [searchQuery] });
+                  const resTags = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qTags, qLimit25]);
                   if (resTags.documents && resTags.documents.length > 0) {
                     relevantProducts = resTags.documents;
                     searched = true;
