@@ -17,9 +17,10 @@ interface QuoteGroupData {
   productIds: string[];
 }
 
-export default function CotizacionForm({ params }: { params: { id: string } }) {
+export default function CotizacionForm({ params }: { params: Promise<{ id: string }> }) {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<QuoteProduct[]>([]);
+  const [resolvedId, setResolvedId] = useState('');
   const [groupsData, setGroupsData] = useState<QuoteGroupData[]>([]);
   const [discountPct, setDiscountPct] = useState(20);
   const [clientName, setClientName] = useState('');
@@ -29,7 +30,12 @@ export default function CotizacionForm({ params }: { params: { id: string } }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(`/api/admin/ia/cotizacion?id=${params.id}`, { cache: 'no-store' })
+    params.then(p => setResolvedId(p.id));
+  }, [params]);
+
+  useEffect(() => {
+    if (!resolvedId) return;
+    fetch(`/api/admin/ia/cotizacion?id=${resolvedId}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(data => {
         if (data?.success) {
@@ -43,7 +49,7 @@ export default function CotizacionForm({ params }: { params: { id: string } }) {
       })
       .catch(() => setError('Error al cargar'))
       .finally(() => setLoading(false));
-  }, [params.id]);
+  }, [resolvedId]);
 
   const discountedPrice = (price: number) => Math.round(price * (1 - discountPct / 100));
 
@@ -125,7 +131,7 @@ export default function CotizacionForm({ params }: { params: { id: string } }) {
       </style></head><body>
         <div class="header">
           <div class="logo">Kevin<span>&Coco</span></div>
-          <div class="info"><b>Cotización N° ${params.id.slice(-6).toUpperCase()}</b><br/>${dateStr}<br/>${clientName ? 'Cliente: <b>' + clientName + '</b><br/>' : ''}Válida por 7 días</div>
+          <div class="info"><b>Cotización N° ${resolvedId.slice(-6).toUpperCase()}</b><br/>${dateStr}<br/>${clientName ? 'Cliente: <b>' + clientName + '</b><br/>' : ''}Válida por 7 días</div>
         </div>
         <h1>Cotización al Mayor <span class="discount-badge">${discountPct}% OFF</span></h1>
         <p class="subtitle">Precios con descuento por compra por embalaje</p>

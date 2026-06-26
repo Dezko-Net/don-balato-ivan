@@ -1502,7 +1502,7 @@ ${products.join('\n') || 'Sin productos.'}`;
           // Admin tomó control o Kenia escaló: aviso amable (solo cada 5 min para no spamear)
           const now = Date.now();
           const lastStallTs = usageCheck.lastStallReplyTs || 0;
-          const STALL_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+          const STALL_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes
           if (now - lastStallTs > STALL_COOLDOWN_MS) {
             const takeoverReply = '¡Amor! 🌸 Dame un segundito que estoy revisando un par de cositas con las chicas de tienda para poder ayudarte mejor con esto 🏃‍♀️💨. ¡Ahorita vuelvo contigo!';
             await addToHistory(fromPhone, 'assistant', takeoverReply, msgId);
@@ -1521,7 +1521,7 @@ ${products.join('\n') || 'Sin productos.'}`;
         // Bloqueo normal (por tokens u otro): también con cooldown de 5 min
         const nowBlocked = Date.now();
         const lastBlockedTs = usageCheck.lastStallReplyTs || 0;
-        const STALL_COOLDOWN_MS = 5 * 60 * 1000;
+        const STALL_COOLDOWN_MS = 3 * 60 * 1000;
         if (nowBlocked - lastBlockedTs > STALL_COOLDOWN_MS) {
           const blockedReply = '¡Ay bella! 🌸 Dame un momentito cortito que estoy confirmando unos detalles en el sistema para poder ayudarte bien rápido 🏃‍♀️💨. ¡En un ratito te respondo!';
           await addToHistory(fromPhone, 'assistant', blockedReply, msgId);

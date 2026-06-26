@@ -453,6 +453,8 @@ export async function recordKeniaUsage(
     isRegistered: usage.isRegistered ?? prev.isRegistered,
     customerName: usage.customerName ?? prev.customerName,
     isGuestWithOrders: usage.isGuestWithOrders ?? prev.isGuestWithOrders,
+    lastStallReplyTs: usage.lastStallReplyTs ?? prev.lastStallReplyTs ?? 0,
+    awaitingAltPhone: usage.awaitingAltPhone ?? prev.awaitingAltPhone ?? false,
     updatedAt: new Date().toISOString(),
   };
 
