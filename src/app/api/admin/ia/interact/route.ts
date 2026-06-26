@@ -7,7 +7,7 @@ import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 export const maxDuration = 60;
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+const GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
 const CUSTOMER_PROMPT = `Eres Kenia, la asistente virtual de Kevin&Coco Chile, una tienda de cosméticos y belleza chilena.
