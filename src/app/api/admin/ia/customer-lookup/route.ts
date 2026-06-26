@@ -77,6 +77,30 @@ export async function GET(req: NextRequest) {
 
   const result: Record<string, CustomerInfo> = {};
 
+  // Collect all phone variants for a single orders query
+  const allVariants: string[] = [];
+  for (const phone of phones) {
+    allVariants.push(...phoneVariants(phone));
+  }
+
+  // Single orders query with all phone variants
+  let allOrders: any[] = [];
+  try {
+    const qPhone = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERPHONE', values: allVariants.slice(0, 100) });
+    const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+    const qLimit = JSON.stringify({ method: 'limit', values: [100] });
+    const ordersRes = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit]);
+    allOrders = ordersRes.documents as any[];
+  } catch {
+    // Fallback: fetch last 100 orders without phone filter
+    try {
+      const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+      const qLimit = JSON.stringify({ method: 'limit', values: [100] });
+      const ordersRes = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit]);
+      allOrders = ordersRes.documents as any[];
+    } catch { /* ignore */ }
+  }
+
   await Promise.all(phones.map(async (phone) => {
     const variants = phoneVariants(phone);
     const variantsJson = JSON.stringify({ method: 'equal', attribute: 'phone', values: variants });
@@ -104,58 +128,53 @@ export async function GET(req: NextRequest) {
       }
     } catch { /* silently ignore */ }
 
+    // Filter orders from the single fetch for this phone
+    const cleanPhone = phone.replace(/\D/g, '');
+    const docs = allOrders.filter(o => {
+      const oPhone = String(o.CUSTOMERPHONE || '').replace(/\D/g, '');
+      if (oPhone) {
+        if (oPhone === cleanPhone) return true;
+        const tailA = oPhone.slice(-8);
+        const tailB = cleanPhone.slice(-8);
+        if (tailA.length === 8 && tailA === tailB) return true;
+      }
+      const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
+      return linked.some((p: string) => {
+        const lp = p.replace(/\D/g, '');
+        if (lp === cleanPhone) return true;
+        const lt = lp.slice(-8);
+        return lt.length === 8 && lt === cleanPhone.slice(-8);
+      });
+    });
+
     let orderCount = 0;
     let totalSpent = 0;
     let orders: OrderDetail[] | undefined;
-
-    try {
-      const orderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-      const limitOrders = JSON.stringify({ method: 'limit', values: [100] });
-      const ordersRes = await serverListDocuments(ORDERS_COLLECTION_ID, [orderDesc, limitOrders]);
-      const allDocs = ordersRes.documents as any[];
-      const cleanPhone = phone.replace(/\D/g, '');
-      const docs = allDocs.filter(o => {
-        const oPhone = String(o.CUSTOMERPHONE || '').replace(/\D/g, '');
-        if (oPhone) {
-          if (oPhone === cleanPhone) return true;
-          const tailA = oPhone.slice(-8);
-          const tailB = cleanPhone.slice(-8);
-          if (tailA.length === 8 && tailA === tailB) return true;
-        }
-        const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
-        return linked.some((p: string) => {
-          const lp = p.replace(/\D/g, '');
-          if (lp === cleanPhone) return true;
-          const lt = lp.slice(-8);
-          return lt.length === 8 && lt === cleanPhone.slice(-8);
+    orderCount = docs.length;
+    if (withDetail) orders = [];
+    for (const o of docs) {
+      const status = String(o.STATUS || o.status || 'pending');
+      const total = Number(o.TOTAL || o.total || 0);
+      if (!['pending', 'cancelled'].includes(status)) totalSpent += total;
+      if (!name && o.CUSTOMERNAME) name = String(o.CUSTOMERNAME);
+      if (!email && o.CUSTOMEREMAIL) email = String(o.CUSTOMEREMAIL);
+      if (withDetail && orders) {
+        orders.push({
+          id: String(o.$id || ''),
+          code: String(o.ORDERCODE || String(o.$id || '').slice(-6).toUpperCase()),
+          status: STATUS_LABELS[status] || status,
+          total,
+          date: o.$createdAt ? new Date(String(o.$createdAt)).toLocaleDateString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—',
+          items: (() => {
+            try {
+              const parsed = JSON.parse(o.ITEMS || '[]');
+              if (Array.isArray(parsed)) return parsed.slice(0, 3).map((i: any) => i.name || i.NAME || '').filter(Boolean).join(', ') + (parsed.length > 3 ? ` +${parsed.length - 3}` : '');
+            } catch {}
+            return '';
+          })(),
         });
-      });
-      orderCount = docs.length;
-      if (withDetail) orders = [];
-      for (const o of docs) {
-        const status = String(o.STATUS || o.status || 'pending');
-        const total = Number(o.TOTAL || o.total || 0);
-        if (!['pending', 'cancelled'].includes(status)) totalSpent += total;
-        if (!name && o.CUSTOMERNAME) name = String(o.CUSTOMERNAME);
-        if (!email && o.CUSTOMEREMAIL) email = String(o.CUSTOMEREMAIL);
-        if (withDetail && orders) {
-          orders.push({
-            id: String(o.$id || ''),
-            code: String(o.ORDERCODE || String(o.$id || '').slice(-6).toUpperCase()),
-            status: STATUS_LABELS[status] || status,
-            total,
-            date: o.$createdAt ? new Date(String(o.$createdAt)).toLocaleDateString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—',
-            items: (() => {
-              try {
-                const parsed = JSON.parse(o.ITEMS || '[]');
-                if (Array.isArray(parsed)) return parsed.slice(0, 3).map((i: any) => i.name || i.NAME || '').filter(Boolean).join(', ') + (parsed.length > 3 ? ` +${parsed.length - 3}` : '');
-              } catch {}
-              return '';
-            })(),
-          });
-        }
       }
-    } catch { /* silently ignore */ }
+    }
 
     result[phone] = { name, email, avatarUrl, orderCount, totalSpent, registered, ...(withDetail ? { orders } : {}) };
   }));
