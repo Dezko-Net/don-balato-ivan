@@ -1914,15 +1914,15 @@ ${products.join('\n') || 'Sin productos.'}`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
       } else if (keniaConfig.smartNotifications) {
         // Smart notifications: only notify on key events, not every message
-        const usageAfter = await getKeniaUsage(fromPhone);
-        const msgCount = usageAfter.messageCount;
+        // usage (line 655) + 1 for current message (recordKeniaUsage at 1529 already incremented)
+        const msgCount = (usage.messageCount || 0) + 1;
         const threshold = keniaConfig.messageThresholdForPause || 10;
 
         if (msgCount === 1) {
           // New conversation started
           const notifyMsg = `🆕 *Nueva conversación iniciada*\nCliente: +${fromPhone}\nMensaje: "${userText.slice(0, 150)}"\n\n🤖 Kenia está atendiendo. Te avisaré si necesito ayuda.\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
           await sendWhatsAppMessage(MAIN_ADMIN_PHONE, notifyMsg, WA_TOKEN);
-        } else if (msgCount >= threshold && !usageAfter.adminTakeover) {
+        } else if (msgCount >= threshold && !usage.adminTakeover) {
           // Threshold reached — pause Kenia and ask admin what to do
           await setKeniaBlocked(fromPhone, true, 'admin_takeover');
           const pauseMsg = `⏸️ *Conversación larga detectada*\n\nCliente: +${fromPhone}\nMensajes intercambiados: ${msgCount}\n\nHe estado conversando con esta persona por un tiempo. ¿Qué quieres que haga?\n\n✅ *Devolver a Kenia* → responde "continuar"\n🚫 *Bloquear* → responde "bloquear"\n👤 *Tomar control* → responde "tomar"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
