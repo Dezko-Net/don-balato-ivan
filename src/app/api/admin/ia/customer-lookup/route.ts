@@ -109,11 +109,27 @@ export async function GET(req: NextRequest) {
     let orders: OrderDetail[] | undefined;
 
     try {
-      const phoneVarJson = JSON.stringify({ method: 'equal', attribute: 'CUSTOMERPHONE', values: variants });
       const orderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-      const limitOrders = JSON.stringify({ method: 'limit', values: [50] });
-      const ordersRes = await serverListDocuments(ORDERS_COLLECTION_ID, [phoneVarJson, orderDesc, limitOrders]);
-      const docs = ordersRes.documents as any[];
+      const limitOrders = JSON.stringify({ method: 'limit', values: [100] });
+      const ordersRes = await serverListDocuments(ORDERS_COLLECTION_ID, [orderDesc, limitOrders]);
+      const allDocs = ordersRes.documents as any[];
+      const cleanPhone = phone.replace(/\D/g, '');
+      const docs = allDocs.filter(o => {
+        const oPhone = String(o.CUSTOMERPHONE || '').replace(/\D/g, '');
+        if (oPhone) {
+          if (oPhone === cleanPhone) return true;
+          const tailA = oPhone.slice(-8);
+          const tailB = cleanPhone.slice(-8);
+          if (tailA.length === 8 && tailA === tailB) return true;
+        }
+        const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
+        return linked.some((p: string) => {
+          const lp = p.replace(/\D/g, '');
+          if (lp === cleanPhone) return true;
+          const lt = lp.slice(-8);
+          return lt.length === 8 && lt === cleanPhone.slice(-8);
+        });
+      });
       orderCount = docs.length;
       if (withDetail) orders = [];
       for (const o of docs) {

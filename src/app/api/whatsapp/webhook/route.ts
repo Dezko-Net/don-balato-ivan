@@ -343,6 +343,25 @@ async function linkPhoneToOrdersAndUser(fromPhone: string, orders: any[], userDo
   return { linkedOrders, linkedUser };
 }
 
+// Link WhatsApp number to orders via LINKED_WHATSAPP (without overwriting CUSTOMERPHONE)
+async function linkWhatsappToOrders(whatsappPhone: string, orders: any[]): Promise<number> {
+  const cleanedWa = whatsappPhone.replace(/\D/g, '');
+  let linked = 0;
+  for (const order of orders) {
+    const existingLinked: string[] = Array.isArray(order.LINKED_WHATSAPP) ? order.LINKED_WHATSAPP.map((p: string) => p.replace(/\D/g, '')) : [];
+    if (existingLinked.includes(cleanedWa)) { linked++; continue; }
+    try {
+      await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
+        LINKED_WHATSAPP: [...existingLinked, `+${cleanedWa}`],
+      });
+      linked++;
+    } catch (e) {
+      console.warn('[WhatsApp Webhook] Failed to link WhatsApp to order', order.$id, e);
+    }
+  }
+  return linked;
+}
+
 // Helper: send welcome menu as interactive list
 async function sendWelcomeMenu(phone: string, customerName: string, token: string, customBody?: string) {
   const firstName = customerName.split(' ')[0] || customerName || 'bella';
@@ -802,6 +821,7 @@ export async function POST(req: NextRequest) {
          // Ya revisamos en esta sesión que no está registrado
          if (usage.isGuestWithOrders === true) {
              isGuestWithOrders = true;
+             if (usage.customerName) customerName = usage.customerName;
          }
       } else {
          registeredUser = await lookupRegisteredUser(fromPhone);
@@ -822,16 +842,19 @@ export async function POST(req: NextRequest) {
                  const { serverListDocuments } = await import('@/lib/appwrite-server');
                  const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
                  const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-                 const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
-                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
+                 const qLimit100b = JSON.stringify({ method: 'limit', values: [100] });
+                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit100b]);
                  const myOrders = (resOrders.documents || []).filter((o: any) => {
                     const oPhone = String(o.CUSTOMERPHONE || '');
-                    if (!oPhone) return false;
-                    return phonesMatch(oPhone, fromPhone);
+                    if (oPhone && phonesMatch(oPhone, fromPhone)) return true;
+                    const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
+                    return linked.some((p: string) => phonesMatch(p, fromPhone));
                  });
                  if (myOrders.length > 0) {
                    isGuestWithOrders = true;
-                   await recordKeniaUsage(fromPhone, { isGuestWithOrders: true });
+                   const guestName = String(myOrders[0]?.CUSTOMERNAME || '');
+                   await recordKeniaUsage(fromPhone, { isGuestWithOrders: true, customerName: guestName || undefined });
+                   if (guestName) customerName = guestName;
                  } else {
                    await recordKeniaUsage(fromPhone, { isGuestWithOrders: false });
                  }
@@ -912,6 +935,70 @@ export async function POST(req: NextRequest) {
             await sendWhatsAppMessage(fromPhone, notFoundMsg, WA_TOKEN);
             return NextResponse.json({ status: `${searchMethod}_not_found` });
           }
+        }
+
+        // ── Alternate phone linking: user was asked for their order phone number ──
+        if (usage.awaitingAltPhone) {
+          const altPhone = userText.replace(/\D/g, '');
+          if (altPhone.length >= 8) {
+            try {
+              const { serverListDocuments } = await import('@/lib/appwrite-server');
+              const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+              const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+              const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
+              const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit100]);
+              const altOrders = (resOrders.documents || []).filter((o: any) => {
+                const oPhone = String(o.CUSTOMERPHONE || '').replace(/\D/g, '');
+                if (!oPhone) return false;
+                return phonesMatch(oPhone, altPhone);
+              });
+
+              if (altOrders.length > 0) {
+                const linked = await linkWhatsappToOrders(fromPhone, altOrders);
+                const guestName = String(altOrders[0]?.CUSTOMERNAME || '');
+                const orderCodes = altOrders.slice(0, 3).map((o: any) => `#${o.ORDERCODE || String(o.$id).slice(-6).toUpperCase()}`).join(', ');
+
+                let linkMsg = `¡Te encontré bella! 💖✨\n\n`;
+                if (guestName) linkMsg += `Hola *${guestName}* 👋\n\n`;
+                linkMsg += `Vinculé tu WhatsApp a ${linked} pedido${linked !== 1 ? 's' : ''} que tenías con nosotros`;
+                if (orderCodes) linkMsg += ` (${orderCodes}${altOrders.length > 3 ? ` y ${altOrders.length - 3} más` : ''})`;
+                linkMsg += `.\n\nAhora puedo ayudarte con tus pedidos. ¿En qué te puedo ayudar? 🌸`;
+
+                await addToHistory(fromPhone, 'user', userText, msgId);
+                await addToHistory(fromPhone, 'assistant', linkMsg, `link-altphone-${Date.now()}`);
+                await sendWhatsAppMessage(fromPhone, linkMsg, WA_TOKEN);
+
+                await recordKeniaUsage(fromPhone, { awaitingAltPhone: false, isGuestWithOrders: true, customerName: guestName || undefined });
+                return NextResponse.json({ status: 'linked_by_altphone' });
+              } else {
+                const notFoundAltMsg = `Uy bella, busqué pedidos con ese número pero no encontré ninguno 🥺.\n\n¿Podrías revisar el número? A veces hay un pequeño error de tipeo. También puedes intentar con:\n• Tu *email* de compra\n• Tu *RUT*\n• El *código de tu pedido* (ej: ORD-00123)\n\nO escribe *Ayuda* y una asesora te atenderá. 🌸`;
+                await addToHistory(fromPhone, 'user', userText, msgId);
+                await addToHistory(fromPhone, 'assistant', notFoundAltMsg, `not-found-altphone-${Date.now()}`);
+                await sendWhatsAppMessage(fromPhone, notFoundAltMsg, WA_TOKEN);
+                await recordKeniaUsage(fromPhone, { awaitingAltPhone: false });
+                return NextResponse.json({ status: 'altphone_not_found' });
+              }
+            } catch (e) {
+              console.warn('[WhatsApp Webhook] Alt phone search error:', e);
+            }
+          } else {
+            const tooShortMsg = `Bella, ese número parece muy corto 🥺. ¿Podrías escribirlo completo? Por ejemplo: 9 1234 5678 📱`;
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', tooShortMsg);
+            await sendWhatsAppMessage(fromPhone, tooShortMsg, WA_TOKEN);
+            return NextResponse.json({ status: 'altphone_too_short' });
+          }
+        }
+
+        // Detect if user mentions they have an order / made a purchase (trigger alt phone flow)
+        const orderKeywords = /\b(pedido|compra|orden|compr[eé]|pagu[eé]|transferencia|env[ií]o|despacho)\b/i;
+        if (orderKeywords.test(userText) && !usage.awaitingAltPhone) {
+          const askAltPhoneMsg = `¡Ah! ¿Tienes un pedido con nosotros? 🛍️ Genial bella.\n\nA veces los clientes ponen un número distinto al hacer su pedido (el de la casa, el de un familiar, etc). \n\n¿Podrías escribirme el *número de teléfono que usaste al hacer tu pedido*? Con ese te lo busco altiro 📱✨\n\nO si prefieres, también puedo buscarte por tu *email* o *RUT* de compra. 🌸`;
+          await addToHistory(fromPhone, 'user', userText, msgId);
+          await addToHistory(fromPhone, 'assistant', askAltPhoneMsg, `ask-altphone-${Date.now()}`);
+          await sendWhatsAppMessage(fromPhone, askAltPhoneMsg, WA_TOKEN);
+          await recordKeniaUsage(fromPhone, { awaitingAltPhone: true, registerPromptedAt: Date.now() });
+          return NextResponse.json({ status: 'asked_alt_phone' });
         }
 
         // Not registered and no orders: prompt to register (once per 24h to avoid spam)
@@ -1193,14 +1280,16 @@ ${products.join('\n') || 'Sin productos.'}`;
           myOrders = (resOrders.documents || [])
             .filter((o: any) => {
               const oPhone = String(o.CUSTOMERPHONE || '');
-              if (!oPhone) return false;
-              // using phonesMatch logic (last 8 digits)
-              const cleanA = oPhone.replace(/\D/g, '');
-              const cleanB = fromPhone.replace(/\D/g, '');
-              if (cleanA === cleanB) return true;
-              const tailA = cleanA.slice(-8);
-              const tailB = cleanB.slice(-8);
-              return tailA.length === 8 && tailA === tailB;
+              if (oPhone) {
+                const cleanA = oPhone.replace(/\D/g, '');
+                const cleanB = fromPhone.replace(/\D/g, '');
+                if (cleanA === cleanB) return true;
+                const tailA = cleanA.slice(-8);
+                const tailB = cleanB.slice(-8);
+                if (tailA.length === 8 && tailA === tailB) return true;
+              }
+              const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
+              return linked.some((p: string) => phonesMatch(p, fromPhone));
             })
             .slice(0, 5);
           

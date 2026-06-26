@@ -35,6 +35,7 @@ import {
   Plus,
   MessageSquarePlus,
   Sparkles,
+  Link2,
 } from 'lucide-react';
 
 type OrderDetail = {
@@ -204,6 +205,9 @@ export default function AdminIAWhatsAppPage() {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState('');
   const [newChatName, setNewChatName] = useState('');
+  const [newChatOrders, setNewChatOrders] = useState<OrderDetail[]>([]);
+  const [newChatOrdersLoading, setNewChatOrdersLoading] = useState(false);
+  const [linkingPhone, setLinkingPhone] = useState(false);
   const [sendingNewTemplate, setSendingNewTemplate] = useState(false);
   const [savingBlock, setSavingBlock] = useState(false);
   const [promptTab, setPromptTab] = useState<'customer' | 'admin'>('customer');
@@ -227,6 +231,28 @@ export default function AdminIAWhatsAppPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  // Fetch orders preview for new chat modal
+  useEffect(() => {
+    const phone = newChatPhone.replace(/\D/g, '').trim();
+    if (phone.length < 8) { setNewChatOrders([]); return; }
+    const finalPhone = phone.startsWith('56') ? phone : (phone.length === 9 && phone.startsWith('9') ? '56' + phone : phone);
+    setNewChatOrdersLoading(true);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/ia/customer-lookup?phones=${encodeURIComponent(finalPhone)}&detail=true`, { cache: 'no-store' });
+        const data = await res.json();
+        if (cancelled) return;
+        const info = data?.customers?.[finalPhone];
+        if (info?.orders) setNewChatOrders(info.orders.slice(0, 10));
+        else setNewChatOrders([]);
+        if (info?.name && !newChatName) setNewChatName(info.name);
+      } catch { if (!cancelled) setNewChatOrders([]); }
+      finally { if (!cancelled) setNewChatOrdersLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [newChatPhone]);
 
   useEffect(() => {
     if (!loadingThread && thread?.messages.length) {
@@ -323,6 +349,15 @@ export default function AdminIAWhatsAppPage() {
     setShowOrdersPanel(false);
     if (selectedPhone) loadThread(selectedPhone);
   }, [selectedPhone, loadThread]);
+
+  // Polling: refresh thread list and active thread every 15s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadThreads(true);
+      if (selectedPhoneRef.current) loadThread(selectedPhoneRef.current);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [loadThreads, loadThread]);
 
 
 
@@ -498,6 +533,7 @@ export default function AdminIAWhatsAppPage() {
     setShowNewChatModal(false);
     setNewChatPhone('');
     setNewChatName('');
+    setNewChatOrders([]);
   }
 
   async function handleSendNewTestTemplate() {
@@ -575,6 +611,30 @@ export default function AdminIAWhatsAppPage() {
       }
     } catch { /* ignore */ } finally {
       setLoadingOrders(false);
+    }
+  }
+
+  async function handleLinkPhone(phone: string) {
+    setLinkingPhone(true);
+    try {
+      const orders = customerMap[phone]?.orders || [];
+      if (orders.length === 0) { showToast('error', 'No hay pedidos para vincular'); return; }
+      const res = await fetch('/api/admin/ia/link-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, orderIds: orders.map(o => o.id) }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        showToast('success', `Vinculado a ${orders.length} pedido(s) correctamente`);
+        await handleLoadOrders(phone);
+      } else {
+        throw new Error(data?.error || 'Error al vincular');
+      }
+    } catch (e: any) {
+      showToast('error', e?.message || 'No se pudo vincular');
+    } finally {
+      setLinkingPhone(false);
     }
   }
 
@@ -750,6 +810,9 @@ export default function AdminIAWhatsAppPage() {
         .wa-thread:hover { background:rgba(0,168,132,0.06); }
         .wa-thread:active { transform:scale(.99); }
         .wa-thread.on { background:linear-gradient(135deg,rgba(0,168,132,0.13),rgba(0,168,132,0.05)); }
+        .wa-thread.unread { background:linear-gradient(135deg,rgba(147,197,253,0.22),rgba(147,197,253,0.08)); }
+        .wa-thread.unread:hover { background:linear-gradient(135deg,rgba(147,197,253,0.30),rgba(147,197,253,0.12)); }
+        .wa-thread.unread.on { background:linear-gradient(135deg,rgba(0,168,132,0.13),rgba(0,168,132,0.05)); }
         .wa-thread.on::before { content:''; position:absolute; left:0; top:14px; bottom:14px; width:3.5px; border-radius:4px; background:var(--green); }
         .wa-thread-name { font-size:15px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:62%; }
         .wa-thread-prev { font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
@@ -775,6 +838,8 @@ export default function AdminIAWhatsAppPage() {
         .wa-bubble { max-width:min(68%,560px); position:relative; border-radius:16px; padding:9px 64px 22px 13px; font-size:14.5px; line-height:1.5; min-width:80px; box-shadow:0 1px 3px rgba(15,23,42,0.10); animation:wa-bubble-in .22s ease; word-break:break-word; }
         .wa-bubble.out { background:linear-gradient(150deg,#e8fedf 0%,#d2f8c6 100%); color:#143021; margin-left:auto; border:1px solid rgba(0,168,132,0.14); border-bottom-right-radius:5px; }
         .wa-bubble.in  { background:#fff; color:#143021; margin-right:auto; border:1px solid var(--line); border-bottom-left-radius:5px; }
+        .wa-bubble.in.unread-admin { background:linear-gradient(135deg,#dbeafe,#bfdbfe); border-color:rgba(59,130,246,0.25); }
+        .wa-bubble.out.unread-admin { background:linear-gradient(150deg,#dbeafe 0%,#bfdbfe 100%); border-color:rgba(59,130,246,0.25); color:#1e3a5f; }
         .wa-bubble-meta { position:absolute; bottom:6px; right:11px; font-size:11px; color:rgba(15,23,42,0.4); display:flex; align-items:center; gap:3px; }
 
         /* ════════════════════ COMPOSE ════════════════════ */
@@ -971,7 +1036,7 @@ export default function AdminIAWhatsAppPage() {
               const cinfo = customerMap[t.phone];
               const displayName = cinfo?.name || `+${t.phone}`;
               return (
-                <div key={t.phone} className={`wa-thread ${active?'on':''}`}
+                <div key={t.phone} className={`wa-thread ${active?'on':''} ${t.unreadCount>0 && !active?'unread':''}`}
                   onClick={() => { setSelectedPhone(t.phone); setMobileView('chat'); }}>
                   <div style={{ position:'relative', flexShrink:0 }}>
                     {renderAvatar(t.phone, 49)}
@@ -1092,7 +1157,7 @@ export default function AdminIAWhatsAppPage() {
                             <div className="wa-daysep"><span>{msgDate.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' })}</span></div>
                           )}
                           <div style={{ display:'flex', justifyContent: isOut ? 'flex-end' : 'flex-start', marginBottom:2 }}>
-                            <div className={`wa-bubble ${isOut ? 'out' : 'in'}`}>
+                            <div className={`wa-bubble ${isOut ? 'out' : 'in'} ${!msg.readByAdmin ? 'unread-admin' : ''}`}>
                               {!isOut && <p style={{ fontSize:11, fontWeight:800, color:'#00a884', marginBottom:3 }}>Cliente</p>}
                               <span style={{ whiteSpace:'pre-wrap' }}>{msg.text}</span>
                               <div className="wa-bubble-meta">
@@ -1156,19 +1221,32 @@ export default function AdminIAWhatsAppPage() {
             </div>
 
             <div className="wa-drawer-body wa-sb">
-              {/* Kenia master switch */}
+              {/* Kenia per-client switch */}
               <div className="wa-psec">
-                <p className="wa-plabel"><Sparkles className="h-3.5 w-3.5" /> Asistente Kenia</p>
-                <label style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background: keniaOn ? 'rgba(0,168,132,0.07)' : '#f9fafb', border:`1.5px solid ${keniaOn ? 'rgba(0,168,132,0.25)' : 'var(--line)'}`, borderRadius:'var(--r)', padding:'13px 15px', cursor:'pointer' }}>
-                  <div>
-                    <span style={{ fontSize:14, fontWeight:700, color:'var(--ink)', display:'block' }}>{keniaOn ? 'Kenia activa' : 'Kenia en pausa'}</span>
-                    <span style={{ fontSize:11.5, color:'#6b7280' }}>{keniaOn ? 'Responde automáticamente a clientes' : 'No responderá hasta reactivar'}</span>
-                  </div>
-                  <span className="wa-switch">
-                    <input type="checkbox" checked={keniaOn} onChange={e => saveKeniaStatusDirectly(e.target.checked)} />
-                    <span className="track" />
-                  </span>
-                </label>
+                <p className="wa-plabel"><Sparkles className="h-3.5 w-3.5" /> Asistente Kenia {selectedPhone ? `· +${selectedPhone}` : ''}</p>
+                {selectedPhone ? (
+                  <label style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background: (!thread?.usage.blocked) ? 'rgba(0,168,132,0.07)' : '#f9fafb', border:`1.5px solid ${(!thread?.usage.blocked) ? 'rgba(0,168,132,0.25)' : 'var(--line)'}`, borderRadius:'var(--r)', padding:'13px 15px', cursor:'pointer' }}>
+                    <div>
+                      <span style={{ fontSize:14, fontWeight:700, color:'var(--ink)', display:'block' }}>{!thread?.usage.blocked ? 'Kenia activa para este cliente' : 'Kenia en pausa para este cliente'}</span>
+                      <span style={{ fontSize:11.5, color:'#6b7280' }}>{!thread?.usage.blocked ? 'Responde automáticamente' : 'No responderá hasta reactivar'}</span>
+                    </div>
+                    <span className="wa-switch">
+                      <input type="checkbox" checked={!thread?.usage.blocked} onChange={e => handleSetBlock(!e.target.checked, 'manual')} disabled={savingBlock} />
+                      <span className="track" />
+                    </span>
+                  </label>
+                ) : (
+                  <label style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background: keniaOn ? 'rgba(0,168,132,0.07)' : '#f9fafb', border:`1.5px solid ${keniaOn ? 'rgba(0,168,132,0.25)' : 'var(--line)'}`, borderRadius:'var(--r)', padding:'13px 15px', cursor:'pointer' }}>
+                    <div>
+                      <span style={{ fontSize:14, fontWeight:700, color:'var(--ink)', display:'block' }}>{keniaOn ? 'Kenia activa (global)' : 'Kenia en pausa (global)'}</span>
+                      <span style={{ fontSize:11.5, color:'#6b7280' }}>Selecciona un chat para controlar por cliente</span>
+                    </div>
+                    <span className="wa-switch">
+                      <input type="checkbox" checked={keniaOn} onChange={e => saveKeniaStatusDirectly(e.target.checked)} />
+                      <span className="track" />
+                    </span>
+                  </label>
+                )}
               </div>
 
               {/* Selected client */}
@@ -1204,6 +1282,44 @@ export default function AdminIAWhatsAppPage() {
                     );
                   })()}
 
+                  {/* Quick orders preview & link */}
+                  {selectedPhone && (
+                    <div style={{ marginTop:12 }}>
+                      {!customerMap[selectedPhone]?.orders ? (
+                        <button className="wa-btn" style={{ width:'100%', justifyContent:'center' }} onClick={() => handleLoadOrders(selectedPhone)}>
+                          <ShoppingBag className="h-4 w-4" style={{ flexShrink:0 }} /> Cargar pedidos del cliente
+                        </button>
+                      ) : customerMap[selectedPhone]!.orders!.length === 0 ? (
+                        <p style={{ fontSize:12.5, color:'#9ca3af', textAlign:'center', padding:'10px 0' }}>Sin pedidos para este número</p>
+                      ) : (
+                        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:2 }}>
+                            <span style={{ fontSize:12, fontWeight:700, color:'#374151' }}>Últimos {customerMap[selectedPhone]!.orders!.length} pedidos</span>
+                            {!customerMap[selectedPhone]?.registered && (
+                              <button onClick={() => handleLinkPhone(selectedPhone)} disabled={linkingPhone} style={{ fontSize:11, fontWeight:700, color:'#fff', background:'linear-gradient(135deg,#00a884,#059669)', border:'none', borderRadius:7, padding:'5px 12px', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                {linkingPhone ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />} Vincular
+                              </button>
+                            )}
+                          </div>
+                          {customerMap[selectedPhone]!.orders!.slice(0, 10).map(o => (
+                            <div key={o.id} style={{ background:'#f9fafb', borderRadius:8, padding:'9px 11px', border:'1px solid var(--line)' }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:3 }}>
+                                <span style={{ fontSize:12, fontWeight:800, color:'#111827' }}>#{o.code}</span>
+                                <span style={{ fontSize:9.5, fontWeight:800, padding:'2px 7px', borderRadius:5,
+                                  background: o.status==='Entregado'?'rgba(16,185,129,0.13)':o.status==='Cancelado'?'rgba(239,68,68,0.13)':o.status.includes('Pendiente')?'rgba(245,158,11,0.13)':'rgba(0,168,132,0.13)',
+                                  color: o.status==='Entregado'?'#059669':o.status==='Cancelado'?'#dc2626':o.status.includes('Pendiente')?'#b45309':'#047857' }}>{o.status}</span>
+                              </div>
+                              <div style={{ display:'flex', justifyContent:'space-between', fontSize:10.5, color:'#6b7280' }}>
+                                <span>{o.date}</span>
+                                <span style={{ fontWeight:700, color:'#374151' }}>${o.total.toLocaleString('es-CL')}</span>
+                              </div>
+                              {o.items && <p style={{ fontSize:10, color:'#9ca3af', marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.items}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {/* Token meter */}
                   <div style={{ marginTop:14, background:'linear-gradient(135deg,#f0fdf8,#e8faf3)', borderRadius:'var(--r)', padding:'14px 15px', border:'1px solid rgba(0,168,132,0.15)', boxShadow:'0 2px 8px rgba(0,168,132,0.08)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
@@ -1412,6 +1528,34 @@ export default function AdminIAWhatsAppPage() {
               <label style={{ display:'block', color:'#374151', fontSize:12.5, fontWeight:700, marginBottom:7 }}>Nombre <span style={{ color:'#9ca3af', fontWeight:400 }}>(opcional)</span></label>
               <input type="text" value={newChatName} onChange={e => setNewChatName(e.target.value)} placeholder="Ej: Juan Pérez" className="wa-input" />
             </div>
+            {newChatPhone.replace(/\D/g,'').length >= 8 && (
+              <div style={{ marginBottom:24 }}>
+                <label style={{ display:'block', color:'#374151', fontSize:12.5, fontWeight:700, marginBottom:7 }}>Pedidos recientes <span style={{ color:'#9ca3af', fontWeight:400 }}>(últimos 10)</span></label>
+                {newChatOrdersLoading ? (
+                  <div style={{ display:'flex', justifyContent:'center', padding:'16px 0' }}><Loader2 className="h-5 w-5 animate-spin" style={{ color:'#9ca3af' }} /></div>
+                ) : newChatOrders.length === 0 ? (
+                  <p style={{ fontSize:13, color:'#9ca3af', textAlign:'center', padding:'12px 0' }}>Sin pedidos para este número</p>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:240, overflowY:'auto' }}>
+                    {newChatOrders.map(o => (
+                      <div key={o.id} style={{ background:'#f9fafb', borderRadius:8, padding:'9px 11px', border:'1px solid var(--line)' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:3 }}>
+                          <span style={{ fontSize:12, fontWeight:800, color:'#111827' }}>#{o.code}</span>
+                          <span style={{ fontSize:9.5, fontWeight:800, padding:'2px 7px', borderRadius:5,
+                            background: o.status==='Entregado'?'rgba(16,185,129,0.13)':o.status==='Cancelado'?'rgba(239,68,68,0.13)':o.status.includes('Pendiente')?'rgba(245,158,11,0.13)':'rgba(0,168,132,0.13)',
+                            color: o.status==='Entregado'?'#059669':o.status==='Cancelado'?'#dc2626':o.status.includes('Pendiente')?'#b45309':'#047857' }}>{o.status}</span>
+                        </div>
+                        <div style={{ display:'flex', justifyContent:'space-between', fontSize:10.5, color:'#6b7280' }}>
+                          <span>{o.date}</span>
+                          <span style={{ fontWeight:700, color:'#374151' }}>${o.total.toLocaleString('es-CL')}</span>
+                        </div>
+                        {o.items && <p style={{ fontSize:10, color:'#9ca3af', marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.items}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <button onClick={handleCreateNewChat} disabled={!newChatPhone || newChatPhone.length < 8} className="wa-cta">Abrir panel del cliente</button>
               <button onClick={handleSendNewTestTemplate} disabled={!newChatPhone || newChatPhone.length < 8 || sendingNewTemplate} className="wa-cta ghost">
