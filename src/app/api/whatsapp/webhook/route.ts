@@ -1538,23 +1538,23 @@ ${products.join('\n') || 'Sin productos.'}`;
       }
 
       if (usageCheck.blocked) {
+        // Siempre guardar el mensaje del cliente en el history para que el admin lo vea
+        await addToHistory(fromPhone, 'user', userText, msgId);
+
         if (usageCheck.spamBlocked) {
           // Spam: silencio total, no responder nada
           return NextResponse.json({ status: 'spam_blocked' });
         }
         if (usageCheck.adminTakeover || usageCheck.escalated) {
-          // Admin tomó control o Kenia escaló: aviso amable (solo cada 5 min para no spamear)
+          // Admin tomó control o Kenia escaló: aviso amable (solo cada 3 min para no spamear)
           const now = Date.now();
           const lastStallTs = usageCheck.lastStallReplyTs || 0;
           const STALL_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes
           if (now - lastStallTs > STALL_COOLDOWN_MS) {
             const takeoverReply = '¡Amor! 🌸 Dame un segundito que estoy revisando un par de cositas con las chicas de tienda para poder ayudarte mejor con esto 🏃‍♀️💨. ¡Ahorita vuelvo contigo!';
-            await addToHistory(fromPhone, 'assistant', takeoverReply, msgId);
+            await addToHistory(fromPhone, 'assistant', takeoverReply, `stall-${Date.now()}`);
             await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
             await recordKeniaUsage(fromPhone, { lastStallReplyTs: now });
-          } else {
-            // Dentro del cooldown: solo registrar el mensaje del cliente, no responder
-            await addToHistory(fromPhone, 'user', userText, msgId);
           }
           // Notificar al admin que el cliente escribió
           const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
@@ -1562,22 +1562,9 @@ ${products.join('\n') || 'Sin productos.'}`;
           await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotif, WA_TOKEN);
           return NextResponse.json({ status: 'admin_takeover' });
         }
-        // Bloqueo normal (por tokens u otro): también con cooldown de 5 min
-        const nowBlocked = Date.now();
-        const lastBlockedTs = usageCheck.lastStallReplyTs || 0;
-        const STALL_COOLDOWN_MS = 3 * 60 * 1000;
-        if (nowBlocked - lastBlockedTs > STALL_COOLDOWN_MS) {
-          const blockedReply = '¡Ay bella! 🌸 Dame un momentito cortito que estoy confirmando unos detalles en el sistema para poder ayudarte bien rápido 🏃‍♀️💨. ¡En un ratito te respondo!';
-          await addToHistory(fromPhone, 'assistant', blockedReply, msgId);
-          await sendWhatsAppMessage(fromPhone, blockedReply, WA_TOKEN);
-          await recordKeniaUsage(fromPhone, { lastStallReplyTs: nowBlocked });
-        } else {
-          await addToHistory(fromPhone, 'user', userText, msgId);
-        }
-        
-        // Notificar al admin que el cliente bloqueado sigue escribiendo
+        // Bloqueo normal (manual): NO responder nada, solo guardar mensaje y notificar admin
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
-        const adminNotifBlocked = `⚠️ *Cliente pausado intentando hablar*\nEl usuario +${fromPhone} intentó escribir a la IA, pero está en pausa automática.\nSu mensaje: "${userText}"\n\n🔗 Atiéndelo en: ${SITE_URL}/admin/ia/whatsapp`;
+        const adminNotifBlocked = `⚠️ *Cliente pausado escribió*\n+${fromPhone}: "${userText}"\n\n🔗 Atiéndelo en: ${SITE_URL}/admin/ia/whatsapp`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotifBlocked, WA_TOKEN);
         
         return NextResponse.json({ status: 'blocked' });
