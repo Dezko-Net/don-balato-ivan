@@ -350,13 +350,43 @@ export default function AdminIAWhatsAppPage() {
     if (selectedPhone) loadThread(selectedPhone);
   }, [selectedPhone, loadThread]);
 
-  // Polling: refresh thread list and active thread every 30s
+  // Polling: refresh thread list and active thread every 60s.
+  // Pausado cuando la pestaña está oculta (minimizada o en segundo plano) para
+  // no consumir lecturas de Appwrite con un panel olvidado abierto. Al volver,
+  // refresca de inmediato y reanuda el intervalo.
   useEffect(() => {
-    const interval = setInterval(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const refresh = () => {
       loadThreads(true);
       if (selectedPhoneRef.current) loadThread(selectedPhoneRef.current);
-    }, 60000);
-    return () => clearInterval(interval);
+    };
+
+    const start = () => {
+      if (interval) return;
+      interval = setInterval(refresh, 60000);
+    };
+
+    const stop = () => {
+      if (interval) { clearInterval(interval); interval = null; }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refresh();
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    if (document.visibilityState === 'visible') start();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      stop();
+    };
   }, [loadThreads, loadThread]);
 
 

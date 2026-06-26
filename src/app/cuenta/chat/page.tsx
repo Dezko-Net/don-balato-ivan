@@ -24,9 +24,10 @@ export default function ChatPage() {
       const { databaseId } = getAppwriteConfig();
       const res = await databases.listDocuments(databaseId, ADMIN_CHAT_COLLECTION, [
         Query.equal('userId', user.id),
-        Query.orderAsc('$createdAt'),
-        Query.limit(200),
+        Query.orderDesc('$createdAt'),
+        Query.limit(50),
       ]);
+      res.documents.reverse();
       setMessages(res.documents as any[]);
       // Mark user messages as read
       const unread = res.documents.filter((d: any) => d.senderRole === 'admin' && !d.readByUser);
