@@ -108,6 +108,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '/admin/ia', label: 'Kenia IA', icon: Ico.Sparkles, children: [
       { href: '/admin/ia',           label: 'Centro de control', icon: Ico.Sparkles },
       { href: '/admin/ia/whatsapp',  label: 'WhatsApp',          icon: Ico.Soporte },
+      { href: '/admin/ia/cotizacion', label: 'Cotización',       icon: Ico.Plantillas },
       { href: '/admin/ia/appwrite',  label: 'Appwrite Monitor',  icon: Ico.Server },
     ]},
   ]},

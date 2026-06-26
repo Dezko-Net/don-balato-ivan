@@ -100,6 +100,7 @@ export const STOCK_REQUESTS_COLLECTION_ID = 'stock_requests';
 export const ADDRESSES_COLLECTION_ID = 'addresses';
 export const APERTURA_SETTINGS_COLLECTION_ID = 'apertura_settings';
 export const AGENCIES_COLLECTION_ID = 'shipping_agencies';
+export const COTIZACION_COLLECTION_ID = 'cotizaciones';
 
 // Backward-compatible exports (reads config at call time for SSR safety)
 export const DATABASE_ID = typeof window !== 'undefined'
