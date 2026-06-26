@@ -158,18 +158,20 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '20px 16px' }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#00a884', marginBottom: 4 }}>Kevin<span style={{ color: '#0f172a' }}>&Coco</span></div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Cotización al Mayor</h1>
-          <p style={{ fontSize: 14, color: '#64748b' }}>{clientName ? `Hola ${clientName}! ` : ''}Elige un producto de cada categoría</p>
-          <div style={{ display: 'inline-block', background: '#00a884', color: '#fff', fontSize: 13, fontWeight: 700, padding: '4px 14px', borderRadius: 20, marginTop: 8 }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '12px' }}>
+      <style>{`@media(min-width:768px){.cot-customer-wrap{padding:20px 16px}}`}</style>
+      <div className="cot-customer-wrap" style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: '#00a884', marginBottom: 4 }}>Kevin<span style={{ color: '#0f172a' }}>&Coco</span></div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Cotización al Mayor</h1>
+          <p style={{ fontSize: 13, color: '#64748b' }}>{clientName ? `Hola ${clientName}! ` : ''}Elige un producto de cada categoría</p>
+          <div style={{ display: 'inline-block', background: '#00a884', color: '#fff', fontSize: 12, fontWeight: 700, padding: '4px 14px', borderRadius: 20, marginTop: 8 }}>
             {discountPct}% de descuento al mayor
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16 }}>
+        <div className="cot-customer-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+          <style>{`@media(min-width:900px){.cot-customer-grid{grid-template-columns:1fr 320px !important;gap:16px !important}}`}</style>
           {/* Products grouped by category */}
           <div>
             {groupedProducts.map((grp, gi) => {
@@ -180,14 +182,14 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
                 <div key={gi} style={{ background: '#fff', border: '2px solid #e2e8f0', borderRadius: 14, marginBottom: 16, overflow: 'hidden' }}>
                   <div
                     onClick={() => toggleGroup(grp.label)}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', cursor: 'pointer', background: selectedId ? '#f0fdf4' : '#f8fafc', borderBottom: isCollapsed ? 'none' : '2px solid #e2e8f0' }}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', cursor: 'pointer', background: selectedId ? '#f0fdf4' : '#f8fafc', borderBottom: isCollapsed ? 'none' : '2px solid #e2e8f0' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ background: '#00a884', color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: '50%', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{gi + 1}</span>
-                      <span style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{grp.label}</span>
-                      <span style={{ fontSize: 12, color: '#94a3b8' }}>({grp.items.length} opciones)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                      <span style={{ background: '#00a884', color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{gi + 1}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{grp.label}</span>
+                      <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>({grp.items.length})</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       {selectedId && (
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#00a884', background: '#dcfce7', padding: '3px 10px', borderRadius: 20 }}>
                           ✓ Seleccionado
@@ -198,7 +200,7 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
                   </div>
 
                   {!isCollapsed && (
-                    <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                    <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
                       {grp.items.map(p => {
                         const sel = selected[grp.label] === p.id;
                         return (
@@ -217,7 +219,7 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
                                 <Check className="h-4 w-4" style={{ color: '#fff' }} />
                               </div>
                             )}
-                            {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
+                            {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 85, objectFit: 'cover', borderRadius: 8, marginBottom: 6 }} />}
                             <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', lineHeight: 1.3, marginBottom: 4 }}>{p.name}</div>
                             <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', marginBottom: 6 }}>SKU: {p.sku}</div>
                             <div>
@@ -235,7 +237,8 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Cart sidebar */}
-          <div style={{ background: '#fff', border: '2px solid #e2e8f0', borderRadius: 14, padding: 16, position: 'sticky', top: 20, maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
+          <div className="cot-cart-panel" style={{ background: '#fff', border: '2px solid #e2e8f0', borderRadius: 14, padding: 14, position: 'static', maxHeight: 'none', overflowY: 'visible' }}>
+          <style>{`@media(min-width:900px){.cot-cart-panel{position:sticky !important;top:20px !important;max-height:calc(100vh - 40px) !important;overflow-y:auto !important}}`}</style>
             <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShoppingBag className="h-5 w-5" style={{ color: '#00a884' }} />
               Mi Selección ({selectedProducts.length})

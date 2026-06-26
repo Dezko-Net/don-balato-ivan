@@ -136,11 +136,12 @@ export default function CotizacionPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '20px 28px' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Cotización al Mayor</h1>
-          <p style={{ fontSize: 14, color: '#64748b' }}>Busca por cada producto pedido, selecciona las opciones y genera un link para que el cliente elija</p>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '16px' }}>
+      <style>{`@media(min-width:768px){.cot-admin-wrap{padding:20px 28px}}`}</style>
+      <div className="cot-admin-wrap" style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Cotización al Mayor</h1>
+          <p style={{ fontSize: 13, color: '#64748b' }}>Busca por cada producto pedido, selecciona las opciones y genera un link para que el cliente elija</p>
         </div>
 
         {/* Search */}
@@ -164,7 +165,8 @@ export default function CotizacionPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20 }}>
+        <div className="cot-admin-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+          <style>{`@media(min-width:900px){.cot-admin-grid{grid-template-columns:1fr 360px !important;gap:20px !important}}`}</style>
           {/* Left: search results + current selection */}
           <div>
             {/* Search results */}
@@ -173,7 +175,7 @@ export default function CotizacionPage() {
                 {results.length} producto{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''} para &quot;{searchTerm}&quot;
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
               {results.map(p => {
                 const sel = isCurrentlySelected(p.id);
                 return (
@@ -191,7 +193,7 @@ export default function CotizacionPage() {
                         <Check className="h-4 w-4" style={{ color: '#fff' }} />
                       </div>
                     )}
-                    {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
+                    {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', lineHeight: 1.3, marginBottom: 4 }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', marginBottom: 6 }}>SKU: {p.sku}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -208,13 +210,13 @@ export default function CotizacionPage() {
             {/* Current selection bar */}
             {currentSelection.length > 0 && (
               <div style={{ background: '#fff', border: '2px solid #00a884', borderRadius: 12, padding: 14, marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
                     {currentSelection.length} seleccionado{currentSelection.length !== 1 ? 's' : ''} para &quot;{searchTerm}&quot;
                   </span>
                   <button
                     onClick={addGroup}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#00a884', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#00a884', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', width: '100%' }}
                   >
                     <Plus className="h-4 w-4" />
                     Agregar categoría
@@ -248,7 +250,8 @@ export default function CotizacionPage() {
           </div>
 
           {/* Right: groups panel */}
-          <div style={{ background: '#fff', border: '2px solid #e2e8f0', borderRadius: 14, padding: 16, position: 'sticky', top: 20, maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
+          <div className="cot-groups-panel" style={{ background: '#fff', border: '2px solid #e2e8f0', borderRadius: 14, padding: 14, position: 'static', maxHeight: 'none', overflowY: 'visible' }}>
+          <style>{`@media(min-width:900px){.cot-groups-panel{position:sticky !important;top:20px !important;max-height:calc(100vh - 40px) !important;overflow-y:auto !important}}`}</style>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
                 Categorías ({groups.length})
