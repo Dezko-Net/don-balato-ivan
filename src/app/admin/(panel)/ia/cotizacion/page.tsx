@@ -136,9 +136,9 @@ export default function CotizacionPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '16px' }}>
-      <style>{`@media(min-width:768px){.cot-admin-wrap{padding:20px 28px}}`}</style>
-      <div className="cot-admin-wrap" style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '12px', paddingBottom: '80px', overflowX: 'hidden', boxSizing: 'border-box' }}>
+      <style>{`@media(min-width:768px){.cot-admin-wrap{padding:20px 28px;padding-bottom:20px}}`}</style>
+      <div className="cot-admin-wrap" style={{ maxWidth: 1200, margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: 20 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Cotización al Mayor</h1>
           <p style={{ fontSize: 13, color: '#64748b' }}>Busca por cada producto pedido, selecciona las opciones y genera un link para que el cliente elija</p>
@@ -175,7 +175,8 @@ export default function CotizacionPage() {
                 {results.length} producto{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''} para &quot;{searchTerm}&quot;
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
+            <div className="cot-admin-prod-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16, boxSizing: 'border-box' }}>
+            <style>{`@media(min-width:640px){.cot-admin-prod-grid{grid-template-columns:repeat(4,1fr) !important;gap:10px !important}}@media(min-width:900px){.cot-admin-prod-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr)) !important;gap:12px !important}}`}</style>
               {results.map(p => {
                 const sel = isCurrentlySelected(p.id);
                 return (
@@ -183,9 +184,10 @@ export default function CotizacionPage() {
                     key={p.id}
                     onClick={() => toggleCurrentSelection(p)}
                     style={{
-                      background: '#fff', border: `2px solid ${sel ? '#00a884' : '#e2e8f0'}`, borderRadius: 12,
-                      padding: 12, cursor: 'pointer', transition: 'all .15s', position: 'relative',
+                      background: '#fff', border: `2px solid ${sel ? '#00a884' : '#e2e8f0'}`, borderRadius: 10,
+                      padding: 8, cursor: 'pointer', transition: 'all .15s', position: 'relative',
                       boxShadow: sel ? '0 4px 14px rgba(0,168,132,0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
+                      overflow: 'hidden',
                     }}
                   >
                     {sel && (
@@ -193,13 +195,13 @@ export default function CotizacionPage() {
                         <Check className="h-4 w-4" style={{ color: '#fff' }} />
                       </div>
                     )}
-                    {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', lineHeight: 1.3, marginBottom: 4 }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', marginBottom: 6 }}>SKU: {p.sku}</div>
+                    {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 70, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }} />}
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', lineHeight: 1.2, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.name}</div>
+                    <div style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'monospace', marginBottom: 4 }}>SKU: {p.sku}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: '#00a884' }}>${p.price.toLocaleString('es-CL')}</span>
-                      <span style={{ fontSize: 11, color: p.stock > 0 ? '#00a884' : '#ef4444', fontWeight: 600 }}>
-                        {p.stock > 0 ? `${p.stock} stock` : 'Sin stock'}
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#00a884' }}>${p.price.toLocaleString('es-CL')}</span>
+                      <span style={{ fontSize: 9, color: p.stock > 0 ? '#00a884' : '#ef4444', fontWeight: 600 }}>
+                        {p.stock > 0 ? `${p.stock} stk` : 'Sin stk'}
                       </span>
                     </div>
                   </div>

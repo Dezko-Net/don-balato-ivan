@@ -158,9 +158,9 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '12px' }}>
-      <style>{`@media(min-width:768px){.cot-customer-wrap{padding:20px 16px}}`}</style>
-      <div className="cot-customer-wrap" style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '12px', paddingBottom: '80px', overflowX: 'hidden', boxSizing: 'border-box' }}>
+      <style>{`@media(min-width:768px){.cot-customer-wrap{padding:20px 16px;padding-bottom:20px}}`}</style>
+      <div className="cot-customer-wrap" style={{ maxWidth: 1000, margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 24, fontWeight: 800, color: '#00a884', marginBottom: 4 }}>Kevin<span style={{ color: '#0f172a' }}>&Coco</span></div>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Cotización al Mayor</h1>
@@ -200,7 +200,8 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
                   </div>
 
                   {!isCollapsed && (
-                    <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+                    <div className="cot-prod-grid" style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, boxSizing: 'border-box' }}>
+                    <style>{`@media(min-width:640px){.cot-prod-grid{grid-template-columns:repeat(4,1fr) !important;gap:10px !important}}@media(min-width:900px){.cot-prod-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr)) !important;gap:12px !important}}`}</style>
                       {grp.items.map(p => {
                         const sel = selected[grp.label] === p.id;
                         return (
@@ -210,8 +211,9 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
                             style={{
                               background: sel ? '#f0fdf4' : '#fff',
                               border: `2px solid ${sel ? '#00a884' : '#e2e8f0'}`,
-                              borderRadius: 12, padding: 12, cursor: 'pointer', position: 'relative', transition: 'all .15s',
+                              borderRadius: 10, padding: 8, cursor: 'pointer', position: 'relative', transition: 'all .15s',
                               boxShadow: sel ? '0 4px 14px rgba(0,168,132,0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
+                              overflow: 'hidden',
                             }}
                           >
                             {sel && (
@@ -219,12 +221,12 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
                                 <Check className="h-4 w-4" style={{ color: '#fff' }} />
                               </div>
                             )}
-                            {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 85, objectFit: 'cover', borderRadius: 8, marginBottom: 6 }} />}
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', lineHeight: 1.3, marginBottom: 4 }}>{p.name}</div>
-                            <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', marginBottom: 6 }}>SKU: {p.sku}</div>
+                            {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: 70, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }} />}
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', lineHeight: 1.2, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.name}</div>
+                            <div style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'monospace', marginBottom: 4 }}>SKU: {p.sku}</div>
                             <div>
-                              <div style={{ fontSize: 11, textDecoration: 'line-through', color: '#94a3b8' }}>${p.price.toLocaleString('es-CL')}</div>
-                              <div style={{ fontSize: 15, fontWeight: 800, color: '#00a884' }}>${discountedPrice(p.price).toLocaleString('es-CL')}</div>
+                              <div style={{ fontSize: 9, textDecoration: 'line-through', color: '#94a3b8' }}>${p.price.toLocaleString('es-CL')}</div>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: '#00a884' }}>${discountedPrice(p.price).toLocaleString('es-CL')}</div>
                             </div>
                           </div>
                         );
