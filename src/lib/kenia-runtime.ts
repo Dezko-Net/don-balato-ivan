@@ -131,6 +131,7 @@ export interface KeniaConfig {
   updatedAt: string;
   isEnabled: boolean;
   debugMode?: boolean;
+  blockedPhones: string[];
 }
 
 export interface KeniaUsageEntry {
@@ -180,6 +181,7 @@ function getDefaultConfig(): KeniaConfig {
     updatedAt: new Date().toISOString(),
     isEnabled: true,
     debugMode: false,
+    blockedPhones: [],
   };
 }
 
@@ -289,6 +291,7 @@ export async function getKeniaConfig(): Promise<KeniaConfig> {
     updatedAt: dbConfig.updatedAt,
     isEnabled: dbConfig.isEnabled,
     debugMode: dbConfig.debugMode,
+    blockedPhones: dbConfig.blockedPhones,
   };
 }
 
@@ -317,14 +320,20 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
     isEnabled: nextConfig.isEnabled,
     debugMode: nextConfig.debugMode,
     updatedAt: nextConfig.updatedAt,
+    blockedPhones: nextConfig.blockedPhones,
   };
 }
 
-export async function getKeniaUsage(phone: string): Promise<KeniaUsageEntry> {
+export async function getKeniaUsage(phone: string, blockedPhonesOverride?: string[]): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
   const usageMap = await readUsageFromFile();
-  const dbConfig = await fetchConfigFromAppwrite();
-  const isBlocked = dbConfig.blockedPhones.includes(cleaned);
+  let isBlocked: boolean;
+  if (blockedPhonesOverride) {
+    isBlocked = blockedPhonesOverride.includes(cleaned);
+  } else {
+    const dbConfig = await fetchConfigFromAppwrite();
+    isBlocked = dbConfig.blockedPhones.includes(cleaned);
+  }
   const entry = usageMap[cleaned];
   return {
     phone: cleaned,
@@ -504,6 +513,7 @@ export async function getKeniaRuntimeSnapshot(): Promise<{ config: KeniaConfig; 
       messageThresholdForPause: dbConfig.messageThresholdForPause,
       updatedAt: dbConfig.updatedAt,
       isEnabled: dbConfig.isEnabled,
+      blockedPhones: dbConfig.blockedPhones,
     },
     usage: hydratedUsage,
   };

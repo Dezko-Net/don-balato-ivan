@@ -661,8 +661,8 @@ export async function POST(req: NextRequest) {
     }
     console.log(`[WhatsApp Webhook] Msg from: ${fromPhone} (cleaned: ${cleanedFrom}) | isAdmin: ${isAdmin} | debugMode: ${debugMode} | Admin list:`, ADMIN_PHONES);
 
-    // Obtener uso actual del remitente
-    const usage = await getKeniaUsage(fromPhone);
+    // Obtener uso actual del remitente (se usa en múltiples lugares, por eso se declara aquí)
+    const usage = await getKeniaUsage(fromPhone, keniaConfig.blockedPhones);
     const testAsClient = usage.testAsClient === true;
 
     // Procesar comandos de modo cliente
@@ -1541,7 +1541,7 @@ ${products.join('\n') || 'Sin productos.'}`;
     const isBanProof = BAN_PROOF_PHONES.includes(cleanedFrom);
 
     if (!isAdmin) {
-      const usageCheck = await getKeniaUsage(fromPhone);
+      const usageCheck = await getKeniaUsage(fromPhone, keniaConfig.blockedPhones);
 
       // Si es un número inmune (admin probando), auto-desbloquear si estaba bloqueado
       if (isBanProof && (usageCheck.blocked || usageCheck.spamBlocked)) {
