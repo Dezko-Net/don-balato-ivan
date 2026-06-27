@@ -53,7 +53,7 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   cancelled:          { color: '#ef4444', bg: '#fef2f2' },
 };
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
@@ -152,7 +152,7 @@ function OrdersContent() {
       const recentResp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
         Query.greaterThanEqual('CREATEDAT', startDayBefore),
         Query.orderDesc('CREATEDAT'),
-        Query.limit(500),
+        Query.limit(80),
       ]);
       const allOrders: any[] = recentResp.documents;
 
@@ -177,7 +177,8 @@ function OrdersContent() {
       // every order, ask Appwrite for the total per status (1 doc returned each).
       const byStatusAll: Record<string, number> = {};
       let countAll = 0;
-      await Promise.all(STATUS_FLOW.map(async (st) => {
+      const statusesToCount = [...STATUS_FLOW, 'negotiation', 'cancelled'];
+      await Promise.all(statusesToCount.map(async (st) => {
         try {
           const r = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
             Query.equal('STATUS', st),
@@ -231,7 +232,7 @@ function OrdersContent() {
           Query.greaterThanEqual('CREATEDAT', sTs),
           Query.lessThanEqual('CREATEDAT', eTs),
           Query.orderDesc('CREATEDAT'),
-          Query.limit(1000),
+          Query.limit(80),
         ]);
         if (cancelled) return;
         const counts: Record<string, number> = {};
@@ -340,15 +341,44 @@ function OrdersContent() {
     }
   }, [load]);
 
-  // Reset pagination when filter changes
+  // Reset pagination when filter changes (using sessionStorage cache to act as wrapper)
   useEffect(() => {
     pageCursorsRef.current = new Map([[1, null]]);
     setCurrentPage(1);
+
+    const cacheKey = `admin_orders_${activeFilter}_${search}_${customDateStart}_${customDateEnd}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.orders && parsed.orders.length > 0) {
+          setOrders(parsed.orders);
+          setStatsCache(parsed.statsCache);
+          setCustomStatusCounts(parsed.customStatusCounts);
+          setTotalCount(parsed.totalCount || 0);
+          setIsLoading(false);
+          autoDeliverShippedOrders();
+          return;
+        }
+      } catch {}
+    }
+
     load(1);
     autoDeliverShippedOrders();
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter]);
+
+  useEffect(() => {
+    if (isLoading || orders.length === 0) return;
+    const cacheKey = `admin_orders_${activeFilter}_${search}_${customDateStart}_${customDateEnd}`;
+    sessionStorage.setItem(cacheKey, JSON.stringify({
+      orders,
+      statsCache,
+      customStatusCounts,
+      totalCount
+    }));
+  }, [orders, statsCache, customStatusCounts, totalCount, activeFilter, search, customDateStart, customDateEnd, isLoading]);
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));

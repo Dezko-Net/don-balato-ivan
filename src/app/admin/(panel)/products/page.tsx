@@ -27,7 +27,7 @@ const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: s
     <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
     <input type={type} value={value ?? ''}
       onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
-      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
   </div>
 );
 
@@ -456,12 +456,53 @@ export default function ProductsPage() {
     }
   };
 
+  const [globalStats, setGlobalStats] = useState<{ total: number; inStock: number; outOfStock: number } | null>(null);
+
+  useEffect(() => {
+    const cachedStats = localStorage.getItem('admin_products_global_stats');
+    if (cachedStats) {
+      try {
+        const parsed = JSON.parse(cachedStats);
+        const age = Date.now() - parsed.timestamp;
+        if (age < 24 * 60 * 60 * 1000) {
+          setGlobalStats(parsed.stats);
+          return;
+        }
+      } catch {}
+    }
+    
+    (async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        
+        const [resTotal, resInStock] = await Promise.all([
+          databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(1)]),
+          databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.greaterThan('STOCK', 0), Query.limit(1)])
+        ]);
+        
+        const total = resTotal.total;
+        const inStock = resInStock.total;
+        const outOfStock = total - inStock;
+        
+        const stats = { total, inStock, outOfStock };
+        setGlobalStats(stats);
+        localStorage.setItem('admin_products_global_stats', JSON.stringify({
+          timestamp: Date.now(),
+          stats
+        }));
+      } catch (err) {
+        console.error('Error loading global product stats:', err);
+      }
+    })();
+  }, []);
+
   const [lastCursor, setLastCursor] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   // Map: page number -> cursor to reach it (page 1 = null cursor)
   const pageCursorsRef = useRef<Map<number, string | null>>(new Map([[1, null]]));
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 10;
 
   const load = useCallback(async (isLoadMore = false, passedCursor: string | null = null, currentSearch = '', currentCat = '', currentSub = '', currentStock = 'instock') => {
     if (!isLoadMore) {
@@ -588,8 +629,36 @@ export default function ProductsPage() {
         setSearch(querySearch);
       }
     }
+    const cacheKey = `admin_products_${initialSearch.trim()}_${catFilter}_${subCatFilter}_${stockFilter}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.products && parsed.products.length > 0) {
+          setProducts(parsed.products);
+          setCategories(parsed.categories || []);
+          setSubcategories(parsed.subcategories || []);
+          setTotalCount(parsed.totalCount || parsed.products.length);
+          setLastCursor(parsed.lastCursor || null);
+          setIsLoading(false);
+          return;
+        }
+      } catch {}
+    }
     load(false, null, initialSearch, catFilter, subCatFilter, stockFilter);
   }, [catFilter, subCatFilter, stockFilter, load]);
+
+  useEffect(() => {
+    if (isLoading || products.length === 0) return;
+    const cacheKey = `admin_products_${search.trim()}_${catFilter}_${subCatFilter}_${stockFilter}`;
+    sessionStorage.setItem(cacheKey, JSON.stringify({
+      products,
+      categories,
+      subcategories,
+      totalCount,
+      lastCursor
+    }));
+  }, [products, categories, subcategories, totalCount, lastCursor, search, catFilter, subCatFilter, stockFilter, isLoading]);
 
   useEffect(() => {
     const handler = () => load(false, null, search, catFilter, subCatFilter, stockFilter);
@@ -1316,7 +1385,7 @@ export default function ProductsPage() {
   const activeFiltersCount = [Boolean(search), Boolean(catFilter), Boolean(subCatFilter), noImageOnly, brokenOnly, stockFilter !== 'instock'].filter(Boolean).length;
 
   return (
-    <div className="space-y-5" style={{ background: '#f3e8ff', minHeight: '100%', padding: '20px', borderRadius: 12 }}>
+    <div className="space-y-5" style={{ background: '#ffffff', minHeight: '100%', padding: '20px', borderRadius: 12 }}>
 
       {/* ═══════════════════════════════════════════════════════════════
           FULL-PAGE PRODUCT EDITOR (replaces table when modal is active)
@@ -1339,7 +1408,7 @@ export default function ProductsPage() {
                       href={`/productos/${(modal.data as Product).$id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline flex items-center gap-1 font-medium"
+                      className="text-xs text-gray-900 hover:text-gray-900 hover:underline flex items-center gap-1 font-medium"
                     >
                       <Eye className="w-3.5 h-3.5" /> Ver en tienda
                     </a>
@@ -1360,11 +1429,11 @@ export default function ProductsPage() {
                 </a>
               )}
               <button onClick={() => setKeniaOpen(!KeniaOpen)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${KeniaOpen ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'}`}>
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${KeniaOpen ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 border border-gray-200'}`}>
                 <MessageSquare className="w-4 h-4" /> Preguntar a Kenia
               </button>
               <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
-              <button onClick={save} disabled={isSaving} className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2">
+              <button onClick={save} disabled={isSaving} className="px-5 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-900 transition disabled:opacity-60 flex items-center gap-2">
                 {isSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Guardando...</> : 'Guardar'}
               </button>
             </div>
@@ -1408,17 +1477,17 @@ export default function ProductsPage() {
                             setAiTitles(titles);
                           } catch (e: any) { alert(e.message); }
                           finally { setAiLoading(null); }
-                        }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
+                        }} className="flex items-center gap-1 text-xs text-gray-900 hover:text-indigo-800 disabled:opacity-50">
                           <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'title' ? 'Generando...' : 'Sugerir con IA'}
                         </button>
                       </div>
                       <input value={modal.data.NAME || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, NAME: e.target.value } } : m)}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Nombre del producto" />
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Nombre del producto" />
                       {aiTitles.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {aiTitles.map((t, i) => (
                             <button key={i} type="button" onClick={() => { setModal(m => m ? { ...m, data: { ...m.data, NAME: t } } : m); setAiTitles([]); }}
-                              className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 border border-indigo-100 transition-colors truncate max-w-full">
+                              className="text-xs px-2.5 py-1 bg-gray-50 text-gray-900 rounded-lg hover:bg-gray-100 border border-gray-100 transition-colors truncate max-w-full">
                               {t}
                             </button>
                           ))}
@@ -1433,7 +1502,7 @@ export default function ProductsPage() {
                             type="button"
                             disabled={aiLoading === 'all'}
                             onClick={generateAllProductContent}
-                            className="flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+                            className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-100 disabled:opacity-50"
                           >
                             <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'all' ? 'Autocompletando...' : 'Autocompletar todo'}
                           </button>
@@ -1450,13 +1519,13 @@ export default function ProductsPage() {
                             setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: desc } } : m);
                           } catch (e: any) { alert(e.message); }
                           finally { setAiLoading(null); }
-                        }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
+                        }} className="flex items-center gap-1 text-xs text-gray-900 hover:text-indigo-800 disabled:opacity-50">
                           <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'desc' ? 'Generando...' : 'Generar con IA'}
                         </button>
                         </div>
                       </div>
                       <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
-                        rows={5} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="Describe tu producto..." />
+                        rows={5} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none" placeholder="Describe tu producto..." />
                     </div>
                   </div>
                 </div>
@@ -1465,18 +1534,18 @@ export default function ProductsPage() {
               {/* Pricing & Inventory */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> Precios e Inventario
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-800" /> Precios e Inventario
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Precio Normal (CLP)</label>
                     <input type="number" value={modal.data.PRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Costo</label>
                     <input type="number" value={modal.data.COST ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, COST: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                     {(() => {
                       const price = Number(modal.data.PRICE) || 0;
                       const cost = Number(modal.data.COST) || 0;
@@ -1496,13 +1565,13 @@ export default function ProductsPage() {
                       <button
                         type="button"
                         onClick={() => setModal(m => m ? { ...m, data: { ...m.data, STOCK: 99999 } } : m)}
-                        className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold underline"
+                        className="text-[10px] text-gray-900 hover:text-indigo-800 font-semibold underline"
                       >
                         Poner Ilimitado (99999)
                       </button>
                     </label>
                     <input type="number" value={modal.data.STOCK ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, STOCK: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                     {Number(modal.data.STOCK) === 99999 && (
                       <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">✓ Stock Ilimitado (vender sin stock)</p>
                     )}
@@ -1526,7 +1595,7 @@ export default function ProductsPage() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">Categoría</label>
                     <div className="relative">
                       <select value={modal.data.CATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATEGORYID: e.target.value, SUBCATEGORYID: '', SUBSUBCATEGORYID: '' } } : m)}
-                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800">
                         <option value="">Sin categoría</option>
                         {categories.map(c => <option key={c.$id} value={c.$id}>{c.name}</option>)}
                       </select>
@@ -1538,7 +1607,7 @@ export default function ProductsPage() {
                     <div className="relative">
                       <select value={modal.data.SUBCATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, SUBCATEGORYID: e.target.value, SUBSUBCATEGORYID: '' } } : m)}
                         disabled={!modal.data.CATEGORYID}
-                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:bg-gray-100">
+                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 disabled:opacity-50 disabled:bg-gray-100">
                         <option value="">Ninguna</option>
                         {subcategories.filter(s => s.categoryId === modal.data.CATEGORYID && !s.parentSubcategoryId).map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
                       </select>
@@ -1550,7 +1619,7 @@ export default function ProductsPage() {
                     <div className="relative">
                       <select value={modal.data.SUBSUBCATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, SUBSUBCATEGORYID: e.target.value } } : m)}
                         disabled={!modal.data.SUBCATEGORYID}
-                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:bg-gray-100">
+                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 disabled:opacity-50 disabled:bg-gray-100">
                         <option value="">Ninguna</option>
                         {subcategories.filter(s => s.parentSubcategoryId === modal.data.SUBCATEGORYID).map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
                       </select>
@@ -1561,40 +1630,40 @@ export default function ProductsPage() {
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Cant. por paquete</label>
                     <input type="number" value={modal.data.PACKQTY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PACKQTY: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">SKU</label>
                     <input type="text" value={modal.data._sku ?? ''}
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _sku: e.target.value } } : m)}
                       placeholder="Código interno"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-800" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Código de barras</label>
                     <input type="text" value={modal.data._barcode ?? ''}
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _barcode: e.target.value } } : m)}
                       placeholder="EAN / UPC"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-800" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Sección (ubicación)</label>
                     <input type="number" value={(modal.data as Product).section ?? ''}
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, section: e.target.value ? Number(e.target.value) : undefined } } : m)}
                       placeholder="Ej: 5"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Tags (separados por coma)</label>
                     <input type="text" value={Array.isArray(modal.data.TAGS) ? modal.data.TAGS.join(', ') : (modal.data.TAGS || '')} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, TAGS: e.target.value } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="tag1, tag2, tag3" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="tag1, tag2, tag3" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Características (otras)</label>
                     <input type="text" value={Array.isArray(modal.data.FEATURES) ? modal.data.FEATURES.join('\n') : (modal.data.FEATURES || '')} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: e.target.value } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                     <p className="text-[10px] text-gray-400 mt-1">SKU y código de barras se guardan en los campos de arriba.</p>
                   </div>
                 </div>
@@ -1605,7 +1674,7 @@ export default function ProductsPage() {
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" /> Pestañas de Información (Ficha Técnica)
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-800 animate-pulse" /> Pestañas de Información (Ficha Técnica)
                     </h3>
                     <p className="text-xs text-gray-500 mt-2">
                       Completa estos campos para mostrar pestañas dedicadas debajo de la descripción en el detalle de producto de Plantilla 5. Si los dejas vacíos, no se mostrarán.
@@ -1615,7 +1684,7 @@ export default function ProductsPage() {
                     type="button"
                     disabled={aiLoading === 'tabs' || aiLoading === 'all'}
                     onClick={generateTechnicalTabsOnly}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-3 py-2 text-xs font-semibold text-pink-700 hover:bg-pink-100 disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-100 disabled:opacity-50"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     {aiLoading === 'tabs' ? 'Generando ficha...' : 'Generar ficha con IA'}
@@ -1624,40 +1693,40 @@ export default function ProductsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-pink-400" /> Detalles del Producto (Especificaciones / Características)
+                      <span className="w-1 h-1 rounded-full bg-gray-400" /> Detalles del Producto (Especificaciones / Características)
                     </label>
                     <textarea
                       rows={3}
                       value={modal.data._details || ''}
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _details: e.target.value } } : m)}
                       placeholder="Ej: Material: 100% Algodón Orgánico&#10;Dimensiones: 15cm x 10cm&#10;Peso: 250g"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none font-sans"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-pink-400" /> Modo de Uso (Instrucciones)
+                      <span className="w-1 h-1 rounded-full bg-gray-400" /> Modo de Uso (Instrucciones)
                     </label>
                     <textarea
                       rows={3}
                       value={modal.data._usage || ''}
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _usage: e.target.value } } : m)}
                       placeholder="Ej: Aplicar sobre la piel limpia por la mañana y por la noche. Masajear suavemente hasta su completa absorción."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none font-sans"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-pink-400" /> Ingredientes (Composición / Tabla Nutricional)
+                      <span className="w-1 h-1 rounded-full bg-gray-400" /> Ingredientes (Composición / Tabla Nutricional)
                     </label>
                     <textarea
                       rows={3}
                       value={modal.data._ingredients || ''}
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _ingredients: e.target.value } } : m)}
                       placeholder="Ej: Aqua, Glycerin, Niacinamide, Sodium Hyaluronate, Phenoxyethanol..."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none font-sans"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
                     />
                   </div>
                 </div>
@@ -1669,7 +1738,7 @@ export default function ProductsPage() {
               <div className="w-[360px] shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">Y</div>
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white text-xs font-bold">Y</div>
                     <span className="text-sm font-semibold text-gray-800">Kenia</span>
                     <span className="text-[10px] text-gray-400">para este producto</span>
                   </div>
@@ -1678,14 +1747,14 @@ export default function ProductsPage() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {KeniaMessages.length === 0 && (
                     <div className="text-center py-8">
-                      <div className="w-12 h-12 mx-auto rounded-full bg-violet-50 flex items-center justify-center mb-3">
-                        <MessageSquare className="w-6 h-6 text-violet-500" />
+                      <div className="w-12 h-12 mx-auto rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                        <MessageSquare className="w-6 h-6 text-gray-800" />
                       </div>
                       <p className="text-sm text-gray-500">Pregúntale algo sobre este producto</p>
                       <p className="text-xs text-gray-400 mt-1">Kenia ya sabe qué producto estás editando</p>
                       <div className="mt-4 space-y-2">
                         {['Mejora la descripción', 'Sugiere un precio competitivo', 'Genera tags para SEO'].map(s => (
-                          <button key={s} onClick={() => { setKeniaInput(s); }} className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-gray-50 hover:bg-violet-50 text-gray-600 hover:text-violet-700 transition">
+                          <button key={s} onClick={() => { setKeniaInput(s); }} className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-50 text-gray-600 hover:text-gray-800 transition">
                             {s}
                           </button>
                         ))}
@@ -1694,7 +1763,7 @@ export default function ProductsPage() {
                   )}
                   {KeniaMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800'}`}>
                         {msg.content}
                       </div>
                     </div>
@@ -1737,9 +1806,9 @@ export default function ProductsPage() {
                     <input value={KeniaInput} onChange={e => setKeniaInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendKeniaMessage(); } }}
                       placeholder="Escribe tu pregunta..."
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                     <button onClick={sendKeniaMessage} disabled={KeniaLoading || !KeniaInput.trim()}
-                      className="p-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition disabled:opacity-50">
+                      className="p-2 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition disabled:opacity-50">
                       <MessageSquare className="w-4 h-4" />
                     </button>
                   </div>
@@ -1759,19 +1828,21 @@ export default function ProductsPage() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <Package className="w-5 h-5 text-indigo-600" />
+            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+              <Package className="w-5 h-5 text-gray-900" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-gray-900">Productos</h1>
-              <p className="text-xs text-gray-500">{filtered.length} de {products.length} · {totalUnits.toLocaleString('es-CL')} unidades · {fmt(totalInventoryValue)}</p>
+              <p className="text-xs text-gray-500">
+                {filtered.length} de {products.length} · {globalStats ? `${globalStats.total.toLocaleString('es-CL')} productos en total · ${globalStats.inStock.toLocaleString('es-CL')} en stock / ${globalStats.outOfStock.toLocaleString('es-CL')} sin stock` : 'Cargando estadísticas...'}
+              </p>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition shadow-sm">
+            <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-900 transition shadow-sm">
               <Plus className="w-4 h-4" /> Agregar
             </button>
-            <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
+            <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition shadow-sm" title="Categorizar productos usando IA">
               <Sparkles className="w-4 h-4" /> Kenia
             </button>
             <button onClick={() => load(false)} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
@@ -1834,7 +1905,7 @@ export default function ProductsPage() {
         <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
           <Download className="w-4 h-4" />XLSX
         </button>
-        <button id="btn-export-shopify" onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
+        <button id="btn-export-shopify" onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border border-indigo-200 text-gray-900 rounded-xl text-sm font-medium hover:bg-gray-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
           <Download className="w-4 h-4" /> Shopify CSV
         </button>
         <Link href="/admin/products/import-images" className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-sm font-medium hover:bg-amber-100 transition" title="Importar imágenes por SKU">
@@ -1896,7 +1967,7 @@ export default function ProductsPage() {
           return (
             <button key={k} onClick={() => setStockFilter(k)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition ${
-                stockFilter === k ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                stockFilter === k ? 'bg-gray-900 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
               }`}>
               {label}
               {cnt > 0 && k !== 'all' && <span className={`text-[10px] font-bold px-1 rounded-full ${stockFilter === k ? 'bg-white/20 text-white' : k === 'out' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>{cnt}</span>}
@@ -1943,18 +2014,18 @@ export default function ProductsPage() {
               }
             }}
             placeholder="SKU, barra o nombre (Enter para buscar en BD)..."
-            className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
           {search && <button onClick={() => { setSearch(''); load(false, null, '', catFilter, subCatFilter, stockFilter); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
         </div>
         <div className="relative">
-          <select value={catFilter} onChange={e => { setCatFilter(e.target.value); setSubCatFilter(''); }} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select value={catFilter} onChange={e => { setCatFilter(e.target.value); setSubCatFilter(''); }} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800">
             <option value="">Todas las categorías</option>
             {categories.map(c => <option key={c.$id} value={c.$id}>{c.name}</option>)}
           </select>
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
         <div className="relative">
-          <select value={subCatFilter} onChange={e => setSubCatFilter(e.target.value)} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select value={subCatFilter} onChange={e => setSubCatFilter(e.target.value)} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800">
             <option value="">Todas las subcategorías</option>
             {subcategories
               .filter(s => !catFilter || s.categoryId === catFilter)
@@ -1967,7 +2038,7 @@ export default function ProductsPage() {
       {categories.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={() => { setCatFilter(''); setSubCatFilter(''); }}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition ${!catFilter ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+            className={`px-3 py-1 rounded-full text-xs font-medium transition ${!catFilter ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
             Todas
           </button>
           {categories.map(c => {
@@ -1977,7 +2048,7 @@ export default function ProductsPage() {
                 setCatFilter(nextVal);
                 setSubCatFilter('');
               }}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${catFilter === c.$id ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${catFilter === c.$id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                 {c.name}
               </button>
             );
@@ -1989,13 +2060,13 @@ export default function ProductsPage() {
       <div className="bg-white border border-gray-150 rounded-xl p-3 flex flex-wrap gap-4 items-center text-xs">
         <span className="font-semibold text-gray-700 flex items-center gap-1.5">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-800"></span>
           </span>
           Participan en Live Shopping de hoy:
         </span>
         <div className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded-md bg-pink-50 border border-pink-200 border-l-4 border-l-pink-400 block shrink-0" />
+          <span className="w-4 h-4 rounded-md bg-gray-50 border border-gray-200 border-l-4 border-l-gray-400 block shrink-0" />
           <span className="text-gray-600">Nuevos agregados hoy</span>
         </div>
         <div className="flex items-center gap-2">
@@ -2160,7 +2231,7 @@ export default function ProductsPage() {
                   const liveStatus = getLiveStatus(p);
                   let rowBgClass = '';
                   if (liveStatus === 'new') {
-                    rowBgClass = 'bg-pink-50/60 hover:bg-pink-100/60 border-l-4 border-l-pink-400';
+                    rowBgClass = 'bg-gray-50/60 hover:bg-gray-100/60 border-l-4 border-l-gray-400';
                   } else if (liveStatus === 'existing') {
                     rowBgClass = 'bg-amber-50/60 hover:bg-amber-100/60 border-l-4 border-l-amber-400';
                   } else if ((p.STOCK ?? 0) === 0) {
@@ -2179,10 +2250,10 @@ export default function ProductsPage() {
                           className="relative shrink-0 group"
                           title="Preguntar a Kenia AI"
                         >
-                          <div className="w-10 h-10 flex items-center justify-center bg-violet-50 rounded-xl hover:bg-violet-100 transition-colors border border-violet-200 text-violet-600">
+                          <div className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200 text-gray-900">
                             <Sparkles className="w-5 h-5 animate-pulse" />
                           </div>
-                          <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-violet-600 text-white rounded px-1 leading-tight">
+                          <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-gray-900 text-white rounded px-1 leading-tight">
                             IA
                           </span>
                         </button>
@@ -2238,7 +2309,7 @@ export default function ProductsPage() {
                           {(() => {
                             const cnt = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean).length;
                             return cnt > 1 ? (
-                              <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                              <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-gray-900 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">
                                 {cnt}
                               </span>
                             ) : null;
@@ -2248,7 +2319,7 @@ export default function ProductsPage() {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="font-medium text-gray-900 truncate max-w-[170px]">{p.NAME}</p>
                             {liveStatus === 'new' && (
-                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-500 text-white animate-pulse">
+                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-white animate-pulse">
                                 Nuevo en Live
                               </span>
                             )}
@@ -2276,7 +2347,7 @@ export default function ProductsPage() {
                                       e.stopPropagation();
                                       setSearch(t);
                                     }}
-                                    className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer"
+                                    className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer"
                                   >
                                     {t}
                                   </button>
@@ -2284,7 +2355,7 @@ export default function ProductsPage() {
                             </div>
                           )}
                           {p.WHOLESALEPRICE ? (
-                            <p className="text-xs text-violet-600">
+                            <p className="text-xs text-gray-900">
                               Mayor: {fmt(p.WHOLESALEPRICE)} × {p.WHOLESALEMINQUANTITY}
                             </p>
                           ) : null}
@@ -2338,7 +2409,7 @@ export default function ProductsPage() {
                         {(() => {
                           const loc = getSection(p);
                           return loc ? (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-indigo-600">
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-gray-900">
                               <MapPin className="w-2.5 h-2.5" />G{loc.gondola} S{loc.section}
                             </span>
                           ) : null;
@@ -2359,14 +2430,14 @@ export default function ProductsPage() {
                         </a>
                         <button
                           onClick={() => openEdit(p)}
-                          className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"
+                          className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition"
                           title="Editar"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => duplicate(p)}
-                          className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition"
+                          className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition"
                           title="Duplicar"
                         >
                           <Copy className="w-3.5 h-3.5" />
@@ -2403,7 +2474,7 @@ export default function ProductsPage() {
             )}
             {(() => { const noCost = filtered.filter(p => !p.COST || p.COST === 0).length; return noCost > 0 ? <span className="text-amber-600 font-medium">{noCost} sin costo</span> : null; })()}
             {noImageCount > 0 ? <span className="text-amber-500 font-medium">{noImageCount} sin imagen</span> : null}
-            {avgMargin !== null ? <span className="ml-auto text-indigo-600 font-semibold">Margen: {avgMargin}%</span> : null}
+            {avgMargin !== null ? <span className="ml-auto text-gray-900 font-semibold">Margen: {avgMargin}%</span> : null}
           </div>
         )}
       </div>
@@ -2456,14 +2527,14 @@ export default function ProductsPage() {
                 </label>
                 <input type="number" value={priceAdj.value} onChange={e => setPriceAdj(a => ({ ...a, value: e.target.value }))}
                   placeholder={priceAdj.type === 'percent' ? 'ej: 10' : 'ej: 500'}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                 <p className="text-xs text-gray-400 mt-1">Usa valores negativos para reducir precios</p>
               </div>
             </div>
             <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setPriceModal(false)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
               <button onClick={applyBulkPrice} disabled={applyingPrice || !priceAdj.value}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60">
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-900 transition disabled:opacity-60">
                 {applyingPrice ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Percent className="w-4 h-4" />}
                 {applyingPrice ? 'Aplicando...' : 'Aplicar'}
               </button>
@@ -2502,7 +2573,7 @@ export default function ProductsPage() {
                 <input type="number" value={stockAdj.value} onChange={e => setStockAdj(a => ({ ...a, value: e.target.value }))}
                   placeholder={stockAdj.type === 'add' ? 'ej: 50 o -10' : 'ej: 100'}
                   min={stockAdj.type === 'set' ? 0 : undefined}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                 {stockAdj.type === 'add' && <p className="text-xs text-gray-400 mt-1">Usa valores negativos para reducir stock</p>}
               </div>
             </div>
@@ -2529,8 +2600,8 @@ export default function ProductsPage() {
             {/* Header */}
             <div className="shrink-0 border-b border-gray-100 px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                  <ImagePlus className="w-5 h-5 text-indigo-600" />
+                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center shrink-0">
+                  <ImagePlus className="w-5 h-5 text-gray-900" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-gray-900 text-sm">Editar producto</p>
@@ -2557,7 +2628,7 @@ export default function ProductsPage() {
                   onClick={() => setImageDrawerTab(tab.key)}
                   className={`px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
                     imageDrawerTab === tab.key
-                      ? 'border-indigo-600 text-indigo-600'
+                      ? 'border-gray-900 text-gray-900'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -2584,7 +2655,7 @@ export default function ProductsPage() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-bold text-gray-900">{slot.label}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${slot.idx === 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${slot.idx === 0 ? 'bg-gray-100 text-gray-900' : 'bg-gray-100 text-gray-600'}`}>
                               {slot.sub}
                             </span>
                           </div>
@@ -2602,11 +2673,11 @@ export default function ProductsPage() {
                         ) : (
                           <button
                             type="button"
-                            className="w-full h-28 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition mb-2"
+                            className="w-full h-28 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-indigo-400 hover:text-gray-800 transition mb-2"
                             onClick={() => imageDrawerFileRefs.current[slot.idx]?.click()}
                           >
                             {isUploading ? (
-                              <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                              <Loader2 className="w-6 h-6 animate-spin text-gray-800" />
                             ) : (
                               <>
                                 <Upload className="w-5 h-5 mb-1" />
@@ -2621,7 +2692,7 @@ export default function ProductsPage() {
                             value={url}
                             onChange={e => setImageDrawer(d => d ? { ...d, [slot.key]: e.target.value } : null)}
                             placeholder="URL..."
-                            className="flex-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="flex-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-800"
                           />
                           <input
                             ref={el => { imageDrawerFileRefs.current[slot.idx] = el; }}
@@ -2651,7 +2722,7 @@ export default function ProductsPage() {
                             type="button"
                             onClick={() => imageDrawerFileRefs.current[slot.idx]?.click()}
                             disabled={isUploading}
-                            className="shrink-0 px-2.5 py-2 border border-indigo-200 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition disabled:opacity-50"
+                            className="shrink-0 px-2.5 py-2 border border-indigo-200 bg-gray-50 rounded-lg text-xs font-medium text-gray-900 hover:bg-gray-100 transition disabled:opacity-50"
                           >
                             <Upload className="w-3.5 h-3.5" />
                           </button>
@@ -2671,7 +2742,7 @@ export default function ProductsPage() {
                       value={imageDrawer.description}
                       onChange={e => setImageDrawer(d => d ? { ...d, description: e.target.value } : null)}
                       rows={6}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none"
                       placeholder="Descripción del producto..."
                     />
                   </div>
@@ -2682,7 +2753,7 @@ export default function ProductsPage() {
                         type="text"
                         value={imageDrawer.sku}
                         onChange={e => setImageDrawer(d => d ? { ...d, sku: e.target.value } : null)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800"
                         placeholder="SKU del producto"
                       />
                     </div>
@@ -2692,7 +2763,7 @@ export default function ProductsPage() {
                         type="text"
                         value={imageDrawer.tags}
                         onChange={e => setImageDrawer(d => d ? { ...d, tags: e.target.value } : null)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800"
                         placeholder="tag1, tag2, tag3"
                       />
                     </div>
@@ -2704,7 +2775,7 @@ export default function ProductsPage() {
                         type="number"
                         value={imageDrawer.price}
                         onChange={e => setImageDrawer(d => d ? { ...d, price: Number(e.target.value) } : null)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800"
                       />
                     </div>
                     <div>
@@ -2713,7 +2784,7 @@ export default function ProductsPage() {
                         type="number"
                         value={imageDrawer.stock}
                         onChange={e => setImageDrawer(d => d ? { ...d, stock: Number(e.target.value) } : null)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800"
                       />
                     </div>
                   </div>
@@ -2731,7 +2802,7 @@ export default function ProductsPage() {
                       value={imageDrawer.features}
                       onChange={e => setImageDrawer(d => d ? { ...d, features: e.target.value } : null)}
                       rows={10}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-mono"
                       placeholder={"Ejemplo:\nMaterial: Algodón\nTalla: L\nColor: Azul\nGarantía: 3 meses"}
                     />
                   </div>
@@ -2768,7 +2839,7 @@ export default function ProductsPage() {
               <button
                 onClick={saveImageDrawer}
                 disabled={imageDrawerSaving}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 shadow-sm"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-900 transition disabled:opacity-50 shadow-sm"
               >
                 {imageDrawerSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
                 {imageDrawerSaving ? 'Guardando...' : 'Guardar cambios'}
@@ -2783,9 +2854,9 @@ export default function ProductsPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-indigo-50/50">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-50/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white shadow-md shadow-gray-100">
                   <Sparkles className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
@@ -2807,11 +2878,11 @@ export default function ProductsPage() {
               {/* State 1: Configuration */}
               {aiCategorizeSuggestions.length === 0 && !aiCategorizing && (
                 <div className="space-y-6 max-w-lg mx-auto py-4">
-                  <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4 flex gap-3 text-sm text-violet-800">
-                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-violet-600" />
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex gap-3 text-sm text-gray-900">
+                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-gray-900" />
                     <div>
                       <p className="font-semibold">¿Cómo funciona?</p>
-                      <p className="text-violet-700/95 mt-1 leading-relaxed text-xs">
+                      <p className="text-gray-800/95 mt-1 leading-relaxed text-xs">
                         Kenia analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
                       </p>
                     </div>
@@ -2820,16 +2891,16 @@ export default function ProductsPage() {
                   <div className="space-y-3">
                     <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">¿Qué productos quieres categorizar?</label>
                     <div className="grid grid-cols-1 gap-3">
-                      <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition ${aiCategorizeMode === 'uncategorized' ? 'border-violet-600 bg-violet-50/40 ring-2 ring-violet-100' : 'border-gray-200 hover:bg-gray-50 bg-white'}`}>
-                        <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'uncategorized'} onChange={() => setAiCategorizeMode('uncategorized')} className="mt-1 text-violet-600 focus:ring-violet-500" />
+                      <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition ${aiCategorizeMode === 'uncategorized' ? 'border-gray-900 bg-gray-50/40 ring-2 ring-gray-100' : 'border-gray-200 hover:bg-gray-50 bg-white'}`}>
+                        <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'uncategorized'} onChange={() => setAiCategorizeMode('uncategorized')} className="mt-1 text-gray-900 focus:ring-gray-800" />
                         <div>
                           <p className="font-semibold text-sm text-gray-900">Solo productos sin categoría</p>
                           <p className="text-xs text-gray-500 mt-1">Recomendado. Procesará únicamente los productos que no tienen ninguna categoría asignada ({products.filter(p => !p.CATEGORYID || p.CATEGORYID.trim() === '').length} encontrados).</p>
                         </div>
                       </label>
 
-                      <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition ${aiCategorizeMode === 'all' ? 'border-violet-600 bg-violet-50/40 ring-2 ring-violet-100' : 'border-gray-200 hover:bg-gray-50 bg-white'}`}>
-                        <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'all'} onChange={() => setAiCategorizeMode('all')} className="mt-1 text-violet-600 focus:ring-violet-500" />
+                      <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition ${aiCategorizeMode === 'all' ? 'border-gray-900 bg-gray-50/40 ring-2 ring-gray-100' : 'border-gray-200 hover:bg-gray-50 bg-white'}`}>
+                        <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'all'} onChange={() => setAiCategorizeMode('all')} className="mt-1 text-gray-900 focus:ring-gray-800" />
                         <div>
                           <p className="font-semibold text-sm text-gray-900">Todos los productos</p>
                           <p className="text-xs text-gray-500 mt-1">Procesará la totalidad de tu catálogo de productos ({products.length} productos) para re-evaluarlos.</p>
@@ -2839,7 +2910,7 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="pt-4 flex justify-center">
-                    <button onClick={startAiCategorization} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-lg shadow-violet-100 transition duration-150">
+                    <button onClick={startAiCategorization} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-lg shadow-gray-100 transition duration-150">
                       <Sparkles className="w-5 h-5" /> Comenzar Análisis
                     </button>
                   </div>
@@ -2849,7 +2920,7 @@ export default function ProductsPage() {
               {/* State 2: Categorizing (Progress) */}
               {aiCategorizing && (
                 <div className="flex flex-col items-center justify-center py-16 space-y-6 max-w-md mx-auto">
-                  <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-600 animate-spin" />
+                  <div className="w-16 h-16 rounded-full border-4 border-gray-100 border-t-gray-900 animate-spin" />
                   <div className="text-center">
                     <p className="font-bold text-gray-800 text-lg">Kenia está analizando tu catálogo...</p>
                     <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
@@ -2857,9 +2928,9 @@ export default function ProductsPage() {
                     </p>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
-                    <div className="bg-gradient-to-r from-violet-500 to-indigo-600 h-full rounded-full transition-all duration-300" style={{ width: `${(aiCategorizeProgress.current / aiCategorizeProgress.total) * 100}%` }} />
+                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 h-full rounded-full transition-all duration-300" style={{ width: `${(aiCategorizeProgress.current / aiCategorizeProgress.total) * 100}%` }} />
                   </div>
-                  <span className="text-xs font-semibold text-violet-700 bg-violet-50 px-3 py-1 rounded-full">
+                  <span className="text-xs font-semibold text-gray-800 bg-gray-50 px-3 py-1 rounded-full">
                     {aiCategorizeProgress.current} de {aiCategorizeProgress.total} productos procesados
                   </span>
                 </div>
@@ -2868,9 +2939,9 @@ export default function ProductsPage() {
               {/* State 3: Suggestion Review */}
               {aiCategorizeSuggestions.length > 0 && !aiCategorizing && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between flex-wrap gap-2 mb-2 bg-violet-50 border border-violet-100 rounded-xl p-3.5">
-                    <div className="flex items-center gap-2 text-violet-800">
-                      <Sparkles className="w-4 h-4 shrink-0 text-violet-600" />
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-2 bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+                    <div className="flex items-center gap-2 text-gray-900">
+                      <Sparkles className="w-4 h-4 shrink-0 text-gray-900" />
                       <span className="text-xs font-semibold">Se encontraron {aiCategorizeSuggestions.length} sugerencias. Desmarca las que no quieras aplicar.</span>
                     </div>
                     <div className="flex gap-2">
@@ -2878,7 +2949,7 @@ export default function ProductsPage() {
                         const next: Record<string, boolean> = {};
                         aiCategorizeSuggestions.forEach(s => { next[s.productId] = true; });
                         setApprovedSuggestions(next);
-                      }} className="text-[11px] font-bold text-violet-700 hover:text-violet-800 bg-white border border-violet-200 px-2.5 py-1 rounded-lg transition">Marcar todo</button>
+                      }} className="text-[11px] font-bold text-gray-800 hover:text-gray-900 bg-white border border-gray-200 px-2.5 py-1 rounded-lg transition">Marcar todo</button>
                       <button onClick={() => setApprovedSuggestions({})} className="text-[11px] font-bold text-gray-500 hover:text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg transition">Desmarcar todo</button>
                     </div>
                   </div>
@@ -2902,12 +2973,12 @@ export default function ProductsPage() {
                             return (
                               <tr key={s.productId} className={`hover:bg-gray-50/50 transition ${approvedSuggestions[s.productId] ? '' : 'opacity-60 bg-gray-50/20'}`}>
                                 <td className="p-4 text-center">
-                                  <input type="checkbox" checked={approvedSuggestions[s.productId] || false} onChange={e => setApprovedSuggestions(prev => ({ ...prev, [s.productId]: e.target.checked }))} className="rounded text-violet-600 focus:ring-violet-500" />
+                                  <input type="checkbox" checked={approvedSuggestions[s.productId] || false} onChange={e => setApprovedSuggestions(prev => ({ ...prev, [s.productId]: e.target.checked }))} className="rounded text-gray-900 focus:ring-gray-800" />
                                 </td>
                                 <td className="p-4 font-medium text-gray-900 max-w-[200px] truncate" title={s.productName}>{s.productName}</td>
                                 <td className="p-4">
                                   {cat ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-900 border border-gray-100">
                                       {cat.name}
                                     </span>
                                   ) : (
@@ -2916,7 +2987,7 @@ export default function ProductsPage() {
                                 </td>
                                 <td className="p-4">
                                   {sub ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-100">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-800 border border-gray-100">
                                       {sub.name}
                                     </span>
                                   ) : (
@@ -2937,7 +3008,7 @@ export default function ProductsPage() {
               {/* State 4: Applying (Saving) */}
               {applyingCategorization && (
                 <div className="flex flex-col items-center justify-center py-16 space-y-6 max-w-md mx-auto">
-                  <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-indigo-600 animate-spin" />
+                  <div className="w-16 h-16 rounded-full border-4 border-gray-100 border-t-gray-900 animate-spin" />
                   <div className="text-center">
                     <p className="font-bold text-gray-800 text-lg">Guardando categorizaciones...</p>
                     <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
@@ -2945,9 +3016,9 @@ export default function ProductsPage() {
                     </p>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
-                    <div className="bg-gradient-to-r from-violet-500 to-indigo-600 h-full rounded-full transition-all duration-300" style={{ width: `${(applyingProgress.current / applyingProgress.total) * 100}%` }} />
+                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 h-full rounded-full transition-all duration-300" style={{ width: `${(applyingProgress.current / applyingProgress.total) * 100}%` }} />
                   </div>
-                  <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full animate-pulse">
+                  <span className="text-xs font-semibold text-gray-900 bg-gray-50 px-3 py-1 rounded-full animate-pulse">
                     Actualizando: {applyingProgress.current} de {applyingProgress.total} productos
                   </span>
                 </div>
@@ -2959,7 +3030,7 @@ export default function ProductsPage() {
               <div>
                 {aiCategorizeSuggestions.length > 0 && !aiCategorizing && !applyingCategorization && (
                   <span className="text-xs font-medium text-gray-500">
-                    Aprobados: <span className="font-bold text-violet-700">{aiCategorizeSuggestions.filter(s => approvedSuggestions[s.productId]).length}</span> de {aiCategorizeSuggestions.length} sugerencias
+                    Aprobados: <span className="font-bold text-gray-800">{aiCategorizeSuggestions.filter(s => approvedSuggestions[s.productId]).length}</span> de {aiCategorizeSuggestions.length} sugerencias
                   </span>
                 )}
               </div>
@@ -2979,7 +3050,7 @@ export default function ProductsPage() {
                 {aiCategorizeSuggestions.length > 0 && !aiCategorizing && !applyingCategorization && (
                   <button
                     onClick={applyAiCategorization}
-                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 shadow-md shadow-violet-100 transition"
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-md shadow-gray-100 transition"
                   >
                     <Sparkles className="w-4 h-4" /> Aplicar Categorizaciones
                   </button>

@@ -519,28 +519,14 @@ export async function POST(req: NextRequest) {
             if (!pendingOrderId) {
               const { serverListDocuments } = await import('@/lib/appwrite-server');
               const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
-              const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-              const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
               try {
-                const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
-                const myOrders = (resOrders.documents || []).filter((o: any) => {
-                  const cleanB = fromPhone.replace(/\D/g, '');
-                  const oPhone = String(o.CUSTOMERPHONE || '');
-                  if (oPhone) {
-                    const cleanA = oPhone.replace(/\D/g, '');
-                    if (cleanA === cleanB) return true;
-                    const tailA = cleanA.slice(-8);
-                    const tailB = cleanB.slice(-8);
-                    if (tailA.length === 8 && tailA === tailB) return true;
-                  }
-                  const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
-                  return linked.some((p: string) => {
-                    const lp = p.replace(/\D/g, '');
-                    if (lp === cleanB) return true;
-                    const lt = lp.slice(-8);
-                    return lt.length === 8 && lt === cleanB.slice(-8);
-                  });
-                });
+                const cleanedPhone = fromPhone.replace(/\D/g, '');
+                const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+                const qLimit5 = JSON.stringify({ method: 'limit', values: [10] });
+                const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhone, `+${cleanedPhone}`] });
+                // We fetch 10 orders matching the phone directly from DB
+                const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit5]);
+                const myOrders = resOrders.documents || [];
                 // First: pending orders without payment proof
                 const pending = myOrders.find((o: any) => o.STATUS === 'pending' && !o.PAYMENTPROOFURL);
                 if (pending) {
@@ -605,7 +591,7 @@ export async function POST(req: NextRequest) {
                 } catch (e) {}
               }
               
-              await notifyPaymentUploaded(orderCode, 'Cliente (vía WhatsApp)');
+              await notifyPaymentUploaded(orderCode, 'Cliente (vía WhatsApp)', fileUrl, pendingOrderId);
               await recordKeniaUsage(fromPhone, { awaitingComprobante: false, pendingOrderId: undefined });
               
               const reply = `¡Listo bella! 💖 Recibí tu comprobante y se ha guardado en tu pedido #${orderCode}. Apenas finanzas lo valide, te avisaremos para continuar con el envío. ¡Muchas gracias! 🥰💸`;
@@ -786,21 +772,13 @@ export async function POST(req: NextRequest) {
     // Intercept "Enviar comprobante" button from Meta templates
     if (!isAdmin && msgType === 'button' && userText.toLowerCase().includes('comprobante')) {
       try {
+        const cleanedPhone = fromPhone.replace(/\D/g, '');
         const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-        const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
-        const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit50]);
+        const qLimit5 = JSON.stringify({ method: 'limit', values: [10] });
+        const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhone, `+${cleanedPhone}`] });
+        const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit5]);
         
-        const myOrders = (resOrders.documents || []).filter((o: any) => {
-          const oPhone = String(o.CUSTOMERPHONE || '');
-          if (!oPhone) return false;
-          const cleanA = oPhone.replace(/\D/g, '');
-          const cleanB = fromPhone.replace(/\D/g, '');
-          if (cleanA === cleanB) return true;
-          const tailA = cleanA.slice(-8);
-          const tailB = cleanB.slice(-8);
-          return tailA.length === 8 && tailA === tailB;
-        });
-
+        const myOrders = resOrders.documents || [];
         const pendingOrder = myOrders.find((o: any) => o.STATUS === 'pending');
         
         if (pendingOrder) {
@@ -824,6 +802,117 @@ export async function POST(req: NextRequest) {
         }
       } catch (e) {
          console.error('[WhatsApp] Failed to process comprobante button:', e);
+      }
+    }
+
+    // Intercept Admin clicking "ENVIAR A REVISAR" template button
+    if (isAdmin && msgType === 'button' && userText.toUpperCase().includes('ENVIAR A REVISAR')) {
+      try {
+        const adminUsage = await getKeniaUsage(fromPhone);
+        const orderId = adminUsage.pendingOrderId;
+        if (orderId) {
+          const { serverGetDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId);
+          const orderCode = orderDoc.ORDERCODE || orderId;
+          const customerName = orderDoc.CUSTOMERNAME || 'Cliente';
+          const fileUrl = orderDoc.PAYMENTPROOFURL;
+          
+          if (fileUrl) {
+            const WORKER_PHONE = '56935623858';
+            const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
+            const { recordKeniaUsage } = await import('@/lib/kenia-runtime');
+            
+            // Set the pendingOrderId for the worker so they can confirm it
+            await recordKeniaUsage(WORKER_PHONE, { pendingOrderId: orderId });
+            
+            const components = [
+              {
+                type: 'header',
+                parameters: [
+                  {
+                    type: 'image',
+                    image: { url: fileUrl }
+                  }
+                ]
+              },
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: String(orderCode) },
+                  { type: 'text', text: String(customerName) }
+                ]
+              }
+            ];
+            
+            await sendWhatsAppTemplate(WORKER_PHONE, 'revision_pago_trabajadora', 'es', components, WA_TOKEN);
+            
+            const adminReply = `¡Listo! Se ha enviado el comprobante del pedido #${orderCode} a Ana (trabajadora) para su revisión. 👩‍💼💵`;
+            await sendWhatsAppMessage(fromPhone, adminReply, WA_TOKEN);
+            return NextResponse.json({ status: 'sent_to_worker' });
+          } else {
+            await sendWhatsAppMessage(fromPhone, `El pedido #${orderCode} no tiene una imagen de comprobante adjunta. ❌`, WA_TOKEN);
+            return NextResponse.json({ status: 'no_proof_image' });
+          }
+        } else {
+          await sendWhatsAppMessage(fromPhone, `No encontré ningún pedido pendiente de revisión reciente. ❌`, WA_TOKEN);
+          return NextResponse.json({ status: 'no_pending_order_id' });
+        }
+      } catch (e) {
+        console.error('[WhatsApp] Failed to process Admin review button:', e);
+      }
+    }
+
+    // Intercept Worker clicking "CONFIRMAR PAGO" or "PAGO CONFIRMADO" template button
+    const isWorker = cleanedFrom === '56935623858';
+    const isConfirmPayment = msgType === 'button' && (userText.toUpperCase().includes('CONFIRMAR') || userText.toUpperCase().includes('CONFIRMADO') || userText.toUpperCase().includes('REVISADO'));
+    if (isWorker && isConfirmPayment) {
+      try {
+        const workerUsage = await getKeniaUsage(fromPhone);
+        const orderId = workerUsage.pendingOrderId;
+        if (orderId) {
+          const { serverUpdateDocument, serverGetDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const { getAdminAlertPhone } = await import('@/lib/notify-admin');
+          const { formatWhatsAppPhone } = await import('@/lib/whatsapp');
+          
+          const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId);
+          const orderCode = orderDoc.ORDERCODE || orderId;
+          
+          // Update order status to paid (Pago Verificado)
+          await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+            STATUS: 'paid',
+            UPDATEDAT: Date.now()
+          });
+          
+          // Try notifying the customer
+          try {
+            const { notifyOrderStatusChange } = await import('@/services/notificationService');
+            await notifyOrderStatusChange(orderDoc as any, (orderDoc as any).STATUS || 'processing', 'paid');
+          } catch (errNotif) {
+            console.warn('[WhatsApp Webhook] Notification to customer error:', errNotif);
+          }
+          
+          // Notify the Admin
+          const adminAlertPhone = await getAdminAlertPhone();
+          const formattedAdminPhone = formatWhatsAppPhone(adminAlertPhone);
+          const adminAlert = `✅ *PAGO CONFIRMADO*\nANA (BINGFEEN) ha verificado y confirmado el pago del pedido #${orderCode}. El estado se ha actualizado a Pago Verificado.`;
+          await sendWhatsAppMessage(formattedAdminPhone, adminAlert, WA_TOKEN);
+          
+          // Clear worker usage pendingOrderId
+          await recordKeniaUsage(fromPhone, { pendingOrderId: undefined });
+          
+          // Reply to worker
+          const workerReply = `¡Listo Ana! El pago del pedido #${orderCode} ha sido verificado y el administrador ha sido notificado. ¡Muchas gracias! 💖`;
+          await sendWhatsAppMessage(fromPhone, workerReply, WA_TOKEN);
+          
+          return NextResponse.json({ status: 'payment_confirmed_by_worker' });
+        } else {
+          await sendWhatsAppMessage(fromPhone, `No encontré ningún pedido pendiente de confirmación en tus registros. ❌`, WA_TOKEN);
+          return NextResponse.json({ status: 'worker_no_pending_order' });
+        }
+      } catch (e) {
+        console.error('[WhatsApp] Failed to process Worker confirm button:', e);
       }
     }
 
@@ -1722,11 +1811,9 @@ ${products.join('\n') || 'Sin productos.'}`;
           if (resCode.documents && resCode.documents.length > 0) {
             matchedOrder = resCode.documents[0];
           } else {
-            // Search last 100 orders for suffix of $id
-            const resRecent = await serverListDocuments(ORDERS_COLLECTION_ID, [JSON.stringify({ method: 'limit', values: [100] })]);
-            matchedOrder = resRecent.documents.find((o: any) => 
-              String(o.$id || '').toUpperCase().endsWith(codeUpper)
-            );
+            const qSuffix = JSON.stringify({ method: 'endsWith', attribute: '$id', values: [codeUpper.toLowerCase()] });
+            const resRecent = await serverListDocuments(ORDERS_COLLECTION_ID, [qSuffix, JSON.stringify({ method: 'limit', values: [1] })]);
+            matchedOrder = resRecent.documents[0] || null;
           }
 
           if (matchedOrder) {
@@ -1775,10 +1862,9 @@ ${products.join('\n') || 'Sin productos.'}`;
           if (resCode.documents && resCode.documents.length > 0) {
             matchedOrder = resCode.documents[0];
           } else {
-            const resRecent = await serverListDocuments(ORDERS_COLLECTION_ID, [JSON.stringify({ method: 'limit', values: [100] })]);
-            matchedOrder = resRecent.documents.find((o: any) => 
-              String(o.$id || '').toUpperCase().endsWith(codeUpper)
-            );
+            const qSuffix = JSON.stringify({ method: 'endsWith', attribute: '$id', values: [codeUpper.toLowerCase()] });
+            const resRecent = await serverListDocuments(ORDERS_COLLECTION_ID, [qSuffix, JSON.stringify({ method: 'limit', values: [1] })]);
+            matchedOrder = resRecent.documents[0] || null;
           }
 
           if (matchedOrder) {

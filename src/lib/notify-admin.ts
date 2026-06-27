@@ -36,7 +36,48 @@ export async function notifyNewOrder(orderCode: string, customerName: string, to
   await notifyAdmin(`🛒 *NUEVO PEDIDO* #${orderCode}\nCliente: ${customerName}\nTotal: ${fmt(total)}\nProductos: ${itemsCount}`);
 }
 
-export async function notifyPaymentUploaded(orderCode: string, customerName: string): Promise<void> {
+export async function notifyPaymentUploaded(orderCode: string, customerName: string, imageUrl?: string, orderId?: string): Promise<void> {
+  const phone = await getAdminAlertPhone();
+  const formattedPhone = formatWhatsAppPhone(phone);
+  const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+
+  if (orderId) {
+    try {
+      const { recordKeniaUsage } = await import('@/lib/kenia-runtime');
+      await recordKeniaUsage(formattedPhone, { pendingOrderId: orderId });
+    } catch (e) {
+      console.error('[notifyPaymentUploaded] Failed to record usage:', e);
+    }
+  }
+
+  if (imageUrl && WA_TOKEN) {
+    try {
+      const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
+      const components = [
+        {
+          type: 'header',
+          parameters: [
+            {
+              type: 'image',
+              image: { url: imageUrl }
+            }
+          ]
+        },
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: orderCode },
+            { type: 'text', text: customerName }
+          ]
+        }
+      ];
+      await sendWhatsAppTemplate(formattedPhone, 'alerta_pago_admin', 'es', components, WA_TOKEN);
+      return;
+    } catch (e) {
+      console.warn('[notifyPaymentUploaded] Failed to send template notification, falling back to text:', e);
+    }
+  }
+
   await notifyAdmin(`💳 *PAGO SUBIDO* #${orderCode}\nCliente: ${customerName}\nEl cliente subió el comprobante de transferencia. Revisa y verifica el pago.`);
 }
 

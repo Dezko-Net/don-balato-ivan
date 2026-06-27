@@ -69,7 +69,6 @@ const NAV_GROUPS: NavGroup[] = [
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
       ]},
       { href: '', label: 'INVENTARIO', icon: Ico.Inventario, children: [
-        { href: '/admin/inventory',      label: 'Stock',           icon: Ico.Inventario },
         { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
         { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
         { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },

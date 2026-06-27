@@ -309,9 +309,21 @@ export default function AdminIAWhatsAppPage() {
           if (phones) {
             fetch(`/api/admin/ia/customer-lookup?phones=${encodeURIComponent(phones)}`, { cache: 'no-store' })
               .then(r => r.json())
-              .then(d => { if (d?.customers) setCustomerMap(prev => ({ ...prev, ...d.customers })); })
+              .then(d => { 
+                if (d?.customers) {
+                   setCustomerMap(prev => {
+                     const merged = { ...prev, ...d.customers };
+                     sessionStorage.setItem('admin_whatsapp_cache', JSON.stringify({ threads: nextThreads, stats: data.stats, customerMap: merged }));
+                     return merged;
+                   });
+                }
+              })
               .catch(() => {});
+          } else {
+            sessionStorage.setItem('admin_whatsapp_cache', JSON.stringify({ threads: nextThreads, stats: data.stats }));
           }
+        } else {
+          sessionStorage.setItem('admin_whatsapp_cache', JSON.stringify({ threads: nextThreads, stats: data.stats }));
         }
       }
     } finally {
@@ -341,6 +353,20 @@ export default function AdminIAWhatsAppPage() {
   }, [loadConfig]);
 
   useEffect(() => {
+    const cached = sessionStorage.getItem('admin_whatsapp_cache');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.threads && parsed.stats) {
+          setThreads(parsed.threads);
+          setStats(parsed.stats);
+          if (parsed.customerMap) setCustomerMap(parsed.customerMap);
+          if (parsed.threads[0]) setSelectedPhone(parsed.threads[0].phone);
+          setLoadingThreads(false);
+          return;
+        }
+      } catch {}
+    }
     loadThreads(false);
   }, [loadThreads]);
 
@@ -350,46 +376,7 @@ export default function AdminIAWhatsAppPage() {
     if (selectedPhone) loadThread(selectedPhone);
   }, [selectedPhone, loadThread]);
 
-  // Polling: refresh thread list and active thread every 60s.
-  // Pausado cuando la pestaña está oculta (minimizada o en segundo plano) para
-  // no consumir lecturas de Appwrite con un panel olvidado abierto. Al volver,
-  // refresca de inmediato y reanuda el intervalo.
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-
-    const refresh = () => {
-      loadThreads(true);
-      if (selectedPhoneRef.current) loadThread(selectedPhoneRef.current);
-    };
-
-    const start = () => {
-      if (interval) return;
-      interval = setInterval(refresh, 60000);
-    };
-
-    const stop = () => {
-      if (interval) { clearInterval(interval); interval = null; }
-    };
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        refresh();
-        start();
-      } else {
-        stop();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibility);
-    if (document.visibilityState === 'visible') start();
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      stop();
-    };
-  }, [loadThreads, loadThread]);
-
-
+  // Auto-polling removed to save Appwrite reads. User must manually click refresh.
 
   function showToast(type: 'success' | 'error', text: string) {
     setMessage({ type, text });
