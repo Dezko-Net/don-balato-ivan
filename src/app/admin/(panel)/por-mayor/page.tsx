@@ -94,17 +94,14 @@ export default function PorMayorPage() {
       const freshCats = catResp.documents as unknown as Category[];
       setCategories(freshCats);
 
-      // Load all products
-      const all: Product[] = [];
-      let cursor: string | undefined;
-      while (true) {
-        const queries: string[] = [Query.limit(100)];
-        if (cursor) queries.push(Query.cursorAfter(cursor));
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-        all.push(...(res.documents as unknown as Product[]));
-        if (res.documents.length < 100) break;
-        cursor = res.documents[res.documents.length - 1].$id;
-      }
+      // Load all products from the shared, server-cached endpoint instead of a
+      // direct Appwrite cursor loop. /api/public-data/products caches every
+      // product for 24h (unstable_cache) and is invalidated on-demand when a
+      // product is edited (/api/revalidate?tag=products), so opening this page
+      // costs ~0 Appwrite reads instead of ~800.
+      const prodRes = await fetch('/api/public-data/products?limit=10000', { cache: 'no-store' });
+      const prodJson = await prodRes.json();
+      const all = (prodJson.products || []) as Product[];
       setProducts(all);
 
       // Save to localStorage cache

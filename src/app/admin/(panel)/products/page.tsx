@@ -346,115 +346,13 @@ export default function ProductsPage() {
     setIsLoading(true);
     setError('');
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      const prodResp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(2000)]);
-      const catResp = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [Query.limit(2000)]);
-      const invResp = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [Query.limit(2000)]);
-
-      const prods = prodResp.documents;
-      const catalogs = catResp.documents;
-      const inventories = invResp.documents;
-
-      const getSkuLocal = (p: any) => getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku) || p.$id;
-
-      const allItems: any[] = [];
-
-      prods.forEach(p => {
-        const sku = getSkuLocal(p).toLowerCase().trim();
-        if (sku && sku !== p.$id) {
-          allItems.push({
-            document: p,
-            sku,
-            name: p.NAME || '',
-            collection: 'products',
-            stock: p.STOCK ?? 0,
-            price: p.PRICE ?? 0,
-            imageurl: p.IMAGEURL || ''
-          });
-        }
-      });
-
-      catalogs.forEach(c => {
-        const sku = getSkuLocal(c).toLowerCase().trim();
-        if (sku && sku !== c.$id) {
-          allItems.push({
-            document: c,
-            sku,
-            name: c.NAME || c.name || '',
-            collection: 'catalog_products',
-            stock: c.STOCK ?? c.stock ?? 0,
-            price: c.PRICE ?? c.price ?? 0,
-            imageurl: c.IMAGEURL || c.imageurl || ''
-          });
-        }
-      });
-
-      inventories.forEach(i => {
-        const sku = getSkuLocal(i).toLowerCase().trim();
-        if (sku && sku !== i.$id) {
-          allItems.push({
-            document: i,
-            sku,
-            name: i.NAME || i.name || '',
-            collection: 'inventory_products',
-            stock: i.STOCK ?? i.stock ?? 0,
-            price: i.PRICE ?? i.price ?? 0,
-            imageurl: i.IMAGEURL || i.imageurl || ''
-          });
-        }
-      });
-
-      const groupedBySku = new Map<string, any[]>();
-      allItems.forEach(item => {
-        if (!groupedBySku.has(item.sku)) {
-          groupedBySku.set(item.sku, []);
-        }
-        groupedBySku.get(item.sku)!.push(item);
-      });
-
-      const groupedDuplicates: any[] = [];
-
-      groupedBySku.forEach((items, sku) => {
-        if (items.length > 1) {
-          items.sort((a, b) => {
-            const aHasStock = a.stock > 0 ? 1 : 0;
-            const bHasStock = b.stock > 0 ? 1 : 0;
-            if (aHasStock !== bHasStock) {
-              return bHasStock - aHasStock;
-            }
-            const aIsMain = a.collection === 'products' ? 1 : 0;
-            const bIsMain = b.collection === 'products' ? 1 : 0;
-            if (aIsMain !== bIsMain) {
-              return bIsMain - aIsMain;
-            }
-            return b.stock - a.stock;
-          });
-
-          const original = items[0];
-          const duplicates = items.slice(1).map(dup => {
-            let reason = '';
-            if (dup.collection === 'products') {
-              reason = `Copia interna en Productos (original tiene ${original.stock} stock)`;
-            } else {
-              reason = `Existe en colección '${dup.collection === 'catalog_products' ? 'Catálogo' : 'Inventario'}'`;
-            }
-            return {
-              ...dup,
-              reason
-            };
-          });
-
-          groupedDuplicates.push({
-            sku,
-            original,
-            duplicates
-          });
-        }
-      });
-
-      setDuplicates(groupedDuplicates);
+      // Duplicate detection now runs server-side behind a 24h cache instead of
+      // pulling 3 × 2000 documents straight from Appwrite on every click
+      // (~6000 reads → ~0, shared across admins; invalidated on product edits).
+      const res = await fetch('/api/admin/check-duplicates', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Error al buscar duplicados');
+      setDuplicates(data.duplicates || []);
     } catch (e: any) {
       setError('Error al buscar duplicados: ' + e.message);
     } finally {

@@ -90,36 +90,41 @@ export default function CatalogProductsPage() {
         return p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '';
       };
 
-      // Pass 1: Search in PRODUCTS and CATALOG_PRODUCTS by $id (direct match)
-      for (const chunk of productChunks) {
-        try {
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.equal('$id', chunk),
-            Query.limit(20),
-          ]);
-          res.documents.forEach((p: any) => {
-            const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
-            const locVal = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
-            productMap[p.$id] = {
-              name: p.NAME || p.name || '',
-              image: extractImage(p),
-              sku: skuVal || '',
-              jumpsellerId: p.jumpseller_id || '',
-              barcode: p.barcode || (p.FEATURES ? (p.FEATURES.match(/Barcode:\s*([^,\n]+)/i) || [])[1] : '') || '',
-              section: locVal.section,
-              gondola: locVal.gondola || '?',
-              stock: p.STOCK ?? 0,
-              price: p.PRICE || p.price || p.CURRENTPRICE || 0,
-              inCatalog: true,
-              hasStock: (p.STOCK ?? 0) > 0,
-              inInventory: false,
-              source: 'products',
-              productsDocId: p.$id,
-            };
-          });
-        } catch (e) {
-          console.error('Error loading products chunk', e);
+      // Pass 1: Resolve products from the shared, server-cached endpoint
+      // (/api/public-data/products — 24h unstable_cache, invalidated on product
+      // edits) instead of chunked direct Appwrite reads. One cached fetch builds
+      // a $id map, so this costs ~0 Appwrite reads instead of one read per alert
+      // product. Note: the endpoint excludes products with negative STOCK; those
+      // fall through to the CATALOG_PRODUCTS / INVENTORY_PRODUCTS passes below.
+      try {
+        const prodRes = await fetch('/api/public-data/products?limit=10000', { cache: 'no-store' });
+        const prodJson = await prodRes.json();
+        const cachedById: Record<string, any> = {};
+        for (const p of (prodJson.products || [])) cachedById[p.$id] = p;
+        for (const id of uniqueProductIds) {
+          const p = cachedById[id];
+          if (!p) continue;
+          const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+          const locVal = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
+          productMap[p.$id] = {
+            name: p.NAME || p.name || '',
+            image: extractImage(p),
+            sku: skuVal || '',
+            jumpsellerId: p.jumpseller_id || '',
+            barcode: p.barcode || (p.FEATURES ? (p.FEATURES.match(/Barcode:\s*([^,\n]+)/i) || [])[1] : '') || '',
+            section: locVal.section,
+            gondola: locVal.gondola || '?',
+            stock: p.STOCK ?? 0,
+            price: p.PRICE || p.price || p.CURRENTPRICE || 0,
+            inCatalog: true,
+            hasStock: (p.STOCK ?? 0) > 0,
+            inInventory: false,
+            source: 'products',
+            productsDocId: p.$id,
+          };
         }
+      } catch (e) {
+        console.error('Error loading products from cached endpoint', e);
       }
 
       for (const chunk of productChunks) {

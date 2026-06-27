@@ -1090,17 +1090,23 @@ export default function OrderDetailPage() {
         const skus: Record<string, string> = {};
         const prices: Record<string, number> = {};
         const barcodes: Record<string, string> = {};
-        await Promise.all(productIds.map(async (pid) => {
-          try {
-            const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-            const doc = product as { STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number; PRICE?: number; barcode?: string };
+        // Batch-fetch every product in ONE query instead of N getDocument calls
+        // (same read count, but a single network round-trip instead of N).
+        try {
+          const productsResp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.equal('$id', productIds),
+            Query.limit(productIds.length),
+          ]);
+          for (const product of productsResp.documents) {
+            const doc = product as { $id: string; STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number; PRICE?: number; barcode?: string };
+            const pid = doc.$id;
             stocks[pid] = doc.STOCK || 0;
             locs[pid] = getWarehouseLocationFromFeatures(doc.FEATURES, doc.section);
             skus[pid] = getSkuFromFeatures(doc.FEATURES, doc.TAGS, doc.jumpseller_id, doc.sku);
             prices[pid] = doc.PRICE || 0;
             barcodes[pid] = getBarcodeFromFeatures(doc.FEATURES, doc.barcode);
-          } catch {}
-        }));
+          }
+        } catch {}
         setProductStocks(stocks);
         setProductLocations(locs);
         setProductSkus(skus);

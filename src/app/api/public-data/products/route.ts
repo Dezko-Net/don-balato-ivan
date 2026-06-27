@@ -17,7 +17,11 @@ let memoryCacheAperturaSettings: any = null;
 let memoryCacheAperturaSettingsTime = 0;
 
 
-// Cache all active products for 60 seconds
+// Cache all active products for 24h. This is the only heavy query (cursor loop
+// over ALL ~800 products = ~800 Appwrite reads per refresh). At 1h that was
+// ~19,200 reads/day; at 24h it's ~800/day. Safe because every product edit
+// invalidates the 'products' tag on-demand (/api/revalidate?tag=products),
+// so the catalog never goes stale beyond an actual change.
 const getCachedAllProducts = unstable_cache(
   async () => {
     const now = Date.now();
@@ -61,7 +65,7 @@ const getCachedAllProducts = unstable_cache(
     return normalized;
   },
   ['all-public-products-cache-v3'],
-  { revalidate: 3600, tags: ['products'] }
+  { revalidate: 86400, tags: ['products'] }
 );
 
 // Cache active offer target IDs

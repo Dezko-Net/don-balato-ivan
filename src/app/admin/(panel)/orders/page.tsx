@@ -105,6 +105,8 @@ function OrdersContent() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [customDateStart, setCustomDateStart] = useState('');
   const [customDateEnd, setCustomDateEnd] = useState('');
+  // Status counts for the custom date range — fetched on demand (see effect below)
+  const [customStatusCounts, setCustomStatusCounts] = useState<Record<string, number>>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -143,18 +145,16 @@ function OrdersContent() {
       const startYesterday = startToday - 86400000;
       const startDayBefore = startToday - 2 * 86400000;
 
-      // Fetch all orders from last 3 days + all paid orders for stats
-      const allOrders: any[] = [];
-      let cursor: string | null = null;
-      while (true) {
-        const q: any[] = [Query.orderDesc('CREATEDAT'), Query.limit(100)];
-        if (cursor) q.push(Query.cursorAfter(cursor));
-        const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, q);
-        allOrders.push(...resp.documents);
-        if (resp.documents.length < 100) break;
-        cursor = resp.documents[resp.documents.length - 1].$id;
-        if (allOrders.length > 3000) break;
-      }
+      // Fetch only the last 3 days of orders for the day-bucketed stats.
+      // CREATEDAT is a numeric (ms) timestamp and is indexed — Query.orderDesc /
+      // greaterThanEqual on CREATEDAT are already used for the orders table — so
+      // this filters server-side instead of downloading the whole collection.
+      const recentResp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
+        Query.greaterThanEqual('CREATEDAT', startDayBefore),
+        Query.orderDesc('CREATEDAT'),
+        Query.limit(500),
+      ]);
+      const allOrders: any[] = recentResp.documents;
 
       const todayOrders = allOrders.filter((o: any) => (o.CREATEDAT || new Date(o.$createdAt).getTime()) >= startToday);
       const yesterdayOrders = allOrders.filter((o: any) => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= startYesterday && ts < startToday; });
@@ -173,9 +173,20 @@ function OrdersContent() {
       // By status counts (today)
       const byStatus: Record<string, number> = {};
       for (const o of todayOrders) { byStatus[o.STATUS] = (byStatus[o.STATUS] || 0) + 1; }
-      // By status counts (all orders — cached, 1 read)
+      // All-time status counts for the "Todos" timeline. Instead of downloading
+      // every order, ask Appwrite for the total per status (1 doc returned each).
       const byStatusAll: Record<string, number> = {};
-      for (const o of allOrders) { byStatusAll[o.STATUS] = (byStatusAll[o.STATUS] || 0) + 1; }
+      let countAll = 0;
+      await Promise.all(STATUS_FLOW.map(async (st) => {
+        try {
+          const r = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
+            Query.equal('STATUS', st),
+            Query.limit(1),
+          ]);
+          byStatusAll[st] = r.total;
+          countAll += r.total;
+        } catch {}
+      }));
       // By status counts (yesterday)
       const byStatusYesterday: Record<string, number> = {};
       for (const o of yesterdayOrders) { byStatusYesterday[o.STATUS] = (byStatusYesterday[o.STATUS] || 0) + 1; }
@@ -197,13 +208,39 @@ function OrdersContent() {
         byStatusAll,
         byStatusYesterday,
         byStatusDayBefore,
-        allOrdersRaw: allOrders,
-        totalAll: allOrders.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0),
-        countAll: allOrders.length,
+        allOrdersRaw: [],
+        totalAll: 0,
+        countAll,
       });
     } catch (e: any) { console.error('Stats error:', e); }
     finally { setStatsLoading(false); }
   }, []);
+
+  // Custom date-range status counts: fetched on demand, bounded to the selected
+  // range, instead of preloading the whole orders collection on every page view.
+  useEffect(() => {
+    if (dateFilter !== 'custom' || !customDateStart) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const sTs = new Date(customDateStart + 'T00:00:00').getTime();
+        const eTs = customDateEnd ? new Date(customDateEnd + 'T23:59:59').getTime() : sTs + 86400000;
+        const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
+          Query.greaterThanEqual('CREATEDAT', sTs),
+          Query.lessThanEqual('CREATEDAT', eTs),
+          Query.orderDesc('CREATEDAT'),
+          Query.limit(1000),
+        ]);
+        if (cancelled) return;
+        const counts: Record<string, number> = {};
+        for (const o of resp.documents) counts[o.STATUS] = (counts[o.STATUS] || 0) + 1;
+        setCustomStatusCounts(counts);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [dateFilter, customDateStart, customDateEnd]);
 
   // Load agencies list
   useEffect(() => {
@@ -643,11 +680,7 @@ function OrdersContent() {
         else if (dateFilter === 'yesterday') statusCounts = statsCache?.byStatusYesterday || {};
         else if (dateFilter === 'day_before') statusCounts = statsCache?.byStatusDayBefore || {};
         else if (dateFilter === 'custom' && customDateStart) {
-          const sTs = new Date(customDateStart + 'T00:00:00').getTime();
-          const eTs = customDateEnd ? new Date(customDateEnd + 'T23:59:59').getTime() : sTs + 86400000;
-          const filtered = (statsCache?.allOrdersRaw || []).filter((o: any) => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= sTs && ts <= eTs; });
-          statusCounts = {};
-          for (const o of filtered) { statusCounts[o.STATUS] = (statusCounts[o.STATUS] || 0) + 1; }
+          statusCounts = customStatusCounts;
         } else statusCounts = statsCache?.byStatusAll || {};
         const counts = STATUS_FLOW.map(st => statusCounts[st] || 0);
         let furthestIdx = -1;
