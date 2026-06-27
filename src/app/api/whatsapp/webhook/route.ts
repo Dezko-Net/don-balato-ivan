@@ -832,7 +832,7 @@ export async function POST(req: NextRequest) {
                 parameters: [
                   {
                     type: 'image',
-                    image: { url: fileUrl }
+                    image: { link: fileUrl }
                   }
                 ]
               },

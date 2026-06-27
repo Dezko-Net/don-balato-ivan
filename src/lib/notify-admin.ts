@@ -59,7 +59,7 @@ export async function notifyPaymentUploaded(orderCode: string, customerName: str
           parameters: [
             {
               type: 'image',
-              image: { url: imageUrl }
+              image: { link: imageUrl }
             }
           ]
         },
