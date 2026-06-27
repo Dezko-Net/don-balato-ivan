@@ -13,7 +13,7 @@ import {
   markNotificationRead,
   isNotificationUnread,
   getNotificationLink,
-} from '@/services/notificationService';
+} from '@/services/notificationClient';
 import { Query } from 'appwrite';
 
 const PINK = '#e396bf';

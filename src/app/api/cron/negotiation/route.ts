@@ -6,7 +6,6 @@ import { sendWhatsAppMessage, sendWhatsAppTemplate, formatWhatsAppPhone, addToHi
 const CRON_SECRET = process.env.CRON_SECRET || 'negotiation_secret_key_2026';
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl';
-const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
 
 export async function GET(req: NextRequest) {
   try {

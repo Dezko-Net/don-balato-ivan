@@ -1,0 +1,63 @@
+const GEMINI_SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
+const GCP_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GCP_PROJECT_ID || '';
+const GCP_REGION = process.env.GOOGLE_CLOUD_REGION || 'global';
+
+let _auth: any = null;
+let _cachedToken: { token: string; expiry: number } | null = null;
+const TOKEN_REFRESH_BUFFER_MS = 60_000;
+
+async function getAuth(): Promise<any> {
+  if (!_auth) {
+    const { GoogleAuth } = await import(/* webpackIgnore: true */ 'google-auth-library');
+    const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    if (credentialsJson) {
+      const credentials = JSON.parse(credentialsJson);
+      _auth = new GoogleAuth({ scopes: [GEMINI_SCOPE], credentials });
+    } else {
+      _auth = new GoogleAuth({ scopes: [GEMINI_SCOPE] });
+    }
+  }
+  return _auth;
+}
+
+export async function getGeminiAccessToken(): Promise<string> {
+  if (_cachedToken && Date.now() < _cachedToken.expiry - TOKEN_REFRESH_BUFFER_MS) {
+    return _cachedToken.token;
+  }
+
+  const auth = await getAuth();
+  const client = await auth.getClient();
+  const tokenRes = await client.getAccessToken();
+
+  const token = tokenRes.token || '';
+  if (!token) {
+    throw new Error('No se pudo obtener el access token de Google Cloud ADC');
+  }
+
+  const expiry = Date.now() + 55 * 60 * 1000;
+
+  _cachedToken = { token, expiry };
+  return token;
+}
+
+export async function getGeminiAuthHeaders(): Promise<Record<string, string>> {
+  const token = await getGeminiAccessToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+  if (GCP_PROJECT_ID) {
+    headers['x-goog-user-project'] = GCP_PROJECT_ID;
+  }
+  return headers;
+}
+
+export function buildGeminiUrl(model: string, method: string = 'generateContent'): string {
+  if (GCP_PROJECT_ID) {
+    const base = GCP_REGION === 'global'
+      ? 'https://aiplatform.googleapis.com'
+      : `https://${GCP_REGION}-aiplatform.googleapis.com`;
+    return `${base}/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/${model}:${method}`;
+  }
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}`;
+}

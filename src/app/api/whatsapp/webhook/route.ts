@@ -14,6 +14,8 @@ import {
   setKeniaBlocked,
   resetKeniaUsage,
 } from '@/lib/kenia-runtime';
+import { getGeminiAuthHeaders, buildGeminiUrl } from '@/lib/google-auth';
+import { GEMINI_TEXT_MODELS } from '@/lib/gemini-models';
 import {
   PRODUCTS_COLLECTION_ID,
   ORDERS_COLLECTION_ID,
@@ -28,8 +30,7 @@ const ENV_ADMINS = process.env.ADMIN_WHATSAPP_NUMBER || '';
 const FALLBACK_ADMINS = '56936599658,56992139185,56935623858,56967115685';
 const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
-const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
-const GEMINI_MODELS   = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+const GEMINI_MODELS   = GEMINI_TEXT_MODELS;
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
 // ── In-memory caches to reduce Appwrite calls ──────────────────────────────
@@ -563,9 +564,10 @@ export async function POST(req: NextRequest) {
             if (pendingOrderId) {
               try {
                 const base64Check = Buffer.from(buffer).toString('base64');
-                const visionRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                const visionHeaders = await getGeminiAuthHeaders();
+                const visionRes = await fetch(buildGeminiUrl('gemini-3.1-flash-lite', 'generateContent'), {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: visionHeaders,
                   body: JSON.stringify({
                     contents: [{
                       parts: [
@@ -1096,11 +1098,12 @@ Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
           contents: [{ role: 'user', parts: [{ text: userText }] }],
           generationConfig: { temperature: 0.9, maxOutputTokens: 800 },
         };
+        const welcomeHeaders = await getGeminiAuthHeaders();
         for (const model of GEMINI_MODELS) {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+          const url = buildGeminiUrl(model);
           const res = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: welcomeHeaders,
             body: JSON.stringify(welcomeBody),
           });
           if (res.ok) {
@@ -1111,7 +1114,7 @@ Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
               break;
             }
           }
-          if (res.status !== 503) break;
+          if (res.status !== 503 && res.status !== 429) break;
         }
       } catch (e) {
         console.warn('[WhatsApp Webhook] Welcome greeting generation failed:', e);
@@ -1664,11 +1667,12 @@ ${products.join('\n') || 'Sin productos.'}`;
     let aiReply = '¡Ay bella! 🌸 Tuve un problemita técnico para procesar tu mensaje ahora mismo 🥺. Dame un momentito cortito y vuelve a intentarlo, ¡pronto estaremos charlando! 💖';
     let rawText = '';
     let usageMetadata: any = null;
+    const geminiHeaders = await getGeminiAuthHeaders();
     for (const model of GEMINI_MODELS) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+      const url = buildGeminiUrl(model);
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: geminiHeaders,
         body: JSON.stringify(geminiBody),
       });
       if (res.ok) {
@@ -1688,7 +1692,7 @@ ${products.join('\n') || 'Sin productos.'}`;
         const errBody = await res.text().catch(() => 'no body');
         console.warn(`[Gemini] Model ${model} failed with status ${res.status}:`, errBody.substring(0, 300));
       }
-      if (res.status !== 503) break;
+      if (res.status !== 503 && res.status !== 429) break;
     }
 
     // If all Gemini models failed, notify admin

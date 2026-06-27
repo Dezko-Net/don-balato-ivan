@@ -47,18 +47,7 @@ const parsePrice = (v: any): number => {
   return parseFloat(s) || 0;
 };
 
-function getApiKey(): string {
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('gemini_api_key');
-    if (stored) return stored;
-  }
-  return process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-}
-
 async function callGeminiBatch(items: { sku: string; nameCn: string; categoryRaw: string }[]): Promise<Record<string, { nameEs: string; category: string; subcategory: string }>> {
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error('API key de Gemini no configurada. Ve a Configuración > AI.');
-
   const lines = items.map(i => `SKU:${i.sku}|NOMBRE:${i.nameCn}|CAT:${i.categoryRaw}`).join('\n');
 
   const prompt = `Eres un experto en cosméticos y productos de belleza. Traduce los siguientes productos del chino al español.
@@ -74,17 +63,14 @@ Reglas:
 
 ${lines}`;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
-    }
-  );
+  const res = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
   if (!res.ok) throw new Error('Error en la API de Gemini');
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text = data?.text || '';
 
   const result: Record<string, { nameEs: string; category: string; subcategory: string }> = {};
   for (const line of text.split('\n')) {
@@ -933,8 +919,6 @@ export default function InventarioPage() {
   const handleTranslate = async () => {
     const needsTranslation = rows.filter(r => !r.translated && (r.nameCn || r.categoryRaw));
     if (needsTranslation.length === 0) { alert('Todos los productos ya están traducidos'); return; }
-    if (!getApiKey()) { alert('Configura tu API key de Gemini en Admin > Configuración > AI'); return; }
-
     if (!confirm(`¿Traducir ${needsTranslation.length} productos con IA? Se procesarán en lotes de 200.`)) return;
 
     setIsTranslating(true);

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
+import { getGeminiAuthHeaders, buildGeminiUrl } from '@/lib/google-auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,12 +37,13 @@ export async function POST(req: NextRequest) {
       'gemini-3.1-flash-image-preview',
     ];
 
+    const geminiHeaders = await getGeminiAuthHeaders();
     for (const model of geminiModels) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+        const url = buildGeminiUrl(model);
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: geminiHeaders,
           body: JSON.stringify(geminiBody),
         });
 

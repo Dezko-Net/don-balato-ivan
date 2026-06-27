@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getGeminiAuthHeaders, buildGeminiUrl } from '@/lib/google-auth';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
-const MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+import { GEMINI_TEXT_MODELS as MODELS } from '@/lib/gemini-models';
 
 const SYSTEM_PROMPT = `Eres Kenia, el asistente de IA del panel de administración de Kevin&Coco, una plataforma de e-commerce.
 Tu nombre es Kenia y eres experta en comercio electrónico. Habla siempre en español, sé concisa, amigable y profesional.
@@ -206,15 +206,16 @@ export async function POST(req: NextRequest) {
     };
 
     let res;
+    const geminiHeaders = await getGeminiAuthHeaders();
     for (const model of MODELS) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const url = buildGeminiUrl(model);
       res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: geminiHeaders,
         body: JSON.stringify(body),
       });
       if (res.ok) break;
-      if (res.status === 503) { console.warn(`Model ${model} unavailable (503), trying fallback...`); continue; }
+      if (res.status === 503 || res.status === 429) { console.warn(`Model ${model} unavailable (${res.status}), trying fallback...`); continue; }
       break;
     }
 

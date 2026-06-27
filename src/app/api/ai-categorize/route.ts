@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getGeminiAuthHeaders, buildGeminiUrl } from '@/lib/google-auth';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
-const MODELS = ['gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+import { GEMINI_TEXT_MODELS as MODELS } from '@/lib/gemini-models';
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,12 +60,13 @@ Debes devolver una lista JSON de objetos en este formato exacto, sin comentarios
 
     let res;
     let lastError = '';
+    const geminiHeaders = await getGeminiAuthHeaders();
     for (const model of MODELS) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const url = buildGeminiUrl(model);
       try {
         res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: geminiHeaders,
           body: JSON.stringify(body),
         });
         if (res.ok) break;

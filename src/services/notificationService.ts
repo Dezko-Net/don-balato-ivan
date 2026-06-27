@@ -10,6 +10,7 @@ import {
   serverCreateDocument,
   serverListDocuments,
 } from '@/lib/appwrite-server';
+import { GEMINI_TEXT_MODELS } from '@/lib/gemini-models';
 
 export type NotificationType =
   | 'info'
@@ -264,16 +265,17 @@ export async function notifyOrderStatusChange(
         };
 
         try {
-          const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
-          const GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+          const { getGeminiAuthHeaders, buildGeminiUrl } = await import(/* webpackIgnore: true */ '@/lib/google-auth');
+          const GEMINI_MODELS = GEMINI_TEXT_MODELS;
           const statusLabel = STATUS_LABELS[status] || status;
           const prompt = `Eres Kenia, asistente de Kevin&Coco Chile (tienda de cosméticos). Escribe un mensaje corto (máx 3 líneas) para notificar a ${name} que su pedido #${orderCode} cambió de estado a: ${statusLabel}. Personalidad: cercana, femenina, usa emojis (🌸💖✨). No inventes información. Sé breve y alegre. Solo el mensaje, sin saludo separado.`;
 
+          const geminiHeaders = await getGeminiAuthHeaders();
           for (const model of GEMINI_MODELS) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+            const url = buildGeminiUrl(model);
             const res = await fetch(url, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: geminiHeaders,
               body: JSON.stringify({
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
@@ -284,7 +286,7 @@ export async function notifyOrderStatusChange(
               const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
               if (text) return text.replace(/\*+/g, '').trim();
             }
-            if (res.status !== 503) break;
+            if (res.status !== 503 && res.status !== 429) break;
           }
         } catch (e) {
           console.warn('[notifyOrderStatusChange] AI message generation failed:', e);

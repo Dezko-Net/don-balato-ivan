@@ -1,11 +1,3 @@
-function getApiKey(): string {
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('gemini_api_key');
-    if (stored) return stored;
-  }
-  return process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
-}
-
 type GeminiOptions = {
   imageUrls?: string[];
 };

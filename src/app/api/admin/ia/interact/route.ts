@@ -3,11 +3,12 @@ import { addToHistory, sendWhatsAppMessage, getHistory, clearHistory } from '@/l
 import { normalizePhone, getKeniaConfig, getKeniaUsage, recordKeniaUsage } from '@/lib/kenia-runtime';
 import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getGeminiAuthHeaders, buildGeminiUrl } from '@/lib/google-auth';
+import { GEMINI_TEXT_MODELS } from '@/lib/gemini-models';
 
 export const maxDuration = 60;
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
-const GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+const GEMINI_MODELS = GEMINI_TEXT_MODELS;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
 const CUSTOMER_PROMPT = `Eres Kenia, la asistente virtual de Kevin&Coco Chile, una tienda de cosméticos y belleza chilena.
@@ -94,11 +95,12 @@ export async function POST(req: NextRequest) {
 
     // 7. Llamar a Gemini
     let aiReply = '';
+    const geminiHeaders = await getGeminiAuthHeaders();
     for (const model of GEMINI_MODELS) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+      const url = buildGeminiUrl(model);
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: geminiHeaders,
         body: JSON.stringify(geminiBody),
       });
       if (res.ok) {
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest) {
           break;
         }
       }
-      if (res.status !== 503) break;
+      if (res.status !== 503 && res.status !== 429) break;
     }
 
     if (!aiReply) {
