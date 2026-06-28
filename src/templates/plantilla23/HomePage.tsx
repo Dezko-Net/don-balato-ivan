@@ -1364,11 +1364,13 @@ export default function HomePage23() {
         }
       }
 
-      /* ── HIDE HEROBANNER PAGINATION AND ARROWS ── */
-      .slideshow .swiper-pagination {
+      /* ── HIDE HEROBANNER NATIVE SWIPER PAGINATION + ARROWS ── */
+      /* El carrusel del hero ahora usa flechas/puntos propios (.hero-nav/.hero-dots),
+         así que ocultamos los controles nativos de Swiper que quedaron sin función. */
+      .slideshow .swiper-pagination,
+      .slideshow .swiper-navigation-wrapper {
           display: none !important;
       }
-      /* ── SLIDESHOW ARROWS ARE NOW VISIBLE ── */
 
       /* Ocultar el bloque de video y el contenido del collage en móviles y tablets para evitar lag severo */
       @media (max-width: 1023px) {
@@ -2386,103 +2388,70 @@ export default function HomePage23() {
       }
     }
 
-    // 🎞️ Segundo Hero Banner (Kenia) — carrusel overlay con crossfade sobre la banner
-    // original, con flechas, puntos, autoplay (5s) y responsive (PC ≥993px / móvil <993px).
+    // 🎞️ Hero Banner: carrusel de 3 imágenes (fade) controlado por JS propio — sin Swiper.
+    // Maneja crossfade, autoplay (5s), flechas y puntos. El overlay de "Kenia" fue removido:
+    // el hero rota SOLO entre las 3 imágenes.
     try {
       const heroSec = containerRef.current.querySelector('[data-id="template--27304712470809__slideshow_FBfKC8"]') as HTMLElement | null;
-      if (heroSec && !heroSec.dataset.keniaBound) {
-        heroSec.dataset.keniaBound = '1';
+      const heroBg = heroSec?.querySelector('.slideshow__background') as HTMLElement | null;
+      if (heroBg && !heroBg.dataset.heroCarouselBound) {
+        heroBg.dataset.heroCarouselBound = '1';
+        heroBg.style.position = heroBg.style.position || 'relative';
 
-        const KENIA_PHONE = '56936599658';
-        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('Hola Kenia! 👋 Te escribo desde la tienda, quiero hacer una consulta 🌸')}`;
-        const DEFAULT_KENIA_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758588825-pegada-1781758586654.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XuK0ff%2FaOBtzwSnfof24jryXdgHqvpnnFpt41fhV7HXSqq%2FsLtXBdxn1EeoICl6hOqGuAI8p2OEjm1v%2BItCsAfedWAJL9DdZAOgD9ax0YS7GUFnwGi%2Blugbq%2F52eS4Xf3M0PY9il9TikeU6BMNgqRoOVc5wsYcgUHLHI5bHkn3vMSaZty9kBmi%2BZlhXir7eM%2F5RGBD9yBJWDQsw19lA3qp8fEo5p8Wn%2FbrGMv9NXIELdqG2%2Bv0HvURo1zJsNcD%2B0TCsoLGVkuK7ojYLl6f8hB6yCLdAFH2LgICS%2B800QecmCHs3kJQeOG%2FlXlpvF9T11vamgc24ZptjcwlmmVzwyTw%3D%3D';
-        const DEFAULT_KENIA_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758310444-pegada-1781758308350.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=GjfIQEBUtw%2F4U6GjdNN4ECU4wcqITqFei2LBBSdASIQyNI%2FRs2M0%2BH%2Fd8OTLaGhjmG%2B6eWQfFTXBoCdmhkyo%2Fd1H9kvIeAlzmDkUY%2BPzS35yTsjelnVXlTvt77zKpsUQfYYR9u5eYIDN%2FfdSEFY98Wb5rlPJOFt2FXneYQqnqfyJA8OhSGnHYKmfxfymlsZakUv6GmiiZGewHQ%2FbTABTHHz4cSgI5rlEISwoPGnDzEsait9CHZoszRscjCeocczr34Vbnd15CJsxrDl%2BaDIijdHSC7JPvAdt14rW6kxp6q1QAbNfxxdUmeIawwAP4tPI2a7EAg8Vna5RIr171OqYtg%3D%3D';
+        // Las dos pistas (PC/móvil); solo una está visible a la vez vía CSS.
+        const carousels = Array.from(heroBg.querySelectorAll('.hero-carousel')) as HTMLElement[];
+        const slidesByCarousel = carousels.map(c => Array.from(c.querySelectorAll('.hero-slide')) as HTMLElement[]);
+        const total = slidesByCarousel[0]?.length || 0;
 
-        const KENIA_IMG_PC = MANUAL_HERO_CONFIG.hero2.desktopImg || DEFAULT_KENIA_PC;
-        const KENIA_IMG_MOBILE = MANUAL_HERO_CONFIG.hero2.mobileImg || DEFAULT_KENIA_MOBILE;
+        if (total > 1) {
+          let idx = 0;
+          let timer = 0;
+          const dots: HTMLButtonElement[] = [];
 
-        const heroBg = heroSec.querySelector('.slideshow__background') as HTMLElement | null;
-        if (heroBg) {
-          heroBg.style.position = heroBg.style.position || 'relative';
-
-          // CSS: imagen responsive (móvil <993px / PC ≥993px) + estilos de flechas y puntos.
-          const kStyle = document.createElement('style');
-          kStyle.textContent = `
-            .tpl23-kenia-slide { background-image:url('${KENIA_IMG_MOBILE}'); }
-            @media (min-width:993px){ .tpl23-kenia-slide { background-image:url('${KENIA_IMG_PC}'); } }
-            .tpl23-hero-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:30;width:42px;height:42px;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);color:#be185d;box-shadow:0 4px 14px rgba(0,0,0,.18);transition:background .2s,transform .2s;}
-            .tpl23-hero-nav:hover{background:#fff;transform:translateY(-50%) scale(1.08);}
-            .tpl23-hero-prev{left:14px;} .tpl23-hero-next{right:14px;}
-            .tpl23-hero-dots{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:9px;}
-            .tpl23-hero-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.6);cursor:pointer;transition:width .25s,background .25s;border:none;padding:0;}
-            .tpl23-hero-dot.active{width:26px;border-radius:6px;background:#fff;}
-            @media (max-width:768px){.tpl23-hero-nav{width:34px;height:34px;} .tpl23-hero-prev{left:8px;} .tpl23-hero-next{right:8px;} .tpl23-hero-dots{bottom:14px;}}
-          `;
-          heroBg.appendChild(kStyle);
-
-          // Slide 2 (Kenia): overlay con crossfade sobre la banner original.
-          // Si keniaEnabled → <a> clickeable a WhatsApp; si no → <div> solo visual.
-          let kenia: HTMLElement;
-          if (keniaEnabled) {
-            const a = document.createElement('a');
-            a.href = KENIA_WA_URL;
-            a.target = '_blank';
-            a.rel = 'noopener';
-            kenia = a;
-          } else {
-            kenia = document.createElement('div');
-          }
-          kenia.className = 'tpl23-kenia-slide';
-          kenia.style.cssText = 'position:absolute;inset:0;z-index:6;opacity:0;transition:opacity .7s ease;background-size:cover;background-position:center top;background-repeat:no-repeat;display:block;';
-          heroBg.appendChild(kenia);
+          const render = () => {
+            slidesByCarousel.forEach(slides => {
+              slides.forEach((s, i) => s.classList.toggle('is-active', i === idx));
+            });
+            dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+          };
+          const goTo = (i: number) => { idx = ((i % total) + total) % total; render(); };
+          const restart = () => {
+            window.clearInterval(timer);
+            timer = window.setInterval(() => goTo(idx + 1), 5000);
+          };
 
           // Puntos
           const dotsWrap = document.createElement('div');
-          dotsWrap.className = 'tpl23-hero-dots';
-          const dots: HTMLButtonElement[] = [];
-
-          let idx = 0; // 0 = banner original, 1 = Kenia
-          let timer = 0;
-          const setSlide = (i: number) => {
-            idx = ((i % 2) + 2) % 2;
-            kenia.style.opacity = idx === 1 ? '1' : '0';
-            dots.forEach((d, di) => d.classList.toggle('active', di === idx));
-          };
-          const restart = () => { window.clearInterval(timer); timer = window.setInterval(() => setSlide(idx + 1), 5000); };
-
-          [0, 1].forEach(i => {
+          dotsWrap.className = 'hero-dots';
+          for (let i = 0; i < total; i++) {
             const d = document.createElement('button');
             d.type = 'button';
-            d.className = 'tpl23-hero-dot' + (i === 0 ? ' active' : '');
-            d.setAttribute('aria-label', 'Banner ' + (i + 1));
-            d.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(i); restart(); };
+            d.className = 'hero-dot' + (i === 0 ? ' active' : '');
+            d.setAttribute('aria-label', 'Ir a la portada ' + (i + 1));
+            d.onclick = (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); restart(); };
             dots.push(d);
             dotsWrap.appendChild(d);
-          });
+          }
           heroBg.appendChild(dotsWrap);
 
           // Flechas
-          const prev = document.createElement('button');
-          prev.type = 'button';
-          prev.className = 'tpl23-hero-nav tpl23-hero-prev';
-          prev.setAttribute('aria-label', 'Anterior');
-          prev.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
-          prev.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(idx - 1); restart(); };
+          const mkArrow = (cls: string, label: string, path: string, delta: number) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'hero-nav ' + cls;
+            b.setAttribute('aria-label', label);
+            b.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${path}"/></svg>`;
+            b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); goTo(idx + delta); restart(); };
+            return b;
+          };
+          heroBg.appendChild(mkArrow('hero-prev', 'Portada anterior', '15 18 9 12 15 6', -1));
+          heroBg.appendChild(mkArrow('hero-next', 'Portada siguiente', '9 18 15 12 9 6', 1));
 
-          const next = document.createElement('button');
-          next.type = 'button';
-          next.className = 'tpl23-hero-nav tpl23-hero-next';
-          next.setAttribute('aria-label', 'Siguiente');
-          next.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
-          next.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(idx + 1); restart(); };
-
-          heroBg.appendChild(prev);
-          heroBg.appendChild(next);
-
-          restart(); // arranca autoplay (cambia cada 5s)
+          render();
+          restart(); // autoplay cada 5s
         }
       }
-    } catch (e) { console.error('[TPL23] Kenia hero banner error', e); }
+    } catch (e) { console.error('[TPL23] Hero carousel error', e); }
 
     // 🧭 Header/drawer móvil: (1) eliminar "COMPRA DESDE: UNIDAD/PAQUETE" del header,
     // (2) subir lupa + carrito a la fila de la hamburguesa, y (3) en el drawer izquierdo
@@ -2977,48 +2946,11 @@ export default function HomePage23() {
       }
     }, 600);
 
-    // ═══ Initialize HeroBanner Swiper ═══
-    const initHeroSwiper = () => {
-      const SwiperClass = (window as any).Swiper;
-      if (!SwiperClass) return;
-      const heroSwiperContainer = root.querySelector('custom-slideshow .swiper-container') as any;
-      if (heroSwiperContainer && !heroSwiperContainer.swiper) {
-        try {
-          const swiperSettings: any = {
-            slidesPerView: 1,
-            loop: true,
-            speed: 500,
-            watchOverflow: true,
-            observer: true,
-            observeSlideChildren: true,
-            autoHeight: false,
-            autoplay: { delay: 5000 }
-          };
-          
-          const parent = heroSwiperContainer.closest('custom-slideshow');
-          if (parent) {
-            if (parent.querySelector('.button-next') && parent.querySelector('.button-previous')) {
-              swiperSettings.navigation = {
-                nextEl: parent.querySelector('.button-next'),
-                prevEl: parent.querySelector('.button-previous')
-              };
-            }
-            if (parent.querySelector('.swiper-pagination')) {
-              swiperSettings.pagination = {
-                el: parent.querySelector('.swiper-pagination'),
-                clickable: true
-              };
-            }
-          }
-          const swiper = new SwiperClass(heroSwiperContainer, swiperSettings);
-          swiper.init();
-        } catch (e) {
-          console.warn('Hero swiper init error:', e);
-        }
-      }
-    };
-    setTimeout(initHeroSwiper, 500);
-    setTimeout(initHeroSwiper, 1500);
+    // ═══ HeroBanner: el carrusel de 3 imágenes es 100% CSS (fade) en body-clean.html ═══
+    // No se inicializa Swiper en el hero a propósito: con innerHTML los <script> nativos
+    // no corren y el init perdía la carrera, dejando los slides apilados. El fade por CSS
+    // no depende de JS, así que nunca se rompe el layout.
+
     // ═══ NEWSLETTER POPUP ON MOBILE: Never auto-open, only on user tap ═══
     // On mobile, always keep the popup closed unless the user explicitly opens it.
     if (window.matchMedia('(max-width: 767px)').matches) {

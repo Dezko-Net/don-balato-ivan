@@ -154,16 +154,7 @@
   }
 </style>
 <div class="page-loader" aria-hidden="true"></div>
-<script>
-  (function(){
-    var loader = document.querySelector('.page-loader');
-    if(!loader) return;
-    window.addEventListener('load', function(){
-      loader.setAttribute('data-hidden', 'true');
-      setHoraout(function(){ loader.remove(); }, 300);
-    });
-  })();
-</script>
+
 
     
 
@@ -194,9 +185,9 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/utility-bar.js" defer="defer"></script>
 
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization.js" defer="defer"></script>
+
+  
 
 <utility-bar class="header-element utility-bar color-scheme-4 block animation-wrapper absolute w-full top-0 left-0" data-id="sections--27304712274201__utility-bar" data-color-scheme="color-scheme-4">
     <div class="custom-container text-[0.85em]">
@@ -370,7 +361,7 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/announcement-bar.js" defer="defer"></script>
+
 
 <announcement-bar 
     class="header-element announcement-bar block absolute top-0 left-0 w-full z-10 color-scheme-1 animation-wrapper" 
@@ -476,8 +467,8 @@
   
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/header.js" defer></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/menu-drawer.js" defer></script>
+
+
 
 <custom-header class="header-element header w-full z-502 absolute left-0 top-0 transition-colors duration-300 ease-in-out flex flex-col items-center justify-center"
   data-drop-shadow="false"
@@ -4973,7 +4964,7 @@
     
 </style>
 
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/slideshow.js" defer="defer"></script>
+  
 
 <custom-slideshow 
     class="slideshow animation-wrapper group block color-scheme-1" 
@@ -5031,7 +5022,7 @@
           hero-sk-shimmer 2.6s linear infinite,
           hero-sk-fadeout 0.7s ease 1.8s forwards;
       }
-      /* ── Hero dynamic slides CSS ── */
+      /* ── Hero 3-image fade carousel (pure CSS — no JS/Swiper dependency) ── */
 
       .tpl23-shopify-root .slideshow .swiper-container,
       .tpl23-shopify-root .slideshow .swiper-wrapper,
@@ -5039,34 +5030,107 @@
         touch-action: pan-y !important;
       }
 
-      .hero-bg-desktop-dynamic {
-        display: none;
+      /* Carousel viewport keeps the hero height via the padding-bottom trick */
+      .hero-carousel {
+        position: relative;
         width: 100%;
-        padding-bottom: 41.67%;   /* 600/1440 */
-        background-size: cover;
-        background-position: center top;
-        background-repeat: no-repeat;
+        overflow: hidden;
       }
-      .hero-bg-mobile-dynamic {
+      .hero-carousel-desktop {
+        display: none;
+        padding-bottom: 41.67%;   /* 600/1440 */
+      }
+      .hero-carousel-mobile {
         display: block;
-        width: 100%;
         padding-bottom: 177.78%;  /* 16/9 */
-        background-size: cover;
-        background-position: center top;
-        background-repeat: no-repeat;
       }
       @media (min-width: 993px) {
-        .hero-bg-desktop-dynamic { display: block; }
-        .hero-bg-mobile-dynamic { display: none; }
+        .hero-carousel-desktop { display: block; }
+        .hero-carousel-mobile  { display: none; }
+      }
+
+      /* Each image fills the viewport; JS toggles .is-active for the crossfade */
+      .hero-carousel .hero-slide {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center top;
+        background-repeat: no-repeat;
+        opacity: 0;
+        transition: opacity .8s ease;
+        z-index: 1;
+      }
+      .hero-carousel .hero-slide.is-active {
+        opacity: 1;
+        z-index: 2;
+      }
+
+      /* ── Hero carousel navigation (arrows + dots) ── */
+      .hero-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 25;
+        width: 42px;
+        height: 42px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,.85);
+        color: #be185d;
+        box-shadow: 0 4px 14px rgba(0,0,0,.18);
+        transition: background .2s, transform .2s;
+      }
+      .hero-nav:hover { background: #fff; transform: translateY(-50%) scale(1.08); }
+      .hero-nav.hero-prev { left: 14px; }
+      .hero-nav.hero-next { right: 14px; }
+      .hero-dots {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 25;
+        display: flex;
+        gap: 9px;
+      }
+      .hero-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.6);
+        cursor: pointer;
+        transition: width .25s, background .25s;
+        border: none;
+        padding: 0;
+      }
+      .hero-dot.active { width: 26px; border-radius: 6px; background: #fff; }
+      @media (max-width: 768px) {
+        .hero-nav { width: 34px; height: 34px; }
+        .hero-nav.hero-prev { left: 8px; }
+        .hero-nav.hero-next { right: 8px; }
+        .hero-dots { bottom: 22px; }
       }
     </style>
 
     
-    <!-- DESKTOP bg-image div -->
-    <div class="hero-bg-desktop-dynamic" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610654620-pegada-1782610651341.png');"></div>
+    <!-- DESKTOP 3-image fade carousel -->
+    <div class="hero-carousel hero-carousel-desktop">
+        <div class="hero-slide is-active" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610654620-pegada-1782610651341.png');"></div>
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D');"></div>
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D');"></div>
+    </div>
 
-    <!-- MOBILE bg-image div -->
-    <div class="hero-bg-mobile-dynamic" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610641645-pegada-1782610639851.png');"></div>
+    <!-- MOBILE 3-image fade carousel -->
+    <div class="hero-carousel hero-carousel-mobile">
+        <div class="hero-slide is-active" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610641645-pegada-1782610639851.png');"></div>
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D');"></div>
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610355118-pegada-1782610352733.png');"></div>
+    </div>
 
 
     <!-- Bottom fade -->
@@ -5117,53 +5181,7 @@
         </h2>
     </giant-heading>
 
-    <script type="text/javascript">
-        if (!customElements.get('giant-heading')) {
-            class GiantHeading extends HTMLElement {
-                    connectedCallback() {
-                    if (this._initialized) return;
-                    this._initialized = true;
-
-                    const init = () => {
-                        const h2 = this.querySelector('h2');
-                        if (!h2) return false;
-
-                        this.heading = h2;
-                        this.updateHighlightedText();
-                        return true;
-                    };
-
-                    if (init()) return;
-
-                    const mo = new MutationObserver(() => {
-                        if (init()) mo.disconnect();
-                    });
-
-                    mo.observe(this, { childList: true, subtree: true });
-                }
-
-                updateHighlightedText() {
-                    if (!this.heading) return;
-
-                    const highlightText = (this.heading.getAttribute('data-highlight-text') || '').trim();
-                    if (!highlightText) return;
-
-                    const innerSpan = this.heading.querySelector('span');
-                    if (!innerSpan) return;
-
-                    if (innerSpan.querySelector('.highlighted-text')) return;
-
-                    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(escapeRegExp(highlightText), 'g');
-
-                    const text = innerSpan.textContent;
-                    innerSpan.innerHTML = text.replace(regex, (m) => `<span class="highlighted-text">${m}</span>`);
-                }
-            }
-
-            customElements.define('giant-heading', GiantHeading);
-            }
-    </script>
+    
 
 </div>
 <div id="shopify-block-AcVBhSWFiRHVuUkd6T__text_JfdEpN" class="shopify-block text-block">
@@ -5212,26 +5230,6 @@
 
 </div>
 
-
-<!-- SLIDE 2 (Original) -->
-<div class="shopify-block swiper-slide w-full h-auto relative">
-<div class="w-full h-auto slideshow__slide color-scheme-1" style="--padding-bottom: unset; --margin-inline: 0 auto; --justify-content: flex-start;">
-    <div class="slideshow__background w-full relative overflow-hidden" style="background-color: #FBCAC9; min-height: 300px;">
-        <div class="hero-bg-desktop-dynamic" style="background-image: url('https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&token=0ad04776-0001-40f0-a7c3-a811c5cce0e7');"></div>
-        <div class="hero-bg-mobile-dynamic" style="background-image: url('https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781404655085-pegada-1781404653623.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=AoMmXhZykJXHuRUbi6kN90211xsIcYZjusKCSZK4ebs2iyXidYeEJWJCvJyaynUTEUcC1VHJo%2FhCnE6cvrTGAGa9IhLOt6sOrpI%2Fr4XuRwVMVeNaanueVgoLg1yRj29zWHhEfXcZ5KbWtT2tJ%2FS6hlyU0z62ichXNvys%2FSn2%2FI%2Bj4OBgMN03lPZT7daOc8RzERbDU19piSeu0Zyy5wvTWWuIa4ySVI7IlmxcbzMQPd3KVX8x7ehOVU67U32C1msMyudocbczpbUFSZiShuu5FqDfCfn4Yrcztl%2Fv9f%2FSIf1PTwAWTc3SrWpsl7%2FZzdCY%2BD3i60ByaI%2Bn3Vwok3AE0Q%3D%3D');"></div>
-    </div>
-</div>
-</div>
-
-<!-- SLIDE 3 (New) -->
-<div class="shopify-block swiper-slide w-full h-auto relative">
-<div class="w-full h-auto slideshow__slide color-scheme-1" style="--padding-bottom: unset; --margin-inline: 0 auto; --justify-content: flex-start;">
-    <div class="slideshow__background w-full relative overflow-hidden" style="background-color: #FBCAC9; min-height: 300px;">
-        <div class="hero-bg-desktop-dynamic" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610341102-pegada-1782610333284.png');"></div>
-        <div class="hero-bg-mobile-dynamic" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610355118-pegada-1782610352733.png');"></div>
-    </div>
-</div>
-</div>
 
 </div>
 <div class="swiper-navigation-wrapper">
@@ -5490,53 +5488,7 @@
   </style>
 
   <!-- Countdown logic script -->
-  <script type="text/javascript">
-    (function() {
-      // Default fallback: 3 days from first run. React overwrites this from local 3-day timer logic.
-      let targetTime = Date.now() + (3 * 24 * 3600) * 1000;
-      
-      const cached = localStorage.getItem('yaxsell_offers_timer_3d');
-      if (cached) {
-        const parsed = parseInt(cached);
-        if (parsed > Date.now()) {
-          targetTime = parsed;
-        } else {
-          localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
-        }
-      } else {
-        localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
-      }
-
-      function updateTimer() {
-        const difference = targetTime - Date.now();
-        if (difference <= 0) {
-          document.getElementById('yaxsell-days').textContent = '00';
-          document.getElementById('yaxsell-hours').textContent = '00';
-          document.getElementById('yaxsell-minutes').textContent = '00';
-          document.getElementById('yaxsell-seconds').textContent = '00';
-          return;
-        }
-
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-        const dEl = document.getElementById('yaxsell-days');
-        const hEl = document.getElementById('yaxsell-hours');
-        const mEl = document.getElementById('yaxsell-minutes');
-        const sEl = document.getElementById('yaxsell-seconds');
-
-        if (dEl) dEl.textContent = days.toString().padStart(2, '0');
-        if (hEl) hEl.textContent = hours.toString().padStart(2, '0');
-        if (mEl) mEl.textContent = minutes.toString().padStart(2, '0');
-        if (sEl) sEl.textContent = seconds.toString().padStart(2, '0');
-      }
-
-      setInterval(updateTimer, 1000);
-      updateTimer();
-    })();
-  </script>
+  
 </div>
 
 <div id="shopify-section-template--27304712470809__collection_list_slider_YAxwGw" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/collection-list.css" rel="stylesheet" type="text/css" media="all" />
@@ -5568,7 +5520,7 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/collection-list.js" defer="defer"></script>
+
 
 <collection-list class="collection-list block animation-section group overflow-hidden relative animation-wrapper color-scheme-1" data-id="template--27304712470809__collection_list_slider_YAxwGw" data-column-type="slideshow" data-collection-type="standard" style="display:none !important;">
     
@@ -6318,12 +6270,12 @@
   
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-media.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-info.js" defer="defer"></script>
 
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/accordion.js" defer="defer"></script>
 
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+
+  
+
+  
 
 <featured-product class="product block color-scheme-1 animation-wrapper" data-id="template--27304712470809__featured_product_38eqkx">
   <div class="product-container custom-container flex animation-element fade-in">
@@ -6551,7 +6503,7 @@
 
 <link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.css" rel="stylesheet" type="text/css" media="all" />
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.js" defer="defer"></script>
+
 
 <variant-selector class="variant-selector py-2 block" aria-hidden="false" id="variant-selector-template--27304712470809__featured_product_38eqkx" data-section-id="template--27304712470809__featured_product_38eqkx" data-type="button"  >
     
@@ -6696,25 +6648,7 @@
         
           
             <div data-shopify="payment-button" class="shopify-payment-button"> <shopify-accelerated-checkout recommended="null" fallback="{&quot;supports_subs&quot;:true,&quot;supports_def_opts&quot;:true,&quot;name&quot;:&quot;buy_it_now&quot;,&quot;wallet_params&quot;:{}}" access-token="d1ed3dd2d42df0ed0954198ce67baa81" buyer-country="US" buyer-locale="en" buyer-currency="USD" variant-params="[{&quot;id&quot;:52380513435929,&quot;requiresShipping&quot;:true},{&quot;id&quot;:52380513468697,&quot;requiresShipping&quot;:true}]" shop-id="100510564633" > <div class="shopify-payment-button__button" role="button" disabled aria-hidden="true" style="background-color: transparent; border: none"> <div class="shopify-payment-button__skeleton">&nbsp;</div> </div> </shopify-accelerated-checkout> </div>
-            <script>
-              document.addEventListener('DOMContentLoaded', function() {
-                var buttonCheckout = document.querySelector('.shopify-payment-button__button--unbranded');
-                if (buttonCheckout) {
-                  const buttonCheckoutText = buttonCheckout.textContent.trim();
-                  if (buttonCheckoutText !== '') {
-                    buttonCheckout.innerHTML = `
-                      <span class="visible-text z-10">
-                        <span class="link-hover-animation">${buttonCheckoutText}</span>
-                      </span>
-                      <span class="hover-text z-10">
-                        <span class="link-hover-animation">${buttonCheckoutText}</span>
-                      </span>
-                    `;
-                  }
-                  buttonCheckout.classList.add('custom-button', 'w-full', 'button--secondary', 'cursor-pointer', 'mt-2');
-                }
-              });
-            </script>
+            
           
         
       </div>
@@ -6787,7 +6721,7 @@
   </script>
 </featured-product>
 
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/countdown-timer.js" defer></script>
+  
 
   
 
@@ -6869,7 +6803,7 @@
 }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/multimedia-collage.js" defer="defer"></script>
+
 
     <multimedia-collage 
         class="multimedia-collage block animation-wrapper animation-section color-scheme-1" 
@@ -6882,78 +6816,7 @@
         <template>
             <div id="shopify-block-AeU1KMU9YMGYxdWlmU__multimedia_collage_video_block_ndXhr3" class="shopify-block multimedia-collage__block w-full block">
 
-<script>
-(function () {
-    if (!window.__animDepsPromise) {
-        const loadScriptOnce = (src, id) => new Promise((resolve, reject) => {
-            const existing = id ? document.getElementById(id) : null;
-            if (existing) {
-                if (existing.dataset.loaded === "true") return resolve();
-                existing.addEventListener("load", () => resolve(), { once: true });
-                existing.addEventListener("error", reject, { once: true });
-                return;
-            }
 
-            const s = document.createElement("script");
-            if (id) s.id = id;
-            s.src = src;
-            s.defer = true;
-            s.onload = () => {
-                s.dataset.loaded = "true";
-                resolve();
-            };
-            s.onerror = reject;
-                document.head.appendChild(s);
-            });
-
-            const ensure = async () => {
-                if (!window.gsap) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gsap.min.js", "lib-gsap");
-                }
-                if (!window.ScrollMagic) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/ScrollMagic.min.js", "lib-scrollmagic");
-                }
-                if (!window.__animationGsapLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/animation.gsap.min.js", "lib-animation-gsap");
-                    window.__animationGsapLoaded = true;
-                }
-                if (!window.MorphSVGPlugin && !window.__morphSvgPluginLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/MorphSVGPlugin.min.js", "lib-morphsvg");
-                    window.__morphSvgPluginLoaded = true;
-                }
-            };
-
-            window.__animDepsPromise = ensure().catch((err) => {
-            console.error("[deps] Failed to load animation deps", err);
-            throw err;
-        });
-    }
-
-    if (!window.__morphSvgSectionLogicPromise) {
-        window.__morphSvgSectionLogicPromise = window.__animDepsPromise
-        .then(() => {
-            if (!window.gsap) throw new Error("GSAP not available after load");
-            return new Promise((resolve, reject) => {
-                const id = "lib-morph-svg-section";
-                const existing = document.getElementById(id);
-                if (existing) return resolve();
-
-                const s = document.createElement("script");
-                s.id = id;
-                s.src = "/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/morph-svg.js";
-                s.defer = true;
-                s.onload = resolve;
-                s.onerror = reject;
-                document.head.appendChild(s);
-            });
-        })
-        .catch((err) => {
-            console.error("[morph-svg] Failed to load morph-svg.js", err);
-            throw err;
-        });
-    }
-})();
-</script>
 
     <morph-svg
         data-mask-url="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/Untitled_design_1.svg"
@@ -7652,12 +7515,12 @@
     
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-collection.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-swatch-selector.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card-form.js" defer="defer"></script>
+
+    
+
+    
 
 <featured-collection class="featured-collection animation-section overflow-hidden relative color-scheme-1 block animation-wrapper" data-id="template--27304712470809__featured_collection_aJrjzW">
      
@@ -7837,7 +7700,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-protein-repair-hair-mask"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -8085,7 +7948,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-camellia-glow-hair-oil"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -8443,7 +8306,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-velvet-mood-lip-tint"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -8713,7 +8576,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-dewy-veil-cushion-foundation-spf50"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -8968,7 +8831,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-camellia-glow-hair-oil"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -9306,7 +9169,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-cheek-glow-blush-balm"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -9610,7 +9473,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-velvet-mood-lip-tint"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -9880,7 +9743,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-dewy-veil-cushion-foundation-spf50"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -10037,78 +9900,7 @@
 
 </div><div id="shopify-section-template--27304712470809__split_hero_HFdBqn" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/split-hero.css" rel="stylesheet" type="text/css" media="all" />
 
-<script>
-(function () {
-    if (!window.__animDepsPromise) {
-        const loadScriptOnce = (src, id) => new Promise((resolve, reject) => {
-            const existing = id ? document.getElementById(id) : null;
-            if (existing) {
-                if (existing.dataset.loaded === "true") return resolve();
-                existing.addEventListener("load", () => resolve(), { once: true });
-                existing.addEventListener("error", reject, { once: true });
-                return;
-            }
 
-            const s = document.createElement("script");
-            if (id) s.id = id;
-            s.src = src;
-            s.defer = true;
-            s.onload = () => {
-                s.dataset.loaded = "true";
-                resolve();
-            };
-            s.onerror = reject;
-                document.head.appendChild(s);
-            });
-
-            const ensure = async () => {
-                if (!window.gsap) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gsap.min.js", "lib-gsap");
-                }
-                if (!window.ScrollMagic) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/ScrollMagic.min.js", "lib-scrollmagic");
-                }
-                if (!window.__animationGsapLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/animation.gsap.min.js", "lib-animation-gsap");
-                    window.__animationGsapLoaded = true;
-                }
-                if (!window.MorphSVGPlugin && !window.__morphSvgPluginLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/MorphSVGPlugin.min.js", "lib-morphsvg");
-                    window.__morphSvgPluginLoaded = true;
-                }
-            };
-
-            window.__animDepsPromise = ensure().catch((err) => {
-            console.error("[deps] Failed to load animation deps", err);
-            throw err;
-        });
-    }
-
-    if (!window.__splitHeroSectionLogicPromise) {
-        window.__splitHeroSectionLogicPromise = window.__animDepsPromise
-        .then(() => {
-            if (!window.gsap) throw new Error("GSAP not available after load");
-            return new Promise((resolve, reject) => {
-                const id = "lib-split-hero-section";
-                const existing = document.getElementById(id);
-                if (existing) return resolve();
-
-                const s = document.createElement("script");
-                s.id = id;
-                s.src = "/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/split-hero.js";
-                s.defer = true;
-                s.onload = resolve;
-                s.onerror = reject;
-                document.head.appendChild(s);
-            });
-        })
-        .catch((err) => {
-            console.error("[split-hero] Failed to load split-hero.js", err);
-            throw err;
-        });
-    }
-})();
-</script>
 
 <split-hero class="split-hero  min-h-[100vh] block overflow-hidden" data-id="template--27304712470809__split_hero_HFdBqn">
     <div class=" flex w-full h-full md:flex-row flex-col">
@@ -10139,55 +9931,14 @@
         
             
 
-    <video playsinline="true" muted="muted" poster="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR34BURAAcZuwwiuHhd_3J5Ind2DLlXQJWePsqXlEFsCzGfldNA5RA-Do4&s=10" class="hero-scroll-video object-cover w-full h-full hidden lg:block pointer-events-none smooth-reveal" preload="metadata"><source src="/video/4bdf00c4fc954008904960bbb12bbe55.HD-1080p-7.2Mbps-84134145.realesrgan.mp4" type="video/mp4"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR34BURAAcZuwwiuHhd_3J5Ind2DLlXQJWePsqXlEFsCzGfldNA5RA-Do4&s=10"></video>
+    <video playsinline="true" muted="muted" class="hero-scroll-video object-cover w-full h-full hidden lg:block pointer-events-none smooth-reveal" preload="metadata"><source src="/video/4bdf00c4fc954008904960bbb12bbe55.HD-1080p-7.2Mbps-84134145.realesrgan.mp4" type="video/mp4"></video>
 
-    <video playsinline="true" muted="muted" poster="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR34BURAAcZuwwiuHhd_3J5Ind2DLlXQJWePsqXlEFsCzGfldNA5RA-Do4&s=10" class="hero-scroll-video object-cover w-full h-full block lg:hidden pointer-events-none smooth-reveal" preload="metadata"><source src="/video/4bdf00c4fc954008904960bbb12bbe55.HD-1080p-7.2Mbps-84134145.realesrgan.mp4" type="video/mp4"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR34BURAAcZuwwiuHhd_3J5Ind2DLlXQJWePsqXlEFsCzGfldNA5RA-Do4&s=10"></video>
+    <video playsinline="true" muted="muted" class="hero-scroll-video object-cover w-full h-full block lg:hidden pointer-events-none smooth-reveal" preload="metadata"><source src="/video/4bdf00c4fc954008904960bbb12bbe55.HD-1080p-7.2Mbps-84134145.realesrgan.mp4" type="video/mp4"></video>
 
         
     </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const heroVideos = document.querySelectorAll('.hero-scroll-video');
-            
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const video = entry.target;
-                    if (entry.isIntersecting) {
-                        if (video.paused) {
-                            video.style.opacity = '1';
-                            video.play().catch(e => console.log("Autoplay prevented", e));
-                        }
-                    } else {
-                        video.pause();
-                    }
-                });
-            }, { threshold: 0.3 });
-
-            heroVideos.forEach(v => {
-                v.removeAttribute('loop'); // Handle loop manually for transition
-                v.style.transition = "opacity 0.6s ease-in-out";
-                v.style.opacity = "1";
-
-                v.addEventListener('timeupdate', function() {
-                    // Fade out 0.5 seconds before the video ends
-                    if (v.duration && v.currentTime >= v.duration - 0.5) {
-                        v.style.opacity = '0';
-                    }
-                });
-
-                v.addEventListener('ended', function() {
-                    // Reset to start and fade back in
-                    v.currentTime = 0;
-                    v.play().then(() => {
-                        v.style.opacity = '1';
-                    }).catch(e => console.log("Autoplay prevented", e));
-                });
-                
-                observer.observe(v);
-            });
-        });
-    </script>
+    
 
     <div class="overlay absolute top-0 left-0 w-full h-full z-10"></div>
 
@@ -10353,12 +10104,12 @@
 </div>
 <div id="shopify-block-ATXo5UGluRXE3eGtKO__product_carousel_KJXWBA" class="shopify-block product-columns-block"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card.css" rel="stylesheet" type="text/css" media="all" />
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-columns-block.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-swatch-selector.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card-form.js" defer="defer"></script>
+
+    
+
+    
 
 <product-columns-block class="product-columns-block custom-theme-block block overflow-hidden" 
     style="
@@ -10488,7 +10239,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-camellia-glow-hair-oil"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -10812,7 +10563,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-dewy-veil-cushion-foundation-spf50"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -11015,7 +10766,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-peptide-eye-cream"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -11249,7 +11000,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-hydration-bomb-sheet-mask"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -11458,7 +11209,7 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/media-columns.js" defer="defer"></script>
+
 
 <media-columns 
     class="media-columns animation-section animation-wrapper relative overflow-hidden block color-scheme-1" 
@@ -11827,13 +11578,13 @@
     }
 </style>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-columns.js" defer="defer"></script>
+    
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-swatch-selector.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card-form.js" defer="defer"></script>
+    
+
+    
 
 <product-columns class="product-columns color-scheme-1 block animation-wrapper animation-section relative overflow-hidden" data-id="template--27304712470809__product_columns_MJFLFz">
     
@@ -11953,7 +11704,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-scalp-detox-exfoliating-scrub"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -12187,7 +11938,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-scalp-revive-serum"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -12488,7 +12239,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-cheek-glow-blush-balm"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -12724,7 +12475,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-daily-glow-tone-up-base"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -12994,7 +12745,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-plumping-lip-glow-treatment"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -13197,7 +12948,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-heartleaf-calming-sheet-mask"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -13400,7 +13151,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-pure-mineral-sunscreen-spf50-pa"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -13634,7 +13385,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-sun-serum-spf50-pa"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -13926,7 +13677,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-scalp-detox-exfoliating-scrub"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -14160,7 +13911,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-scalp-revive-serum"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -14461,7 +14212,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-cheek-glow-blush-balm"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -14697,7 +14448,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-daily-glow-tone-up-base"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -14967,7 +14718,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-plumping-lip-glow-treatment"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -15170,7 +14921,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-heartleaf-calming-sheet-mask"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -15373,7 +15124,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-pure-mineral-sunscreen-spf50-pa"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -15607,7 +15358,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-sun-serum-spf50-pa"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -15806,78 +15557,7 @@
     <div class="media-with-text__container custom-container flex">
         <div id="shopify-block-ARWNWNC9IVkZ3TE9iM__media_with_text_image_block_GJ96Bz" class="shopify-block media-with-text__block w-full">
 
-<script>
-(function () {
-    if (!window.__animDepsPromise) {
-        const loadScriptOnce = (src, id) => new Promise((resolve, reject) => {
-            const existing = id ? document.getElementById(id) : null;
-            if (existing) {
-                if (existing.dataset.loaded === "true") return resolve();
-                existing.addEventListener("load", () => resolve(), { once: true });
-                existing.addEventListener("error", reject, { once: true });
-                return;
-            }
 
-            const s = document.createElement("script");
-            if (id) s.id = id;
-            s.src = src;
-            s.defer = true;
-            s.onload = () => {
-                s.dataset.loaded = "true";
-                resolve();
-            };
-            s.onerror = reject;
-                document.head.appendChild(s);
-            });
-
-            const ensure = async () => {
-                if (!window.gsap) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gsap.min.js", "lib-gsap");
-                }
-                if (!window.ScrollMagic) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/ScrollMagic.min.js", "lib-scrollmagic");
-                }
-                if (!window.__animationGsapLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/animation.gsap.min.js", "lib-animation-gsap");
-                    window.__animationGsapLoaded = true;
-                }
-                if (!window.MorphSVGPlugin && !window.__morphSvgPluginLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/MorphSVGPlugin.min.js", "lib-morphsvg");
-                    window.__morphSvgPluginLoaded = true;
-                }
-            };
-
-            window.__animDepsPromise = ensure().catch((err) => {
-            console.error("[deps] Failed to load animation deps", err);
-            throw err;
-        });
-    }
-
-    if (!window.__morphSvgSectionLogicPromise) {
-        window.__morphSvgSectionLogicPromise = window.__animDepsPromise
-        .then(() => {
-            if (!window.gsap) throw new Error("GSAP not available after load");
-            return new Promise((resolve, reject) => {
-                const id = "lib-morph-svg-section";
-                const existing = document.getElementById(id);
-                if (existing) return resolve();
-
-                const s = document.createElement("script");
-                s.id = id;
-                s.src = "/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/morph-svg.js";
-                s.defer = true;
-                s.onload = resolve;
-                s.onerror = reject;
-                document.head.appendChild(s);
-            });
-        })
-        .catch((err) => {
-            console.error("[morph-svg] Failed to load morph-svg.js", err);
-            throw err;
-        });
-    }
-})();
-</script>
 
 <div class="media-with-text__block-outer relative w-full h-full color-scheme-4 overflow-hidden animation-element fade-in hover-zoom-image-wrapper" 
     style="
@@ -15965,19 +15645,7 @@
             <div class="w-full p-5">
                 <div id="shopify-block-ANHB0ZTVjUEwyUUlTM__link_d49B4V" class="shopify-block link-block">
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const linkBlocks = document.querySelectorAll('.link-block');
-        linkBlocks.forEach(item => {
-            const bodyText = item.querySelectorAll('.body-text > span');
-            if(bodyText.length > 0){
-                bodyText.forEach(element => {
-                    element.classList.add('link-hover-animation');
-                });
-            }
-        });
-    });
-</script>
+
 
 <div class="custom-theme-block" 
     style="
@@ -16136,7 +15804,7 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/media-columns.js" defer="defer"></script>
+
 
 <media-columns 
     class="media-columns animation-section animation-wrapper relative overflow-hidden block color-scheme-1" 
@@ -16746,7 +16414,7 @@
     
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/bundle-products.js" defer="defer"></script>
+
 
 <bundle-products class="bundle-products animation-wrapper relative overflow-x-hidden block color-scheme-9" 
     data-id="template--27304712470809__bundle_products_3zgi3T"
@@ -17312,7 +16980,7 @@
 
 <link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.css" rel="stylesheet" type="text/css" media="all" />
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.js" defer="defer"></script>
+
 
 <variant-selector class="variant-selector py-2 block" aria-hidden="false" id="variant-selector-template--27304712470809__bundle_products_3zgi3T" data-section-id="template--27304712470809__bundle_products_3zgi3T" data-type="dropdown"  >
     
@@ -17681,7 +17349,7 @@
 
 <link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.css" rel="stylesheet" type="text/css" media="all" />
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.js" defer="defer"></script>
+
 
 <variant-selector class="variant-selector py-2 block" aria-hidden="false" id="variant-selector-template--27304712470809__bundle_products_3zgi3T" data-section-id="template--27304712470809__bundle_products_3zgi3T" data-type="dropdown"  >
     
@@ -18232,78 +17900,7 @@
 </div>
 <div id="shopify-block-AL3pwdlM3ellRSW5ST__image_link_qrXErb" class="shopify-block image-link-block">
 
-<script>
-(function () {
-    if (!window.__animDepsPromise) {
-        const loadScriptOnce = (src, id) => new Promise((resolve, reject) => {
-            const existing = id ? document.getElementById(id) : null;
-            if (existing) {
-                if (existing.dataset.loaded === "true") return resolve();
-                existing.addEventListener("load", () => resolve(), { once: true });
-                existing.addEventListener("error", reject, { once: true });
-                return;
-            }
 
-            const s = document.createElement("script");
-            if (id) s.id = id;
-            s.src = src;
-            s.defer = true;
-            s.onload = () => {
-                s.dataset.loaded = "true";
-                resolve();
-            };
-            s.onerror = reject;
-                document.head.appendChild(s);
-            });
-
-            const ensure = async () => {
-                if (!window.gsap) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gsap.min.js", "lib-gsap");
-                }
-                if (!window.ScrollMagic) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/ScrollMagic.min.js", "lib-scrollmagic");
-                }
-                if (!window.__animationGsapLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/animation.gsap.min.js", "lib-animation-gsap");
-                    window.__animationGsapLoaded = true;
-                }
-                if (!window.MorphSVGPlugin && !window.__morphSvgPluginLoaded) {
-                    await loadScriptOnce("/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/MorphSVGPlugin.min.js", "lib-morphsvg");
-                    window.__morphSvgPluginLoaded = true;
-                }
-            };
-
-            window.__animDepsPromise = ensure().catch((err) => {
-            console.error("[deps] Failed to load animation deps", err);
-            throw err;
-        });
-    }
-
-    if (!window.__morphSvgSectionLogicPromise) {
-        window.__morphSvgSectionLogicPromise = window.__animDepsPromise
-        .then(() => {
-            if (!window.gsap) throw new Error("GSAP not available after load");
-            return new Promise((resolve, reject) => {
-                const id = "lib-morph-svg-section";
-                const existing = document.getElementById(id);
-                if (existing) return resolve();
-
-                const s = document.createElement("script");
-                s.id = id;
-                s.src = "/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/morph-svg.js";
-                s.defer = true;
-                s.onload = resolve;
-                s.onerror = reject;
-                document.head.appendChild(s);
-            });
-        })
-        .catch((err) => {
-            console.error("[morph-svg] Failed to load morph-svg.js", err);
-            throw err;
-        });
-    }
-})();
-</script>
 
 <div class="custom-theme-block" 
     style="
@@ -18415,63 +18012,17 @@
         </h2>
     </giant-heading>
 
-    <script type="text/javascript">
-        if (!customElements.get('giant-heading')) {
-            class GiantHeading extends HTMLElement {
-                    connectedCallback() {
-                    if (this._initialized) return;
-                    this._initialized = true;
-
-                    const init = () => {
-                        const h2 = this.querySelector('h2');
-                        if (!h2) return false;
-
-                        this.heading = h2;
-                        this.updateHighlightedText();
-                        return true;
-                    };
-
-                    if (init()) return;
-
-                    const mo = new MutationObserver(() => {
-                        if (init()) mo.disconnect();
-                    });
-
-                    mo.observe(this, { childList: true, subtree: true });
-                }
-
-                updateHighlightedText() {
-                    if (!this.heading) return;
-
-                    const highlightText = (this.heading.getAttribute('data-highlight-text') || '').trim();
-                    if (!highlightText) return;
-
-                    const innerSpan = this.heading.querySelector('span');
-                    if (!innerSpan) return;
-
-                    if (innerSpan.querySelector('.highlighted-text')) return;
-
-                    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(escapeRegExp(highlightText), 'g');
-
-                    const text = innerSpan.textContent;
-                    innerSpan.innerHTML = text.replace(regex, (m) => `<span class="highlighted-text">${m}</span>`);
-                }
-            }
-
-            customElements.define('giant-heading', GiantHeading);
-            }
-    </script>
+    
 
 </div>
 <div id="shopify-block-AdmpmRWpZdVdzRXAyO__product_carousel_E8Fh9X" class="shopify-block product-columns-block"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card.css" rel="stylesheet" type="text/css" media="all" />
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-columns-block.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-swatch-selector.js" defer="defer"></script>
 
-    <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card-form.js" defer="defer"></script>
+
+    
+
+    
 
 <product-columns-block class="product-columns-block custom-theme-block block overflow-hidden" 
     style="
@@ -18668,7 +18219,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-dewy-veil-cushion-foundation-spf50"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -18938,7 +18489,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-plumping-lip-glow-treatment"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -19242,7 +18793,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-velvet-mood-lip-tint"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -19478,7 +19029,7 @@
         <div class="product-badge-block absolute top-3 left-0 w-full flex justify-end items-center z-10" data-loaded="false">
             <product-badge data-product-link="#product-daily-glow-tone-up-base"></product-badge>
         </div>
-        <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+        
     
 
     
@@ -19677,7 +19228,7 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/horizontal-testimonials.js" defer="defer"></script>
+
 
 <horizontal-testimonials class="horizontal-testimonials block color-scheme-1 animation-wrapper" data-id="template--27304712470809__horizontal_testimonials_ficPn4">
     
@@ -19691,7 +19242,7 @@
     
     
         <div class="body-text py-2 animation-element fade-in animation-delay-200 hyphens-auto">
-            <span><p>Honest words from customers who discovered new favorites, built better routines, and found products their skin truly enjoys.</p></span>
+            <span><p>Palabras sinceras de clientas que descubrieron nuevos favoritos, crearon mejores rutinas y encontraron productos que su piel realmente disfruta.</p></span>
         </div>
     
 </div>
@@ -20075,7 +19626,7 @@
     
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/marquee.js" defer="defer"></script>
+
 
 <custom-marquee class="marquee block color-scheme-1 animation-wrapper overflow-hidden relative" data-id="template--27304712470809__marquee_7zVN4Q" 
     data-animation-direction="forwards" 
@@ -23073,7 +22624,7 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-blog-posts.js" defer="defer"></script>
+
 
 <featured-blog-posts class="featured-blog-posts animation-section overflow-hidden relative color-scheme-1 block animation-wrapper" data-id="template--27304712470809__featured_blog_posts_slider_NPkjze" data-column-type="slideshow">
     
@@ -23157,7 +22708,7 @@
             <span class="icon"><img src="https://cdn-icons-png.flaticon.com/512/3557/3557614.png" width="24" height="24" alt="VIP" /></span> Beneficios VIP
          </button>
          <button class="kc-tab-btn" data-target="faq-cupones">
-            <span class="icon"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpVrOEOLlJKtZ0myIO2KT1qm7LYJqnnH22Tg&s" width="24" height="24" alt="Cupones" /></span> Cupones y Ofertas
+            <span class="icon"><img src="https://cdn-icons-png.flaticon.com/512/879/879757.png" width="24" height="24" alt="Cupones" /></span> Cupones y Ofertas
          </button>
          <button class="kc-tab-btn" data-target="faq-envios">
             <span class="icon"><img src="https://cdn-icons-png.flaticon.com/512/1950/1950321.png" width="24" height="24" alt="Envíos" /></span> Envíos y Garantías
@@ -23290,7 +22841,7 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/store-locator.js" defer="defer"></script>
+
 
 <!-- KEVIN & COCO STORE LOCATOR -->
 <section class="kc-store-locator relative py-24 overflow-hidden bg-white">
@@ -23497,19 +23048,7 @@
         <div class="w-full">
             <div id="shopify-block-AeXl4YVFEZWpkTW13Z__link_GAPYWz" class="shopify-block link-block">
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const linkBlocks = document.querySelectorAll('.link-block');
-        linkBlocks.forEach(item => {
-            const bodyText = item.querySelectorAll('.body-text > span');
-            if(bodyText.length > 0){
-                bodyText.forEach(element => {
-                    element.classList.add('link-hover-animation');
-                });
-            }
-        });
-    });
-</script>
+
 
 <div class="custom-theme-block" 
     style="
@@ -23593,19 +23132,7 @@
         <div class="w-full">
             <div id="shopify-block-AdkFkTWkzM05OdWNDR__link_fLwPCU" class="shopify-block link-block">
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const linkBlocks = document.querySelectorAll('.link-block');
-        linkBlocks.forEach(item => {
-            const bodyText = item.querySelectorAll('.body-text > span');
-            if(bodyText.length > 0){
-                bodyText.forEach(element => {
-                    element.classList.add('link-hover-animation');
-                });
-            }
-        });
-    });
-</script>
+
 
 <div class="custom-theme-block" 
     style="
@@ -23693,19 +23220,7 @@
         <div class="w-full">
             <div id="shopify-block-AbXRkc3RZYzJyOGxaW__link_tKxCe8" class="shopify-block link-block">
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const linkBlocks = document.querySelectorAll('.link-block');
-        linkBlocks.forEach(item => {
-            const bodyText = item.querySelectorAll('.body-text > span');
-            if(bodyText.length > 0){
-                bodyText.forEach(element => {
-                    element.classList.add('link-hover-animation');
-                });
-            }
-        });
-    });
-</script>
+
 
 <div class="custom-theme-block" 
     style="
@@ -23789,19 +23304,7 @@
         <div class="w-full">
             <div id="shopify-block-ASXR1UzJOZTd5V1JBQ__link_kCRWT4" class="shopify-block link-block">
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const linkBlocks = document.querySelectorAll('.link-block');
-        linkBlocks.forEach(item => {
-            const bodyText = item.querySelectorAll('.body-text > span');
-            if(bodyText.length > 0){
-                bodyText.forEach(element => {
-                    element.classList.add('link-hover-animation');
-                });
-            }
-        });
-    });
-</script>
+
 
 <div class="custom-theme-block" 
     style="
@@ -24015,9 +23518,9 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-media.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-info.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-popup.js" defer="defer"></script>
+
+
+
 
 <variant-popup class="section-product variant-popup popup fixed w-full top-0 left-0 h-screen bg-black/50 flex items-center z-503 justify-center transition-all duration-400 ease-in-out" 
     data-hidden="true" inert
@@ -24039,7 +23542,7 @@
     
 <div id="shopify-section-sections--27304712241433__added-to-cart-popup" class="shopify-section shopify-section-group-overlay-group"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/added-to-cart-popup.css" rel="stylesheet" type="text/css" media="all" />
 
-<!-- <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/added-to-cart-popup.js" defer="defer"></script> -->
+<!--  -->
 
 <added-to-cart-popup class="added-to-cart-popup popup fixed left-0 top-0 max-w-[100vw] w-full block z-502 duration-300 ease-in-out" inert data-hidden="true" data-duration="">
     <div class="popup__inner absolute right-[5%] top-0 w-full duration-400 ease-in-out transition-all">
@@ -24111,8 +23614,8 @@
 }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization-popup.js" defer></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization.js" defer></script>
+
+
 
 <localization-popup class="localization-popup fixed top-0 left-0 w-full h-screen bg-black/50 z-502 flex items-center justify-center transition-all duration-400" data-hidden="true" inert>
   <div class="popup__inner relative w-full max-w-[500px] min-w-max h-auto px-7 pb-7 pt-[55px] transition-all duration-400 ease-in-out">
@@ -24241,7 +23744,7 @@
 }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/search-drawer.js" defer></script>
+
 
 <search-drawer class="search-drawer drawer fixed right-0 top-0 h-screen bg-black/50 w-full z-502" inert data-hidden="true" id="search-drawer">
     <div class="drawer__inner relative pt-[55px] w-full overflow-y-auto max-w-[450px] bg-white h-full ml-auto mr-0 duration-700 transition-all ease-in-out">
@@ -25473,9 +24976,9 @@
     }
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-popup.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-invalid.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-validate.js" defer="defer"></script>
+
+
+
 
 <newsletter-popup class="newsletter-popup popup fixed w-[calc(100%-2rem)] max-w-[360px] h-max transition-all duration-400 ease-in-out top-auto z-502" style="left: 16px !important; bottom: 16px !important; z-index: 999999 !important;"
     data-vertical-position="bottom" 
@@ -25695,8 +25198,8 @@
     
 </style>
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-popup.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-bottom-sheet.js" defer="defer"></script>
+
+
 
 <style data-shopify>
     .product-compare-popup{
@@ -26121,7 +25624,7 @@
 }
 </style>
 
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/button-to-top.js" defer="defer"></script>
+  
   <button-to-top style="display: none;">
     <a href="#" class="button-to-top custom-button button--primary cursor-pointer fixed bottom-10 right-10 z-100" role="button" aria-label="Volver to top">
       <span class="visible-text z-10"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
@@ -26215,19 +25718,7 @@
 >
     <div id="shopify-block-AQ2VPVXRWc2V0cGNjR__link_eemiPR" class="shopify-block link-block">
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const linkBlocks = document.querySelectorAll('.link-block');
-        linkBlocks.forEach(item => {
-            const bodyText = item.querySelectorAll('.body-text > span');
-            if(bodyText.length > 0){
-                bodyText.forEach(element => {
-                    element.classList.add('link-hover-animation');
-                });
-            }
-        });
-    });
-</script>
+
 
 <div class="custom-theme-block" 
     style="
@@ -26916,7 +26407,7 @@
 >
     <div id="shopify-block-AR051UEh3Qk05Zkx4b__footer_localization_fbcfRN" class="shopify-block"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization.css" rel="stylesheet" type="text/css" media="all" />
 
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization.js" defer="defer"></script>
+
 
 <div class="custom-theme-block" 
     style="
@@ -27048,78 +26539,10 @@
     
 
   
-<script>!function(){'use strict';const t='contact',e='account',n='new_comment',o=[[t,t],['blogs',n],['comments',n],[t,'customer']],c=[[e,'customer_login'],[e,'guest_login'],[e,'recover_customer_password'],[e,'create_customer']],r=t=>t.map((([t,e])=>`form[action*='/${t}']:not([data-nocaptcha='true']) input[name='form_type'][value='${e}']`)).join(','),a=t=>()=>t?[...document.querySelectorAll(t)].map((t=>t.form)):[];function s(){const t=[...o],e=r(t);return a(e)}const i='password',u='form_key',d=['recaptcha-v3-token','g-recaptcha-response','h-captcha-response',i],f=()=>{try{return window.sessionStorage}catch{return}},m='__shopify_v',_=t=>t.elements[u];function p(t,e,n=!1){try{const o=window.sessionStorage,c=JSON.parse(o.getItem(e)),{data:r}=function(t){const{data:e,action:n}=t;return t[m]||n?{data:e,action:n}:{data:t,action:n}}(c);for(const[e,n]of Object.entries(r))t.elements[e]&&(t.elements[e].value=n);n&&o.removeItem(e)}catch(o){console.error('form repopulation failed',{error:o})}}const l='form_type',E='cptcha';function T(t){t.dataset[E]=!0}const w=window,h=w.document,L='Comprarify',v='ce_forms',y='captcha';let A=!1;((t,e)=>{const n=(g='f06e6c50-85a8-45c8-87d0-21a2b65856fe',I='https://cdn.shopify.com/shopifycloud/storefront-forms-hcaptcha/ce_storefront_forms_captcha_hcaptcha.v1.5.2.iife.js',D={infoText:'Protected by hCaptcha',privacyText:'Privacy',termsText:'Terms'},(t,e,n)=>{const o=w[L][v],c=o.bindForm;if(c)return c(t,g,e,D).then(n);var r;o.q.push([[t,g,e,D],n]),r=I,A||(h.body.append(Object.assign(h.createElement('script'),{id:'captcha-provider',async:!0,src:r})),A=!0)});var g,I,D;w[L]=w[L]||{},w[L][v]=w[L][v]||{},w[L][v].q=[],w[L][y]=w[L][y]||{},w[L][y].protect=function(t,e){n(t,void 0,e),T(t)},Object.freeze(w[L][y]),function(t,e,n,w,h,L){const[v,y,A,g]=function(t,e,n){const i=e?o:[],u=t?c:[],d=[...i,...u],f=r(d),m=r(i),_=r(d.filter((([t,e])=>n.includes(e))));return[a(f),a(m),a(_),s()]}(w,h,L),I=t=>{const e=t.target;return e instanceof HTMLFormElement?e:e&&e.form},D=t=>v().includes(t);t.addEventListener('submit',(t=>{const e=I(t);if(!e)return;const n=D(e)&&!e.dataset.hcaptchaBound&&!e.dataset.recaptchaBound,o=_(e),c=g().includes(e)&&(!o||!o.value);(n||c)&&t.preventDefault(),c&&!n&&(function(t){try{if(!f())return;!function(t){const e=f();if(!e)return;const n=_(t);if(!n)return;const o=n.value;o&&e.removeItem(o)}(t);const e=Array.from(Array(32),(()=>Math.random().toString(36)[2])).join('');!function(t,e){_(t)||t.append(Object.assign(document.createElement('input'),{type:'hidden',name:u})),t.elements[u].value=e}(t,e),function(t,e){const n=f();if(!n)return;const o=[...t.querySelectorAll(`input[type='${i}']`)].map((({name:t})=>t)),c=[...d,...o],r={};for(const[a,s]of new FormData(t).entries())c.includes(a)||(r[a]=s);n.setItem(e,JSON.stringify({[m]:1,action:t.action,data:r}))}(t,e)}catch(e){console.error('failed to persist form',e)}}(e),e.submit())}));const S=(t,e)=>{t&&!t.dataset[E]&&(n(t,e.some((e=>e===t))),T(t))};for(const o of['focusin','change'])t.addEventListener(o,(t=>{const e=I(t);D(e)&&S(e,y())}));const B=e.get('form_key'),M=e.get(l),P=B&&M;t.addEventListener('DOMContentLoaded',(()=>{const t=y();if(P)for(const e of t)e.elements[l].value===M&&p(e,B);[...new Set([...A(),...v().filter((t=>'true'===t.dataset.shopifyCaptcha))])].forEach((e=>S(e,t)))}))}(h,new URLBuscarParams(w.location.search),n,t,e,['guest_login'])})(!0,!0)}();</script>
-<script>
-  function portableWalletsLimpioup(e){e&&e.src&&console.error("Failed to load portable wallets script "+e.src);var t=document.querySelectorAll("shopify-accelerated-checkout .shopify-payment-button__skeleton, shopify-accelerated-checkout-cart .wallet-cart-button__skeleton"),e=document.getElementById("shopify-buyer-consent");for(let e=0;e<t.length;e++)t[e].remove();e&&e.remove()}function portableWalletsNotLoadedAsModule(e){e instanceof ErrorEvent&&"string"==typeof e.message&&e.message.includes("import.meta")&&"string"==typeof e.filename&&e.filename.includes("portable-wallets")&&(window.removeEventListener("error",portableWalletsNotLoadedAsModule),window.Comprarify.PaymentButton.failedToLoad=e,"loading"===document.readyEstado?document.addEventListener("DOMContentLoaded",window.Comprarify.PaymentButton.init):window.Comprarify.PaymentButton.init())}window.addEventListener("error",portableWalletsNotLoadedAsModule);
-</script>
-<script>
-  document.addEventListener("DOMContentLoaded", portableWalletsLimpioup);
-</script>\n
-<script id="pingpong-script">
-document.addEventListener("DOMContentLoaded", function() {
-    // wait a bit for the video to be injected if it's a web component
-    setTimeout(function() {
-        var vid = document.getElementById("pingpong-video") || document.querySelector('video[src*="lv_0_20260528021828"]');
-        if (!vid) {
-            // Check inside block-video just in case
-            var block = document.querySelector('block-video');
-            if (block) vid = block.querySelector('video');
-        }
-        
-        if (vid) {
-            var isReversing = false;
-            var maxTime = 5.0; // The video will only play up to 5 seconds
-            
-            // Detect iPhone/iPad/iPod
-            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            
-            // Make sure it has the id so onclick works
-            vid.id = "pingpong-video";
-            vid.removeAttribute("controls");
-            vid.removeAttribute("loop");
-            vid.onclick = function() {
-                this.paused ? this.play() : this.pause();
-            };
-            
-            vid.addEventListener('timeupdate', function() {
-                // If it's iOS, just pause when it reaches 5s
-                if (isIOS) {
-                    if (vid.currentTime >= maxTime) {
-                        vid.pause();
-                        vid.currentTime = maxTime;
-                    }
-                    return;
-                }
-                
-                // For other devices: Ping-Pong
-                // If we are playing forward and hit 5s
-                if (!isReversing && vid.currentTime >= maxTime) {
-                    isReversing = true;
-                    vid.pause();
-                    try { vid.playbackRate = -1; } catch(e) {}
-                    vid.play();
-                }
-                // If we are playing backward and hit the start
-                else if (isReversing && vid.currentTime <= 0.1) {
-                    isReversing = false;
-                    vid.pause();
-                    vid.playbackRate = 1;
-                    vid.play();
-                }
-            });
-            
-            vid.addEventListener('ended', function() {
-                if (isIOS) return;
-                if (!isReversing) {
-                    isReversing = true;
-                    try { vid.playbackRate = -1; } catch(e) {}
-                    vid.play();
-                }
-            });
-        }
-    }, 1000);
-});
-</script>
+
+
+\n
+
 
 <style>
 /* Hide Elfsight branding */
