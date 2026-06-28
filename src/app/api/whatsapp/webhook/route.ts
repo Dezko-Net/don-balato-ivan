@@ -1668,22 +1668,18 @@ ${products.join('\n') || 'Sin productos.'}`;
           return NextResponse.json({ status: 'spam_blocked' });
         }
         if (usageCheck.adminTakeover || usageCheck.escalated) {
-          // Admin tomó control o Kenia escaló: aviso amable (solo cada 3 min para no spamear)
-          const now = Date.now();
+          // Admin tomó control o Kenia escaló: responder UNA sola vez y luego silencio total
           const lastStallTs = usageCheck.lastStallReplyTs || 0;
-          const STALL_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes
-          if (now - lastStallTs > STALL_COOLDOWN_MS) {
+          if (lastStallTs === 0) {
             const takeoverReply = '¡Amor! 🌸 Dame un segundito que estoy revisando un par de cositas con las chicas de tienda para poder ayudarte mejor con esto 🏃‍♀️💨. ¡Ahorita vuelvo contigo!';
             await addToHistory(fromPhone, 'assistant', takeoverReply, `stall-${Date.now()}`);
             await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
-            await recordKeniaUsage(fromPhone, { lastStallReplyTs: now });
-          }
-          // Notificar al admin que el cliente escribió (throttled)
-          if (now - lastStallTs > STALL_COOLDOWN_MS) {
             const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
             const adminNotif = `📩 *Cliente esperando respuesta*\n+${fromPhone} escribió: "${userText}"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
             await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotif, WA_TOKEN);
+            await recordKeniaUsage(fromPhone, { lastStallReplyTs: Date.now() });
           }
+          // Después del primer mensaje: silencio total, solo guardar el mensaje del cliente
           return NextResponse.json({ status: 'admin_takeover' });
         }
         // Bloqueo normal (manual): NO responder nada, solo guardar mensaje y notificar admin (throttled)
