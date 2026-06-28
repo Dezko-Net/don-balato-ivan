@@ -5031,40 +5031,68 @@
           hero-sk-shimmer 2.6s linear infinite,
           hero-sk-fadeout 0.7s ease 1.8s forwards;
       }
-      /* ── Hero image containers ── */
-      /* Desktop: wide image, shown only at ≥993px */
+      /* ── Hero image containers (Carousel CSS) ── */
+      /* Base styles for aspect ratio */
+      #hero-bg-desktop, #hero-bg-mobile {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+      }
       #hero-bg-desktop {
         display: none;
-        width: 100%;
         padding-bottom: 41.67%;   /* 600/1440 */
-        background-image: url('https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&token=0ad04776-0001-40f0-a7c3-a811c5cce0e7');
-        background-size: cover;
-        background-position: center top;
-        background-repeat: no-repeat;
       }
-      /* Mobile: tall image, shown below 993px */
       #hero-bg-mobile {
         display: block;
-        width: 100%;
         padding-bottom: 177.78%;  /* 16/9 */
-        background-image: url('https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781404655085-pegada-1781404653623.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=AoMmXhZykJXHuRUbi6kN90211xsIcYZjusKCSZK4ebs2iyXidYeEJWJCvJyaynUTEUcC1VHJo%2FhCnE6cvrTGAGa9IhLOt6sOrpI%2Fr4XuRwVMVeNaanueVgoLg1yRj29zWHhEfXcZ5KbWtT2tJ%2FS6hlyU0z62ichXNvys%2FSn2%2FI%2Bj4OBgMN03lPZT7daOc8RzERbDU19piSeu0Zyy5wvTWWuIa4ySVI7IlmxcbzMQPd3KVX8x7ehOVU67U32C1msMyudocbczpbUFSZiShuu5FqDfCfn4Yrcztl%2Fv9f%2FSIf1PTwAWTc3SrWpsl7%2FZzdCY%2BD3i60ByaI%2Bn3Vwok3AE0Q%3D%3D');
-        background-size: cover;
-        background-position: center top;
-        background-repeat: no-repeat;
       }
       @media (min-width: 993px) {
         #hero-bg-desktop { display: block; }
         #hero-bg-mobile  { display: none; }
       }
+
+      /* Slide styles */
+      .hero-slide {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center top;
+        background-repeat: no-repeat;
+        opacity: 0;
+        animation: heroFade 15s infinite;
+      }
+
+      /* 3 slides animation setup (15s total, 5s each) */
+      .hero-slide:nth-child(1) { animation-delay: 0s; }
+      .hero-slide:nth-child(2) { animation-delay: 5s; }
+      .hero-slide:nth-child(3) { animation-delay: 10s; }
+
+      @keyframes heroFade {
+        0% { opacity: 0; z-index: 1; }
+        10% { opacity: 1; z-index: 2; }
+        33% { opacity: 1; z-index: 2; }
+        43% { opacity: 0; z-index: 1; }
+        100% { opacity: 0; z-index: 1; }
+      }
     </style>
 
-    <!-- DESKTOP bg-image div (always has height from padding-bottom trick) -->
-    <div id="hero-bg-desktop"></div>
-    <div id="hero-sk-desktop"  class="hero-sk"></div>
+    <!-- DESKTOP bg-image div -->
+    <div id="hero-bg-desktop">
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610654620-pegada-1782610651341.png');"></div>
+        <div class="hero-slide" style="background-image: url('https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&token=0ad04776-0001-40f0-a7c3-a811c5cce0e7');"></div>
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610341102-pegada-1782610333284.png');"></div>
+    </div>
+    <div id="hero-sk-desktop" class="hero-sk"></div>
 
-    <!-- MOBILE bg-image div (always has height from padding-bottom trick) -->
-    <div id="hero-bg-mobile"></div>
-    <div id="hero-sk-mobile"   class="hero-sk"></div>
+    <!-- MOBILE bg-image div -->
+    <div id="hero-bg-mobile">
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610641645-pegada-1782610639851.png');"></div>
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781404655085-pegada-1781404653623.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=AoMmXhZykJXHuRUbi6kN90211xsIcYZjusKCSZK4ebs2iyXidYeEJWJCvJyaynUTEUcC1VHJo%2FhCnE6cvrTGAGa9IhLOt6sOrpI%2Fr4XuRwVMVeNaanueVgoLg1yRj29zWHhEfXcZ5KbWtT2tJ%2FS6hlyU0z62ichXNvys%2FSn2%2FI%2Bj4OBgMN03lPZT7daOc8RzERbDU19piSeu0Zyy5wvTWWuIa4ySVI7IlmxcbzMQPd3KVX8x7ehOVU67U32C1msMyudocbczpbUFSZiShuu5FqDfCfn4Yrcztl%2Fv9f%2FSIf1PTwAWTc3SrWpsl7%2FZzdCY%2BD3i60ByaI%2Bn3Vwok3AE0Q%3D%3D');"></div>
+        <div class="hero-slide" style="background-image: url('https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782610355118-pegada-1782610352733.png');"></div>
+    </div>
+    <div id="hero-sk-mobile" class="hero-sk"></div>
 
     <!-- Bottom fade -->
     <div style="position:absolute; bottom:0; left:0; right:0; height:25%; background:linear-gradient(to bottom, transparent 0%, transparent 50%, #ffc9e0 100%); pointer-events:none; z-index:20;"></div>
