@@ -2991,39 +2991,7 @@ export default function HomePage23() {
       }
     }, 600);
 
-    // ═══ DISABLE HEROBANNER SWIPER COMPLETELY (no drag, no swipe, no auto) ═══
-    const disableHeroSwiper = () => {
-      const heroSwiperEl = root.querySelector('custom-slideshow .swiper-container, custom-slideshow parallax-element-section .swiper-container') as HTMLElement | null;
-      if (heroSwiperEl) {
-        // @ts-ignore
-        const swiperInstance = (heroSwiperEl as any).swiper;
-        if (swiperInstance) {
-          try {
-            swiperInstance.allowTouchMove = false;
-            swiperInstance.allowSlidePrev = false;
-            swiperInstance.allowSlideNext = false;
-            swiperInstance.autoplay?.stop?.();
-            swiperInstance.disable?.();
-            // Also remove any touch/mouse event listeners by cloning the wrapper
-            const wrapper = heroSwiperEl.querySelector('.swiper-wrapper') as HTMLElement;
-            if (wrapper) {
-              wrapper.style.setProperty('transform', 'translate3d(0,0,0)', 'important');
-              wrapper.style.setProperty('transition-duration', '0ms', 'important');
-            }
-          } catch(e) { /* ignore */ }
-        }
-        // Belt-and-suspenders: prevent all pointer/touch events on the swiper itself
-        heroSwiperEl.style.setProperty('touch-action', 'pan-y', 'important');
-        heroSwiperEl.style.setProperty('user-select', 'none', 'important');
-        // Override the swiper-container data to disable init
-        heroSwiperEl.setAttribute('data-enabled', 'false');
-      }
-    };
-    // Try immediately, then retry after JS loads
-    disableHeroSwiper();
-    setTimeout(disableHeroSwiper, 500);
-    setTimeout(disableHeroSwiper, 1500);
-    setTimeout(disableHeroSwiper, 3000);
+    // Hero swiper is now enabled natively
 
     // ═══ NEWSLETTER POPUP ON MOBILE: Never auto-open, only on user tap ═══
     // On mobile, always keep the popup closed unless the user explicitly opens it.
