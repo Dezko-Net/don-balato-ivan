@@ -1432,10 +1432,10 @@ export default function OrderDetailPage() {
       return;
     }
 
-    // Foto obligatoria antes de ready_to_ship
-    if (newStatus === 'ready_to_ship' && !orderIsPickup) {
+    // Foto obligatoria antes de shipped (Salió de tienda)
+    if (newStatus === 'shipped' && !orderIsPickup) {
       if (!order.SHIPPINGPROOFURL) {
-        alert('⚠️ Debes subir la foto de la caja embalada antes de marcar como "Listo para Despachar".\n\nSube la foto en la sección "Comprobante de Envío" e inténtalo de nuevo.');
+        alert('⚠️ Debes subir la foto de la caja embalada antes de marcar como "Salió de Tienda".\n\nSube la foto en la sección "Comprobante de Envío" e inténtalo de nuevo.');
         return;
       }
     }
@@ -1599,11 +1599,11 @@ export default function OrderDetailPage() {
     !((order as any).TRACKINGNUMBER && (order as any).TRACKINGNUMBER.trim()) &&
     !(order.SHIPPINGPROOFURL && order.SHIPPINGPROOFURL.trim());
 
-  // Warn: falta foto de caja embalada antes de ready_to_ship (todas las agencias excepto retiro en tienda)
+  // Warn: falta foto de caja embalada antes de shipped (todas las agencias excepto retiro en tienda)
   const boxPhotoPending =
     !orderIsPickup &&
     !order.SHIPPINGPROOFURL &&
-    ['stock_confirmed', 'packing', 'preparing_shipping'].includes(order.STATUS);
+    ['ready_to_ship'].includes(order.STATUS);
 
   // Warn: falta comprobante de agencia antes de delivered (Starken, Chilexpress, etc. — no BluExpress)
   const agencyProofPending =
@@ -2417,7 +2417,7 @@ export default function OrderDetailPage() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-orange-800">Falta foto de la caja embalada</p>
             <p className="text-xs text-orange-700 mt-0.5">
-              Sube la foto del pedido embalado en la sección <strong>"Comprobante de Envío"</strong> antes de marcar como "Listo para Despachar". Es obligatorio.
+              Sube la foto del pedido embalado en la sección <strong>"Comprobante de Envío"</strong> antes de marcar como "Salió de Tienda". Es obligatorio.
             </p>
           </div>
         </div>

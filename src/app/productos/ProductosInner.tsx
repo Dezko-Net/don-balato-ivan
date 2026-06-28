@@ -195,7 +195,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     tag: selectedTag || undefined,
     priceMin: debouncedPriceRange ? debouncedPriceRange[0] : undefined,
     priceMax: debouncedPriceRange ? debouncedPriceRange[1] : undefined,
-    ofertasOnly: selectedOfertasOnly
+    ofertasOnly: selectedOfertasOnly,
+    serverPaginated: true
   });
 
   const products = visibleProducts;

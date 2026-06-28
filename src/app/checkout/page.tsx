@@ -569,6 +569,24 @@ function CheckoutInner() {
         CREATEDAT: now,
         ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
       });
+      // Update First Purchase state
+      if (user) {
+        try {
+          const { account } = getServices();
+          const acc = await account.get();
+          const currentPrefs = (acc as any).prefs || {};
+          const updatedPrefs: any = { ...currentPrefs };
+          
+          if (currentPrefs.firstPurchaseActive || !currentPrefs.hasMadeFirstPurchase) {
+            updatedPrefs.firstPurchaseActive = false;
+            updatedPrefs.hasMadeFirstPurchase = true;
+            await account.updatePrefs(updatedPrefs);
+          }
+        } catch (prefError) {
+          console.log('Error saving user prefs:', prefError);
+        }
+      }
+
       submittedRef.current = true;
       clearCart();
       router.push(`/pedido-mayorista-confirmado?id=${docId}`);
@@ -761,18 +779,26 @@ function CheckoutInner() {
         } catch {}
       }
       
-      // Save RUT and phone to user prefs for future purchases
-      if (user && (form.rut || form.phone)) {
+      // Save user prefs for future purchases and handle First Purchase reward state
+      if (user) {
         try {
           const { account } = getServices();
           const acc = await account.get();
           const currentPrefs = (acc as any).prefs || {};
           const updatedPrefs: any = { ...currentPrefs };
+          
           if (form.rut) updatedPrefs.rut = form.rut;
           if (form.phone) updatedPrefs.phone = form.phone;
           if (form.region) updatedPrefs.region = form.region;
           if (form.comuna) updatedPrefs.comuna = form.comuna;
           if (form.address) updatedPrefs.address = form.address;
+
+          // Update First Purchase state
+          if (currentPrefs.firstPurchaseActive || !currentPrefs.hasMadeFirstPurchase) {
+            updatedPrefs.firstPurchaseActive = false;
+            updatedPrefs.hasMadeFirstPurchase = true;
+          }
+
           await account.updatePrefs(updatedPrefs);
         } catch (prefError) {
           console.log('Error saving user prefs:', prefError);

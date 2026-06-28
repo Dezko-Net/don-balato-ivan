@@ -44,36 +44,21 @@ export default function RegalosPage() {
   async function loadRewardData() {
     if (!user?.id) return;
     try {
-      const { account, databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
+      const { account } = getServices();
       const acc = await account.get();
       const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
 
-      // Check if apertura promotion is active from Appwrite
-      let aperturaEnabled = false;
-      try {
-        const aperturaRes = await databases.listDocuments(databaseId, APERTURA_SETTINGS_COLLECTION_ID, [Query.limit(1)]);
-        const doc = aperturaRes.documents[0] as { isActive?: boolean; discountPercent?: number };
-        aperturaEnabled = aperturaRes.documents.length > 0 ? !!doc.isActive : false;
-        if (doc?.discountPercent) setDiscountPercent(doc.discountPercent);
-      } catch (e) {
-        // Collection doesn't exist yet, assume disabled
-        console.error('Apertura collection not found, assuming disabled');
-        aperturaEnabled = false;
-      }
-
-      if (!aperturaEnabled) {
+      if (prefs.hasMadeFirstPurchase) {
         setShowWelcomeReward(false);
         setLoading(false);
         return;
       }
 
-      // Show reward to ALL users when promotion is active
       setShowWelcomeReward(true);
+      setDiscountPercent(20);
       
-      // Check if user already claimed it
-      if (prefs.welcomeCouponCode) {
-        setClaimedCode(String(prefs.welcomeCouponCode));
+      if (prefs.firstPurchaseActive) {
+        setClaimedCode('ACTIVADO');
         setJustClaimed(false);
       } else {
         setJustClaimed(false);
@@ -89,16 +74,22 @@ export default function RegalosPage() {
     if (!user?.id) return;
     setClaiming(true);
     try {
-      setClaimedCode('KEVINCOCOCL');
       const { account } = getServices();
       const acc = await account.get();
       const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
+      
+      if (prefs.hasMadeFirstPurchase) {
+        setShowWelcomeReward(false);
+        return;
+      }
+
       await account.updatePrefs({
         ...prefs,
-        welcomeGiftClaimed: true,
-        welcomeCouponCode: 'KEVINCOCOCL',
-        autoApplyCoupon: null,
+        firstPurchaseActive: true,
+        welcomeGiftClaimed: true, // mantenemos compatibilidad por si acaso
       });
+      
+      setClaimedCode('ACTIVADO');
       setJustClaimed(true);
       fireCelebration();
       if (typeof window !== 'undefined') {
@@ -210,10 +201,10 @@ export default function RegalosPage() {
                 </span>
 
                 <h2 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-                  ¡Regalo de bienvenida por tu registro!
+                  ¡Regalo de Primera Compra!
                 </h2>
                 <p style={{ margin: '10px auto 0', fontSize: 14, color: 'rgba(255,255,255,0.9)', maxWidth: 340, lineHeight: 1.5, fontWeight: 500 }}>
-                  Por la gran apertura de nuestra tienda, desbloquea un cupón exclusivo solo para nuevos miembros.
+                  Activa tu descuento exclusivo del 20% válido solo para tu primer pedido.
                 </p>
               </div>
             </div>
@@ -272,12 +263,12 @@ export default function RegalosPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                           <Zap size={14} color={PINK} fill={PINK} />
                           <span style={{ fontSize: 10, fontWeight: 800, color: PINK, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                            Cupón de apertura
+                            Regalo Especial
                           </span>
                         </div>
                         <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#111827' }}>20% de descuento</p>
                         <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280', lineHeight: 1.45 }}>
-                          Válido en tu primera compra. Se aplica automáticamente al pagar.
+                          Válido en tu primera compra. Se aplicará a toda la tienda al instante.
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
                           {['Exclusivo', 'Por tiempo limitado', 'Nuevos usuarios'].map((tag) => (

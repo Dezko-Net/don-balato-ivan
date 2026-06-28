@@ -7,16 +7,17 @@ import type { AperturaSettings } from '@/lib/apertura-promo';
 // ── Singleton cache: todos los hooks comparten la misma llamada ──
 let cachedSettings: AperturaSettings | null = null;
 let cachedClaimed: boolean = false;
+let cachedFirstPurchaseActive: boolean = false;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos (antes era 2min con SDK directo, ahora más seguro)
-let pendingPromise: Promise<{ settings: AperturaSettings; claimed: boolean }> | null = null;
+let pendingPromise: Promise<{ settings: AperturaSettings; claimed: boolean; firstPurchaseActive: boolean }> | null = null;
 
-async function loadApertura(isLoggedIn: boolean): Promise<{ settings: AperturaSettings; claimed: boolean }> {
+async function loadApertura(isLoggedIn: boolean): Promise<{ settings: AperturaSettings; claimed: boolean; firstPurchaseActive: boolean }> {
   const now = Date.now();
   if (cachedSettings && (now - cacheTimestamp) < CACHE_TTL) {
     // Si ya tenemos caché y no está logueado, o ya tenemos claimed, reusar
     if (!isLoggedIn || cachedClaimed !== undefined) {
-      return { settings: cachedSettings, claimed: cachedClaimed };
+      return { settings: cachedSettings, claimed: cachedClaimed, firstPurchaseActive: cachedFirstPurchaseActive };
     }
   }
 
@@ -32,22 +33,27 @@ async function loadApertura(isLoggedIn: boolean): Promise<{ settings: AperturaSe
         : { isActive: false, discountPercent: 20, minPurchase: 62500 };
 
       let claimed = false;
+      let firstPurchaseActive = false;
+      
       if (isLoggedIn) {
-        // Leer si el regalo fue reclamado desde localStorage (ya cacheado por AuthService)
         try {
-          const cachedUser = localStorage.getItem('yaxsel_auth_user');
-          if (cachedUser) {
-            const parsed = JSON.parse(cachedUser);
-            claimed = Boolean(parsed.welcomeGiftClaimed);
-          }
+          const { getServices } = await import('@/lib/appwrite');
+          const account = getServices().account;
+          const acc = await account.get();
+          const prefs = (acc as any).prefs || {};
+          claimed = Boolean(prefs.welcomeGiftClaimed);
+          firstPurchaseActive = Boolean(prefs.firstPurchaseActive);
         } catch {
           claimed = false;
+          firstPurchaseActive = false;
         }
       }
+      
       cachedSettings = globalSettings;
       cachedClaimed = claimed;
+      cachedFirstPurchaseActive = firstPurchaseActive;
       cacheTimestamp = Date.now();
-      return { settings: globalSettings, claimed };
+      return { settings: globalSettings, claimed, firstPurchaseActive };
     } finally {
       pendingPromise = null;
     }
@@ -59,6 +65,7 @@ async function loadApertura(isLoggedIn: boolean): Promise<{ settings: AperturaSe
 export function invalidateAperturaCache() {
   cachedSettings = null;
   cachedClaimed = false;
+  cachedFirstPurchaseActive = false;
   cacheTimestamp = 0;
   pendingPromise = null;
 }
@@ -68,24 +75,27 @@ export function useAperturaPromotion() {
   const { isLoggedIn } = useAuth();
   const [settings, setSettings] = useState<AperturaSettings | null>(cachedSettings);
   const [hasClaimedGift, setHasClaimedGift] = useState(cachedClaimed);
+  const [firstPurchaseActive, setFirstPurchaseActive] = useState(cachedFirstPurchaseActive);
   const [isLoading, setIsLoading] = useState(!cachedSettings);
 
   useEffect(() => {
     let cancelled = false;
 
-    loadApertura(isLoggedIn).then(({ settings: s, claimed }) => {
+    loadApertura(isLoggedIn).then(({ settings: s, claimed, firstPurchaseActive: fpa }) => {
       if (cancelled) return;
       setSettings(s);
       setHasClaimedGift(claimed);
+      setFirstPurchaseActive(fpa);
       setIsLoading(false);
     });
 
     const onClaimed = () => {
       invalidateAperturaCache();
-      loadApertura(isLoggedIn).then(({ settings: s, claimed }) => {
+      loadApertura(isLoggedIn).then(({ settings: s, claimed, firstPurchaseActive: fpa }) => {
         if (cancelled) return;
         setSettings(s);
         setHasClaimedGift(claimed);
+        setFirstPurchaseActive(fpa);
       });
     };
 
@@ -96,16 +106,22 @@ export function useAperturaPromotion() {
     };
   }, [isLoggedIn]);
 
-  const canShowDiscount = Boolean(settings?.isActive);
-  const effectiveSettings: AperturaSettings | null = canShowDiscount ? settings : null;
+  // Si el usuario tiene activo su regalo de primera compra, sobreescribimos la configuración
+  const overrideSettings = firstPurchaseActive 
+    ? { isActive: true, discountPercent: 20, minPurchase: 0 }
+    : null;
+
+  const activeSettings = overrideSettings || settings;
+  const canShowDiscount = Boolean(activeSettings?.isActive);
+  const effectiveSettings: AperturaSettings | null = canShowDiscount ? activeSettings : null;
 
   return {
     settings: effectiveSettings,
     isLoading,
     hasClaimedGift,
-    isPromotionEnabled: settings?.isActive ?? false,
+    isPromotionEnabled: activeSettings?.isActive ?? false,
     isActive: canShowDiscount,
-    discountPercent: canShowDiscount ? (settings?.discountPercent ?? 0) : 0,
-    minPurchase: settings?.minPurchase ?? 0,
+    discountPercent: canShowDiscount ? (activeSettings?.discountPercent ?? 0) : 0,
+    minPurchase: activeSettings?.minPurchase ?? 0,
   };
 }

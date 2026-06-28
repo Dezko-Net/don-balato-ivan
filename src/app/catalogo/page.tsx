@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
-import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getServices, getAppwriteConfig, CATALOG_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
-import { normalizeProductImages, resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
-import { cached, TTL } from '@/lib/cache';
+import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
 import { Query } from 'appwrite';
+import { resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
 import { Product, Category, Subcategory } from '@/types';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
@@ -18,6 +17,8 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/hooks/useAuth';
 import ImageZoomModal from '@/components/ImageZoomModal';
 import { buildStockAlertData, normalizeStockAlert } from '@/lib/stock-alerts';
+
+const PAGE_SIZE = 10;
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -36,13 +37,22 @@ export default function CatalogoPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [subcategoryCounts, setSubcategoryCounts] = useState<Record<string, number>>({});
+  const [totalCount, setTotalCount] = useState(0);
   const [selectedCat, setSelectedCat] = useState('');
   const [selectedSub, setSelectedSub] = useState('');
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [filterBarHeight, setFilterBarHeight] = useState(52);
   const [barVisible, setBarVisible] = useState(true);
   const lastScrollY = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false);
+  const offsetRef = useRef(0);
   useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user, isLoggedIn } = useAuth();
@@ -51,8 +61,6 @@ export default function CatalogoPage() {
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [requestQty, setRequestQty] = useState<Record<string, number>>({});
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
-  const [visibleCount, setVisibleCount] = useState(30);
-  const PAGE_SIZE = 30;
 
   // Load user's existing requests
   useEffect(() => {
@@ -101,33 +109,81 @@ export default function CatalogoPage() {
     }
   };
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
+  // Load counts (categories + counts or subcategories + counts)
+  const loadCounts = useCallback(async (cat: string) => {
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      const [catDocs, prodDocs] = await Promise.all([
-        cached('categories:all', TTL.categories, async () => {
-          const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]);
-          return r.documents;
-        }),
-        cached('products:catalogo', TTL.products, async () => {
-          const r = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION, [
-            Query.equal('ISACTIVE', true),
-            Query.limit(500),
-          ]);
-          return r.documents;
-        }),
-      ]);
-
-      setCategories(catDocs as unknown as Category[]);
-      setProducts((prodDocs as unknown as Product[]).map(p => normalizeProductImages(p)));
-    } catch (e) { console.error(e); }
-    finally { setIsLoading(false); }
+      const params = cat ? `?category=${encodeURIComponent(cat)}` : '';
+      const res = await fetch(`/api/public-data/catalog-counts${params}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (cat) {
+        setSubcategories((data.subcategories || []) as Subcategory[]);
+        setSubcategoryCounts(data.subcategoryCounts || {});
+      } else {
+        setCategories((data.categories || []) as Category[]);
+        setCategoryCounts(data.categoryCounts || {});
+      }
+      setTotalCount(data.total || 0);
+    } catch (e) { console.error('loadCounts error:', e); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Load products page from API
+  const loadProducts = useCallback(async (offsetVal: number, append: boolean) => {
+    if (append) setLoadingMore(true); else setIsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(offsetVal),
+      });
+      if (selectedCat) params.set('category', selectedCat);
+      if (selectedSub) params.set('subcategory', selectedSub);
+      if (search) params.set('search', search);
+      const res = await fetch(`/api/public-data/catalog-products?${params}`, { cache: 'no-store' });
+      const data = await res.json();
+      const newProducts = (data.products || []) as Product[];
+      if (append) {
+        setProducts(prev => [...prev, ...newProducts]);
+      } else {
+        setProducts(newProducts);
+      }
+      setHasMore(data.hasMore || false);
+      const newOffset = offsetVal + newProducts.length;
+      setOffset(newOffset);
+      offsetRef.current = newOffset;
+    } catch (e) { console.error('loadProducts error:', e); }
+    finally {
+      if (append) setLoadingMore(false); else setIsLoading(false);
+    }
+  }, [selectedCat, selectedSub, search]);
+
+  // Initial load: counts + first page (only once)
+  useEffect(() => {
+    loadCounts('');
+    loadProducts(0, false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When category changes: load subcategories + counts + reset products
+  useEffect(() => {
+    if (selectedCat) {
+      loadCounts(selectedCat);
+      loadProducts(0, false);
+    } else if (selectedSub) {
+      loadCounts('');
+      loadProducts(0, false);
+    }
+  }, [selectedCat]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When subcategory changes: reset products
+  useEffect(() => {
+    if (selectedCat) loadProducts(0, false);
+  }, [selectedSub]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debounced search: reset products
+  useEffect(() => {
+    if (search) {
+      const t = setTimeout(() => loadProducts(0, false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Measure filter bar height for spacer
   useEffect(() => {
@@ -151,94 +207,31 @@ export default function CatalogoPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCat, selectedSub, search]);
-
-  // Load subcategories when category selected
+  // Infinite scroll via IntersectionObserver
   useEffect(() => {
-    if (!selectedCat) { setSubcategories([]); return; }
-    const loadSubs = async () => {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        // Try with categoryId first, fallback to CATEGORYID
-        let subDocs: any[] = [];
-        try {
-          const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-            Query.equal('categoryId', selectedCat),
-            Query.orderAsc('$createdAt'),
-            Query.limit(50),
-          ]);
-          subDocs = r.documents;
-        } catch {
-          try {
-            const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-              Query.equal('CATEGORYID', selectedCat),
-              Query.orderAsc('$createdAt'),
-              Query.limit(50),
-            ]);
-            subDocs = r.documents;
-          } catch {
-            // Load all and filter client-side
-            const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [Query.limit(500)]);
-            subDocs = r.documents.filter((d: any) => d.categoryId === selectedCat || d.CATEGORYID === selectedCat);
-          }
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    let cancelled = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMoreRef.current && !isLoading) {
+          loadingMoreRef.current = true;
+          setLoadingMore(true);
+          loadProducts(offsetRef.current, true).finally(() => {
+            loadingMoreRef.current = false;
+          });
         }
-        setSubcategories(subDocs as unknown as Subcategory[]);
-      } catch { setSubcategories([]); }
-    };
-    loadSubs();
-  }, [selectedCat]);
+      },
+      { rootMargin: '200px' }
+    );
+    // Delay observation to avoid immediate fire after non-append loads
+    const timer = setTimeout(() => {
+      if (!cancelled) observer.observe(sentinel);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); observer.disconnect(); };
+  }, [hasMore, isLoading, loadProducts]);
 
-  const filtered = useMemo(() => {
-    return products.filter(p => {
-      // catalog_products only contains zero-stock items (a pedido)
-      // Exclude COMING_SOON products (they show in /llegan-pronto)
-      if (p.COMING_SOON) return false;
-      if (!p.IMAGEURL || !p.IMAGEURL.trim()) return false;
-      if (selectedCat && p.CATEGORYID !== selectedCat) return false;
-      if (selectedSub && p.SUBCATEGORYID !== selectedSub) return false;
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return p.NAME.toLowerCase().includes(q) || (p.DESCRIPTION || '').toLowerCase().includes(q);
-    });
-  }, [products, selectedCat, selectedSub, search]);
-
-  // Group products by category
-  const groupedByCategory = useMemo(() => {
-    const map: Record<string, Product[]> = {};
-    filtered.forEach(p => {
-      const catId = p.CATEGORYID || 'uncategorized';
-      if (!map[catId]) map[catId] = [];
-      map[catId].push(p);
-    });
-    return map;
-  }, [filtered]);
-
-  // Count products per category and subcategory from filtered list
-  const catCountMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach(p => {
-      const catId = p.CATEGORYID || 'uncategorized';
-      map[catId] = (map[catId] || 0) + 1;
-    });
-    return map;
-  }, [filtered]);
-
-  const subcatCountMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach(p => {
-      if (p.SUBCATEGORYID) {
-        map[p.SUBCATEGORYID] = (map[p.SUBCATEGORYID] || 0) + 1;
-      }
-    });
-    return map;
-  }, [filtered]);
-
-  // Only categories that have products in the filtered list
-  const categoriesWithProducts = useMemo(() => {
-    return categories.filter(c => catCountMap[c.$id] > 0);
-  }, [categories, catCountMap]);
+  const categoriesWithProducts = categories.filter(c => (categoryCounts[c.$id] || 0) > 0);
 
   const getCategoryName = (catId: string) => {
     return categories.find(c => c.$id === catId)?.name || 'Sin categoría';
@@ -323,7 +316,7 @@ export default function CatalogoPage() {
             Productos<br /><span style={{ color: '#e396bf' }}>a Pedido</span>
           </h1>
           <p className="cat-hero-desc" style={{ fontSize: 14, color: 'rgba(0,0,0,0.4)', margin: '0 0 20px', letterSpacing: '0.3px' }}>
-            {isLoading ? 'Cargando catálogo...' : `${filtered.length.toLocaleString()} productos disponibles para consultar`}
+            {isLoading ? 'Cargando catálogo...' : `${totalCount.toLocaleString()} productos disponibles para consultar`}
           </p>
           <div className="cat-hero-notice" style={{ background: 'rgba(227,150,191,0.06)', border: '1px solid rgba(227,150,191,0.12)', borderRadius: 12, padding: '12px 16px', margin: '0 0 24px', textAlign: 'left' }}>
             <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', margin: 0, lineHeight: 1.6, fontFamily: FF }}>
@@ -402,7 +395,7 @@ export default function CatalogoPage() {
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}>
                 {getCategoryImage(cat.$id) && <img src={getCategoryImage(cat.$id)} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />}
-                {cat.name} <span style={{ fontSize: 10, fontWeight: 700, opacity: .7 }}>({catCountMap[cat.$id] || 0})</span>
+                {cat.name} <span style={{ fontSize: 10, fontWeight: 700, opacity: .7 }}>({categoryCounts[cat.$id] || 0})</span>
               </button>
             ))}
           </div>
@@ -418,7 +411,7 @@ export default function CatalogoPage() {
         </div>
         {selectedCat && !selectedSub && subcategories.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '0 24px 14px' }}>
-            {subcategories.filter(sub => (subcatCountMap[sub.$id] || 0) > 0).map((sub, i) => (
+            {subcategories.filter(sub => (subcategoryCounts[sub.$id] || 0) > 0).map((sub, i) => (
               <button key={sub.$id} className="cat-pill subcat-pill"
                 onClick={() => setSelectedSub(selectedSub === sub.$id ? '' : sub.$id)}
                 style={{
@@ -432,7 +425,7 @@ export default function CatalogoPage() {
                   transition: 'all .2s',
                 }}>
                 {sub.ICON_URL && <img src={sub.ICON_URL} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} />}
-                {sub.name} <span style={{ fontSize: 9, fontWeight: 700, opacity: .7 }}>({subcatCountMap[sub.$id] || 0})</span>
+                {sub.name} <span style={{ fontSize: 9, fontWeight: 700, opacity: .7 }}>({subcategoryCounts[sub.$id] || 0})</span>
               </button>
             ))}
           </div>
@@ -463,7 +456,7 @@ export default function CatalogoPage() {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : products.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '100px 20px' }}>
             <Package size={56} color="#ccc" style={{ margin: '0 auto 20px' }} />
             <p style={{ fontSize: 22, fontWeight: 700, color: '#333', margin: '0 0 8px', fontFamily: '"Playfair Display", serif' }}>Sin resultados</p>
@@ -477,7 +470,7 @@ export default function CatalogoPage() {
                   {selectedCat ? getCategoryName(selectedCat) : 'Todos los productos'}
                 </h2>
                 <p style={{ fontSize: 13, color: '#888', margin: '6px 0 0', letterSpacing: '0.5px' }}>
-                  {filtered.length.toLocaleString()} producto{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+                  {totalCount.toLocaleString()} producto{totalCount !== 1 ? 's' : ''} encontrado{totalCount !== 1 ? 's' : ''}
                 </p>
               </div>
               {selectedCat && (
@@ -487,20 +480,24 @@ export default function CatalogoPage() {
               )}
             </div>
             <div className="cat-card-list" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {filtered.slice(0, visibleCount).map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} requestQty={requestQty} onRequest={handleRequestAvailability} onZoom={() => { const src = getProductImageUrl(p); if (src) setZoomImage({ src, alt: p.NAME }); }} onQtyChange={(id, q) => setRequestQty(prev => ({ ...prev, [id]: q }))} />)}
+              {products.map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} requestQty={requestQty} onRequest={handleRequestAvailability} onZoom={() => { const src = getProductImageUrl(p); if (src) setZoomImage({ src, alt: p.NAME }); }} onQtyChange={(id, q) => setRequestQty(prev => ({ ...prev, [id]: q }))} />)}
             </div>
-            {filtered.length > visibleCount && (
-              <div style={{ textAlign: 'center', marginTop: 32 }}>
-                <button onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)} style={{
-                  padding: '14px 40px', border: 'none', borderRadius: 50,
-                  background: 'linear-gradient(135deg, #e396bf, #c0547a)',
-                  color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
-                  letterSpacing: '1.5px', textTransform: 'uppercase', fontFamily: FF,
-                  boxShadow: '0 6px 24px rgba(227,150,191,0.3)',
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                }}>
-                  <Package size={16} /> Cargar más ({filtered.length - visibleCount} restantes)
-                </button>
+            {hasMore && (
+              <div ref={sentinelRef} style={{ textAlign: 'center', padding: '32px 0' }}>
+                {loadingMore ? (
+                  <Loader2 size={28} style={{ color: '#e396bf', animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <button onClick={() => { setLoadingMore(true); loadProducts(offset, true).finally(() => setLoadingMore(false)); }} style={{
+                    padding: '14px 40px', border: 'none', borderRadius: 50,
+                    background: 'linear-gradient(135deg, #e396bf, #c0547a)',
+                    color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                    letterSpacing: '1.5px', textTransform: 'uppercase', fontFamily: FF,
+                    boxShadow: '0 6px 24px rgba(227,150,191,0.3)',
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <Package size={16} /> Cargar más
+                  </button>
+                )}
               </div>
             )}
           </div>

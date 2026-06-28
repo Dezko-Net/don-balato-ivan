@@ -1365,24 +1365,10 @@ export default function HomePage23() {
       }
 
       /* ── HIDE HEROBANNER PAGINATION AND ARROWS ── */
-      .slideshow .swiper-pagination,
-      .slideshow .button-previous,
-      .slideshow .button-next,
-      .slideshow .swiper-navigation-wrapper {
+      .slideshow .swiper-pagination {
           display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          pointer-events: none !important;
       }
-
-      /* ── DISABLE SLIDING/DRAGGING IN HEROBANNER ── */
-      .slideshow .swiper-wrapper {
-          pointer-events: none !important;
-          touch-action: none !important;
-      }
-      .slideshow .slideshow__slide {
-          pointer-events: auto !important;
-      }
+      /* ── SLIDESHOW ARROWS ARE NOW VISIBLE ── */
 
       /* Ocultar el bloque de video y el contenido del collage en móviles y tablets para evitar lag severo */
       @media (max-width: 1023px) {
@@ -2991,8 +2977,48 @@ export default function HomePage23() {
       }
     }, 600);
 
-    // Hero swiper is now enabled natively
-
+    // ═══ Initialize HeroBanner Swiper ═══
+    const initHeroSwiper = () => {
+      const SwiperClass = (window as any).Swiper;
+      if (!SwiperClass) return;
+      const heroSwiperContainer = root.querySelector('custom-slideshow .swiper-container') as any;
+      if (heroSwiperContainer && !heroSwiperContainer.swiper) {
+        try {
+          const swiperSettings: any = {
+            slidesPerView: 1,
+            loop: true,
+            speed: 500,
+            watchOverflow: true,
+            observer: true,
+            observeSlideChildren: true,
+            autoHeight: false,
+            autoplay: { delay: 5000 }
+          };
+          
+          const parent = heroSwiperContainer.closest('custom-slideshow');
+          if (parent) {
+            if (parent.querySelector('.button-next') && parent.querySelector('.button-previous')) {
+              swiperSettings.navigation = {
+                nextEl: parent.querySelector('.button-next'),
+                prevEl: parent.querySelector('.button-previous')
+              };
+            }
+            if (parent.querySelector('.swiper-pagination')) {
+              swiperSettings.pagination = {
+                el: parent.querySelector('.swiper-pagination'),
+                clickable: true
+              };
+            }
+          }
+          const swiper = new SwiperClass(heroSwiperContainer, swiperSettings);
+          swiper.init();
+        } catch (e) {
+          console.warn('Hero swiper init error:', e);
+        }
+      }
+    };
+    setTimeout(initHeroSwiper, 500);
+    setTimeout(initHeroSwiper, 1500);
     // ═══ NEWSLETTER POPUP ON MOBILE: Never auto-open, only on user tap ═══
     // On mobile, always keep the popup closed unless the user explicitly opens it.
     if (window.matchMedia('(max-width: 767px)').matches) {

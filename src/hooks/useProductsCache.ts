@@ -1,5 +1,6 @@
 import useSWR from 'swr';
-import { useState, useEffect, useMemo } from 'react';
+import useSWRInfinite from 'swr/infinite';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Product } from '@/types';
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
@@ -18,6 +19,12 @@ interface UseProductsParams {
   priceMax?: number;
   ofertasOnly?: boolean;
   catalogMode?: 'retail' | 'paquetes' | 'embalajes';
+  // Opt-in: real server-side pagination (10/page) via useSWRInfinite.
+  // When false (default) the hook keeps the legacy behaviour of downloading
+  // every product once and filtering/sorting/slicing client-side — required by
+  // consumers that need allProducts (carousels) or multi-mode client filters.
+  serverPaginated?: boolean;
+  pageSize?: number;
 }
 
 export function useProductsCache({
@@ -30,12 +37,14 @@ export function useProductsCache({
   priceMin,
   priceMax,
   ofertasOnly,
-  catalogMode
+  catalogMode,
+  serverPaginated = false,
+  pageSize = 10
 }: UseProductsParams) {
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [page, setPage] = useState(1);
-  
+
   const { settings: apertura } = useAperturaPromotion();
 
   const [isMinWaitDone, setIsMinWaitDone] = useState(false);
@@ -45,10 +54,10 @@ export function useProductsCache({
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
-    
+
     // Premium UX: Ensure minimum loader time so Lottie has time to load and play
     const t = setTimeout(() => setIsMinWaitDone(true), 1200);
-    
+
     return () => {
       window.removeEventListener('resize', check);
       clearTimeout(t);
@@ -57,8 +66,28 @@ export function useProductsCache({
 
   const limit = isMobile ? 50 : 100;
 
-  // Global SWR Key: Fetch EVERYTHING exactly once per session.
-  const globalKey = isClient ? `/api/public-data/products?limit=10000` : null;
+  // ---------------------------------------------------------------------------
+  // Build the shared filter query string used by the server-paginated mode.
+  // ---------------------------------------------------------------------------
+  const buildParams = useCallback(() => {
+    const params = new URLSearchParams();
+    if (categoryId) params.set('categoryId', categoryId);
+    if (subcategoryId) params.set('subcategoryId', subcategoryId);
+    if (subSubcategoryId) params.set('subSubcategoryId', subSubcategoryId);
+    if (sortBy) params.set('sortBy', sortBy);
+    if (search) params.set('search', search);
+    if (tag) params.set('tag', tag);
+    if (priceMin !== undefined) params.set('priceMin', String(priceMin));
+    if (priceMax !== undefined) params.set('priceMax', String(priceMax));
+    if (ofertasOnly) params.set('ofertasOnly', 'true');
+    return params;
+  }, [categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, priceMin, priceMax, ofertasOnly]);
+
+  // ===========================================================================
+  // LEGACY MODE: download everything once, filter/sort/paginate client-side.
+  // ===========================================================================
+  // Global SWR Key: Fetch EVERYTHING exactly once per session (only when NOT paginated).
+  const globalKey = (isClient && !serverPaginated) ? `/api/public-data/products?limit=10000` : null;
 
   const { data, error, isValidating, mutate } = useSWR(globalKey, fetcher, {
     revalidateOnFocus: false,
@@ -66,6 +95,45 @@ export function useProductsCache({
     revalidateOnReconnect: false,
     dedupingInterval: 86400000, // 24 hours deduping (essentially cached for the entire session)
   });
+
+  // ===========================================================================
+  // PAGINATED MODE: real server-side pagination (10/page) via useSWRInfinite.
+  // ===========================================================================
+  const getKey = useCallback(
+    (pageIndex: number, previousPageData: any) => {
+      if (!serverPaginated || !isClient) return null;
+      // Stop when the previous page came back empty.
+      if (previousPageData && (!previousPageData.products || previousPageData.products.length === 0)) return null;
+      const params = buildParams();
+      params.set('limit', String(pageSize));
+      params.set('offset', String(pageIndex * pageSize));
+      return `/api/public-data/products?${params.toString()}`;
+    },
+    [serverPaginated, isClient, buildParams, pageSize]
+  );
+
+  const {
+    data: pages,
+    error: infiniteError,
+    size,
+    setSize,
+    isValidating: isInfiniteValidating,
+    mutate: infiniteMutate,
+  } = useSWRInfinite(getKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateFirstPage: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 60000,
+  });
+
+  // Reset pagination back to the first page whenever the filters change.
+  useEffect(() => {
+    if (serverPaginated) {
+      setSize(1);
+    } else {
+      setPage(1);
+    }
+  }, [categoryId, subcategoryId, subSubcategoryId, search, tag, sortBy, priceMin, priceMax, ofertasOnly, catalogMode, serverPaginated, setSize]);
 
   // Keep loading true until both data arrives AND the minimum premium delay has passed
   const isLoadingInitialData = (!data && !error) || !isMinWaitDone;
@@ -85,7 +153,7 @@ export function useProductsCache({
 
     let filtered: Product[] = [...data.products];
     const activeOffers = data.activeOffers || [];
-    
+
     if (categoryId) {
       filtered = filtered.filter(p => p.CATEGORYID === categoryId);
     }
@@ -111,16 +179,16 @@ export function useProductsCache({
       });
     }
     if (search) {
-      const normalizeText = (text: string) => 
+      const normalizeText = (text: string) =>
         text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/g, "").toLowerCase();
-      
+
       const qTokens = normalizeText(search).trim().split(/\s+/).filter(Boolean);
       if (qTokens.length > 0) {
         filtered = filtered.filter(p => {
           const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
           const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
           const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
-          
+
           const searchSpace = normalizeText(`${p.NAME} ${p.DESCRIPTION || ''} ${pSku}`);
           return qTokens.every(token => searchSpace.includes(token));
         });
@@ -130,7 +198,7 @@ export function useProductsCache({
     // Calculate priceRange dynamically for the current mode
     let minPrice = Infinity;
     let maxPrice = -Infinity;
-    
+
     const modeProducts = data.products.filter((p: Product) => {
       if (catalogMode === 'paquetes' || catalogMode === 'embalajes') {
         const qty = p.PACKQTY ? Number(p.PACKQTY) : 0;
@@ -155,7 +223,7 @@ export function useProductsCache({
         subSubcategoryCounts[p.SUBSUBCATEGORYID] = (subSubcategoryCounts[p.SUBSUBCATEGORYID] || 0) + 1;
       }
     });
-    
+
     modeProducts.forEach((p: Product) => {
       let price = resolveProductDisplayPrice(p, apertura).displayPrice;
       if (catalogMode === 'embalajes') {
@@ -169,7 +237,7 @@ export function useProductsCache({
       if (price < minPrice) minPrice = price;
       if (price > maxPrice) maxPrice = price;
     });
-    
+
     if (minPrice === Infinity) minPrice = 0;
     if (maxPrice === -Infinity) maxPrice = 0;
     const finalPriceRange: [number, number] = [minPrice, maxPrice];
@@ -244,11 +312,56 @@ export function useProductsCache({
     return processedData.products.slice(0, page * limit);
   }, [processedData.products, page, limit]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [categoryId, subcategoryId, subSubcategoryId, search, tag, sortBy, priceMin, priceMax, ofertasOnly, catalogMode]);
-
   const hasMore = paginatedProducts.length < processedData.products.length;
+
+  // ---------------------------------------------------------------------------
+  // PAGINATED MODE derived values (server-side).
+  // ---------------------------------------------------------------------------
+  const pagProducts = useMemo(
+    () => (pages || []).flatMap((pg: any) => (pg?.products || []) as Product[]),
+    [pages]
+  );
+  const firstPage: any = pages?.[0];
+  const lastPage: any = pages?.[pages.length - 1];
+  const pagTotal: number = firstPage?.total || 0;
+  const pagIsEmpty = (firstPage?.products?.length || 0) === 0;
+  const pagReachingEnd =
+    pagIsEmpty ||
+    pagProducts.length >= pagTotal ||
+    (!!lastPage && (lastPage.products?.length || 0) < pageSize);
+  const pagLoadingInitial = !pages && !infiniteError;
+  const pagLoadingMore =
+    pagLoadingInitial ||
+    (size > 0 && !!pages && typeof pages[size - 1] === 'undefined') ||
+    (isInfiniteValidating && (pages?.length || 0) > 0);
+
+  const loadMorePaginated = useCallback(() => {
+    if (!pagReachingEnd) setSize(s => s + 1);
+  }, [pagReachingEnd, setSize]);
+
+  const loadMoreLegacy = useCallback(() => {
+    if (hasMore) setPage(p => p + 1);
+  }, [hasMore]);
+
+  if (serverPaginated) {
+    return {
+      products: pagProducts,
+      allProducts: undefined as Product[] | undefined,
+      total: pagTotal,
+      priceRange: (firstPage?.priceRange || [0, 0]) as [number, number],
+      categoryCounts: (firstPage?.categoryCounts || {}) as Record<string, number>,
+      subcategoryCounts: (firstPage?.subcategoryCounts || {}) as Record<string, number>,
+      subSubcategoryCounts: (firstPage?.subSubcategoryCounts || {}) as Record<string, number>,
+      allTags: (firstPage?.allTags || []) as string[],
+      error: infiniteError,
+      isLoadingInitialData: pagLoadingInitial,
+      isLoadingMore: pagLoadingMore,
+      isReachingEnd: pagReachingEnd,
+      loadMore: loadMorePaginated,
+      isMobile,
+      mutate: infiniteMutate,
+    };
+  }
 
   return {
     products: paginatedProducts,
@@ -263,9 +376,7 @@ export function useProductsCache({
     isLoadingInitialData,
     isLoadingMore: isValidating && isLoadingInitialData,
     isReachingEnd: !hasMore,
-    loadMore: () => {
-      if (hasMore) setPage(p => p + 1);
-    },
+    loadMore: loadMoreLegacy,
     isMobile,
     mutate
   };
@@ -284,4 +395,3 @@ export async function invalidateGlobalProductsCache() {
     console.error('Error invalidating cache', e);
   }
 }
-
