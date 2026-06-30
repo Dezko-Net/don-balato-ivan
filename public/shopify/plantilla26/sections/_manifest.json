@@ -1,0 +1,155 @@
+{
+  "plantilla": 26,
+  "generatedAt": "2026-06-29T06:31:50.494Z",
+  "note": "Editá sections/*.html y recompilá con: node shopify-folla.js join 26",
+  "parts": [
+    {
+      "order": 0,
+      "role": "prelude",
+      "file": "000-_prelude.html",
+      "bytes": 766
+    },
+    {
+      "order": 10,
+      "role": "section",
+      "name": "announcement",
+      "id": "shopify-section-sections--21952070713590__announcement",
+      "file": "010-announcement.html",
+      "bytes": 1044
+    },
+    {
+      "order": 20,
+      "role": "section",
+      "name": "header",
+      "id": "shopify-section-sections--21952070713590__header",
+      "file": "020-header.html",
+      "bytes": 784398
+    },
+    {
+      "order": 30,
+      "role": "section",
+      "name": "side-cart",
+      "id": "shopify-section-sections--21952071434486__side-cart",
+      "file": "030-side-cart.html",
+      "bytes": 465
+    },
+    {
+      "order": 40,
+      "role": "section",
+      "name": "shop-the-look-drawer",
+      "id": "shopify-section-sections--21952071434486__shop-the-look-drawer",
+      "file": "040-shop-the-look-drawer.html",
+      "bytes": 498
+    },
+    {
+      "order": 50,
+      "role": "section",
+      "name": "section_grid_yycxme",
+      "id": "shopify-section-template--21952075268342__section_grid_yyCXme",
+      "file": "050-section_grid_yycxme.html",
+      "bytes": 11467
+    },
+    {
+      "order": 60,
+      "role": "section",
+      "name": "1653391228084c834a",
+      "id": "shopify-section-template--21952075268342__1653391228084c834a",
+      "file": "060-1653391228084c834a.html",
+      "bytes": 15740
+    },
+    {
+      "order": 70,
+      "role": "section",
+      "name": "16603001534a9c90c9",
+      "id": "shopify-section-template--21952075268342__16603001534a9c90c9",
+      "file": "070-16603001534a9c90c9.html",
+      "bytes": 44157
+    },
+    {
+      "order": 80,
+      "role": "section",
+      "name": "16548652677db3e33c",
+      "id": "shopify-section-template--21952075268342__16548652677db3e33c",
+      "file": "080-16548652677db3e33c.html",
+      "bytes": 7836
+    },
+    {
+      "order": 90,
+      "role": "section",
+      "name": "166030001712c7cb2b",
+      "id": "shopify-section-template--21952075268342__166030001712c7cb2b",
+      "file": "090-166030001712c7cb2b.html",
+      "bytes": 79807
+    },
+    {
+      "order": 100,
+      "role": "section",
+      "name": "16620576959f001826",
+      "id": "shopify-section-template--21952075268342__16620576959f001826",
+      "file": "100-16620576959f001826.html",
+      "bytes": 8610
+    },
+    {
+      "order": 110,
+      "role": "section",
+      "name": "section_image_hotspots_qffpmj",
+      "id": "shopify-section-template--21952075268342__section_image_hotspots_qffPmj",
+      "file": "110-section_image_hotspots_qffpmj.html",
+      "bytes": 12382
+    },
+    {
+      "order": 120,
+      "role": "section",
+      "name": "1653468546493c13a2",
+      "id": "shopify-section-template--21952075268342__1653468546493c13a2",
+      "file": "120-1653468546493c13a2.html",
+      "bytes": 7814
+    },
+    {
+      "order": 130,
+      "role": "section",
+      "name": "section_slideshow_bkarxg",
+      "id": "shopify-section-template--21952075268342__section_slideshow_bKaRxG",
+      "file": "130-section_slideshow_bkarxg.html",
+      "bytes": 4870
+    },
+    {
+      "order": 140,
+      "role": "section",
+      "name": "16548654705529ee49",
+      "id": "shopify-section-template--21952075268342__16548654705529ee49",
+      "file": "140-16548654705529ee49.html",
+      "bytes": 2715
+    },
+    {
+      "order": 150,
+      "role": "section",
+      "name": "78836e0a-6131-4f01-afff-dbdd186d0914",
+      "id": "shopify-section-template--21952075268342__78836e0a-6131-4f01-afff-dbdd186d0914",
+      "file": "150-78836e0a-6131-4f01-afff-dbdd186d0914.html",
+      "bytes": 911
+    },
+    {
+      "order": 160,
+      "role": "section",
+      "name": "165346832322a4db6f",
+      "id": "shopify-section-template--21952075268342__165346832322a4db6f",
+      "file": "160-165346832322a4db6f.html",
+      "bytes": 1031
+    },
+    {
+      "order": 170,
+      "role": "section",
+      "name": "footer",
+      "id": "shopify-section-sections--21952070648054__footer",
+      "file": "170-footer.html",
+      "bytes": 34075
+    },
+    {
+      "order": 180,
+      "role": "tail",
+      "file": "180-_tail.html",
+      "bytes": 12568
+    }
+  ]
+}

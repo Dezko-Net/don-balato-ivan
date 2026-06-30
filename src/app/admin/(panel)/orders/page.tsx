@@ -341,44 +341,24 @@ function OrdersContent() {
     }
   }, [load]);
 
-  // Reset pagination when filter changes (using sessionStorage cache to act as wrapper)
+  // Reset pagination when filter changes — always fetch fresh, no sessionStorage cache
   useEffect(() => {
     pageCursorsRef.current = new Map([[1, null]]);
     setCurrentPage(1);
-
-    const cacheKey = `admin_orders_${activeFilter}_${search}_${customDateStart}_${customDateEnd}`;
-    const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.orders && parsed.orders.length > 0) {
-          setOrders(parsed.orders);
-          setStatsCache(parsed.statsCache);
-          setCustomStatusCounts(parsed.customStatusCounts);
-          setTotalCount(parsed.totalCount || 0);
-          setIsLoading(false);
-          autoDeliverShippedOrders();
-          return;
-        }
-      } catch {}
-    }
-
     load(1);
     autoDeliverShippedOrders();
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter]);
 
+  // Auto-poll every 30s to pick up external changes (WhatsApp webhook, Kenia, etc.)
   useEffect(() => {
-    if (isLoading || orders.length === 0) return;
-    const cacheKey = `admin_orders_${activeFilter}_${search}_${customDateStart}_${customDateEnd}`;
-    sessionStorage.setItem(cacheKey, JSON.stringify({
-      orders,
-      statsCache,
-      customStatusCounts,
-      totalCount
-    }));
-  }, [orders, statsCache, customStatusCounts, totalCount, activeFilter, search, customDateStart, customDateEnd, isLoading]);
+    const interval = setInterval(() => {
+      load(currentPage);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [load, currentPage]);
+
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));
