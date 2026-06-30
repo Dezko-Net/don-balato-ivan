@@ -237,10 +237,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         );
       }
       if (!isEmbalajes) {
-        return (
-          p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < p.PRICE &&
-          p.UNIT_OFFER_EXPIRES_AT && p.UNIT_OFFER_EXPIRES_AT > nowMs
-        );
+        const hasOfferPrice = !!(p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < p.PRICE);
+        const notExpired = !p.UNIT_OFFER_EXPIRES_AT || p.UNIT_OFFER_EXPIRES_AT > nowMs;
+        return hasOfferPrice && notExpired;
       }
       return false;
     });
@@ -651,6 +650,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                 const cTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                 const cSku = getSkuFromFeatures(cFeatures, cTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
                 const expiresAtMs = p.UNIT_OFFER_EXPIRES_AT || 0;
+                const minQty = (p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 1) ? p.WHOLESALEMINQUANTITY : 1;
                 return (
                   <div key={p.$id} style={{ minWidth: 204, maxWidth: 224, flex: '0 0 auto', background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', overflow: 'hidden', boxShadow: `0 4px 14px ${shadowColorLight}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
                     {discPct > 0 && (
@@ -672,6 +672,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         <span style={{ fontSize: 19, fontWeight: 900, color: '#e396bf', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(offerPrice)}</span>
                         {discPct > 0 && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(origPrice)}</span>}
                       </div>
+                      {minQty > 1 && (
+                        <div style={{ fontSize: 10.5, fontWeight: 700, color: '#db2777' }}>Desde {minQty} unidades</div>
+                      )}
                       {expiresAtMs > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}>
                           <Clock size={11} className="animate-pulse" />
@@ -679,11 +682,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         </div>
                       )}
                       <button
-                        onClick={() => (p.STOCK || 0) > 0 && addItem(p, 1, undefined, undefined, offerPrice)}
+                        onClick={() => (p.STOCK || 0) > 0 && addItem(p, minQty)}
                         disabled={(p.STOCK || 0) <= 0}
                         style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: (p.STOCK || 0) <= 0 ? '#f3f4f6' : 'linear-gradient(135deg,#fdf2f8,#fce7f3)', color: (p.STOCK || 0) <= 0 ? '#9ca3af' : '#c0547a', fontSize: 12, fontWeight: 700, cursor: (p.STOCK || 0) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF }}
                       >
-                        <ShoppingCart size={13} /> {(p.STOCK || 0) <= 0 ? 'Sin stock' : 'Agregar'}
+                        <ShoppingCart size={13} /> {(p.STOCK || 0) <= 0 ? 'Sin stock' : (minQty > 1 ? `Agregar ${minQty}` : 'Agregar')}
                       </button>
                     </div>
                   </div>

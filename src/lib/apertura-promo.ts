@@ -13,6 +13,7 @@ export type ProductPriceLike = {
   PRICE: number;
   CURRENTPRICE?: number | null;
   WHOLESALEPRICE?: number | null;
+  WHOLESALEMINQUANTITY?: number | null;
   PACKQTY?: number | null;
   PACK_DISCOUNT_PCT?: number | null;
   UNIT_OFFER_EXPIRES_AT?: number | null;
@@ -151,8 +152,12 @@ export function resolveProductDisplayPrice(
   }
 
   const unitOfferExpired = !!(product.UNIT_OFFER_EXPIRES_AT && product.UNIT_OFFER_EXPIRES_AT < Date.now());
+  // Si hay una cantidad mínima configurada (precio por volumen), la oferta NO se aplica
+  // incondicionalmente: solo se activa al alcanzar esa cantidad (gestionado por la lógica
+  // de wholesale en carrito/checkout/detalle). Sin cantidad mínima, la oferta es incondicional.
+  const hasMinQtyGate = !!(product.WHOLESALEMINQUANTITY && product.WHOLESALEMINQUANTITY > 1);
   const sale =
-    product.CURRENTPRICE && product.CURRENTPRICE > 0 && product.CURRENTPRICE < effectiveBase && !unitOfferExpired
+    product.CURRENTPRICE && product.CURRENTPRICE > 0 && product.CURRENTPRICE < effectiveBase && !unitOfferExpired && !hasMinQtyGate
       ? product.CURRENTPRICE
       : null;
 

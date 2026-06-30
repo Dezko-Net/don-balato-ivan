@@ -75,7 +75,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return item.timedOfferPrice * item.quantity;
     }
     
-    if (item.wholesalePrice !== undefined) {
+    if (item.wholesalePrice !== undefined && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
       return item.wholesalePrice * item.quantity;
     }
     

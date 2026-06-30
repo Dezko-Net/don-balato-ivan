@@ -28,7 +28,8 @@ export function useCartItemPrice(item: CartItem): {
     }
 
     // 2. Explicit wholesale price passed via item (e.g. from embalajes or isPack mode addition)
-    if (item.wholesalePrice !== undefined) {
+    // Respects WHOLESALEMINQUANTITY: only applies unconditionally for packs or when no minQty is set
+    if (item.wholesalePrice !== undefined && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
       return {
         unitPrice: item.wholesalePrice,
         pricing: {
@@ -118,7 +119,7 @@ export function useCartPricing(items: CartItem[]) {
         unit = item.timedOfferPrice;
       } else if (hasConfiguredWholesale && qtyMatches) {
         unit = item.product.WHOLESALEPRICE!;
-      } else if (!hasConfiguredWholesale && item.wholesalePrice) {
+      } else if (!hasConfiguredWholesale && item.wholesalePrice && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
         unit = item.wholesalePrice;
       } else {
         unit = resolveProductDisplayPrice(item.product, apertura).displayPrice;
