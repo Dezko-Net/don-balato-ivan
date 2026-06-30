@@ -183,6 +183,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     subcategoryCounts: serverSubcategoryCounts,
     subSubcategoryCounts: serverSubSubcategoryCounts,
     allTags,
+    offerCount,
     isLoadingInitialData: isLoading,
     isLoadingMore: isMoreLoading,
     isReachingEnd,
@@ -296,14 +297,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
       )}
 
       {/* Ofertas Temporales */}
-      {activeOfferProductIds.length > 0 && (
+      {(activeOfferProductIds.length > 0 || offerCount > 0) && (
         <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Promociones</p>
           <button onClick={() => setSelectedOfertasOnly(!selectedOfertasOnly)}
             style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedOfertasOnly ? 700 : 500, color: selectedOfertasOnly ? '#e396bf' : '#6b7280', background: selectedOfertasOnly ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15 }}>🔥</span>
             <span style={{ flex: 1 }}>Ofertas Temporales</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedOfertasOnly ? '#fce7f3' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{activeOfferProductIds.length}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedOfertasOnly ? '#fce7f3' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{Math.max(activeOfferProductIds.length, offerCount)}</span>
           </button>
         </div>
       )}

@@ -254,6 +254,12 @@ export async function GET(request: NextRequest) {
       return (p.TAGS as string[]).filter(Boolean);
     }))).sort();
 
+    // Count products with CURRENTPRICE offer (set from por-unidad admin)
+    const cpOfferCount = allProducts.filter(p =>
+      p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < (p.PRICE || 0)
+    ).length;
+    const totalOfferCount = Math.max(cpOfferCount, activeOffers.length);
+
     // Sliced pagination
     const total = filtered.length;
     const paginatedProducts = filtered.slice(offset, offset + limit);
@@ -265,7 +271,8 @@ export async function GET(request: NextRequest) {
       categoryCounts,
       subcategoryCounts,
       subSubcategoryCounts,
-      allTags
+      allTags,
+      offerCount: totalOfferCount
     }, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
