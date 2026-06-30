@@ -622,6 +622,78 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           </div>
         )}
 
+        {/* Carousel de ofertas del día (solo retail) */}
+        {!isPaquetes && !isEmbalajes && offersDayProducts.length > 0 && (
+          <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg,#fff5f8 0%,#fdf2f8 100%)', border: '1px solid #fce7f3', boxShadow: `0 8px 32px ${shadowColor}` }}>
+            <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg,#e396bf,#c0547a)', color: '#fff', padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 800, marginBottom: 8, letterSpacing: '0.04em' }}>
+                  🔥 OFERTAS DEL DÍA
+                </div>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em', fontFamily: FF }}>Productos en promoción</h2>
+                <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0', fontWeight: 500 }}>Precios especiales por tiempo limitado</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: -268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #fce7f3', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
+                  <ChevronLeft size={18} />
+                </button>
+                <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: 268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #fce7f3', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+            <div ref={offerCarouselRef} className="pk-carousel-offers-no-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+              {offersDayProducts.map(p => {
+                const offerPrice = p.CURRENTPRICE || 0;
+                const origPrice = p.PRICE || 0;
+                const discPct = origPrice > 0 ? Math.round((1 - offerPrice / origPrice) * 100) : 0;
+                const cFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+                const cTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+                const cSku = getSkuFromFeatures(cFeatures, cTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+                const expiresAtMs = p.UNIT_OFFER_EXPIRES_AT || 0;
+                return (
+                  <div key={p.$id} style={{ minWidth: 204, maxWidth: 224, flex: '0 0 auto', background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', overflow: 'hidden', boxShadow: `0 4px 14px ${shadowColorLight}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                    {discPct > 0 && (
+                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: '#e396bf', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 900, padding: '3px 9px' }}>-{discPct}%</div>
+                    )}
+                    <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
+                      {getProductImageUrl(p) ? (
+                        <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>🛍️</div>
+                      )}
+                    </div>
+                    <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      {cSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {cSku}</div>}
+                      <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
+                      </Link>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+                        <span style={{ fontSize: 19, fontWeight: 900, color: '#e396bf', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(offerPrice)}</span>
+                        {discPct > 0 && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(origPrice)}</span>}
+                      </div>
+                      {expiresAtMs > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}>
+                          <Clock size={11} className="animate-pulse" />
+                          <CountdownTimer expiresAt={Math.floor(expiresAtMs / 1000)} compact />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => (p.STOCK || 0) > 0 && addItem(p, 1, undefined, undefined, offerPrice)}
+                        disabled={(p.STOCK || 0) <= 0}
+                        style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: (p.STOCK || 0) <= 0 ? '#f3f4f6' : 'linear-gradient(135deg,#fdf2f8,#fce7f3)', color: (p.STOCK || 0) <= 0 ? '#9ca3af' : '#c0547a', fontSize: 12, fontWeight: 700, cursor: (p.STOCK || 0) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF }}
+                      >
+                        <ShoppingCart size={13} /> {(p.STOCK || 0) <= 0 ? 'Sin stock' : 'Agregar'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <style>{`.pk-carousel-offers-no-scroll::-webkit-scrollbar { display: none; }`}</style>
+          </div>
+        )}
+
         {/* Top toolbar */}
         <div className={`pk-toolbar ${isScrolled ? 'pk-toolbar-scrolled' : ''}`} style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center', padding: 12, borderRadius: 22, background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(229,231,235,0.9)', backdropFilter: 'blur(16px)', boxShadow: '0 10px 34px rgba(227,150,191,0.1)' }}>
           <div className="pk-toolbar-search" style={{ position: 'relative', flex: 1, minWidth: 0 }}>
