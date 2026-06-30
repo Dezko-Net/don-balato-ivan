@@ -108,16 +108,17 @@ export default function BlockedProductsPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`¿Desbloquear "${name}"? Podrá volver a ser agregado o importado.`)) return;
+    if (!confirm(`¿Eliminar "${name}" de productos bloqueados?`)) return;
     setDeletingId(id);
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      await databases.deleteDocument(databaseId, 'blocked_products', id);
+      const res = await fetch(`/api/admin/blocked-products?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Error ${res.status}`);
+      }
       setItems(prev => prev.filter(item => item.$id !== id));
-      alert('Producto desbloqueado correctamente.');
     } catch (e: any) {
-      alert('Error al eliminar bloqueo: ' + e.message);
+      alert('Error al eliminar: ' + e.message);
     } finally {
       setDeletingId(null);
     }
