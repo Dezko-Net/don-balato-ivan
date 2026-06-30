@@ -351,14 +351,6 @@ function OrdersContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter]);
 
-  // Auto-poll every 30s to pick up external changes (WhatsApp webhook, Kenia, etc.)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      load(currentPage);
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [load, currentPage]);
-
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));
