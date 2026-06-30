@@ -180,7 +180,10 @@ export async function GET(request: NextRequest) {
       filtered = filtered.filter(p => p.SUBSUBCATEGORYID === subSubcategoryId);
     }
     if (ofertasOnly) {
-      filtered = filtered.filter(p => activeOffers.includes(p.$id));
+      filtered = filtered.filter(p =>
+        activeOffers.includes(p.$id) ||
+        (p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < (p.PRICE || 0))
+      );
     }
     if (tag) {
       filtered = filtered.filter(p => {

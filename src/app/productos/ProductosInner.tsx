@@ -119,7 +119,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           }
 
           const offerIds = (data.offers as any[] || []).map((d: any) => d.targetId).filter(Boolean);
-          setActiveOfferProductIds(offerIds);
+          const cpOfferIds = (data.offerProductIds as string[] || []);
+          setActiveOfferProductIds(Array.from(new Set([...offerIds, ...cpOfferIds])));
         }
       } catch (e) {
         console.error(e);

@@ -163,8 +163,11 @@ export function useProductsCache({
     if (subSubcategoryId) {
       filtered = filtered.filter(p => p.SUBSUBCATEGORYID === subSubcategoryId);
     }
-    if (ofertasOnly && activeOffers.length > 0) {
-      filtered = filtered.filter(p => activeOffers.includes(p.$id));
+    if (ofertasOnly) {
+      filtered = filtered.filter(p =>
+        (activeOffers.length > 0 && activeOffers.includes(p.$id)) ||
+        (p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < (p.PRICE || 0))
+      );
     }
     if (catalogMode === 'paquetes' || catalogMode === 'embalajes') {
       filtered = filtered.filter(p => {
