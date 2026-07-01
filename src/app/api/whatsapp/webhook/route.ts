@@ -516,15 +516,15 @@ export async function POST(req: NextRequest) {
             let pendingOrderId = usageState.awaitingComprobante ? usageState.pendingOrderId : null;
             let orderCode = pendingOrderId || '';
 
-            if (!pendingOrderId) {
+            if (!pendingOrderId && usageState.hasNoPendingOrders !== true) {
               const { serverListDocuments } = await import('@/lib/appwrite-server');
               const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
               try {
                 const cleanedPhone = fromPhone.replace(/\D/g, '');
                 const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-                const qLimit5 = JSON.stringify({ method: 'limit', values: [10] });
-                const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhone, `+${cleanedPhone}`] });
-                // We fetch 10 orders matching the phone directly from DB
+                const qLimit5 = JSON.stringify({ method: 'limit', values: [5] });
+                const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhone] });
+                // We fetch up to 5 orders matching the phone directly from DB
                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit5]);
                 const myOrders = resOrders.documents || [];
                 // First: pending orders without payment proof
@@ -538,6 +538,9 @@ export async function POST(req: NextRequest) {
                   if (processingNoProof) {
                     pendingOrderId = String(processingNoProof.$id);
                     orderCode = String(processingNoProof.ORDERCODE || processingNoProof.$id);
+                  } else {
+                    // Mark so we don't query again this session when they send more images
+                    await recordKeniaUsage(fromPhone, { hasNoPendingOrders: true });
                   }
                 }
               } catch (e) {
@@ -987,14 +990,11 @@ export async function POST(req: NextRequest) {
                  const { serverListDocuments } = await import('@/lib/appwrite-server');
                  const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
                  const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-                 const qLimit100b = JSON.stringify({ method: 'limit', values: [100] });
-                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit100b]);
-                 const myOrders = (resOrders.documents || []).filter((o: any) => {
-                    const oPhone = String(o.CUSTOMERPHONE || '');
-                    if (oPhone && phonesMatch(oPhone, fromPhone)) return true;
-                    const linked: string[] = Array.isArray(o.LINKED_WHATSAPP) ? o.LINKED_WHATSAPP : [];
-                    return linked.some((p: string) => phonesMatch(p, fromPhone));
-                 });
+                 const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+                 const cleanedPhone = fromPhone.replace(/\D/g, '');
+                 const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhone] });
+                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit1, qPhone]);
+                 const myOrders = resOrders.documents || [];
                  if (myOrders.length > 0) {
                    isGuestWithOrders = true;
                    const guestName = String(myOrders[0]?.CUSTOMERNAME || '');
@@ -1090,13 +1090,10 @@ export async function POST(req: NextRequest) {
               const { serverListDocuments } = await import('@/lib/appwrite-server');
               const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
               const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-              const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
-              const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit100]);
-              const altOrders = (resOrders.documents || []).filter((o: any) => {
-                const oPhone = String(o.CUSTOMERPHONE || '').replace(/\D/g, '');
-                if (!oPhone) return false;
-                return phonesMatch(oPhone, altPhone);
-              });
+              const qLimit5 = JSON.stringify({ method: 'limit', values: [5] });
+              const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [altPhone] });
+              const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit5, qPhone]);
+              const altOrders = resOrders.documents || [];
 
               if (altOrders.length > 0) {
                 const linked = await linkWhatsappToOrders(fromPhone, altOrders);
