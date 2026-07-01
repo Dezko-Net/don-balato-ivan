@@ -4664,6 +4664,20 @@ export default function HomePage1() {
       }
     }
 
+    // --- OVERRIDE: Wholesale Promo (20% OFF for 12+ units) ---
+    const wholesaleStart = new Date('2026-07-01T21:00:00-04:00').getTime();
+    const wholesaleEnd = new Date('2026-07-06T12:00:00-04:00').getTime();
+    const nowMs = Date.now();
+    if (nowMs >= wholesaleStart && nowMs < wholesaleEnd) {
+      section.classList.remove('tpl1-section-hidden');
+      title = '🔥 ¡GRAN PROMOCIÓN MAYORISTA! 🔥';
+      subtitle = 'Lleva 12 o más unidades de cualquier producto y obtén 20% OFF automático.';
+      slideText = '20% OFF MAYORISTA';
+      buttonText = 'VER CATÁLOGO';
+      buttonHref = '/productos';
+      endTimeMs = wholesaleEnd;
+    }
+
     // Aplicar al DOM
     const titleEl = section.querySelector('.countdown-sec-title h2') as HTMLElement;
     if (titleEl && title) titleEl.textContent = title;
@@ -8213,7 +8227,34 @@ export default function HomePage1() {
     }
 
     // Mobile: hide Shopify section, inject simple React countdown
-    if (!countdownOffer) {
+    let endTimeMs: number | null = null;
+    if (countdownOffer?.timeType === 'endDateTime' && countdownOffer.endDateTime) {
+      endTimeMs = new Date(countdownOffer.endDateTime).getTime();
+    } else if (countdownOffer?.timeType === 'duration' && countdownOffer.activatedAt && countdownOffer.durationHours) {
+      endTimeMs = new Date(countdownOffer.activatedAt).getTime() + (countdownOffer.durationHours * 3600000);
+    }
+
+    let title = countdownOffer?.productName || '';
+    let subtitle = countdownOffer?.discountPercentage ? `-${countdownOffer.discountPercentage}% por tiempo limitado` : '';
+    let bgImage = countdownProduct?.IMAGEURL || '';
+    let buttonHref = countdownOffer?.targetId ? `/producto/${countdownOffer.targetId}` : '/productos';
+
+    // --- OVERRIDE: Wholesale Promo (20% OFF for 12+ units) ---
+    const wholesaleStart = new Date('2026-07-01T21:00:00-04:00').getTime();
+    const wholesaleEnd = new Date('2026-07-06T12:00:00-04:00').getTime();
+    const nowMs = Date.now();
+    let isWholesaleActive = false;
+    if (nowMs >= wholesaleStart && nowMs < wholesaleEnd) {
+      isWholesaleActive = true;
+      title = '🔥 ¡GRAN PROMOCIÓN MAYORISTA! 🔥';
+      subtitle = 'Lleva 12 o más unidades de cualquier producto y obtén 20% OFF automático.';
+      bgImage = ''; // Default to gradient
+      buttonHref = '/productos';
+      endTimeMs = wholesaleEnd;
+    }
+
+    // Si no hay oferta ni promo activa, ocultar
+    if (!countdownOffer && !isWholesaleActive) {
       section.classList.add('tpl1-section-hidden');
       const existing = document.getElementById('tpl1-mobile-countdown');
       if (existing) {
@@ -8223,20 +8264,8 @@ export default function HomePage1() {
       }
       return;
     }
-
+    
     section.classList.add('tpl1-countdown-mobile-source-hidden');
-
-    let endTimeMs: number | null = null;
-    if (countdownOffer.timeType === 'endDateTime' && countdownOffer.endDateTime) {
-      endTimeMs = new Date(countdownOffer.endDateTime).getTime();
-    } else if (countdownOffer.timeType === 'duration' && countdownOffer.activatedAt && countdownOffer.durationHours) {
-      endTimeMs = new Date(countdownOffer.activatedAt).getTime() + (countdownOffer.durationHours * 3600000);
-    }
-
-    const title = countdownOffer.productName || '';
-    const subtitle = countdownOffer.discountPercentage ? `-${countdownOffer.discountPercentage}% por tiempo limitado` : '';
-    const bgImage = countdownProduct?.IMAGEURL || '';
-    const buttonHref = countdownOffer.targetId ? `/producto/${countdownOffer.targetId}` : '/productos';
 
     let host = document.getElementById('tpl1-mobile-countdown');
     if (!host) {

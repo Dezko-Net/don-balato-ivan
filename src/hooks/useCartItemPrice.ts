@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { CartItem } from '@/types';
-import { resolveProductDisplayPrice, type ResolvedProductPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, isWholesalePromoActive, type ResolvedProductPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 
 export function useCartItemPrice(item: CartItem): {
@@ -13,9 +13,11 @@ export function useCartItemPrice(item: CartItem): {
 
   return useMemo(() => {
     const now = Date.now();
+    let result: { unitPrice: number; pricing: ResolvedProductPrice } | null = null;
+
     // 1. Timed offer
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
-      return {
+      result = {
         unitPrice: item.timedOfferPrice,
         pricing: {
           displayPrice: item.timedOfferPrice,
@@ -29,8 +31,8 @@ export function useCartItemPrice(item: CartItem): {
 
     // 2. Explicit wholesale price passed via item (e.g. from embalajes or isPack mode addition)
     // Respects WHOLESALEMINQUANTITY: only applies unconditionally for packs or when no minQty is set
-    if (item.wholesalePrice !== undefined && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
-      return {
+    if (!result && item.wholesalePrice !== undefined && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
+      result = {
         unitPrice: item.wholesalePrice,
         pricing: {
           displayPrice: item.wholesalePrice,
@@ -44,7 +46,7 @@ export function useCartItemPrice(item: CartItem): {
 
     // 3. Paquetes: if item.isPack is true, or if qty reaches PACKQTY
     const packQty = item.product.PACKQTY;
-    if (item.isPack || (packQty && packQty > 1 && item.quantity >= packQty)) {
+    if (!result && (item.isPack || (packQty && packQty > 1 && item.quantity >= packQty))) {
       const base = item.product.PRICE || 0;
       let packPrice = base;
       if (item.product.WHOLESALEPRICE && item.product.WHOLESALEPRICE > 0) {
@@ -53,7 +55,7 @@ export function useCartItemPrice(item: CartItem): {
         const pct = item.product.PACK_DISCOUNT_PCT && item.product.PACK_DISCOUNT_PCT > 0 ? item.product.PACK_DISCOUNT_PCT : 20; // 20 is PACK_BONUS_DISCOUNT_PCT
         packPrice = Math.round(base * (1 - pct / 100));
       }
-      return {
+      result = {
         unitPrice: packPrice,
         pricing: {
           displayPrice: packPrice,
@@ -78,8 +80,8 @@ export function useCartItemPrice(item: CartItem): {
       ? item.product.WHOLESALEPRICE 
       : undefined;
 
-    if (effectiveWholesale) {
-      return {
+    if (!result && effectiveWholesale) {
+      result = {
         unitPrice: effectiveWholesale,
         pricing: {
           displayPrice: effectiveWholesale,
@@ -92,8 +94,28 @@ export function useCartItemPrice(item: CartItem): {
     }
 
     // 5. Default Apertura/Live logic
-    const pricing = resolveProductDisplayPrice(item.product, apertura);
-    return { unitPrice: pricing.displayPrice, pricing };
+    if (!result) {
+      const pricing = resolveProductDisplayPrice(item.product, apertura);
+      result = { unitPrice: pricing.displayPrice, pricing };
+    }
+
+    // 6. Global Wholesale Promo (20% OFF for 12+ units)
+    if (item.quantity >= 12 && isWholesalePromoActive()) {
+      const basePrice = item.product.PRICE || 0;
+      const globalWholesalePrice = Math.round(basePrice * 0.8); // 20% OFF
+      if (globalWholesalePrice > 0 && result.unitPrice > globalWholesalePrice) {
+        result.unitPrice = globalWholesalePrice;
+        result.pricing = {
+          displayPrice: globalWholesalePrice,
+          originalPrice: basePrice,
+          hasDiscount: true,
+          discountPercent: 20,
+          fromApertura: false,
+        };
+      }
+    }
+
+    return result;
   }, [item, apertura]);
 }
 
@@ -123,6 +145,14 @@ export function useCartPricing(items: CartItem[]) {
         unit = item.wholesalePrice;
       } else {
         unit = resolveProductDisplayPrice(item.product, apertura).displayPrice;
+      }
+
+      // Apply Global Wholesale Promo override
+      if (item.quantity >= 12 && isWholesalePromoActive()) {
+        const globalWholesalePrice = Math.round((item.product.PRICE || 0) * 0.8);
+        if (globalWholesalePrice > 0 && unit > globalWholesalePrice) {
+          unit = globalWholesalePrice;
+        }
       }
       subtotal += unit * item.quantity;
       catalogSubtotal += item.product.PRICE * item.quantity;

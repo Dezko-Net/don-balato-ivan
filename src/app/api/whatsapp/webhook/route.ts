@@ -35,13 +35,16 @@ const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.ver
 
 // ── In-memory caches to reduce Appwrite calls ──────────────────────────────
 let _catCache: { data: any[]; ts: number } | null = null;
-const CAT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const _productSearchCache = new Map<string, { data: any[]; ts: number }>();
-const PROD_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const PROD_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const _ordersCache = new Map<string, { data: any[]; ts: number }>();
-const ORDERS_CACHE_TTL = 60 * 1000; // 1 minute
+const ORDERS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+let _adminContextCache: { data: { recentOrders: any[], productsRes: any }; ts: number } | null = null;
+const ADMIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for Admin Context
 
 // ─── Admin system prompt ───────────────────────────────────────────────────────
 const ADMIN_PROMPT = `Eres Kenia IA, el asistente administrativo de Kevin&Coco por WhatsApp.
@@ -1224,17 +1227,32 @@ Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
     if (isAdmin ? needsDbContext(userText) : true) {
       try {
         if (isAdmin) {
-          // Admin: get recent orders (up to 100) + products
-          const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-          const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
-          const qLimit30 = JSON.stringify({ method: 'limit', values: [30] });
+          const now = Date.now();
+          let recentOrders: any[] = [];
+          let productsRes: any = { documents: [] };
 
-          const [ordersRes, productsRes] = await Promise.all([
-            serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit100]),
-            serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit30]),
-          ]);
+          if (_adminContextCache && (now - _adminContextCache.ts < ADMIN_CACHE_TTL)) {
+            recentOrders = _adminContextCache.data.recentOrders;
+            productsRes = _adminContextCache.data.productsRes;
+          } else {
+            // Admin: get recent orders (up to 100) + products
+            const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+            const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
+            const qLimit30 = JSON.stringify({ method: 'limit', values: [30] });
 
-          const recentOrders = ordersRes.documents || [];
+            const [fetchedOrdersRes, fetchedProductsRes] = await Promise.all([
+              serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit100]),
+              serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit30]),
+            ]);
+
+            recentOrders = fetchedOrdersRes.documents || [];
+            productsRes = fetchedProductsRes || { documents: [] };
+            
+            _adminContextCache = { 
+              data: { recentOrders, productsRes }, 
+              ts: now 
+            };
+          }
 
           // Helper to get local date string YYYY-MM-DD in America/Santiago timezone
           const getChileDateStr = (dateInput: string | number | Date) => {

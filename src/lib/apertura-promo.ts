@@ -227,3 +227,18 @@ export async function fetchAperturaSettings(): Promise<AperturaSettings> {
     return DEFAULT_SETTINGS;
   }
 }
+
+/**
+ * Determina si la promoción global de mayorista (20% OFF por 12+ unidades) está activa.
+ * Inicia: 2026-07-01T21:00:00-04:00
+ * Termina: 2026-07-06T12:00:00-04:00 (Lunes a las 12 PM)
+ */
+export function isWholesalePromoActive(): boolean {
+  const now = Date.now();
+  // July 1, 2026 21:00:00 EDT/AST is 2026-07-01T21:00:00-04:00 -> 1782954000000 ms
+  // Let's use Date objects to be safe with timezone
+  const start = new Date('2026-07-01T21:00:00-04:00').getTime();
+  const end = new Date('2026-07-06T12:00:00-04:00').getTime();
+  
+  return now >= start && now < end;
+}
