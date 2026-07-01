@@ -55,7 +55,8 @@ export default function Navbar1() {
   const [fabOpen, setFabOpen] = useState(false);
   const [navLogoUrl, setNavLogoUrl] = useState<string>('');
   const [navStoreName, setNavStoreName] = useState<string>('');
-  const { isEnabled: keniaEnabled } = useKeniaStatus();
+  const { isEnabled: keniaEnabledState } = useKeniaStatus();
+  const keniaEnabled = false; // 🛑 DISABLED PER USER REQUEST
   const lottieRef = useRef<HTMLDivElement>(null);
   const lottieAnimRef = useRef<any>(null);
 
