@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, OrderStatus } from '@/types/admin';
-import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package, Copy } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package, Copy, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures } from '@/lib/product-features';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
@@ -128,6 +128,10 @@ function OrdersContent() {
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportDateStart, setExportDateStart] = useState('');
+  const [exportDateEnd, setExportDateEnd] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
   // Stats cache — persists until manual refresh
   const [statsCache, setStatsCache] = useState<{ totalToday: number; countToday: number; topCustomer: { name: string; total: number } | null; avgTicket: number; totalPaid: number; countPaid: number; byStatus: Record<string, number>; byStatusAll: Record<string, number>; byStatusYesterday: Record<string, number>; byStatusDayBefore: Record<string, number>; allOrdersRaw: any[]; totalYesterday: number; countYesterday: number; totalAll: number; countAll: number; } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -446,6 +450,183 @@ function OrdersContent() {
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
+  const EXPORT_EXCLUDED_STATUSES = ['negotiation', 'pending', 'cancelled'];
+
+  const exportOrdersImage = async () => {
+    setExportLoading(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Determine date range with 6pm cutoff logic
+      // If today is 30-06 and user selects 29→30, range = 28-06 18:00 to 30-06 18:00
+      // Default: yesterday to today
+      const nowCLT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+      const todayStr = nowCLT.toISOString().slice(0, 10);
+      const yesterday = new Date(nowCLT.getTime() - 86400000);
+      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+      const startDateStr = exportDateStart || yesterdayStr;
+      const endDateStr = exportDateEnd || todayStr;
+
+      // start = (startDate - 1 day) at 18:00 CLT (UTC-3)
+      const startDateObj = new Date(startDateStr + 'T00:00:00-03:00');
+      startDateObj.setDate(startDateObj.getDate() - 1);
+      startDateObj.setHours(18, 0, 0, 0);
+      const startTs = startDateObj.getTime();
+
+      // end = endDate at 18:00 CLT
+      const endDateObj = new Date(endDateStr + 'T00:00:00-03:00');
+      endDateObj.setHours(18, 0, 0, 0);
+      const endTs = endDateObj.getTime();
+
+      // Fetch orders in range, excluding negotiation/pending/cancelled
+      const allFetched: any[] = [];
+      let cursor: string | null = null;
+      for (let page = 0; page < 20; page++) {
+        const queries: any[] = [
+          Query.greaterThanEqual('CREATEDAT', startTs),
+          Query.lessThan('CREATEDAT', endTs),
+          Query.orderDesc('CREATEDAT'),
+          Query.limit(100),
+        ];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+        const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, queries);
+        allFetched.push(...resp.documents);
+        if (resp.documents.length < 100) break;
+        cursor = resp.documents[resp.documents.length - 1].$id;
+      }
+
+      const exportOrders = allFetched.filter((o: any) => !EXPORT_EXCLUDED_STATUSES.includes(o.STATUS));
+
+      if (exportOrders.length === 0) {
+        alert('No hay pedidos para exportar en el rango seleccionado.');
+        return;
+      }
+
+      // Generate image with Canvas
+      const W = 800;
+      const rowH = 40;
+      const headerH = 120;
+      const footerH = 60;
+      const tableHeaderH = 36;
+      const H = headerH + tableHeaderH + exportOrders.length * rowH + footerH;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d')!;
+
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      // Header gradient
+      const grad = ctx.createLinearGradient(0, 0, W, 0);
+      grad.addColorStop(0, '#6366f1');
+      grad.addColorStop(1, '#8b5cf6');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, headerH);
+
+      // Header text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('Resumen de Pedidos', 24, 40);
+
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      const rangeLabel = `${new Date(startTs).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} — ${new Date(endTs).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
+      ctx.fillText(rangeLabel, 24, 64);
+
+      const totalSum = exportOrders.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0);
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${exportOrders.length} pedidos · Total: ${fmt(totalSum)}`, 24, 92);
+
+      // Table header
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(0, headerH, W, tableHeaderH);
+      ctx.fillStyle = '#374151';
+      ctx.font = 'bold 12px sans-serif';
+      const cols = [
+        { label: 'Código', x: 24, w: 120 },
+        { label: 'Cliente', x: 154, w: 200 },
+        { label: 'Estado', x: 364, w: 140 },
+        { label: 'Método', x: 514, w: 100 },
+        { label: 'Total', x: 624, w: 150 },
+      ];
+      cols.forEach(c => { ctx.fillText(c.label, c.x, headerH + 23); });
+
+      // Separator line
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.beginPath();
+      ctx.moveTo(0, headerH + tableHeaderH);
+      ctx.lineTo(W, headerH + tableHeaderH);
+      ctx.stroke();
+
+      // Rows
+      ctx.font = '12px sans-serif';
+      exportOrders.forEach((o: any, i: number) => {
+        const y = headerH + tableHeaderH + i * rowH;
+        if (i % 2 === 0) {
+          ctx.fillStyle = '#fafafa';
+          ctx.fillRect(0, y, W, rowH);
+        }
+        ctx.fillStyle = '#111827';
+        ctx.fillText((o.ORDERCODE || '').slice(0, 14), cols[0].x, y + 25);
+        ctx.fillText((o.CUSTOMERNAME || '').slice(0, 28), cols[1].x, y + 25);
+
+        const stCfg = STATUS_CONFIG[o.STATUS] || { label: o.STATUS };
+        ctx.fillStyle = STATUS_COLORS[o.STATUS]?.color || '#6b7280';
+        ctx.fillText(stCfg.label.slice(0, 18), cols[2].x, y + 25);
+
+        ctx.fillStyle = '#374151';
+        ctx.fillText((o.PAYMENTMETHOD || '-').slice(0, 14), cols[3].x, y + 25);
+
+        ctx.fillStyle = '#059669';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(fmt(o.TOTAL || 0), cols[4].x, y + 25);
+        ctx.font = '12px sans-serif';
+
+        // Row separator
+        ctx.strokeStyle = '#f3f4f6';
+        ctx.beginPath();
+        ctx.moveTo(0, y + rowH);
+        ctx.lineTo(W, y + rowH);
+        ctx.stroke();
+      });
+
+      // Footer
+      const footerY = headerH + tableHeaderH + exportOrders.length * rowH;
+      ctx.fillStyle = '#f9fafb';
+      ctx.fillRect(0, footerY, W, footerH);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`Generado el ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}`, 24, footerY + 35);
+      ctx.fillStyle = '#059669';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`Total: ${fmt(totalSum)}`, W - 24, footerY + 35);
+      ctx.textAlign = 'left';
+
+      // Download
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `pedidos_${startDateStr}_a_${endDateStr}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setShowExportModal(false);
+    } catch (e: any) {
+      console.error('Export image error:', e);
+      alert('Error al generar la imagen: ' + e.message);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const exportCSV = () => {
     const headers = ['Código', 'Cliente', 'RUT', 'Teléfono', 'Región', 'Comuna', 'Total', 'Estado', 'Método Pago', 'Cupón', 'Items', 'Notas Admin', 'Fecha'];
     const rows = filtered.map(o => {
@@ -554,12 +735,69 @@ function OrdersContent() {
             <Calendar className="w-4 h-4" />
             <span className="hidden sm:inline">{dateFilter === 'custom' && customDateStart ? `${customDateStart}${customDateEnd ? ' → ' + customDateEnd : ''}` : DATE_FILTER_LABELS[dateFilter]}</span>
           </button>
+          <button onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-emerald-700 transition">
+            <ImageIcon className="w-4 h-4" /><span className="hidden sm:inline">Descargar imagen</span>
+          </button>
           <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); loadStats(); }} disabled={isLoading}
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
       </div>
+
+      {/* Export Image Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+          onClick={() => !exportLoading && setShowExportModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-sm font-bold text-gray-800">Descargar imagen de pedidos</h3>
+              </div>
+              <button onClick={() => !exportLoading && setShowExportModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl leading-none">×</button>
+            </div>
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
+              <p className="text-xs text-emerald-700 font-medium">
+                Se excluirán los pedidos en estado: <b>Negociación</b>, <b>Pendiente</b> y <b>Cancelado</b>.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4">
+              <p className="text-xs text-blue-700 font-medium">
+                El rango usa corte a las <b>6 PM</b>. Ej: si seleccionas 29 al 30, se toman pedidos desde el 28 a las 18:00 hasta el 30 a las 18:00.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Fecha inicio (opcional)</label>
+                <input type="date" value={exportDateStart} onChange={e => setExportDateStart(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Fecha fin (opcional)</label>
+                <input type="date" value={exportDateEnd} onChange={e => setExportDateEnd(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+              <p className="text-[11px] text-gray-400">
+                Si no seleccionas fechas, se usará por defecto: ayer → hoy (con corte 6 PM).
+              </p>
+              <button onClick={exportOrdersImage} disabled={exportLoading}
+                className="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
+                {exportLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Generando imagen...</>
+                ) : (
+                  <><Download className="w-4 h-4" /> Descargar PNG</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Date Picker Modal */}
       {showDatePicker && (

@@ -23,7 +23,12 @@ import { isEditorMockEnabled } from '@/lib/editor-mock';
 import { getTpl23MockData } from './mockData';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { resolveStorageImageUrl } from '@/lib/product-images';
+import { resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ShoppingCart, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import CountdownTimer from '@/components/CountdownTimer';
+import { getSkuFromFeatures } from '@/lib/product-features';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
@@ -320,6 +325,8 @@ export default function HomePage23() {
   const [htmlInjected, setHtmlInjected] = useState(false);
   const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
+  const [offersCarouselContainer, setOffersCarouselContainer] = useState<Element | null>(null);
+  const [offersProducts, setOffersProducts] = useState<Product[]>([]);
   const { isEnabled: keniaEnabled } = useKeniaStatus();
   const [themeSections, setThemeSections] = useState<SectionConfig[]>([]);
   const [isThemeConfigLoaded, setIsThemeConfigLoaded] = useState(false);
@@ -765,6 +772,28 @@ export default function HomePage23() {
     document.documentElement.dataset.template = '23';
     return () => { delete document.documentElement.dataset.template; };
   }, []);
+
+  /* ── Fetch products with CURRENTPRICE offers for the offers carousel ── */
+  useEffect(() => {
+    if (offersProducts.length > 0) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/public-data/products?limit=600');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!alive) return;
+        const allProducts = (data.products || []) as Product[];
+        const offers = allProducts.filter(p =>
+          p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < (p.PRICE || 0) && (p.STOCK || 0) > 0
+        );
+        if (alive) setOffersProducts(offers);
+      } catch (e) {
+        console.warn('[TPL23] Failed to fetch offers for home carousel', e);
+      }
+    })();
+    return () => { alive = false; };
+  }, [offersProducts.length]);
 
   /* ── Load font faces ── */
   useEffect(() => {
@@ -2191,9 +2220,13 @@ export default function HomePage23() {
         anchor = countdownSection;
       }
 
+      const offersCarouselRoot = document.createElement('div');
+      offersCarouselRoot.id = 'yaxsell-offers-carousel-root';
+      anchor.insertAdjacentElement('afterend', offersCarouselRoot);
+
       const liveShoppingRoot = document.createElement('div');
       liveShoppingRoot.id = 'yaxsell-live-shopping-root';
-      anchor.insertAdjacentElement('afterend', liveShoppingRoot);
+      offersCarouselRoot.insertAdjacentElement('afterend', liveShoppingRoot);
 
       const wholesaleOffersRoot = document.createElement('div');
       wholesaleOffersRoot.id = 'yaxsell-wholesale-offers-root';
@@ -2718,6 +2751,11 @@ export default function HomePage23() {
           };
         }
       }
+    }
+
+    const offersCarouselEl = document.getElementById('yaxsell-offers-carousel-root');
+    if (offersCarouselEl) {
+      setOffersCarouselContainer(offersCarouselEl);
     }
 
     const wholesaleOffersEl = document.getElementById('yaxsell-wholesale-offers-root');
@@ -5514,6 +5552,87 @@ export default function HomePage23() {
           alt="WhatsApp"
         />
       </a>
+
+      {offersCarouselContainer && offersProducts.length > 0 && createPortal(
+        (() => {
+          const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
+          const primaryColor = '#e396bf';
+          const shadowColorLight = 'rgba(227,150,191,0.12)';
+          return (
+            <div style={{ background: '#fff', position: 'relative', zIndex: 11, padding: '24px 0 40px' }}>
+              <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px 12px' }}>
+                  <div>
+                    <h2 style={{ fontSize: 22, fontWeight: 900, color: '#374151', margin: 0, fontFamily: FF }}>🔥 Ofertas del día</h2>
+                    <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0', fontFamily: FF }}>Productos en oferta por tiempo limitado</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => { const el = document.getElementById('tpl23-offers-carousel-scroll'); if (el) el.scrollBy({ left: -268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #fce7f3', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button onClick={() => { const el = document.getElementById('tpl23-offers-carousel-scroll'); if (el) el.scrollBy({ left: 268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #fce7f3', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+                <div id="tpl23-offers-carousel-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                  {offersProducts.map(p => {
+                    const offerPrice = p.CURRENTPRICE || 0;
+                    const origPrice = p.PRICE || 0;
+                    const discPct = origPrice > 0 ? Math.round((1 - offerPrice / origPrice) * 100) : 0;
+                    const cFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+                    const cTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+                    const cSku = getSkuFromFeatures(cFeatures, cTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+                    const expiresAtMs = p.UNIT_OFFER_EXPIRES_AT || 0;
+                    const minQty = (p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 1) ? p.WHOLESALEMINQUANTITY : 1;
+                    return (
+                      <div key={p.$id} style={{ minWidth: 204, maxWidth: 224, flex: '0 0 auto', background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', overflow: 'hidden', boxShadow: `0 4px 14px ${shadowColorLight}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                        {discPct > 0 && (
+                          <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: '#e396bf', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 900, padding: '3px 9px' }}>-{discPct}%</div>
+                        )}
+                        <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => window.location.href = `/productos/${p.$id}`}>
+                          {getProductImageUrl(p) ? (
+                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>🛍️</div>
+                          )}
+                        </div>
+                        <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          {cSku && <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700 }}>SKU: {cSku}</div>}
+                          <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
+                          </Link>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+                            <span style={{ fontSize: 19, fontWeight: 900, color: '#e396bf', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(offerPrice)}</span>
+                            {discPct > 0 && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(origPrice)}</span>}
+                          </div>
+                          {minQty > 1 && (
+                            <div style={{ fontSize: 10.5, fontWeight: 700, color: '#db2777' }}>Desde {minQty} unidades</div>
+                          )}
+                          {expiresAtMs > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}>
+                              <Clock size={11} className="animate-pulse" />
+                              <CountdownTimer expiresAt={Math.floor(expiresAtMs / 1000)} compact />
+                            </div>
+                          )}
+                          <button
+                            onClick={() => (p.STOCK || 0) > 0 && addItem(p, minQty)}
+                            disabled={(p.STOCK || 0) <= 0}
+                            style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: (p.STOCK || 0) <= 0 ? '#f3f4f6' : 'linear-gradient(135deg,#fdf2f8,#fce7f3)', color: (p.STOCK || 0) <= 0 ? '#9ca3af' : '#c0547a', fontSize: 12, fontWeight: 700, cursor: (p.STOCK || 0) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF }}
+                          >
+                            <ShoppingCart size={13} /> {(p.STOCK || 0) <= 0 ? 'Sin stock' : (minQty > 1 ? `Agregar ${minQty}` : 'Agregar')}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })(),
+        offersCarouselContainer
+      )}
 
       {wholesaleOffersContainer && createPortal(
         <WholesaleOffersSection initialProducts={products} />,
