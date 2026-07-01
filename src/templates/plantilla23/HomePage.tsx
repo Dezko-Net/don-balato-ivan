@@ -2484,6 +2484,61 @@ export default function HomePage23() {
           restart(); // autoplay cada 5s
         }
       }
+
+      // Inyectar Countdown Timer de Oferta Flash a las 21:00 en la primera slide
+      if (heroBg && !heroBg.dataset.flashTimerBound) {
+        heroBg.dataset.flashTimerBound = '1';
+        const firstSlides = heroBg.querySelectorAll('.hero-carousel-desktop .hero-slide:first-child, .hero-carousel-mobile .hero-slide:first-child');
+        firstSlides.forEach(slide => {
+          const timerContainer = document.createElement('div');
+          timerContainer.className = 'absolute flex flex-col items-center justify-center pointer-events-none z-[100]';
+          timerContainer.style.cssText = 'bottom: 12%; left: 0; right: 0; margin: auto; max-width: 90%; transform: translateY(-10%);';
+          timerContainer.innerHTML = `
+            <div class="flex gap-2 sm:gap-4 items-center bg-white/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/40">
+              <div class="flex flex-col items-center">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-hrs">00</div>
+                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Horas</span>
+              </div>
+              <span class="text-white font-black text-3xl drop-shadow-md pb-5">:</span>
+              <div class="flex flex-col items-center">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-mins">00</div>
+                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Minutos</span>
+              </div>
+              <span class="text-white font-black text-3xl drop-shadow-md pb-5">:</span>
+              <div class="flex flex-col items-center">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-secs">00</div>
+                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Segundos</span>
+              </div>
+            </div>
+          `;
+          slide.appendChild(timerContainer);
+        });
+
+        const updateHeroTimer = () => {
+          const now = new Date();
+          const target = new Date();
+          target.setHours(21, 0, 0, 0); // 21:00 de hoy
+          
+          let diff = target.getTime() - now.getTime();
+          if (diff < 0) diff = 0; // Terminado
+
+          const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+          const m = Math.floor((diff / 1000 / 60) % 60);
+          const s = Math.floor((diff / 1000) % 60);
+
+          const pad = (n: number) => n.toString().padStart(2, '0');
+
+          heroBg.querySelectorAll('.time-hrs').forEach(el => el.textContent = pad(h));
+          heroBg.querySelectorAll('.time-mins').forEach(el => el.textContent = pad(m));
+          heroBg.querySelectorAll('.time-secs').forEach(el => el.textContent = pad(s));
+        };
+
+        if (firstSlides.length > 0) {
+          updateHeroTimer();
+          if ((window as any)._heroFlashInterval) clearInterval((window as any)._heroFlashInterval);
+          (window as any)._heroFlashInterval = setInterval(updateHeroTimer, 1000);
+        }
+      }
     } catch (e) { console.error('[TPL23] Hero carousel error', e); }
 
     // 🧭 Header/drawer móvil: (1) eliminar "COMPRA DESDE: UNIDAD/PAQUETE" del header,
