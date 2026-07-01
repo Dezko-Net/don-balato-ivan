@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, OrderStatus } from '@/types/admin';
-import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package, Copy, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package, Copy, Image as ImageIcon, Loader2, Printer } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures } from '@/lib/product-features';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
@@ -132,6 +132,8 @@ function OrdersContent() {
   const [exportDateStart, setExportDateStart] = useState('');
   const [exportDateEnd, setExportDateEnd] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printStatuses, setPrintStatuses] = useState<string[]>(['assembling', 'packing', 'ready_to_ship']);
   // Stats cache — persists until manual refresh
   const [statsCache, setStatsCache] = useState<{ totalToday: number; countToday: number; topCustomer: { name: string; total: number } | null; avgTicket: number; totalPaid: number; countPaid: number; byStatus: Record<string, number>; byStatusAll: Record<string, number>; byStatusYesterday: Record<string, number>; byStatusDayBefore: Record<string, number>; allOrdersRaw: any[]; totalYesterday: number; countYesterday: number; totalAll: number; countAll: number; } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -739,12 +741,69 @@ function OrdersContent() {
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-emerald-700 transition">
             <ImageIcon className="w-4 h-4" /><span className="hidden sm:inline">Descargar imagen</span>
           </button>
+          <button onClick={() => setShowPrintModal(true)}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-pink-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-pink-700 transition">
+            <Printer className="w-4 h-4" /><span className="hidden sm:inline">Imprimir Checklist</span>
+          </button>
           <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); loadStats(); }} disabled={isLoading}
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
       </div>
+
+      {/* Print Checklist Modal */}
+      {showPrintModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={() => setShowPrintModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <Printer size={18} className="text-pink-600" /> Imprimir Checklist de Bodega
+              </h3>
+              <button onClick={() => setShowPrintModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl leading-none">×</button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-gray-600 mb-2">Selecciona los estados que deseas incluir en el checklist imprimible:</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2">
+                {Object.entries(STATUS_CONFIG).filter(([k]) => k !== 'all' && k !== 'paid_group').map(([k, cfg]) => {
+                  const isSelected = printStatuses.includes(k);
+                  return (
+                    <label key={k} className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${isSelected ? 'border-pink-500 bg-pink-50/50' : 'border-gray-200 hover:border-gray-300'}`}>
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) setPrintStatuses([...printStatuses, k]);
+                          else setPrintStatuses(printStatuses.filter(s => s !== k));
+                        }}
+                      />
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-md ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+              <button onClick={() => setShowPrintModal(false)} className="px-5 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition">
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  if (printStatuses.length === 0) return alert('Selecciona al menos un estado.');
+                  window.open(`/admin/orders-print?statuses=${printStatuses.join(',')}`, '_blank');
+                  setShowPrintModal(false);
+                }} 
+                className="px-5 py-2 text-sm font-bold text-white bg-pink-600 rounded-xl hover:bg-pink-700 transition flex items-center gap-2"
+                disabled={printStatuses.length === 0}
+              >
+                <Printer size={16} /> Generar PDF / Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Export Image Modal */}
       {showExportModal && (

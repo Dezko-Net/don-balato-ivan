@@ -4974,7 +4974,7 @@
     <parallax-element-section class="relative overflow-hidden block w-full h-auto">
         <div class="swiper-container relative overflow-hidden w-full h-auto"
             data-speed="5000"
-            data-autoplay="true"
+            data-autoplay="false"
             data-loop="true"
             data-transition="slide"
         >
@@ -5067,6 +5067,29 @@
         z-index: 2;
       }
 
+      .hero-flash-timer {
+        position: absolute;
+        z-index: 100;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        bottom: 75px;
+        max-width: 90%;
+      }
+      @media (min-width: 993px) {
+        .hero-flash-timer {
+          bottom: 50px;
+          left: auto;
+          right: 5%;
+          margin: 0;
+        }
+      }
+
       /* ── Hero carousel navigation (arrows + dots) ── */
       .hero-nav {
         position: absolute;
@@ -5134,7 +5157,7 @@
 
 
     <!-- Bottom fade -->
-    <div style="position:absolute; bottom:0; left:0; right:0; height:25%; background:linear-gradient(to bottom, transparent 0%, transparent 50%, #ffc9e0 100%); pointer-events:none; z-index:20;"></div>
+    <div style="position:absolute; bottom:0; left:0; right:0; height:12%; background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 40%, #ffffff 100%); pointer-events:none; z-index:20;"></div>
 
     </div>
 
@@ -5261,7 +5284,7 @@
 </custom-slideshow>
 
 </div>
-<div id="shopify-section-template--KEVIN & COCO CHILE_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10;">
+<div id="shopify-section-template--KEVIN & COCO CHILE_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10; display: none !important;">
 
   <!-- Fade superior: overlay que sube sobre la base de la imagen del hero y la funde con el rosa -->
   <div class="yaxsell-apertura-fade-top" style="position: absolute; top: -128px; left: 0; right: 0; height: 128px; background: linear-gradient(to bottom, rgba(255,201,224,0) 0%, rgba(255,201,224,0.78) 62%, #ffc9e0 100%); pointer-events: none; z-index: 5;"></div>

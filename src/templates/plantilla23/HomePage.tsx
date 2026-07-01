@@ -2491,9 +2491,9 @@ export default function HomePage23() {
         heroBg.dataset.flashTimerBound = '1';
         const firstSlides = heroBg.querySelectorAll('.hero-carousel-desktop .hero-slide:first-child, .hero-carousel-mobile .hero-slide:first-child');
         firstSlides.forEach(slide => {
-          const timerContainer = document.createElement('div');
-          timerContainer.className = 'absolute flex flex-col items-center justify-center pointer-events-none z-[100]';
-          timerContainer.style.cssText = 'bottom: 2%; left: 0; right: 0; margin: auto; max-width: 90%; transform: translateY(0);';
+           const timerContainer = document.createElement('div');
+          timerContainer.className = 'hero-flash-timer';
+          timerContainer.style.cssText = '';
           timerContainer.innerHTML = `
             <div class="flex gap-2 sm:gap-4 items-center bg-white/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/40">
               <div class="flex flex-col items-center">
