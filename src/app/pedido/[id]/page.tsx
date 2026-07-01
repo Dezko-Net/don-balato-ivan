@@ -46,6 +46,7 @@ function getBankDetails(): Record<string, string> {
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   pending:            { label: 'Pendiente',                 color: '#b45309', bg: '#fffbeb' },
+  confirming_stock:   { label: 'Confirmando stock',         color: '#be185d', bg: '#fdf2f8' },
   processing:         { label: 'Pago a verificar',          color: '#1558b0', bg: '#e8f0fe' },
   paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
   assembling:         { label: 'Armando',                   color: '#7b1fa2', bg: '#f3e5f5' },
@@ -62,6 +63,11 @@ const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertTy
     title: 'Esperando el Pago',
     desc: 'Tu pedido ha sido recibido. Para comenzar a procesarlo, realiza la transferencia bancaria con los datos indicados abajo y sube tu comprobante de pago.',
     alertType: 'warning'
+  },
+  confirming_stock: {
+    title: 'Confirmando Stock',
+    desc: 'Estamos validando la disponibilidad física de tus productos en bodega. Muy pronto te actualizaremos.',
+    alertType: 'info'
   },
   processing: {
     title: 'Verificando tu Pago',
@@ -1004,6 +1010,7 @@ export default function PedidoPage() {
           const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
           const steps = [
             { key: 'pending',            label: 'Pedido',       icon: <Clock size={15} /> },
+            { key: 'confirming_stock',   label: 'Stock',        icon: <Box size={15} /> },
             { key: 'processing',         label: 'Verificando',  icon: <Upload size={15} /> },
             { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
             { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
@@ -1013,7 +1020,7 @@ export default function PedidoPage() {
             { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
             { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
           ];
-          const statusOrder = ['pending', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+          const statusOrder = ['pending', 'confirming_stock', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (

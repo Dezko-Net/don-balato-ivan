@@ -55,9 +55,10 @@ function loadBankDetails(): BankField[] {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  pending:    { label: 'Pendiente de pago',  color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  processing: { label: 'Pago en revisión',   color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  paid:       { label: 'Pago confirmado',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  pending:          { label: 'Pendiente de pago',  color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  confirming_stock: { label: 'Confirmando stock',  color: '#be185d', bg: '#fdf2f8', border: '#fbcfe8' },
+  processing:       { label: 'Pago en revisión',   color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  paid:             { label: 'Pago confirmado',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
   shipped:    { label: 'Despachado',         color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
   delivered:  { label: 'Entregado',          color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
   cancelled:  { label: 'Cancelado',          color: '#991b1b', bg: '#fef2f2', border: '#fecaca' },
