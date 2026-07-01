@@ -2449,8 +2449,9 @@ export default function HomePage23() {
           };
           const goTo = (i: number) => { idx = ((i % total) + total) % total; render(); };
           const restart = () => {
-            window.clearInterval(timer);
-            timer = window.setInterval(() => goTo(idx + 1), 5000);
+            // Autoplay deshabilitado por solicitud del usuario
+            // window.clearInterval(timer);
+            // timer = window.setInterval(() => goTo(idx + 1), 5000);
           };
 
           // Puntos
@@ -2492,7 +2493,7 @@ export default function HomePage23() {
         firstSlides.forEach(slide => {
           const timerContainer = document.createElement('div');
           timerContainer.className = 'absolute flex flex-col items-center justify-center pointer-events-none z-[100]';
-          timerContainer.style.cssText = 'bottom: 12%; left: 0; right: 0; margin: auto; max-width: 90%; transform: translateY(-10%);';
+          timerContainer.style.cssText = 'bottom: 2%; left: 0; right: 0; margin: auto; max-width: 90%; transform: translateY(0);';
           timerContainer.innerHTML = `
             <div class="flex gap-2 sm:gap-4 items-center bg-white/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/40">
               <div class="flex flex-col items-center">
