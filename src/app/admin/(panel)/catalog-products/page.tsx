@@ -56,15 +56,9 @@ export default function CatalogProductsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const allDocs: any[] = [];
-      let offset = 0;
-      while (true) {
-        const r = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION_ID, [Query.limit(2000), Query.offset(offset)]);
-        allDocs.push(...r.documents);
-        if (r.documents.length < 2000) break;
-        offset += 2000;
-      }
-      
+      const res = await fetch('/api/admin/stock-alerts');
+      const data = res.ok ? await res.json() : { documents: [] };
+      const allDocs: any[] = data.documents || [];
       const rawAlerts = allDocs.map((d: any) => normalizeStockAlert(d));
       
       const uniqueProductIds = Array.from(new Set(rawAlerts.map(a => a.productId).filter(Boolean)));

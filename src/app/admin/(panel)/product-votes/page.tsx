@@ -38,12 +38,10 @@ export default function ProductVotesPage() {
       ]);
       // Paginate all inventory products
       const allDocs: any[] = [];
-      let offset = 0;
-      while (true) {
-        const r = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [Query.limit(2000), Query.offset(offset)]);
-        allDocs.push(...r.documents);
-        if (r.documents.length < 2000) break;
-        offset += 2000;
+      const invRes = await fetch('/api/public-data/inventory');
+      if (invRes.ok) {
+        const data = await invRes.json();
+        allDocs.push(...(data.documents || []));
       }
       setProducts(allDocs as unknown as Product[]);
       setCategories(catsResp.documents as unknown as Category[]);

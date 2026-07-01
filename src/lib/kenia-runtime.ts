@@ -143,6 +143,7 @@ export interface KeniaUsageEntry {
   blocked: boolean;
   updatedAt: string;
   maintenanceNotified?: boolean;
+  hasNoPendingOrders?: boolean;
   testAsClient?: boolean;
   adminTakeover?: boolean;
   escalated?: boolean;
@@ -419,6 +420,7 @@ export async function recordKeniaUsage(
     isGuestWithOrders?: boolean;
     lastStallReplyTs?: number;
     awaitingAltPhone?: boolean;
+    hasNoPendingOrders?: boolean;
   }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);

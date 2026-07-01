@@ -50,14 +50,14 @@ export default function CategoriesPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const [catsResp, prodsResp] = await Promise.all([
-        databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.orderAsc('$createdAt'), Query.limit(100)]),
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(500)]),
-      ]);
+      const catsResp = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.orderAsc('$createdAt'), Query.limit(100)]);
+      const prodsRes = await fetch('/api/public-data/products?limit=5000');
+      const prodsData = prodsRes.ok ? await prodsRes.json() : { products: [] };
+      
       setCategories(catsResp.documents as unknown as Category[]);
       const counts: Record<string, number> = {};
-      for (const p of prodsResp.documents) {
-        const catId = (p as any).CATEGORYID || '__none__';
+      for (const p of prodsData.products || []) {
+        const catId = p.CATEGORYID || '__none__';
         counts[catId] = (counts[catId] || 0) + 1;
       }
       setProductCounts(counts);

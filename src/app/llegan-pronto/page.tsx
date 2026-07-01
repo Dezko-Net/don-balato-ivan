@@ -49,15 +49,10 @@ export default function LleganProntoPage() {
           return r.documents;
         }),
         cached('inventory_products:llegan-pronto', TTL.products, async () => {
-          const allDocs: any[] = [];
-          let offset = 0;
-          while (true) {
-            const r = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION, [Query.limit(2000), Query.offset(offset)]);
-            allDocs.push(...r.documents);
-            if (r.documents.length < 2000) break;
-            offset += 2000;
-          }
-          return allDocs;
+          const res = await fetch('/api/public-data/inventory');
+          if (!res.ok) return [];
+          const data = await res.json();
+          return data.documents || [];
         }),
       ]);
 
