@@ -1481,7 +1481,9 @@ function OrdersContent() {
         const ageMs = Date.now() - date.getTime();
         const ageH = Math.floor(ageMs / 3600000);
         const ageD = Math.floor(ageH / 24);
-        const ageStr = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+        const ageStrRel = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+        const exactTime = date.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' });
+        const ageStr = `${ageStrRel} (${exactTime})`;
         
         const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
         const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
@@ -1541,7 +1543,7 @@ function OrdersContent() {
                   <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                     Pedido <span className="font-mono text-indigo-600 font-extrabold">{order.ORDERCODE || '—'}</span>
                   </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Creado hace {ageStr} ({date.toLocaleString('es-CL', { timeZone: 'America/Santiago' })})</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Creado hace {ageStr} ({date.toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })})</p>
                 </div>
                 <button onClick={() => setDrawerOrderId(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl font-bold leading-none transition">×</button>
               </div>
@@ -1847,7 +1849,9 @@ function OrdersContent() {
               const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
               const ageH = Math.floor(ageMs / 3600000);
               const ageD = Math.floor(ageH / 24);
-              const ageStr = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+              const ageStrRel = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+              const exactTime = date.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' });
+              const ageStr = `${ageStrRel} (${exactTime})`;
               const pendingAgeStr = order.STATUS === 'pending' ? (ageD > 0 ? `${ageD}d ${ageH % 24}h sin pagar` : `${ageH}h sin pagar`) : null;
               const totalItems = items.reduce((s: number, it: any) => s + (it.qty || 1), 0);
 
@@ -1965,7 +1969,9 @@ function OrdersContent() {
                   const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
                   const ageH = Math.floor(ageMs / 3600000);
                   const ageD = Math.floor(ageH / 24);
-                  const ageStr = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+                  const ageStrRel = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+                  const exactTime = date.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' });
+                  const ageStr = `${ageStrRel} (${exactTime})`;
                   const pendingAgeStr = order.STATUS === 'pending' ? (ageD > 0 ? `${ageD}d ${ageH % 24}h sin pagar` : `${ageH}h sin pagar`) : null;
                   
                   let items: any[] = [];
