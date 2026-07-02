@@ -536,8 +536,8 @@ function CheckoutInner() {
       const reqCode = `WR-${String(now).slice(-8)}`;
       const itemsData = items.map(i => {
         const prod = i.product as any;
-        const productSku = prod.SKU || getSkuFromFeatures(prod.FEATURES, prod.TAGS, prod.jumpseller_id, prod.SKU) || '';
-        const productBarcode = prod.BARCODE || getBarcodeFromFeatures(prod.FEATURES, prod.BARCODE) || '';
+        const productSku = prod.SKU || prod.sku || getSkuFromFeatures(prod.FEATURES, prod.TAGS, prod.jumpseller_id, prod.SKU) || '';
+        const productBarcode = prod.BARCODE || prod.barcode || getBarcodeFromFeatures(prod.FEATURES, prod.BARCODE) || '';
         const total = getEffectiveItemTotal(i);
         const price = getEffectivePrice(i);
         return {
@@ -659,6 +659,9 @@ function CheckoutInner() {
         const price = getEffectivePrice(i);
         const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
         const note = itemNotes[i.product.$id] || '';
+        const prod = i.product as any;
+        const productSku = prod.SKU || prod.sku || getSkuFromFeatures(prod.FEATURES, prod.TAGS, prod.jumpseller_id, prod.SKU) || '';
+        const productBarcode = prod.BARCODE || prod.barcode || getBarcodeFromFeatures(prod.FEATURES, prod.BARCODE) || '';
         return { 
           id: i.product.$id, 
           name: i.product.NAME, 
@@ -667,6 +670,8 @@ function CheckoutInner() {
           qty: i.quantity, 
           img: resolveStorageImageUrl(i.product.IMAGEURL), 
           total,
+          sku: productSku,
+          barcode: productBarcode,
           ...(note.trim() ? { note: note.trim() } : {})
         };
       });

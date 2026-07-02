@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, WHOLESALE_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, WHOLESALE_ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { 
   RefreshCw, AlertTriangle, Search, X, ChevronDown, ChevronUp, 
   Package, MessageSquare, Save, XCircle, Download, CheckCircle, Clock, Phone, MapPin, ExternalLink, ShieldCheck, ShoppingCart
@@ -75,7 +75,51 @@ export default function WholesaleOrdersPage() {
       const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
       
       const resp = await databases.listDocuments(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, queries);
-      setOrders(resp.documents as unknown as WholesaleOrder[]);
+      const ordersData = resp.documents as unknown as WholesaleOrder[];
+
+      // Enrich items with SKU and barcode if missing (for orders created before the fix)
+      const allItems = ordersData.flatMap(o => {
+        const parsed = JSON.parse(o.ITEMS || '[]');
+        return parsed.filter((it: any) => it.id && (!it.sku || !it.barcode));
+      });
+      const productIds = [...new Set(allItems.map((it: any) => it.id))];
+      const productMap: Record<string, any> = {};
+      if (productIds.length > 0) {
+        try {
+          for (let i = 0; i < productIds.length; i += 100) {
+            const batch = productIds.slice(i, i + 100);
+            const prodResp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+              Query.equal('$id', batch),
+              Query.limit(100)
+            ]);
+            for (const p of prodResp.documents) {
+              productMap[p.$id] = p;
+            }
+          }
+        } catch (e) {
+          console.warn('Error fetching products for SKU enrichment:', e);
+        }
+      }
+      // Patch items with missing SKU/barcode
+      const enrichedOrders = ordersData.map(o => {
+        const parsed = JSON.parse(o.ITEMS || '[]');
+        let changed = false;
+        const enrichedItems = parsed.map((it: any) => {
+          if ((!it.sku || !it.barcode) && productMap[it.id]) {
+            const p = productMap[it.id];
+            changed = true;
+            return {
+              ...it,
+              sku: it.sku || p.SKU || p.sku || '',
+              barcode: it.barcode || p.BARCODE || p.barcode || '',
+            };
+          }
+          return it;
+        });
+        return changed ? { ...o, ITEMS: JSON.stringify(enrichedItems) } : o;
+      });
+
+      setOrders(enrichedOrders);
     } catch (e: any) { 
       setError('Error al cargar pedidos: ' + e.message); 
     } finally { 
