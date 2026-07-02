@@ -737,6 +737,15 @@ export default function HomePage23() {
             subcategories: nextSubcategories.length,
             cheapestProducts: nextCheapestProducts.length,
           });
+          // Un payload vacío suele ser transitorio (rate limit / cold start de Appwrite).
+          // Reintentar en vez de renderizar la home sin productos.
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+            console.warn(`[Plantilla23] Empty payload — retrying in ${delay}ms (${retryCount}/${maxRetries})`);
+            setTimeout(fetchData, delay);
+            return;
+          }
         }
 
         setCategories(nextCategories);
@@ -824,7 +833,9 @@ export default function HomePage23() {
       if (existing) return;
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = `${href}?v=${Date.now()}`;
+      // Versión estable: con Date.now() el navegador re-descargaba todo el CSS en cada visita.
+      // Subir el número solo cuando se edite bundle-all.css.
+      link.href = `${href}?v=20260701`;
       link.setAttribute('data-tpl23', href);
       document.head.appendChild(link);
     });
@@ -2101,12 +2112,61 @@ export default function HomePage23() {
       wrapper.innerHTML = html;
     });
 
-    if (categories.length > 0) {
+    // ─── NUEVO: HYDRATE NAV MENUS CON CATEGORÍAS REALES ───
+    // Siempre se reconstruyen los menús base (aunque no haya categorías) para que
+    // nunca quede visible el menú de la plantilla original.
+    {
+      // 1. PC Megamenu
+      const pcNavUl = tempDiv.querySelector('.menu-wrapper ul[data-tier="1"]')
+        || tempDiv.querySelector('ul.menu[data-tier="1"]:not(.menu--drawer)');
+      if (pcNavUl) {
+        const homeLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;color:#e396bf">Inicio</span></a></li>`;
+        const storeLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/productos" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Tienda</span></a></li>`;
+        const packLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/paquetes" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Paquetes</span></a></li>`;
+        
+        const catLinks = categories.map((cat: any) => `
+          <li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/categoria/${cat.$id}" title="${cat.name}" aria-label="${cat.name}" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:500;">${cat.name}</span></a></li>
+        `).join('');
+
+        const ordersLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus ml-auto"><a href="/cuenta/pedidos" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;color:#333">Mis Pedidos</span></a></li>`;
+        
+        pcNavUl.innerHTML = homeLink + storeLink + packLink + catLinks + ordersLink;
+      }
+
+      // 2. Mobile Drawer Menu
+      const drawerUl = tempDiv.querySelector('ul.menu--drawer[data-tier="1"]');
+      if (drawerUl) {
+        const makeDrawerLi = (label: string, href: string, isBold: boolean, color: string = 'inherit') => `
+          <li class="group relative border-b border-gray-100 last:border-0"><a href="${href}" class="flex items-center justify-between w-full p-4 link hover-only hover:bg-gray-50"><span class="menu__heading-title ${isBold ? 'font-semibold text-lg' : 'font-medium text-[15px]'} text-gray-800" style="color:${color}">${label}</span></a></li>
+        `;
+
+        const homeLi = makeDrawerLi('Inicio', '/', true, '#e396bf');
+        const storeLi = makeDrawerLi('Tienda (Unidad)', '/productos', true);
+        const packLi = makeDrawerLi('Catálogo Paquetes', '/paquetes', true);
+        
+        const catHeader = categories.length > 0 ? `<li class="px-4 py-3 text-xs text-gray-400 font-bold uppercase tracking-wider bg-gray-50">Categorías</li>` : '';
+        const catLis = categories.map((cat: any) => makeDrawerLi(cat.name, `/categoria/${cat.$id}`, false)).join('');
+        
+        const ordersLi = makeDrawerLi('Mis Pedidos', '/cuenta/pedidos', true);
+        const loginLi = makeDrawerLi('Mi Cuenta', '/cuenta', true);
+        
+        drawerUl.innerHTML = homeLi + storeLi + packLi + catHeader + catLis + `<div class="h-2 bg-gray-50"></div>` + ordersLi + loginLi;
+      }
+    }
+    // ────────────────────────────────────────────────────────
+
+    {
       // Find Swiper wrapper inside collection-list
       const swiperWrapper = tempDiv.querySelector('.collection-list .swiper-wrapper');
       const swiperContainer = tempDiv.querySelector('.collection-list .swiper-container');
       if (swiperWrapper) {
         swiperWrapper.innerHTML = ''; // Clear hardcoded slides
+
+        // Sin categorías no hay nada que mostrar: ocultar la sección completa
+        if (categories.length === 0) {
+          const clSection = swiperWrapper.closest('.shopify-section') as HTMLElement | null;
+          if (clSection) clSection.style.setProperty('display', 'none', 'important');
+        }
 
         categories.forEach((cat, index) => {
           const slide = document.createElement('div');
@@ -2217,7 +2277,17 @@ export default function HomePage23() {
         } else {
           heroBannerSection.insertAdjacentElement('afterend', countdownSection);
         }
-        anchor = countdownSection;
+        // --- NEW: Botón rosa solo para móviles debajo del cronómetro ---
+        const ctaBtn = document.createElement('div');
+        ctaBtn.className = 'flex justify-center md:hidden w-full px-4 mb-4 mt-2 z-10 relative';
+        ctaBtn.innerHTML = `
+          <a href="/productos?sort=price-asc" class="w-full text-center text-white font-bold py-4 rounded-xl shadow-lg hover:opacity-90 transition-opacity" style="background-color: #ec4899; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); font-size: 18px; letter-spacing: 0.5px;">
+            MIRALOS AQUI:
+          </a>
+        `;
+        countdownSection.insertAdjacentElement('afterend', ctaBtn);
+        // ---------------------------------------------------------------
+        anchor = ctaBtn;
       }
 
       const offersCarouselRoot = document.createElement('div');
@@ -2247,8 +2317,11 @@ export default function HomePage23() {
     tempDiv.querySelectorAll('.product-columns-block .swiper-container .swiper-wrapper, product-columns .swiper-container .swiper-wrapper').forEach(wrapper => {
       wrapper.innerHTML = '';
     });
+    // No vaciar el esqueleto de featured-product (la hidratación lo necesita para
+    // rellenar título/precio/imagen). Se oculta la sección hasta que haya producto real.
     tempDiv.querySelectorAll('featured-product').forEach(block => {
-      block.innerHTML = '';
+      const section = (block.closest('.shopify-section') || block) as HTMLElement;
+      section.style.setProperty('display', 'none', 'important');
     });
 
     // Remove hotspots from bundle products section as requested by user
@@ -2594,35 +2667,11 @@ export default function HomePage23() {
           done = false; // aún no está la hamburguesa
         }
 
-        // (3) Drawer: TIENDA → UNIDAD + PAQUETE. Guard por presencia (re-aplica si se
-        //     re-renderiza el menú). Solo marca hecho cuando UNIDAD ya existe.
+        // (3) Drawer logic is now handled during initial HTML hydration above.
+        // We just mark it as done.
         const drawerUl = root.querySelector('#mobile-menu-drawer ul.menu--drawer') as HTMLElement | null;
-        if (drawerUl) {
-          const hasUnidad = [...drawerUl.children].some(li => /^\s*UNIDAD\b/i.test((li.textContent || '').trim()));
-          if (!hasUnidad) {
-            const tiendaLi = ([...drawerUl.children].find(li => /^\s*TIENDA\b/i.test((li.textContent || '').trim())) as HTMLElement | undefined);
-            if (tiendaLi) {
-              const makeLi = (label: string, href: string) => {
-                const li = tiendaLi.cloneNode(true) as HTMLElement;
-                li.querySelectorAll('a').forEach(a => a.setAttribute('href', href));
-                const w = document.createTreeWalker(li, NodeFilter.SHOW_TEXT);
-                let node: Node | null;
-                while ((node = w.nextNode())) {
-                  if (node.nodeValue && /\S/.test(node.nodeValue)) {
-                    node.nodeValue = node.nodeValue.replace(/TIENDA/ig, label);
-                  }
-                }
-                return li;
-              };
-              tiendaLi.insertAdjacentElement('beforebegin', makeLi('UNIDAD', '/productos'));
-              tiendaLi.insertAdjacentElement('beforebegin', makeLi('PAQUETE', '/paquetes'));
-              tiendaLi.remove();
-            } else {
-              done = false; // TIENDA aún no está en el menú
-            }
-          }
-        } else {
-          done = false; // drawer aún no listo
+        if (!drawerUl) {
+          done = false;
         }
       } catch (e) { console.error('[TPL23] header/drawer móvil error', e); }
       return done;
@@ -3142,7 +3191,7 @@ export default function HomePage23() {
     setTimeout(injectMobileHeroButtons, 800);
     setTimeout(injectMobileHeroButtons, 2000);
 
-  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers, keniaEnabled, isThemeConfigLoaded]);
+  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers, keniaEnabled, isThemeConfigLoaded, htmlInjected]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
   useEffect(() => {
@@ -3357,8 +3406,10 @@ export default function HomePage23() {
       .slice(0, 4);
 
     // ── Desktop menu ──
+    // Solo reconstruir si hay categorías con productos; si no, se conservan los
+    // links base que dejó la inyección inicial (nunca el menú de la plantilla original).
     const desktopMenu = root.querySelector('ul.menu[data-tier="1"]:not(.menu--drawer)');
-    if (desktopMenu) {
+    if (desktopMenu && sortedCats.length > 0) {
       desktopMenu.innerHTML = '';
 
       sortedCats.forEach((cat, idx) => {
@@ -3491,7 +3542,7 @@ export default function HomePage23() {
 
     // ── Mobile drawer menu ──
     const mobileMenu = root.querySelector('ul.menu--drawer[data-tier="1"]');
-    if (mobileMenu) {
+    if (mobileMenu && sortedCats.length > 0) {
       mobileMenu.innerHTML = '';
 
       sortedCats.forEach(cat => {
@@ -4133,6 +4184,10 @@ export default function HomePage23() {
           const brand = (targetProduct as any).BRAND || 'Kevin & Coco';
           vendor.textContent = brand.toLowerCase() === 'yaxsell' ? 'Kevin & Coco' : brand;
         }
+
+        // Ya hay producto real: mostrar la sección (se ocultó en la inyección inicial)
+        const fpSection = (fpBlock.closest('.shopify-section') || fpBlock) as HTMLElement;
+        fpSection.style.removeProperty('display');
       });
 
       // Force in-view on all animation elements inside featured-collection that were created dynamically
@@ -4237,7 +4292,9 @@ export default function HomePage23() {
     }
 
     root.dataset.navInjected = '1';
-  }, [categories, subcategories, products, cheapestProducts, isAppwriteLoaded, unlimitedStock]);
+    // htmlInjected en deps: si el HTML se inyecta DESPUÉS de que lleguen los datos
+    // (fetch del body-clean.html lento), este efecto debe re-ejecutarse.
+  }, [categories, subcategories, products, cheapestProducts, isAppwriteLoaded, unlimitedStock, htmlInjected]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {
@@ -4993,7 +5050,7 @@ export default function HomePage23() {
       }
     }
 
-  }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products]);
+  }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products, htmlInjected]);
 
   /* ── Anular enlaces de WhatsApp de Kenia si está desactivada ── */
   useEffect(() => {
