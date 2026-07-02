@@ -118,6 +118,105 @@ export default function WholesaleOrdersPage() {
     }
   };
 
+  const downloadOrderPrint = (order: WholesaleOrder) => {
+    const items = parseItems(order.ITEMS);
+    const cfg = STATUS_CFG[order.STATUS] || { label: order.STATUS };
+    const win = window.open('', '_blank', 'width=800,height=900');
+    if (!win) return;
+    win.document.write(`
+      <!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedido ${order.REQCODE}</title>
+      <style>
+        * { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; }
+        body { margin: 0; padding: 32px; color: #1f2937; }
+        h1 { font-size: 22px; margin: 0 0 4px; }
+        h2 { font-size: 14px; margin: 24px 0 8px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.05em; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 16px; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #92400e; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .info-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
+        .info-card p { margin: 2px 0; font-size: 13px; }
+        .info-card .label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th { text-align: left; font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; padding: 8px 10px; border-bottom: 2px solid #e5e7eb; }
+        td { padding: 10px; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+        .total-row { font-weight: 800; font-size: 16px; }
+        .total-row td { border-top: 2px solid #e5e7eb; border-bottom: none; padding-top: 12px; }
+        .notes { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 14px; margin-top: 16px; font-size: 13px; }
+        .print-btn { position: fixed; bottom: 24px; right: 24px; padding: 12px 24px; background: #4f46e5; color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .check-col { width: 32px; text-align: center; }
+        @media print { .print-btn { display: none; } body { padding: 16px; } }
+      </style>
+      </head><body>
+      <div class="header">
+        <div>
+          <h1>Pedido Mayorista #${order.REQCODE}</h1>
+          <p style="font-size:13px;color:#6b7280;margin:4px 0 0">${formatDate(order.CREATEDAT)}</p>
+        </div>
+        <div style="text-align:right">
+          <span class="badge">${cfg.label}</span>
+          <p style="font-size:20px;font-weight:800;margin:8px 0 0">${formatPrice(order.TOTAL)}</p>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <p class="label">Cliente</p>
+          <p style="font-weight:700;font-size:15px">${order.CUSTOMERNAME}</p>
+          ${order.CUSTOMERRUT ? `<p>RUT: ${order.CUSTOMERRUT}</p>` : ''}
+          <p>${order.CUSTOMEREMAIL}</p>
+          <p>📱 ${order.CUSTOMERPHONE}</p>
+        </div>
+        <div class="info-card">
+          <p class="label">Envío</p>
+          <p>${order.ADDRESS}</p>
+          ${order.COMUNA ? `<p>${order.COMUNA}${order.REGION ? ', ' + order.REGION : ''}</p>` : ''}
+          ${order.SHIPPINGAGENCY ? `<p style="font-weight:700;color:#4f46e5">Agencia: ${order.SHIPPINGAGENCY}</p>` : ''}
+          ${order.ADDITIONALINFO ? `<p style="color:#6b7280;font-size:12px;margin-top:6px"><em>Indicaciones: ${order.ADDITIONALINFO}</em></p>` : ''}
+        </div>
+      </div>
+
+      <h2>Productos a Verificar (${items.length})</h2>
+      <table>
+        <thead>
+          <tr>
+            <th class="check-col">✓</th>
+            <th>Producto</th>
+            <th>SKU</th>
+            <th style="text-align:center">Cant.</th>
+            <th style="text-align:right">Precio</th>
+            <th style="text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((it: any) => `
+            <tr>
+              <td class="check-col" style="border:2px solid #d1d5db;border-radius:4px;height:24px"></td>
+              <td>
+                <p style="font-weight:600;margin:0">${it.name}</p>
+                ${it.isPack ? `<span style="font-size:11px;color:#7c3aed;font-weight:700">Paquete de ${it.packQty || 1} un.</span>` : ''}
+              </td>
+              <td style="font-family:monospace;font-size:12px">${it.sku || '-'}</td>
+              <td style="text-align:center;font-weight:700">${it.qty}</td>
+              <td style="text-align:right">${formatPrice(it.price)}</td>
+              <td style="text-align:right;font-weight:700">${formatPrice(it.total)}</td>
+            </tr>
+          `).join('')}
+          <tr class="total-row">
+            <td colspan="5" style="text-align:right">TOTAL</td>
+            <td style="text-align:right">${formatPrice(order.TOTAL)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      ${order.CUSTOMERNOTE ? `<div class="notes"><strong>Nota del cliente:</strong> ${order.CUSTOMERNOTE}</div>` : ''}
+      ${order.ADMINNOTES ? `<div class="notes" style="background:#eff6ff;border-color:#bfdbfe"><strong>Notas admin:</strong> ${order.ADMINNOTES}</div>` : ''}
+
+      <button class="print-btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
+      </body></html>
+    `);
+    win.document.close();
+  };
+
   const getWhatsAppLink = (phone: string, reqCode: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.startsWith('56') ? cleanPhone : `56${cleanPhone}`;
@@ -289,9 +388,13 @@ export default function WholesaleOrdersPage() {
                               </p>
                               <div className="pt-2 flex gap-2">
                                 <a href={getWhatsAppLink(order.CUSTOMERPHONE, order.REQCODE)} target="_blank" rel="noopener noreferrer" 
-                                  className="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition no-underline">
+                                  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition no-underline">
                                   WhatsApp <ExternalLink className="w-3 h-3" />
                                 </a>
+                                <button onClick={() => downloadOrderPrint(order)}
+                                  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold transition">
+                                  <Download className="w-3 h-3" /> Imprimir / PDF
+                                </button>
                               </div>
                             </div>
                           </div>
