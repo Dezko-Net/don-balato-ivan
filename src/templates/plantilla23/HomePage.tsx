@@ -2306,7 +2306,7 @@ export default function HomePage23() {
       let anchor: Element = heroBannerSection;
       const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
       const bundleSection = tempDiv.querySelector('[id*="bundle_products"]') as HTMLElement | null;
-      // bundleSection visible — no hiding
+      if (bundleSection) { bundleSection.style.display = 'none'; }
       console.log("[Plantilla23 Debug] heroBannerSection:", !!heroBannerSection, "countdownSection:", !!countdownSection, "bundleSection:", !!bundleSection);
       if (countdownSection) {
         if (bundleSection) {
