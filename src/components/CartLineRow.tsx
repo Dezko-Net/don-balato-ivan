@@ -71,7 +71,9 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
 
         {/* Name + Price — NO navigation */}
         <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
-          <p style={{ margin: '0 0 2px', fontSize: 13, color: '#1a1a1a', fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
+          <p style={{ margin: '0 0 2px', fontSize: 13, color: '#1a1a1a', fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {p.NAME}
+          </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
             {pricing.hasDiscount && pricing.originalPrice != null && (
               <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>

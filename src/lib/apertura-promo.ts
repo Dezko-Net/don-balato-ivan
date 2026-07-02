@@ -18,6 +18,7 @@ export type ProductPriceLike = {
   PACK_DISCOUNT_PCT?: number | null;
   UNIT_OFFER_EXPIRES_AT?: number | null;
   $createdAt?: string | null;
+  SKU?: string | null;
 };
 
 /** Porcentaje de descuento al comprar en paquete (cuando no hay PACK_DISCOUNT_PCT específico). */
@@ -185,8 +186,8 @@ export function resolveProductDisplayPrice(
     }
   }
 
-  // Suppress apertura discount if live logic has disableApertura flag
-  const suppressApertura = liveLogic?.disableApertura === true;
+  // Suppress apertura discount if live logic has disableApertura flag or product is PROMO1
+  const suppressApertura = liveLogic?.disableApertura === true || product.SKU === 'PROMO1';
 
   if (!suppressApertura && apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
     const displayPrice = getAperturaDiscountedPrice(effectiveBase, apertura.discountPercent);

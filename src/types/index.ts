@@ -121,7 +121,7 @@ export interface Coupon {
   description?: string;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'negotiation' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'negotiation' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled' | 'waiting_payment' | 'pending_stock' | 'stock_confirmed' | 'partial_stock' | 'confirming_stock';
 
 export interface OrderItem {
   id: string;
@@ -228,6 +228,8 @@ export interface CartItem {
   timedOfferExpiresAt?: number;
   wholesalePrice?: number;
   isPack?: boolean;
+  bundlePackQty?: number;
+  bundlePackPrice?: number;
 }
 
 export interface LiveStream {

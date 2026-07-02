@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink, MessageSquare, Box } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
+import { WHOLESALE_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
@@ -55,6 +56,10 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   ready_to_ship:      { label: 'Pedido listo para enviar',            color: '#00838f', bg: '#e0f7fa' },
   shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
   delivered:          { label: 'Entregado',                 color: '#166534', bg: '#f0fdf4' },
+  waiting_payment:  { label: 'Esperando pago',           color: '#1558b0', bg: '#e8f0fe' },
+  pending_stock:    { label: 'Verificando stock',        color: '#b45309', bg: '#fffbeb' },
+  stock_confirmed:  { label: 'Stock confirmado',         color: '#166534', bg: '#f0fdf4' },
+  partial_stock:    { label: 'Stock parcial',            color: '#e65c00', bg: '#fff3e0' },
   cancelled:          { label: 'Cancelado',                 color: '#991b1b', bg: '#fff5f5' },
 };
 
@@ -108,6 +113,26 @@ const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertTy
     title: 'Pedido Entregado',
     desc: 'El pedido ha sido entregado correctamente en la dirección de destino. ¡Muchas gracias por tu compra y por confiar en nosotros!',
     alertType: 'success'
+  },
+  waiting_payment: {
+    title: 'Esperando tu Pago',
+    desc: 'El stock de tu pedido mayorista está confirmado. Realiza la transferencia bancaria con los datos indicados abajo y sube tu comprobante de pago.',
+    alertType: 'warning'
+  },
+  pending_stock: {
+    title: 'Verificando Stock',
+    desc: 'Estamos validando la disponibilidad física de los productos de tu pedido mayorista en bodega. Te avisaremos por WhatsApp muy pronto.',
+    alertType: 'info'
+  },
+  stock_confirmed: {
+    title: 'Stock Confirmado',
+    desc: 'Todos los productos de tu pedido mayorista están disponibles. Procede con el pago para que podamos preparar tu envío.',
+    alertType: 'success'
+  },
+  partial_stock: {
+    title: 'Stock Parcial',
+    desc: 'Algunos productos de tu pedido mayorista tienen stock limitado. Te contactaremos por WhatsApp con las novedades.',
+    alertType: 'warning'
   },
   cancelled: {
     title: 'Pedido Cancelado',
@@ -164,6 +189,7 @@ export default function PedidoPage() {
   const { id } = useParams<{ id: string }>();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
+  const [isWholesale, setIsWholesale] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
@@ -382,7 +408,8 @@ export default function PedidoPage() {
       const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNT || 0);
       const editCount = (order as any).CUSTOMEREDITCOUNT || 0;
 
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION, order.$id, {
+      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+      await databases.updateDocument(databaseId, coll, order.$id, {
         ITEMS: JSON.stringify(parsedItems),
         SUBTOTAL: newSubtotal,
         TOTAL: newTotal,
@@ -431,16 +458,28 @@ export default function PedidoPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const doc = await databases.getDocument(databaseId, ORDERS_COLLECTION, id);
+      let doc: any;
+      let wholesale = false;
+      try {
+        doc = await databases.getDocument(databaseId, ORDERS_COLLECTION, id);
+      } catch {
+        try {
+          doc = await databases.getDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, id);
+          wholesale = true;
+        } catch { throw new Error('Order not found'); }
+      }
+      setIsWholesale(wholesale);
       const o = doc as unknown as Order;
       setOrder(o);
       if (o.PAYMENTPROOFURL) setUploaded(true);
       try { setItems(JSON.parse(o.ITEMS)); } catch {}
 
+      const coll = wholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+
       // If order is in negotiation and customer hasn't opened it yet, mark as opened
       if (o.STATUS === 'negotiation' && !(o as any).NEGOTIATION_OPENED_AT) {
         try {
-          await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+          await databases.updateDocument(databaseId, coll, id, {
             NEGOTIATION_OPENED_AT: Date.now()
           });
           // Notify admin that customer opened the negotiation link
@@ -518,7 +557,8 @@ export default function PedidoPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+      await databases.updateDocument(databaseId, coll, id, {
         SHIPPINGAGENCY: selectedAgency,
         AGENCYCHANGED: true,
       });
@@ -542,7 +582,8 @@ export default function PedidoPage() {
       const up = await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
+      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+      await databases.updateDocument(databaseId, coll, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
       setUploaded(true);
       await load();
 
@@ -815,7 +856,8 @@ export default function PedidoPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      const latestDoc = await databases.getDocument(databaseId, ORDERS_COLLECTION, id);
+      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+      const latestDoc = await databases.getDocument(databaseId, coll, id);
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
@@ -844,7 +886,7 @@ export default function PedidoPage() {
         }
       }
 
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+      await databases.updateDocument(databaseId, coll, id, {
         STATUS: 'cancelled',
         UPDATEDAT: Date.now(),
         CUSTOMEREDITCOUNT: editCount + 1,
@@ -866,7 +908,8 @@ export default function PedidoPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+      await databases.updateDocument(databaseId, coll, id, {
         STATUS: 'delivered',
         UPDATEDAT: Date.now(),
       });
@@ -912,7 +955,7 @@ export default function PedidoPage() {
     }
   }
 
-  const isPending = order.STATUS === 'pending';
+  const isPending = order.STATUS === 'pending' || order.STATUS === 'waiting_payment' || order.STATUS === 'stock_confirmed';
   const BANK = getBankDetails();
   const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
   const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
@@ -922,7 +965,7 @@ export default function PedidoPage() {
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
   const customerEditCount = getCustomerEditCount(order);
-  const canCustomerModify = !['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
+  const canCustomerModify = !['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS) && order.STATUS !== 'pending_stock';
   // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
   const hasMissingItems = items.some(it => !!(it as any).missing);
   const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);

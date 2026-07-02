@@ -71,6 +71,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const getEffectiveItemTotal = (item: CartItem): number => {
     const now = Date.now();
+    
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
       return item.timedOfferPrice * item.quantity;
     }
@@ -96,7 +97,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const packQty = item.product.PACKQTY;
     const originalPrice = item.product.PRICE || 0;
     
-    if (packQty && packQty > 1 && item.quantity >= packQty) {
+    if (packQty && packQty > 1 && item.quantity >= packQty && item.product.SKU !== 'PROMO1') {
       const fullPacks = Math.floor(item.quantity / packQty);
       const remainder = item.quantity % packQty;
       
@@ -127,10 +128,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const maxStock = isLimited ? product.STOCK : 99999;
       const newQty = (!isLimited && unlimitedStock) ? (existing.quantity + qty) : Math.min(existing.quantity + qty, maxStock);
       setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice, isPack: isPack ?? i.isPack } : i));
-      showToast(`Cantidad actualizada: ${newQty} unidades`, 'info');
     } else {
       setItems(prev => [...prev, { product, quantity: qty, timedOfferPrice, timedOfferExpiresAt, wholesalePrice, isPack }]);
-      showToast(`✓ Agregado al carrito`, 'success');
     }
   };
 

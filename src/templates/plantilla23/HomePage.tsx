@@ -149,7 +149,7 @@ const FONT_FACE_CSS = `
 }
 `;
 
-const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
+const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number; bundleUnitPrice?: number })[] = [
   {
     $id: '6a2b4ef50018fb3a8c64',
     NAME: 'Base De Maquillaje Raspberry Tart Party',
@@ -159,7 +159,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/db022e6a4a8df69271f73f86efae795e.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1307'
+    SKU: 'KC1307',
+    bundleUnitPrice: 1770
   },
   {
     $id: '6a1a4da2000dd909a12a',
@@ -170,7 +171,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/4164f83c116f25162a627a5e464a9e41.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1277'
+    SKU: 'KC1277',
+    bundleUnitPrice: 916
   },
   {
     $id: '6a287c100036e5592ea7',
@@ -181,7 +183,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/a73f3086e5d3fdf141c9291048fb5baf.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1439'
+    SKU: 'KC1439',
+    bundleUnitPrice: 1390
   },
   {
     $id: '6a1a4da50015b9ebbd58',
@@ -192,7 +195,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/83dc0de25ec30d42e5e65eb5fb97da88.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1328'
+    SKU: 'KC1328',
+    bundleUnitPrice: 1896
   },
   {
     $id: '6a1a4da70009d16509de',
@@ -203,7 +207,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/7002e6ad9dcf769cabb007487e530180.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1403'
+    SKU: 'KC1403',
+    bundleUnitPrice: 1011
   },
   {
     $id: '6a23384e0005993581fe',
@@ -214,7 +219,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/61ea8b265d8a2ea7a67c8627a792c50c.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1817'
+    SKU: 'KC1817',
+    bundleUnitPrice: 2749
   },
   {
     $id: '6a3c6094003ceef0b1ec',
@@ -225,7 +231,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/17c9eb3a00e9748b0a1d0c6da54a3244.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1048'
+    SKU: 'KC1048',
+    bundleUnitPrice: 600
   },
   {
     $id: '6a3c615e000b35db0f3b',
@@ -236,7 +243,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     IMAGEURL: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783012128460-pegada-1783012124985.png',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: '1028'
+    SKU: '1028',
+    bundleUnitPrice: 726
   },
   {
     $id: '6a1a4db00004abd0d67d',
@@ -248,7 +256,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     CATEGORYID: '',
     SELLERID: '',
     SKU: 'L1516',
-    quantity: 3
+    quantity: 3,
+    bundleUnitPrice: 632
   },
   {
     $id: '6a46afc90033cd090a8e',
@@ -260,7 +269,8 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
     CATEGORYID: '',
     SELLERID: '',
     SKU: 'KC1241',
-    quantity: 4
+    quantity: 4,
+    bundleUnitPrice: 759
   }
 ];
 
@@ -2343,13 +2353,37 @@ export default function HomePage23() {
       section.style.setProperty('display', 'none', 'important');
     });
 
-    // Replace background image in bundle products section
+    // Replace background image in bundle products section + add pink particles
     const bgDiv = tempDiv.querySelector('.bundle-products__background');
     if (bgDiv) {
       bgDiv.innerHTML = `
         <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782341290873-pegada-1782341289319.png" alt="Background image" loading="lazy" sizes="100vw" class="object-cover w-full h-full hidden lg:block pointer-events-none rounded-3xl" />
         <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782341581947-pegada-1782341580104.png" alt="Background image" loading="lazy" sizes="100vw" class="object-cover w-full h-full lg:hidden block pointer-events-none rounded-3xl" />
+        <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:1.5rem;z-index:5;">
+          <div style="position:absolute;top:8%;left:12%;width:8px;height:8px;background:#fbcfe8;border-radius:50%;box-shadow:0 0 12px #f9a8d4;animation:bp-float1 4s ease-in-out infinite;"></div>
+          <div style="position:absolute;top:22%;right:15%;width:12px;height:12px;background:#f5a8cf;border-radius:50%;box-shadow:0 0 16px #f9a8d4;animation:bp-float2 5.5s ease-in-out infinite;animation-delay:0.8s;"></div>
+          <div style="position:absolute;bottom:18%;left:20%;width:6px;height:6px;background:#fbcfe8;border-radius:50%;box-shadow:0 0 10px #f9a8d4;animation:bp-float3 3.5s ease-in-out infinite;animation-delay:1.5s;"></div>
+          <div style="position:absolute;top:45%;left:8%;width:10px;height:10px;background:#e396bf;border-radius:50%;box-shadow:0 0 14px #f9a8d4;animation:bp-float1 6s ease-in-out infinite;animation-delay:2s;"></div>
+          <div style="position:absolute;bottom:30%;right:10%;width:7px;height:7px;background:#fbcfe8;border-radius:50%;box-shadow:0 0 11px #f9a8d4;animation:bp-float2 4.8s ease-in-out infinite;animation-delay:0.3s;"></div>
+          <div style="position:absolute;top:60%;right:25%;width:9px;height:9px;background:#f5a8cf;border-radius:50%;box-shadow:0 0 13px #f9a8d4;animation:bp-float3 5.2s ease-in-out infinite;animation-delay:1.2s;"></div>
+          <div style="position:absolute;top:15%;left:40%;width:5px;height:5px;background:#fff;border-radius:50%;box-shadow:0 0 8px #fbcfe8;animation:bp-float1 3.8s ease-in-out infinite;animation-delay:2.5s;"></div>
+          <div style="position:absolute;bottom:10%;left:55%;width:11px;height:11px;background:#e396bf;border-radius:50%;box-shadow:0 0 15px #f9a8d4;animation:bp-float2 6.5s ease-in-out infinite;animation-delay:1.8s;"></div>
+        </div>
+        <style>
+          @keyframes bp-float1 { 0%,100%{transform:translateY(0) scale(1);opacity:0.7;} 50%{transform:translateY(-20px) scale(1.3);opacity:1;} }
+          @keyframes bp-float2 { 0%,100%{transform:translateY(0) translateX(0) scale(1);opacity:0.6;} 50%{transform:translateY(-15px) translateX(10px) scale(1.2);opacity:0.9;} }
+          @keyframes bp-float3 { 0%,100%{transform:translateY(0) scale(1);opacity:0.5;} 50%{transform:translateY(-25px) scale(1.4);opacity:0.8;} }
+          @media (max-width:1023px){
+            div[style*="bp-float"]{transform:scale(0.7)!important;}
+          }
+        </style>
       `;
+    }
+
+    // Translate "Bundle & save (15%)" to Spanish and update percentage
+    const saveLabel = tempDiv.querySelector('.section-bundle-products .item-total-price--save .label');
+    if (saveLabel) {
+      saveLabel.textContent = 'Ahorra con el Pack (37%):';
     }
 
     // Hydrate bundle products with the 12 selected products
@@ -2363,6 +2397,10 @@ export default function HomePage23() {
       const bundleHtml = BUNDLE_PACK_PRODUCTS.map(p => {
         const qty = p.quantity || 1;
         const lineTotal = p.PRICE * qty;
+        const bundleUnitPrice = p.bundleUnitPrice || 0;
+        const bundleLineTotal = bundleUnitPrice * qty;
+        const lineSavings = lineTotal - bundleLineTotal;
+        const lineDiscountPct = Math.round((lineSavings / lineTotal) * 100);
         return `
         <li class="product-list__product-info flex gap-3 py-5 flex-wrap border-b-1 border-current/10" data-product-id="${p.$id}">
           <div class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)]">
@@ -2392,9 +2430,16 @@ export default function HomePage23() {
                 <div class="error text-[0.8em]" role="alert"><small></small></div>
               </form>
             </div>
-            <div class="price flex gap-[5px] flex-wrap">
+            <div class="price flex gap-[5px] flex-wrap items-center">
               <div class="price__regular">
-                <span class="price-item">$${p.PRICE.toLocaleString()} CLP${qty > 1 ? ` &times; ${qty} = $${lineTotal.toLocaleString()} CLP` : ''}</span>
+                <span class="price-item" style="text-decoration: line-through; color: #9ca3af; font-size: 0.85em;">$${p.PRICE.toLocaleString()} CLP${qty > 1 ? ` &times; ${qty}` : ''}</span>
+              </div>
+              <div class="price__sale" style="display:flex; align-items:center; gap:6px;">
+                <span class="price-item price-item--sale" style="font-weight:800; color:#db2777; font-size:1.05em;">$${bundleLineTotal.toLocaleString()} CLP</span>
+                <span style="background:#db2777; color:#fff; font-size:0.7em; font-weight:800; padding:2px 8px; border-radius:999px; line-height:1.2;">-${lineDiscountPct}%</span>
+              </div>
+              <div style="width:100%; margin-top:2px;">
+                <span style="font-size:0.75em; color:#10b981; font-weight:700;">Ahorras $${lineSavings.toLocaleString()} CLP</span>
               </div>
             </div>
           </div>
@@ -2417,14 +2462,20 @@ export default function HomePage23() {
     const subtotalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--subtotal .value');
     if (subtotalEl) {
       subtotalEl.textContent = '$25.300 CLP';
+      subtotalEl.style.fontWeight = '700';
     }
     const saveEl = tempDiv.querySelector('.section-bundle-products .item-total-price--save .value');
     if (saveEl) {
-      saveEl.textContent = '$9.310 CLP';
+      saveEl.textContent = '$9.310 CLP (37%)';
+      saveEl.style.color = '#db2777';
+      saveEl.style.fontWeight = '800';
     }
     const totalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--total .value');
     if (totalEl) {
       totalEl.textContent = '$15.990 CLP';
+      totalEl.style.fontWeight = '800';
+      totalEl.style.fontSize = '1.3em';
+      totalEl.style.color = '#db2777';
     }
 
     containerRef.current.innerHTML = tempDiv.innerHTML;
@@ -2436,7 +2487,7 @@ export default function HomePage23() {
     if (bundleCartBtn) {
       bundleCartBtn.classList.remove('disabled', 'pointer-events-none');
       const texts = bundleCartBtn.querySelectorAll('.link-hover-animation');
-      texts.forEach(t => t.textContent = 'Añadir Pack al Carrito ($27.276)');
+      texts.forEach(t => t.textContent = 'Añadir Pack al Carrito ($15.990)');
       
       // Clone it to strip native Shopify listeners
       const clonedBtn = bundleCartBtn.cloneNode(true);
@@ -2446,10 +2497,19 @@ export default function HomePage23() {
         e.preventDefault();
         e.stopPropagation();
         
-        // Add all 12 products to cart
-        BUNDLE_PACK_PRODUCTS.forEach(p => {
-          addItem(p, 1);
-        });
+        // Add the bundle as a single product (la caja)
+        const BUNDLE_PRODUCT: Product = {
+          $id: 'bundle-pack-caja',
+          NAME: 'Mega Pack Favoritos (15 Productos)',
+          DESCRIPTION: 'Base Raspberry Tart + Iluminadores + Polvo Suelto + Paleta 4 Rubores + Corrector + Paleta Sombras Ghost Music + Toallitas + Brocha + Brillos Labial 6 Colores x3 + Brillos Love Color x4',
+          PRICE: 15990,
+          STOCK: 99999,
+          IMAGEURL: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783031423674-pegada-1783031416170.png',
+          CATEGORYID: '',
+          SELLERID: '',
+          SKU: 'PROMO1',
+        };
+        addItem(BUNDLE_PRODUCT, 1);
         
         // Open the Cart drawer
         const cartDrawer = document.querySelector('cart-drawer');
@@ -4739,6 +4799,7 @@ export default function HomePage23() {
                       <a href="/productos/${item.product.$id}" style="text-decoration: none;">
                           <h6 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #374151; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                             ${item.product.NAME}
+                            ${item.bundlePackQty && item.bundlePackQty > 0 ? '<span style="display:inline-block;margin-left:6px;background:linear-gradient(135deg,#f9a8d4 0%,#e396bf 100%);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999;vertical-align:middle;animation:pk-badge-pulse 2s ease-in-out infinite;box-shadow:0 2px 8px rgba(244,114,182,0.4);">PACK</span>' : ''}
                           </h6>
                       </a>
                       <div style="display:flex; align-items:center; justify-content:space-between;">

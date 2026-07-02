@@ -134,6 +134,9 @@ export default function PedidosMayoristasPage() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                       <span style={{ fontSize: 14, fontWeight: 800, color: AMBER }}>{formatPrice(req.TOTAL || req.SUBTOTAL || 0)}</span>
+                      <Link href={`/pedido/${req.$id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: AMBER, color: '#fff', borderRadius: 10, fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                        Ver detalle
+                      </Link>
                       {isExpanded ? <ChevronUp size={16} color="#9ca3af" /> : <ChevronDown size={16} color="#9ca3af" />}
                     </div>
                   </div>

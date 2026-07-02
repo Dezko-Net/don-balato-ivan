@@ -15,6 +15,40 @@ export function useCartItemPrice(item: CartItem): {
     const now = Date.now();
     let result: { unitPrice: number; pricing: ResolvedProductPrice } | null = null;
 
+    // 0. Bundle pack pricing: bundleQty at bundle price, extra at normal price
+    if (item.bundlePackQty && item.bundlePackQty > 0 && item.bundlePackPrice) {
+      const bundleTotal = item.bundlePackQty * item.bundlePackPrice;
+      const extraQty = item.quantity - item.bundlePackQty;
+      if (extraQty <= 0) {
+        result = {
+          unitPrice: item.bundlePackPrice,
+          pricing: {
+            displayPrice: item.bundlePackPrice,
+            originalPrice: item.product.PRICE,
+            hasDiscount: item.bundlePackPrice < item.product.PRICE,
+            discountPercent: item.product.PRICE > 0 ? Math.round(((item.product.PRICE - item.bundlePackPrice) / item.product.PRICE) * 100) : 0,
+            fromApertura: false,
+          },
+        };
+      } else {
+        // Mixed: bundle qty at bundle price, extra at normal price
+        const normalItem = { ...item, bundlePackQty: undefined, bundlePackPrice: undefined, timedOfferPrice: undefined, wholesalePrice: undefined, isPack: undefined };
+        const normalPricing = resolveProductDisplayPrice(normalItem.product, apertura);
+        const total = bundleTotal + (normalPricing.displayPrice * extraQty);
+        const avgPrice = Math.round(total / item.quantity);
+        result = {
+          unitPrice: avgPrice,
+          pricing: {
+            displayPrice: avgPrice,
+            originalPrice: item.product.PRICE,
+            hasDiscount: avgPrice < item.product.PRICE,
+            discountPercent: item.product.PRICE > 0 ? Math.round(((item.product.PRICE - avgPrice) / item.product.PRICE) * 100) : 0,
+            fromApertura: false,
+          },
+        };
+      }
+    }
+
     // 1. Timed offer
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
       result = {

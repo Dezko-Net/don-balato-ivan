@@ -84,7 +84,7 @@ function CheckoutInner() {
         const validDocs = res.documents as any[];
         const validIds = new Set(validDocs.map(d => d.$id));
         
-        const deletedProducts = items.filter(it => !validIds.has(it.product.$id));
+        const deletedProducts = items.filter(it => !validIds.has(it.product.$id) && it.product.SKU !== 'PROMO1');
         if (deletedProducts.length > 0) {
           for (const dp of deletedProducts) {
             removeItem(dp.product.$id);
@@ -1300,7 +1300,9 @@ function CheckoutInner() {
                               <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(227,150,191,0.3)' }}>{item.quantity}</span>
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>{item.product.NAME}</p>
+                              <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>
+                                {item.product.NAME}
+                              </p>
                               {pricing.fromApertura && (
                                 <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
                               )}
@@ -1342,7 +1344,7 @@ function CheckoutInner() {
                   <div style={{ borderTop: '1px dashed #fce7f3', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                       <span style={{ color: '#6b7280', fontFamily: FF }}>Subtotal</span>
-                      <span style={{ color: '#374151', fontWeight: 600, fontFamily: FF }}>{formatPrice(subtotal)}</span>
+                      <span style={{ color: '#374151', fontWeight: 600, fontFamily: FF }}>{formatPrice(subtotal + aperturaSavings)}</span>
                     </div>
                     {aperturaSavings > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
