@@ -698,62 +698,111 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         )}
 
         {/* Top toolbar */}
-        <div className={`pk-toolbar ${isScrolled ? 'pk-toolbar-scrolled' : ''}`} style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center', padding: 12, borderRadius: 22, background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(229,231,235,0.9)', backdropFilter: 'blur(16px)', boxShadow: '0 10px 34px rgba(227,150,191,0.1)' }}>
-          <div className="pk-toolbar-search" style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-            <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: primaryColor }} />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder={isPaquetes ? "Buscar paquetes..." : (isEmbalajes ? "Buscar embalajes..." : "Buscar productos...")}
-              style={{ width: '100%', padding: '13px 38px 13px 42px', borderRadius: 16, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 14, color: '#111', outline: 'none', boxShadow: `0 2px 8px ${shadowColorLight}`, fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
-              onFocus={e => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.boxShadow = `0 0 0 4px ${shadowColorLight}`; }}
-              onBlur={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = `0 2px 8px ${shadowColorLight}`; }} />
-            {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: primaryColor }}><X size={14} /></button>}
+        <div className={`pk-toolbar ${isScrolled ? 'pk-toolbar-scrolled' : ''}`} style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20, padding: 12, borderRadius: 22, background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(229, 231, 235, 0.9)', backdropFilter: 'blur(16px)', boxShadow: '0 10px 34px rgba(227,150,191,0.1)' }}>
+          
+          {/* Row 1: Search + Filters (Mobile next to Search, Desktop full flex) */}
+          <div style={{ display: 'flex', width: '100%', gap: 10, alignItems: 'center' }}>
+            <div className="pk-toolbar-search" style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+              <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: primaryColor }} />
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder={isPaquetes ? "Buscar paquetes..." : (isEmbalajes ? "Buscar embalajes..." : "Buscar productos...")}
+                style={{ width: '100%', padding: '13px 38px 13px 42px', borderRadius: 16, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 14, color: '#111', outline: 'none', boxShadow: `0 2px 8px ${shadowColorLight}`, fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
+                onFocus={e => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.boxShadow = `0 0 0 4px ${shadowColorLight}`; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = `0 2px 8px ${shadowColorLight}`; }} />
+              {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: primaryColor }}><X size={14} /></button>}
+            </div>
+
+            <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-mobile-only animate-fade-in"
+              style={{ display: 'none', alignItems: 'center', gap: 6, padding: '12px 14px', borderRadius: 16, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 700, color: primaryColor, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <SlidersHorizontal size={15} /> Filtros{hasActiveFilters ? ' •' : ''}
+            </button>
           </div>
 
-          <div className="pk-toolbar-actions">
+          {/* Row 2: Categories Horizontal Scroll on Mobile only */}
+          {!lockCategoryId && (
+            <div className="pk-mobile-only pk-categories-scroll-wrap" style={{ display: 'none', width: '100%', overflowX: 'auto', gap: 8, padding: '4px 0 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', borderTop: '1px solid rgba(229,231,235,0.4)', paddingTop: 10, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+              <button
+                onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
+                style={{
+                  whiteSpace: 'nowrap',
+                  padding: '8px 16px',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  background: !selectedCat ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fff',
+                  color: !selectedCat ? '#fff' : '#6b7280',
+                  border: '1px solid ' + (!selectedCat ? 'transparent' : '#e5e7eb'),
+                  cursor: 'pointer',
+                  boxShadow: !selectedCat ? '0 4px 10px rgba(227,150,191,0.2)' : 'none',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Todos
+              </button>
+              {categories.map(c => {
+                const count = catCountMap[c.$id] || 0;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={c.$id}
+                    onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id); }}
+                    style={{
+                      whiteSpace: 'nowrap',
+                      padding: '8px 16px',
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      background: selectedCat === c.$id ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fff',
+                      color: selectedCat === c.$id ? '#fff' : '#6b7280',
+                      border: '1px solid ' + (selectedCat === c.$id ? 'transparent' : '#e5e7eb'),
+                      cursor: 'pointer',
+                      boxShadow: selectedCat === c.$id ? '0 4px 10px rgba(227,150,191,0.2)' : 'none',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    {c.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Row 3 (Desktop only or collapsed on scroll on mobile) */}
+          <div className="pk-toolbar-actions" style={{ width: '100%' }}>
             {/* Selector de Categorías en Toolbar */}
           {!lockCategoryId && (
-            <>
-              {/* Desktop Category Select */}
-              <div className="pk-toolbar-select-wrap pk-desktop-only" style={{ position: 'relative' }}>
-                <select
-                  value={selectedCat}
-                  onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); updateCategoryUrl(e.target.value); }}
-                  style={{
-                    padding: '12px 34px 12px 16px',
-                    borderRadius: 14,
-                    border: '1.5px solid #e5e7eb',
-                    background: '#fff',
-                    fontSize: 13,
-                    color: '#111',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                    minWidth: 160,
-                    appearance: 'none',
-                    WebkitAppearance: 'none',
-                  }}
-                >
-                  <option value="">Todas las categorías</option>
-                  {categories.map(c => (
-                    <option key={c.$id} value={c.$id}>{c.name}</option>
-                  ))}
-                </select>
-                <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: primaryColor, pointerEvents: 'none' }} />
-              </div>
-
-              {/* Mobile Category Button */}
-              <button type="button" onClick={() => setCategoryDrawerOpen(true)} className="pk-category-btn-mobile pk-mobile-only"
-                style={{ alignItems: 'center', justifyContent: 'space-between', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit', minWidth: 140 }}>
-                <span>{selectedCat ? categories.find(c => c.$id === selectedCat)?.name || 'Categoría' : 'Categorías'}</span>
-                <ChevronDown size={15} style={{ color: primaryColor }} />
-              </button>
-            </>
+            <div className="pk-toolbar-select-wrap pk-desktop-only" style={{ position: 'relative' }}>
+              <select
+                value={selectedCat}
+                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); updateCategoryUrl(e.target.value); }}
+                style={{
+                  padding: '12px 34px 12px 16px',
+                  borderRadius: 14,
+                  border: '1.5px solid #e5e7eb',
+                  background: '#fff',
+                  fontSize: 13,
+                  color: '#111',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  minWidth: 160,
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                <option value="">Todas las categorías</option>
+                {categories.map(c => (
+                  <option key={c.$id} value={c.$id}>{c.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: primaryColor, pointerEvents: 'none' }} />
+            </div>
           )}
 
           {/* Selector de Subcategorías en Toolbar */}
           {selectedCat && subcategories.length > 0 && (
-            <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
+            <div className="pk-toolbar-select-wrap pk-desktop-only" style={{ position: 'relative' }}>
               <select
                 value={selectedSubcat}
                 onChange={e => setSelectedSubcat(e.target.value)}
@@ -782,7 +831,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             </div>
           )}
 
-          <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-mobile-only"
+          <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-desktop-only"
             style={{ alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 700, color: primaryColor, cursor: 'pointer', fontFamily: 'inherit' }}>
             <SlidersHorizontal size={15} /> Filtros{hasActiveFilters ? ' •' : ''}
           </button>
@@ -1889,21 +1938,39 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-toolbar {
             position: -webkit-sticky !important;
             position: sticky !important;
-            top: 10px !important;
+            top: 54px !important;
+            z-index: 999 !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
           }
           .pk-toolbar.pk-toolbar-scrolled {
             position: -webkit-sticky !important;
             position: sticky !important;
-            top: 10px !important;
+            top: 54px !important;
             z-index: 999 !important;
             backdrop-filter: blur(16px) !important;
             -webkit-backdrop-filter: blur(16px) !important;
           }
           .pk-toolbar-search {
-            flex: 0 0 100% !important;
-            width: 100% !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          .pk-categories-scroll-wrap {
+            display: flex !important;
+          }
+          .pk-categories-scroll-wrap::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+          .pk-toolbar.pk-toolbar-scrolled .pk-categories-scroll-wrap {
+            opacity: 0 !important;
+            max-height: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0 !important;
+            overflow: hidden !important;
+            pointer-events: none !important;
           }
 
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
