@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -1468,32 +1469,34 @@ function CheckoutInner() {
                   </div>
                 )}
 
-                {/* Submit button */}
-                <div style={{ padding: '0 22px 20px' }}>
-                  <button type="submit" disabled={submitting || belowMinimum} className={hasPackItems ? "ck-confirm-btn-wholesale" : "ck-confirm-btn"}
-                    style={{ display: 'block', width: '100%', padding: '16px 0', backgroundImage: submitting ? 'none' : (hasPackItems ? 'linear-gradient(135deg, #f7e5d4, #eed9c4, #d4b290, #eed9c4, #f7e5d4)' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf, #f5a8cf, #fbcfe8)'), backgroundColor: submitting ? (hasPackItems ? '#eed9c4' : '#f5a8cf') : 'transparent', color: hasPackItems ? '#5c3d24' : '#fff', textAlign: 'center', borderRadius: 16, fontSize: 16, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
-                    {!submitting && <>
-                      <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-                        <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
-                        <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
-                        <span className="ck-trail" /><span className="ck-trail" /><span className="ck-trail" />
-                      </span>
-                      <span className="ck-shimmer-line" />
-                    </>}
-                    <span style={{ position: 'relative', zIndex: 2, textShadow: '0 1px 3px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      {submitting ? 'Procesando...' : hasPackItems ? <>📦 Solicitar Pedido Mayorista</> : <><Shield size={16} /> Confirmar pedido</>}
-                    </span>
-                  </button>
-                </div>
               </div>
             </div>
+          </div>
+
+          {/* Submit button — full width at bottom */}
+          <div style={{ marginTop: 16, padding: '0 0 8px' }}>
+            <button type="submit" disabled={submitting || belowMinimum} className={hasPackItems ? "ck-confirm-btn-wholesale" : "ck-confirm-btn"}
+              style={{ display: 'block', width: '100%', padding: '18px 0', backgroundImage: submitting ? 'none' : (hasPackItems ? 'linear-gradient(135deg, #f7e5d4, #eed9c4, #d4b290, #eed9c4, #f7e5d4)' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf, #f5a8cf, #fbcfe8)'), backgroundColor: submitting ? (hasPackItems ? '#eed9c4' : '#f5a8cf') : 'transparent', color: hasPackItems ? '#5c3d24' : '#fff', textAlign: 'center', borderRadius: 16, fontSize: 17, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
+              {!submitting && <>
+                <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                  <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
+                  <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
+                  <span className="ck-trail" /><span className="ck-trail" /><span className="ck-trail" />
+                </span>
+                <span className="ck-shimmer-line" />
+              </>}
+              <span style={{ position: 'relative', zIndex: 2, textShadow: '0 1px 3px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {submitting ? 'Procesando...' : hasPackItems ? <>📦 Solicitar Pedido Mayorista</> : <><Shield size={16} /> Confirmar pedido</>}
+              </span>
+            </button>
           </div>
         </form>
       </div>
       </div>
+    </div>
 
         {/* Modal de Selección de Agencia */}
-        {showAgencyModal && (
+        {showAgencyModal && typeof document !== 'undefined' && createPortal(
           <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
             <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
               <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
@@ -1545,11 +1548,12 @@ function CheckoutInner() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Modal de Resumen y Confirmación */}
-        {showSummaryModal && (
+        {showSummaryModal && typeof document !== 'undefined' && createPortal(
           <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
             <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
               <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1602,11 +1606,12 @@ function CheckoutInner() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Modal de Geolocalización (Pro) */}
-        {showGeoModal && (
+        {showGeoModal && typeof document !== 'undefined' && createPortal(
           <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
             <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
               <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
@@ -1644,9 +1649,9 @@ function CheckoutInner() {
                 to { opacity: 1; transform: translateY(0) scale(1); }
               }
             `}</style>
-          </div>
+          </div>,
+          document.body
         )}
-    </div>
     </>
   );
 }
