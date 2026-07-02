@@ -2029,6 +2029,36 @@ export default function HomePage23() {
         }
       }
 
+      @media (max-width: 992px) {
+        .tpl23-shopify-root custom-header.header-element {
+          position: absolute !important;
+          top: 0px !important;
+          margin-top: 0px !important;
+          padding-top: 2px !important;
+          padding-bottom: 2px !important;
+        }
+        .tpl23-shopify-root .header-element .logo-wrapper {
+          margin-top: 0px !important;
+          padding-top: 0px !important;
+          padding-bottom: 0px !important;
+        }
+        .tpl23-shopify-root .header-element .logo-wrapper img {
+          max-height: 36px !important;
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+        }
+        .tpl23-shopify-root .header-element .menu-hamburger-button {
+          margin-top: 0px !important;
+          margin-bottom: 0px !important;
+          height: 18px !important;
+        }
+        .tpl23-shopify-root .header-element .flex.justify-between.relative.gap-3.py-3 {
+          padding-top: 0px !important;
+          padding-bottom: 0px !important;
+          margin-top: -8px !important;
+        }
+      }
+
       /* Fades for herobanner and latest products section */
       .tpl23-shopify-root .slideshow__background,
       .tpl23-shopify-root custom-slideshow {
@@ -2580,6 +2610,11 @@ export default function HomePage23() {
             <div class="text-white font-black text-sm sm:text-base mb-2 drop-shadow-md text-center w-full uppercase tracking-wide" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">ESTA PROMOCION TERMINA EN :</div>
             <div class="flex gap-2 sm:gap-4 items-center bg-white/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/40">
               <div class="flex flex-col items-center">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-days">00</div>
+                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Días</span>
+              </div>
+              <span class="text-white font-black text-3xl drop-shadow-md pb-5">:</span>
+              <div class="flex flex-col items-center">
                 <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-hrs">00</div>
                 <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Horas</span>
               </div>
@@ -2615,13 +2650,14 @@ export default function HomePage23() {
           let diff = target.getTime() - now.getTime();
           if (diff < 0) diff = 0; // Terminado
 
-          // Since it's more than 24h, let's include days as hours (e.g. 100+ hours)
-          const h = Math.floor(diff / (1000 * 60 * 60));
+          const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
           const m = Math.floor((diff / 1000 / 60) % 60);
           const s = Math.floor((diff / 1000) % 60);
 
           const pad = (n: number) => n.toString().padStart(2, '0');
 
+          heroBg.querySelectorAll('.time-days').forEach(el => el.textContent = pad(d));
           heroBg.querySelectorAll('.time-hrs').forEach(el => el.textContent = pad(h));
           heroBg.querySelectorAll('.time-mins').forEach(el => el.textContent = pad(m));
           heroBg.querySelectorAll('.time-secs').forEach(el => el.textContent = pad(s));
