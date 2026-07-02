@@ -182,6 +182,7 @@ export default function WholesaleOrdersPage() {
             <th class="check-col">✓</th>
             <th>Producto</th>
             <th>SKU</th>
+            <th>Código de Barras</th>
             <th style="text-align:center">Cant.</th>
             <th style="text-align:right">Precio</th>
             <th style="text-align:right">Total</th>
@@ -191,18 +192,22 @@ export default function WholesaleOrdersPage() {
           ${items.map((it: any) => `
             <tr>
               <td class="check-col" style="border:2px solid #d1d5db;border-radius:4px;height:24px"></td>
-              <td>
-                <p style="font-weight:600;margin:0">${it.name}</p>
-                ${it.isPack ? `<span style="font-size:11px;color:#7c3aed;font-weight:700">Paquete de ${it.packQty || 1} un.</span>` : ''}
+              <td style="display:flex;align-items:center;gap:10px">
+                ${it.img ? `<img src="${it.img}" alt="${it.name}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb" />` : '<div style="width:48px;height:48px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>'}
+                <div>
+                  <p style="font-weight:600;margin:0">${it.name}</p>
+                  ${it.isPack ? `<span style="font-size:11px;color:#7c3aed;font-weight:700">Paquete de ${it.packQty || 1} un.</span>` : ''}
+                </div>
               </td>
-              <td style="font-family:monospace;font-size:12px">${it.sku || '-'}</td>
-              <td style="text-align:center;font-weight:700">${it.qty}</td>
+              <td style="font-family:monospace;font-size:12px;font-weight:700">${it.sku || '-'}</td>
+              <td style="font-family:monospace;font-size:12px">${it.barcode || '-'}</td>
+              <td style="text-align:center;font-weight:700;font-size:15px">${it.qty}</td>
               <td style="text-align:right">${formatPrice(it.price)}</td>
               <td style="text-align:right;font-weight:700">${formatPrice(it.total)}</td>
             </tr>
           `).join('')}
           <tr class="total-row">
-            <td colspan="5" style="text-align:right">TOTAL</td>
+            <td colspan="6" style="text-align:right">TOTAL</td>
             <td style="text-align:right">${formatPrice(order.TOTAL)}</td>
           </tr>
         </tbody>
