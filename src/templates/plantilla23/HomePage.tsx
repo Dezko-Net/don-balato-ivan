@@ -2459,18 +2459,18 @@ export default function HomePage23() {
       bundleDataScript.innerHTML = JSON.stringify(bundleData);
     }
 
-    const subtotalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--subtotal .value');
+    const subtotalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--subtotal .value') as HTMLElement | null;
     if (subtotalEl) {
       subtotalEl.textContent = '$25.300 CLP';
       subtotalEl.style.fontWeight = '700';
     }
-    const saveEl = tempDiv.querySelector('.section-bundle-products .item-total-price--save .value');
+    const saveEl = tempDiv.querySelector('.section-bundle-products .item-total-price--save .value') as HTMLElement | null;
     if (saveEl) {
       saveEl.textContent = '$9.310 CLP (37%)';
       saveEl.style.color = '#db2777';
       saveEl.style.fontWeight = '800';
     }
-    const totalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--total .value');
+    const totalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--total .value') as HTMLElement | null;
     if (totalEl) {
       totalEl.textContent = '$15.990 CLP';
       totalEl.style.fontWeight = '800';
