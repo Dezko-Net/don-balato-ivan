@@ -2032,8 +2032,8 @@ export default function HomePage23() {
       /* Fades for herobanner and latest products section */
       .tpl23-shopify-root .slideshow__background,
       .tpl23-shopify-root custom-slideshow {
-        -webkit-mask-image: linear-gradient(to bottom, black 92%, transparent 100%) !important;
-        mask-image: linear-gradient(to bottom, black 92%, transparent 100%) !important;
+        -webkit-mask-image: none !important;
+        mask-image: none !important;
       }
       #yaxsell-wholesale-offers-root {
         position: relative !important;
