@@ -2575,8 +2575,9 @@ export default function HomePage23() {
         firstSlides.forEach(slide => {
            const timerContainer = document.createElement('div');
           timerContainer.className = 'hero-flash-timer';
-          timerContainer.style.cssText = '';
+          timerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
           timerContainer.innerHTML = `
+            <div class="text-white font-black text-sm sm:text-base mb-2 drop-shadow-md text-center w-full uppercase tracking-wide" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">ESTA PROMOCION TERMINA EN :</div>
             <div class="flex gap-2 sm:gap-4 items-center bg-white/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/40">
               <div class="flex flex-col items-center">
                 <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-hrs">00</div>
@@ -2599,13 +2600,23 @@ export default function HomePage23() {
 
         const updateHeroTimer = () => {
           const now = new Date();
-          const target = new Date();
-          target.setHours(21, 0, 0, 0); // 21:00 de hoy
+          const currentDay = now.getDay();
+          let daysUntilMonday = (1 - currentDay + 7) % 7;
+          if (daysUntilMonday === 0 && now.getHours() >= 12) {
+            daysUntilMonday = 7;
+          }
+          const target = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() + daysUntilMonday,
+            12, 0, 0, 0
+          );
           
           let diff = target.getTime() - now.getTime();
           if (diff < 0) diff = 0; // Terminado
 
-          const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+          // Since it's more than 24h, let's include days as hours (e.g. 100+ hours)
+          const h = Math.floor(diff / (1000 * 60 * 60));
           const m = Math.floor((diff / 1000 / 60) % 60);
           const s = Math.floor((diff / 1000) % 60);
 
