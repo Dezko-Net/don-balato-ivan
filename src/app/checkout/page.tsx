@@ -1489,6 +1489,8 @@ function CheckoutInner() {
             </div>
           </div>
         </form>
+      </div>
+      </div>
 
         {/* Modal de Selección de Agencia */}
         {showAgencyModal && (
@@ -1644,8 +1646,6 @@ function CheckoutInner() {
             `}</style>
           </div>
         )}
-      </div>
-      </div>
     </div>
     </>
   );

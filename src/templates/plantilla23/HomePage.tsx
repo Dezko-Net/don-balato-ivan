@@ -178,7 +178,7 @@ const BUNDLE_PACK_PRODUCTS: Product[] = [
     DESCRIPTION: 'BROCHA',
     PRICE: 1150,
     STOCK: 30,
-    IMAGEURL: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png',
+    IMAGEURL: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783012128460-pegada-1783012124985.png',
     CATEGORYID: '',
     SELLERID: '',
     SKU: '1028'
@@ -2306,9 +2306,7 @@ export default function HomePage23() {
       let anchor: Element = heroBannerSection;
       const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
       const bundleSection = tempDiv.querySelector('[id*="bundle_products"]') as HTMLElement | null;
-      if (bundleSection) {
-        bundleSection.style.display = 'none'; // Ocultar temporalmente
-      }
+      // bundleSection visible — no hiding
       console.log("[Plantilla23 Debug] heroBannerSection:", !!heroBannerSection, "countdownSection:", !!countdownSection, "bundleSection:", !!bundleSection);
       if (countdownSection) {
         if (bundleSection) {
@@ -2365,14 +2363,12 @@ export default function HomePage23() {
       section.style.setProperty('display', 'none', 'important');
     });
 
-    // Remove hotspots from bundle products section as requested by user
-    tempDiv.querySelectorAll('.bundle-products__hotspot').forEach(el => el.remove());
-
     // Replace background image in bundle products section
     const bgDiv = tempDiv.querySelector('.bundle-products__background');
     if (bgDiv) {
       bgDiv.innerHTML = `
-        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782341290873-pegada-1782341289319.png" alt="Background image" class="object-cover w-full h-full pointer-events-none" />
+        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782341290873-pegada-1782341289319.png" alt="Background image" loading="lazy" sizes="100vw" class="object-cover w-full h-full hidden lg:block pointer-events-none rounded-3xl" />
+        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1782341581947-pegada-1782341580104.png" alt="Background image" loading="lazy" sizes="100vw" class="object-cover w-full h-full lg:hidden block pointer-events-none rounded-3xl" />
       `;
     }
 
@@ -2400,6 +2396,7 @@ export default function HomePage23() {
           <div class="product-list__product-content py-3">
             <a href="/productos/${p.$id}" aria-label="${p.NAME}" title="${p.NAME}" class="block max-w-max">
               <h3 class="heading pt-2 pb-1 h6 max-w-max"><span class="link-hover-animation">${p.NAME}</span></h3>
+              <span class="text-[0.75em] text-current/50 font-medium">SKU: ${p.SKU || 'N/A'}</span>
             </a>
             <div class="variant pb-2 text-current/70" data-loading="false">
               <div class="flex gap-[5px] items-center justify-between pr-2">
@@ -2428,8 +2425,8 @@ export default function HomePage23() {
     if (bundleDataScript) {
       const bundleData = {
         products: BUNDLE_PACK_PRODUCTS.map(p => ({ id: p.$id, price: p.PRICE, available: true })),
-        total_price: 32090,
-        saving_percentage: 15
+        total_price: 24990,
+        saving_percentage: 22
       };
       bundleDataScript.innerHTML = JSON.stringify(bundleData);
     }
@@ -2440,11 +2437,11 @@ export default function HomePage23() {
     }
     const saveEl = tempDiv.querySelector('.section-bundle-products .item-total-price--save .value');
     if (saveEl) {
-      saveEl.textContent = '$4.814 CLP';
+      saveEl.textContent = '$7.100 CLP';
     }
     const totalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--total .value');
     if (totalEl) {
-      totalEl.textContent = '$27.276 CLP';
+      totalEl.textContent = '$24.990 CLP';
     }
 
     containerRef.current.innerHTML = tempDiv.innerHTML;
