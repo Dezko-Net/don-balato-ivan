@@ -797,12 +797,14 @@ export default function HomePage23() {
     let alive = true;
     (async () => {
       try {
-        const res = await fetch('/api/public-data/products?limit=600');
+        // ofertasOnly filtra en el servidor (cacheado): antes se bajaban 600
+        // productos completos por visitante solo para quedarse con las ofertas.
+        const res = await fetch('/api/public-data/products?ofertasOnly=true&limit=60');
         if (!res.ok) return;
         const data = await res.json();
         if (!alive) return;
-        const allProducts = (data.products || []) as Product[];
-        const offers = allProducts.filter(p =>
+        const pool = (data.products || []) as Product[];
+        const offers = pool.filter(p =>
           p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < (p.PRICE || 0) && (p.STOCK || 0) > 0
         );
         if (alive) setOffersProducts(offers);

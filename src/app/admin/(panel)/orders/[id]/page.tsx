@@ -505,26 +505,14 @@ export default function OrderDetailPage() {
       ]);
       setAddProductResults(res.documents);
     } catch {
-      // Fallback: manual search with pagination
+      // Fallback: búsqueda vía endpoint cacheado del servidor (0 lecturas
+      // Appwrite). Antes descargaba hasta 2.000 productos directo de la BD.
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const allProds: any[] = [];
-        let offset = 0;
-        while (offset < 2000) {
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.limit(100),
-            Query.offset(offset)
-          ]);
-          if (res.documents.length === 0) break;
-          allProds.push(...res.documents);
-          offset += 100;
+        const res = await fetch(`/api/public-data/products?search=${encodeURIComponent(q)}&limit=30`);
+        if (res.ok) {
+          const data = await res.json();
+          setAddProductResults(data.products || []);
         }
-        const filteredProds = allProds.filter((p: any) =>
-          p.NAME?.toLowerCase().includes(q.toLowerCase()) ||
-          p.sku?.toLowerCase().includes(q.toLowerCase())
-        );
-        setAddProductResults(filteredProds.slice(0, 30));
       } catch {}
     }
   };
@@ -685,7 +673,7 @@ export default function OrderDetailPage() {
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
           Query.greaterThanEqual('PRICE', minPriceLimit),
           Query.lessThanEqual('PRICE', maxPriceLimit),
-          Query.limit(150)
+          Query.limit(60)
         ]);
         prods = res.documents;
       } catch (err) {

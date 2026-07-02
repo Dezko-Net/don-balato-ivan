@@ -80,8 +80,9 @@ export function useProductsCache({
     if (priceMin !== undefined) params.set('priceMin', String(priceMin));
     if (priceMax !== undefined) params.set('priceMax', String(priceMax));
     if (ofertasOnly) params.set('ofertasOnly', 'true');
+    if (catalogMode && catalogMode !== 'retail') params.set('mode', catalogMode);
     return params;
-  }, [categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, priceMin, priceMax, ofertasOnly]);
+  }, [categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, priceMin, priceMax, ofertasOnly, catalogMode]);
 
   // ===========================================================================
   // LEGACY MODE: download everything once, filter/sort/paginate client-side.
@@ -389,7 +390,9 @@ export function useProductsCache({
 
 export async function invalidateGlobalProductsCache() {
   try {
-    await fetch('/api/admin/revalidate', { method: 'POST' }).catch(() => {});
+    // Coalescido: evita reconstruir los cachés del servidor en cada guardado
+    const { requestProductsRevalidate } = await import('@/lib/cache');
+    requestProductsRevalidate();
     const { mutate } = require('swr');
     await mutate(
       (key: string) => typeof key === 'string' && key.startsWith('/api/public-data/products'),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, Suspense, useRef } from 'react';
+import useSWR from 'swr';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -151,7 +152,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
   const {
     products,
-    allProducts,
     total,
     priceRange: fetchedPriceRange,
     categoryCounts: catCountMap,
@@ -169,8 +169,31 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     tag: selectedTag || undefined,
     priceMin: activePriceRange ? activePriceRange[0] : undefined,
     priceMax: activePriceRange ? activePriceRange[1] : undefined,
-    catalogMode
+    catalogMode,
+    // Paginación real 10 en 10 (server-side): evita descargar el catálogo
+    // completo (~1-2MB) por visitante; el servidor responde desde su caché 24h.
+    serverPaginated: true,
+    pageSize: 10
   });
+
+  // ── Pools chicos y cacheados para los carruseles ──
+  // Antes venían de allProducts (catálogo completo). Con paginación 10/10 se
+  // piden listas acotadas al endpoint cacheado (0 lecturas Appwrite extra).
+  const poolFetcher = (url: string) => fetch(url).then(r => r.json());
+  const poolOpts = { revalidateOnFocus: false, revalidateOnReconnect: false, dedupingInterval: 300000 };
+  const isRetailMode = !isPaquetes && !isEmbalajes;
+  const { data: offersPoolData } = useSWR(
+    isRetailMode ? '/api/public-data/products?ofertasOnly=true&limit=40' : null,
+    poolFetcher, poolOpts
+  );
+  const { data: cheapPoolData } = useSWR(
+    isRetailMode ? '/api/public-data/products?sortBy=price_asc&limit=20' : null,
+    poolFetcher, poolOpts
+  );
+  const { data: packPoolData } = useSWR(
+    isPaquetes ? '/api/public-data/products?mode=paquetes&sortBy=price_asc&limit=60' : null,
+    poolFetcher, poolOpts
+  );
 
   const priceRange = fetchedPriceRange;
   const filtered = products;
@@ -201,25 +224,27 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
 
 
-  const activeProducts = useMemo(() => products.filter(p => p.ISACTIVE !== false), [products]);
-  // allActiveProducts uses non-paginated list so carousels/offers can find any product
-  const allActiveProducts = useMemo(() => (allProducts || products).filter(p => p.ISACTIVE !== false), [allProducts, products]);
+  // Con paginación server-side, `total` ya refleja los filtros activos
+  // (categoría bloqueada incluida) — sin necesidad de descargar todo.
+  const allActiveProducts = useMemo(() => {
+    const pool: Product[] = isPaquetes
+      ? (packPoolData?.products || [])
+      : (offersPoolData?.products || []);
+    return pool.filter(p => p.ISACTIVE !== false);
+  }, [isPaquetes, packPoolData, offersPoolData]);
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
-  const categoryProductCount = lockCategoryId
-    ? activeProducts.filter(p => p.CATEGORYID === lockCategoryId).length
-    : activeProducts.length;
+  const categoryProductCount = total;
 
   const carouselRef = useRef<HTMLDivElement>(null);
   const offerCarouselRef = useRef<HTMLDivElement>(null);
 
-  const [now, setNow] = useState(() => Date.now());
+  // filterTick re-evalúa las ofertas 1 vez por minuto (para expirar countdowns).
+  // Se eliminó el intervalo de 1s que re-renderizaba todo el catálogo sin uso.
   const [filterTick, setFilterTick] = useState(0);
   useEffect(() => {
-    if (!isPaquetes && isEmbalajes) return;
-    const secInterval = setInterval(() => setNow(Date.now()), 1000);
     const minInterval = setInterval(() => setFilterTick(t => t + 1), 60_000);
-    return () => { clearInterval(secInterval); clearInterval(minInterval); };
-  }, [isPaquetes, isEmbalajes]);
+    return () => clearInterval(minInterval);
+  }, []);
 
   const paquetesBgImage = "https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1781677554034-pegada-1781677553118.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=eBZXWbfjIuRon5KJ6w172cIhUggaq0JHwBS6cWMTEtVt6ccY8wxRylB96GL0%2BVLsXH3XOar1sbALOGWZznl5BaPWztvm%2BeuhZOMIyjCpCJXxoUcbl0gUGPJ%2Bl2krzpJfDimqv30TF8%2FlghxLcHAUb8aS3Fu4MGr8T3fLTYCUnqg5m96tFZVlGqDkwLq%2FZVc6oV%2FgCmaf8fLcxfNXYZux5gDBXEGLp5WQhGD%2BU3hwn3e9S67DlRNdqdtTyiqRV%2Bb9ALz0uHF0YJ1ulsOhaivE2d2gd4PSMAsjUjC3M2eBHBE5%2Bq3A9%2F1iGif8ZRoav9wCebVlkS6rARLvTFMr8PEJqw%3D%3D";
   const bgImageToUse = isPaquetes ? paquetesBgImage : (isEmbalajes ? '' : (catalogCover.image || ''));
@@ -261,7 +286,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
   const cheapestRetailProducts = useMemo(() => {
     if (isPaquetes || isEmbalajes) return [];
-    return [...allActiveProducts]
+    const pool: Product[] = (cheapPoolData?.products || []).filter((p: Product) => p.ISACTIVE !== false);
+    return pool
       .map(p => {
         const unitOfferExpired = !!(p.UNIT_OFFER_EXPIRES_AT && p.UNIT_OFFER_EXPIRES_AT < Date.now());
         const effectivePrice = (!unitOfferExpired && p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < p.PRICE) ? p.CURRENTPRICE : p.PRICE;
@@ -270,7 +296,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       .sort((a, b) => a.effectivePrice - b.effectivePrice)
       .slice(0, 20)
       .map(x => x.p);
-  }, [isPaquetes, isEmbalajes, allActiveProducts]);
+  }, [isPaquetes, isEmbalajes, cheapPoolData]);
 
   const heroBadgeText = isPaquetes ? 'Paquetes Especiales' : (isEmbalajes ? 'Embalajes Profesionales' : (lockCategoryId ? 'Categoría' : 'Nuestra tienda'));
   const heroTitleText = isPaquetes ? 'Paquetes Mayoristas' : (isEmbalajes ? 'Sección Embalaje' : (catalogCover.title || lockedCategory?.name || 'Productos'));
@@ -391,7 +417,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat && !selectedSubcat ? 700 : 500, color: !selectedCat && !selectedSubcat ? primaryColor : '#6b7280', background: !selectedCat && !selectedSubcat ? '#f8f9fa' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat && !selectedSubcat ? primaryColor : '#d1d5db', flexShrink: 0 }} />
           <span style={{ flex: 1 }}>Todas</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{products.length}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{total}</span>
         </button>
         {categories.map(c => {
           const count = catCountMap[c.$id] || 0;

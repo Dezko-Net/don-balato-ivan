@@ -136,6 +136,8 @@ export async function GET(request: NextRequest) {
     const tag = searchParams.get('tag') || undefined;
     const search = searchParams.get('search') || undefined;
     const ofertasOnly = searchParams.get('ofertasOnly') === 'true';
+    // mode=paquetes|embalajes: catálogo por paquete (PACKQTY>1, precio de pack)
+    const mode = searchParams.get('mode') || undefined;
     const priceMin = searchParams.get('priceMin') ? parseInt(searchParams.get('priceMin')!, 10) : undefined;
     const priceMax = searchParams.get('priceMax') ? parseInt(searchParams.get('priceMax')!, 10) : undefined;
     
@@ -152,11 +154,30 @@ export async function GET(request: NextRequest) {
     ]);
     const allProducts = allProductsRaw as any[];
 
+    // Precio efectivo según modo (pack multiplica por PACKQTY)
+    const isPackMode = mode === 'paquetes' || mode === 'embalajes';
+    const priceOf = (p: any): number => {
+      if (isPackMode) {
+        let price = p.WHOLESALEPRICE || p.PRICE || 0;
+        if (p.PACKQTY) price *= p.PACKQTY;
+        return price;
+      }
+      return resolveProductDisplayPrice(p, apertura).displayPrice;
+    };
+
+    // Universo de productos del modo actual (para counts y priceRange coherentes)
+    const modeProducts = isPackMode
+      ? allProducts.filter(p => {
+          const qty = p.PACKQTY ? Number(p.PACKQTY) : 0;
+          return !isNaN(qty) && qty > 1;
+        })
+      : allProducts;
+
     // Calculate Category, Subcategory and SubSubcategory Counts (across all active products in DB)
     const categoryCounts: Record<string, number> = {};
     const subcategoryCounts: Record<string, number> = {};
     const subSubcategoryCounts: Record<string, number> = {};
-    allProducts.forEach(p => {
+    modeProducts.forEach(p => {
       if (p.CATEGORYID) {
         categoryCounts[p.CATEGORYID] = (categoryCounts[p.CATEGORYID] || 0) + 1;
       }
@@ -169,7 +190,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Filter by category and search parameters (Except Price Range to compute price slider dynamically)
-    let filtered = allProducts;
+    let filtered = modeProducts;
     if (categoryId) {
       filtered = filtered.filter(p => p.CATEGORYID === categoryId);
     }
@@ -212,14 +233,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate dynamic price range (min/max price matching current category/search criteria)
-    const displayPrices = filtered.map(p => resolveProductDisplayPrice(p, apertura).displayPrice).filter(price => price > 0);
+    const displayPrices = filtered.map(p => priceOf(p)).filter(price => price > 0);
     const minPrice = displayPrices.length > 0 ? Math.floor(Math.min(...displayPrices)) : 0;
     const maxPrice = displayPrices.length > 0 ? Math.ceil(Math.max(...displayPrices)) : 0;
 
     // Apply Price Range filter
     if (priceMin !== undefined && priceMax !== undefined) {
       filtered = filtered.filter(p => {
-        const price = resolveProductDisplayPrice(p, apertura).displayPrice;
+        const price = priceOf(p);
         return price >= priceMin && price <= priceMax;
       });
     }
@@ -234,17 +255,9 @@ export async function GET(request: NextRequest) {
         return timeB - timeA;
       });
     } else if (sortBy === 'price_asc') {
-      filtered.sort((a, b) => {
-        const pa = resolveProductDisplayPrice(a, apertura).displayPrice;
-        const pb = resolveProductDisplayPrice(b, apertura).displayPrice;
-        return pa - pb;
-      });
+      filtered.sort((a, b) => priceOf(a) - priceOf(b));
     } else if (sortBy === 'price_desc') {
-      filtered.sort((a, b) => {
-        const pa = resolveProductDisplayPrice(a, apertura).displayPrice;
-        const pb = resolveProductDisplayPrice(b, apertura).displayPrice;
-        return pb - pa;
-      });
+      filtered.sort((a, b) => priceOf(b) - priceOf(a));
     }
 
     // Calculate all available tags in the current filtered set

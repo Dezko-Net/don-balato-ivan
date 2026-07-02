@@ -140,8 +140,23 @@ function OrdersContent() {
   // page cursors: key = page number, value = cursor to use to reach that page
   const pageCursorsRef = React.useRef<Map<number, string | null>>(new Map([[1, null]]));
 
-  // Load stats — cached until manual refresh
-  const loadStats = useCallback(async () => {
+  // Load stats — cacheado en sessionStorage 3 min (≈92 lecturas por refresco;
+  // sin el cache, cada visita/navegación al panel repetía todas las consultas)
+  const STATS_CACHE_KEY = 'yaxsel_admin_orders_stats_v1';
+  const STATS_CACHE_TTL = 3 * 60 * 1000;
+  const loadStats = useCallback(async (force = false) => {
+    if (!force) {
+      try {
+        const raw = sessionStorage.getItem(STATS_CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Date.now() - parsed.ts < STATS_CACHE_TTL && parsed.data) {
+            setStatsCache(parsed.data);
+            return;
+          }
+        }
+      } catch {}
+    }
     setStatsLoading(true);
     try {
       const { databases } = getServices();
@@ -202,7 +217,7 @@ function OrdersContent() {
       const byStatusDayBefore: Record<string, number> = {};
       for (const o of dayBeforeOrders) { byStatusDayBefore[o.STATUS] = (byStatusDayBefore[o.STATUS] || 0) + 1; }
 
-      setStatsCache({
+      const statsData = {
         totalToday: todayOrders.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0),
         countToday: todayOrders.length,
         totalYesterday: yesterdayOrders.reduce((s: number, o: any) => s + (o.TOTAL || 0), 0),
@@ -218,7 +233,9 @@ function OrdersContent() {
         allOrdersRaw: [],
         totalAll: 0,
         countAll,
-      });
+      };
+      setStatsCache(statsData);
+      try { sessionStorage.setItem(STATS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: statsData })); } catch {}
     } catch (e: any) { console.error('Stats error:', e); }
     finally { setStatsLoading(false); }
   }, []);
@@ -352,10 +369,16 @@ function OrdersContent() {
     pageCursorsRef.current = new Map([[1, null]]);
     setCurrentPage(1);
     load(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilter]);
+
+  // Stats y auto-entrega: solo al montar (no dependen del filtro activo).
+  // Antes se repetían las ~92 lecturas de stats en cada cambio de pestaña.
+  useEffect(() => {
     autoDeliverShippedOrders();
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilter]);
+  }, []);
 
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -745,7 +768,7 @@ function OrdersContent() {
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-pink-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-pink-700 transition">
             <Printer className="w-4 h-4" /><span className="hidden sm:inline">Imprimir Checklist</span>
           </button>
-          <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); loadStats(); }} disabled={isLoading}
+          <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); loadStats(true); }} disabled={isLoading}
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Actualizar</span>
           </button>

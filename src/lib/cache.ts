@@ -143,13 +143,65 @@ export async function cached<T>(
 }
 
 /**
+ * ── Revalidación coalescida (anti-tormenta de lecturas) ──
+ *
+ * Cada invalidación de la etiqueta 'products' obliga a reconstruir los cachés
+ * del servidor (products ≈800 docs + home ≈400 docs + inventory + catalog).
+ * Appwrite cobra las lecturas POR DOCUMENTO, así que una sesión de edición
+ * masiva (50 productos guardados uno a uno) generaba ~60.000 lecturas.
+ *
+ * Este helper agrupa las invalidaciones: la primera se dispara al instante y
+ * las siguientes dentro de la ventana se funden en UNA sola llamada al final.
+ * Si la pestaña se cierra antes del disparo diferido, queda un flag pendiente
+ * que se libera en la próxima carga (flushPendingRevalidate desde el admin).
+ */
+const REVAL_WINDOW_MS = 120_000; // 2 minutos entre reconstrucciones como máximo
+let revalTimer: ReturnType<typeof setTimeout> | null = null;
+
+function fireRevalidate(): void {
+  try {
+    localStorage.setItem(PREFIX + 'reval:last', String(Date.now()));
+    localStorage.removeItem(PREFIX + 'reval:pending');
+  } catch {}
+  fetch('/api/admin/revalidate', { method: 'POST' }).catch(() => {});
+}
+
+export function requestProductsRevalidate(): void {
+  if (!isBrowser()) return;
+  let last = 0;
+  try { last = Number(localStorage.getItem(PREFIX + 'reval:last') || 0); } catch {}
+  const elapsed = Date.now() - last;
+  if (elapsed >= REVAL_WINDOW_MS) {
+    fireRevalidate();
+    return;
+  }
+  try { localStorage.setItem(PREFIX + 'reval:pending', '1'); } catch {}
+  if (!revalTimer) {
+    revalTimer = setTimeout(() => {
+      revalTimer = null;
+      let pending = false;
+      try { pending = !!localStorage.getItem(PREFIX + 'reval:pending'); } catch {}
+      if (pending) fireRevalidate();
+    }, REVAL_WINDOW_MS - elapsed + 250);
+  }
+}
+
+/** Dispara una revalidación que quedó pendiente de una sesión anterior. */
+export function flushPendingRevalidate(): void {
+  if (!isBrowser()) return;
+  let pending = false;
+  try { pending = !!localStorage.getItem(PREFIX + 'reval:pending'); } catch {}
+  if (pending) fireRevalidate();
+}
+
+/**
  * Hook de invalidación: borra todos los cachés relacionados con productos.
  * Llamar tras crear/editar/eliminar productos en el admin.
  */
 export function invalidateProductCache(): void {
   cacheInvalidate('products:');
   if (isBrowser()) {
-    fetch('/api/admin/revalidate', { method: 'POST' }).catch(() => {});
+    requestProductsRevalidate();
     import('swr').then(({ mutate }) => {
       mutate(
         (key: any) => typeof key === 'string' && key.startsWith('/api/public-data/products'),

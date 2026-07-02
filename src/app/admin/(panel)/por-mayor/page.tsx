@@ -14,6 +14,7 @@ import {
   PRODUCTS_COLLECTION_ID, 
   CATEGORIES_COLLECTION_ID 
 } from '@/lib/appwrite-admin';
+import { requestProductsRevalidate } from '@/lib/cache';
 import { Product, Category } from '@/types/admin';
 
 const PRODUCTS_CACHE_KEY = 'yaxsel_pormayor_products_cache';
@@ -292,8 +293,8 @@ export default function PorMayorPage() {
         setSaveStatus(prev => ({ ...prev, [productId]: null }));
       }, 2000);
 
-      // Auto-revalidate Next.js cache so /paquetes reflects changes
-      try { await fetch('/api/revalidate?tag=products'); } catch {}
+      // Auto-revalidate (coalescido) so /paquetes reflects changes
+      try { requestProductsRevalidate(); } catch {}
     } catch (err) {
       console.error('Error updating product:', err);
       setSaveStatus(prev => ({ ...prev, [productId]: 'error' }));
@@ -456,9 +457,9 @@ export default function PorMayorPage() {
     setBulkErrorLog(errors);
     setIsBulkSaving(false);
 
-    // Auto-revalidate Next.js cache so /paquetes reflects changes
+    // Auto-revalidate (coalescido) so /paquetes reflects changes
     if (Object.keys(successfulUpdates).length > 0) {
-      try { await fetch('/api/revalidate?tag=products'); } catch {}
+      try { requestProductsRevalidate(); } catch {}
     }
 
     if (errors.length === 0) {

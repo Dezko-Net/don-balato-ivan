@@ -217,7 +217,7 @@ function CheckoutInner() {
           const { databaseId } = getAppwriteConfig();
           const res = await databases.listDocuments(databaseId, ADDRESSES_COLLECTION_ID, [
             Query.equal('userId', user.id),
-            Query.limit(100),
+            Query.limit(25),
           ]);
           const dbAddrs: SavedAddress[] = res.documents.map((doc: any) => ({
             id: doc.$id,

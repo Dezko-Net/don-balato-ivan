@@ -285,6 +285,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => document.removeEventListener('mousedown', handler);
   }, [userMenuOpen]);
 
+  // Si una revalidación coalescida quedó pendiente al cerrar la pestaña,
+  // dispararla ahora para que la tienda no quede desactualizada.
+  useEffect(() => {
+    import('@/lib/cache').then(m => m.flushPendingRevalidate()).catch(() => {});
+  }, []);
+
   const [openGroups,  setOpenGroups]  = useState<string[]>(NAV_GROUPS.map(g => g.label));
   const [openItems,   setOpenItems]   = useState<Record<string, boolean>>({});
 

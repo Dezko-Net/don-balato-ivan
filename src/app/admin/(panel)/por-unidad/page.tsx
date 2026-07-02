@@ -14,6 +14,7 @@ import {
   PRODUCTS_COLLECTION_ID,
   CATEGORIES_COLLECTION_ID,
 } from '@/lib/appwrite-admin';
+import { requestProductsRevalidate } from '@/lib/cache';
 import { Product, Category } from '@/types/admin';
 
 const PRODUCTS_CACHE_KEY = 'yaxsel_porunidad_products_cache';
@@ -225,7 +226,7 @@ export default function PorUnidadPage() {
 
       setSaveStatus(prev => ({ ...prev, [productId]: 'success' }));
       setTimeout(() => setSaveStatus(prev => ({ ...prev, [productId]: null })), 2000);
-      try { await fetch('/api/revalidate?tag=products'); } catch {}
+      try { requestProductsRevalidate(); } catch {}
     } catch (err) {
       console.error('Error updating product:', err);
       setSaveStatus(prev => ({ ...prev, [productId]: 'error' }));
@@ -283,7 +284,7 @@ export default function PorUnidadPage() {
     setIsBulkSaving(false);
 
     if (Object.keys(successfulUpdates).length > 0) {
-      try { await fetch('/api/revalidate?tag=products'); } catch {}
+      try { requestProductsRevalidate(); } catch {}
     }
 
     if (errors.length === 0) {
