@@ -513,10 +513,17 @@ function CheckoutInner() {
       // Validate pack stock for wholesale items
       for (const item of items) {
         if (item.isPack && item.product.PACKQTY && item.product.PACKQTY > 1) {
-          const packStock = item.product.PACK_STOCK ?? Math.floor((item.product.STOCK || 0) / item.product.PACKQTY);
+          const rawStock = item.product.STOCK || 0;
+          // Skip validation for unlimited stock sentinel
+          if (rawStock === 99999) continue;
+          const packStock = (item.product.PACK_STOCK && item.product.PACK_STOCK > 0)
+            ? item.product.PACK_STOCK
+            : Math.floor(rawStock / item.product.PACKQTY);
           const requestedPacks = Math.ceil(item.quantity / item.product.PACKQTY);
           if (packStock < requestedPacks) {
-            setError(`Stock insuficiente para "${item.product.NAME}". Solo hay ${packStock} paquete(s) disponible(s) y solicitaste ${requestedPacks}.`);
+            const msg = `Stock insuficiente para "${item.product.NAME}". Solo hay ${packStock} paquete(s) disponible(s) y solicitaste ${requestedPacks}.`;
+            setError(msg);
+            setGeoError(msg);
             setSubmitting(false);
             return;
           }
@@ -592,7 +599,10 @@ function CheckoutInner() {
       clearCart();
       router.push(`/pedido-mayorista-confirmado?id=${docId}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al registrar pedido mayorista');
+      const msg = err instanceof Error ? err.message : 'Error al registrar pedido mayorista';
+      console.error('[createWholesaleRequest] Error:', err);
+      setError(msg);
+      setGeoError(msg);
     } finally { setSubmitting(false); }
   }
 
@@ -627,10 +637,10 @@ function CheckoutInner() {
 
   const handleSkipGeo = () => {
     setGeoSkipped(true);
-    setShowGeoModal(false);
     if (hasPackItems) {
       createWholesaleRequest(null);
     } else {
+      setShowGeoModal(false);
       createOrder(null);
     }
   };
@@ -1628,16 +1638,18 @@ function CheckoutInner() {
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <button onClick={handleGeolocate} disabled={isGeolocating}
-                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf)', color: '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: isGeolocating ? 'not-allowed' : 'pointer', fontFamily: FF, boxShadow: '0 8px 20px rgba(227,150,191,0.3)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <button onClick={handleGeolocate} disabled={isGeolocating || submitting}
+                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf)', color: '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: (isGeolocating || submitting) ? 'not-allowed' : 'pointer', fontFamily: FF, boxShadow: '0 8px 20px rgba(227,150,191,0.3)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.6 : 1 }}>
                     {isGeolocating ? (
                       <><RefreshCw size={18} className="animate-spin" /> Obteniendo ubicación...</>
+                    ) : submitting ? (
+                      <><RefreshCw size={18} className="animate-spin" /> Procesando pedido...</>
                     ) : (
                       <><MapPin size={18} /> Sí, usar mi ubicación actual</>
                     )}
                   </button>
-                  <button onClick={handleSkipGeo} disabled={isGeolocating}
-                    style={{ width: '100%', padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 14, fontWeight: 700, cursor: isGeolocating ? 'not-allowed' : 'pointer', fontFamily: FF, transition: 'all 0.2s' }}>
+                  <button onClick={handleSkipGeo} disabled={isGeolocating || submitting}
+                    style={{ width: '100%', padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 14, fontWeight: 700, cursor: (isGeolocating || submitting) ? 'not-allowed' : 'pointer', fontFamily: FF, transition: 'all 0.2s', opacity: submitting ? 0.6 : 1 }}>
                     No estoy en mi casa, prefiero escribirla.
                   </button>
                 </div>
