@@ -390,19 +390,21 @@ export default function HomePage23() {
     // 1. Timer Setup — cuenta regresiva hasta el día 1 del siguiente mes (00:00 hora local).
     //    Se recalcula en cada carga, por lo que siempre apunta al próximo "1".
     const nowForTarget = new Date();
-    const targetTime = new Date(nowForTarget);
-    targetTime.setHours(12, 0, 0, 0); // 12:00 PM
-    const currentDay = nowForTarget.getDay();
-    // Calculate days until next Monday (0=Sun, 1=Mon, ...)
-    const daysUntilMonday = (1 - currentDay + 7) % 7;
-    
+    const currentDay = nowForTarget.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    let daysUntilMonday = (1 - currentDay + 7) % 7;
     if (daysUntilMonday === 0 && nowForTarget.getHours() >= 12) {
-      // If today is Monday and it's already past 12 PM, target NEXT Monday
-      targetTime.setDate(nowForTarget.getDate() + 7);
-    } else {
-      targetTime.setDate(nowForTarget.getDate() + daysUntilMonday);
+      daysUntilMonday = 7;
     }
+    
+    // Create a robust target date
+    const targetTime = new Date(
+      nowForTarget.getFullYear(),
+      nowForTarget.getMonth(),
+      nowForTarget.getDate() + daysUntilMonday,
+      12, 0, 0, 0
+    );
     const targetTimeMs = targetTime.getTime();
+    console.log("Countdown targetTimeMs:", targetTimeMs, "targetDate:", targetTime.toString());
     try {
       localStorage.removeItem('yaxsell_offers_timer_3d');
     } catch (e) {
