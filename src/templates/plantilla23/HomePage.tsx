@@ -149,51 +149,7 @@ const FONT_FACE_CSS = `
 }
 `;
 
-const BUNDLE_PACK_PRODUCTS: Product[] = [
-  {
-    $id: '6a1b22f10009f64aefa2',
-    NAME: 'SET DE RIMEL + DELINEADOR OCEAN CAT',
-    DESCRIPTION: 'SET DE RIMEL + DELINEADOR OCEAN CAT',
-    PRICE: 2250,
-    STOCK: 99995,
-    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/bf19acb0e8b6c9e019b4a635b6977ca3.jpg',
-    CATEGORYID: '',
-    SELLERID: '',
-    SKU: 'KC1371'
-  },
-  {
-    $id: '6a1a4d96000c6fd8e4f5',
-    NAME: 'Set Lip Combo Sweet Hearth',
-    DESCRIPTION: 'Set Lip Combo Sweet Hearth',
-    PRICE: 2200,
-    STOCK: 99999,
-    IMAGEURL: 'https://yesbella.qianji.us./be/api/resource/thumbnail?id=5366',
-    CATEGORYID: '',
-    SELLERID: '',
-    SKU: 'KC1016'
-  },
-  {
-    $id: '6a3c615e000b35db0f3b',
-    NAME: 'BROCHA',
-    DESCRIPTION: 'BROCHA',
-    PRICE: 1150,
-    STOCK: 30,
-    IMAGEURL: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783012128460-pegada-1783012124985.png',
-    CATEGORYID: '',
-    SELLERID: '',
-    SKU: '1028'
-  },
-  {
-    $id: '6a1a4da50015b9ebbd58',
-    NAME: 'PALETA DE 4 RUBORES',
-    DESCRIPTION: 'PALETA DE 4 RUBORES',
-    PRICE: 3000,
-    STOCK: 99999,
-    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/83dc0de25ec30d42e5e65eb5fb97da88.jpg',
-    CATEGORYID: '',
-    SELLERID: '',
-    SKU: 'KC1328'
-  },
+const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number })[] = [
   {
     $id: '6a2b4ef50018fb3a8c64',
     NAME: 'Base De Maquillaje Raspberry Tart Party',
@@ -204,28 +160,6 @@ const BUNDLE_PACK_PRODUCTS: Product[] = [
     CATEGORYID: '',
     SELLERID: '',
     SKU: 'KC1307'
-  },
-  {
-    $id: '6a1a4da70009d16509de',
-    NAME: 'CORRECTOR DE OJERAS CLEAR SKIN',
-    DESCRIPTION: 'CORRECTOR DE OJERAS CLEAR SKIN',
-    PRICE: 1600,
-    STOCK: 99999,
-    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/7002e6ad9dcf769cabb007487e530180.jpg',
-    CATEGORYID: '',
-    SELLERID: '',
-    SKU: 'KC1403'
-  },
-  {
-    $id: '6a23384e0005993581fe',
-    NAME: 'Paleta de Sombras Serie Ghost Music de 18 Colores',
-    DESCRIPTION: 'Paleta de Sombras Serie Ghost Music de 18 Colores',
-    PRICE: 4350,
-    STOCK: 99999,
-    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/61ea8b265d8a2ea7a67c8627a792c50c.jpg',
-    CATEGORYID: '',
-    SELLERID: '',
-    SKU: 'KC1817'
   },
   {
     $id: '6a1a4da2000dd909a12a',
@@ -250,6 +184,39 @@ const BUNDLE_PACK_PRODUCTS: Product[] = [
     SKU: 'KC1439'
   },
   {
+    $id: '6a1a4da50015b9ebbd58',
+    NAME: 'PALETA DE 4 RUBORES',
+    DESCRIPTION: 'PALETA DE 4 RUBORES',
+    PRICE: 3000,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/83dc0de25ec30d42e5e65eb5fb97da88.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1328'
+  },
+  {
+    $id: '6a1a4da70009d16509de',
+    NAME: 'CORRECTOR DE OJERAS CLEAR SKIN',
+    DESCRIPTION: 'CORRECTOR DE OJERAS CLEAR SKIN',
+    PRICE: 1600,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/7002e6ad9dcf769cabb007487e530180.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1403'
+  },
+  {
+    $id: '6a23384e0005993581fe',
+    NAME: 'Paleta de Sombras Serie Ghost Music de 18 Colores',
+    DESCRIPTION: 'Paleta de Sombras Serie Ghost Music de 18 Colores',
+    PRICE: 4350,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/61ea8b265d8a2ea7a67c8627a792c50c.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1817'
+  },
+  {
     $id: '6a3c6094003ceef0b1ec',
     NAME: 'Toallitas Desmaquillantes',
     DESCRIPTION: 'Toallitas Desmaquillantes',
@@ -261,26 +228,39 @@ const BUNDLE_PACK_PRODUCTS: Product[] = [
     SKU: 'KC1048'
   },
   {
-    $id: '6a3c60e0003076a9db08',
-    NAME: 'Contornos Liquidos Roses And Love',
-    DESCRIPTION: 'Contornos Liquidos Roses And Love',
-    PRICE: 1800,
-    STOCK: 99999,
-    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/207ad865cbdbd0f47697c44cb3b22680.jpg',
+    $id: '6a3c615e000b35db0f3b',
+    NAME: 'BROCHA',
+    DESCRIPTION: 'BROCHA',
+    PRICE: 1150,
+    STOCK: 30,
+    IMAGEURL: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783012128460-pegada-1783012124985.png',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1199'
+    SKU: '1028'
   },
   {
-    $id: '6a3c611f002b9f64732a',
-    NAME: 'Paleta de Sombras Cherry Face de 72 colores con rubor, corrector e iluminador',
-    DESCRIPTION: 'Paleta de Sombras Cherry Face de 72 colores con rubor, corrector e iluminador',
-    PRICE: 8340,
+    $id: '6a1a4db00004abd0d67d',
+    NAME: 'BRILLOS LABIAL DE 6 COLORES + DELINEADOR DE LABIOS',
+    DESCRIPTION: 'BRILLOS LABIAL DE 6 COLORES + DELINEADOR DE LABIOS',
+    PRICE: 1000,
     STOCK: 99999,
-    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/f2edceb3b965b194108070a99d3bfd05.jpg',
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/e4564128a8b9eef6cfda26b852e07653.jpg',
     CATEGORYID: '',
     SELLERID: '',
-    SKU: 'KC1240'
+    SKU: 'L1516',
+    quantity: 3
+  },
+  {
+    $id: '6a46afc90033cd090a8e',
+    NAME: 'BRILLOS LABIALES LOVE COLOR WHISPER',
+    DESCRIPTION: 'BRILLOS LABIALES LOVE COLOR WHISPER',
+    PRICE: 1200,
+    STOCK: 99999,
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/33cd0e942a382b1eb4bb88eb6eb499e5.jpg',
+    CATEGORYID: '',
+    SELLERID: '',
+    SKU: 'KC1241',
+    quantity: 4
   }
 ];
 
@@ -2306,7 +2286,7 @@ export default function HomePage23() {
       let anchor: Element = heroBannerSection;
       const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
       const bundleSection = tempDiv.querySelector('[id*="bundle_products"]') as HTMLElement | null;
-      if (bundleSection) { bundleSection.style.display = 'none'; }
+      // bundleSection visible
       console.log("[Plantilla23 Debug] heroBannerSection:", !!heroBannerSection, "countdownSection:", !!countdownSection, "bundleSection:", !!bundleSection);
       if (countdownSection) {
         if (bundleSection) {
@@ -2375,12 +2355,15 @@ export default function HomePage23() {
     // Hydrate bundle products with the 12 selected products
     const bundleTitle = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list h2 span');
     if (bundleTitle) {
-      bundleTitle.textContent = 'Mega Pack Favoritos (12 Productos)';
+      bundleTitle.textContent = 'Mega Pack Favoritos (15 Productos)';
     }
 
     const bundleListWrapper = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list ul');
     if (bundleListWrapper) {
-      const bundleHtml = BUNDLE_PACK_PRODUCTS.map(p => `
+      const bundleHtml = BUNDLE_PACK_PRODUCTS.map(p => {
+        const qty = p.quantity || 1;
+        const lineTotal = p.PRICE * qty;
+        return `
         <li class="product-list__product-info flex gap-3 py-5 flex-wrap border-b-1 border-current/10" data-product-id="${p.$id}">
           <div class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)]">
             <a href="/productos/${p.$id}" aria-label="${p.NAME}" title="${p.NAME}" class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)]" tabindex="-1">
@@ -2396,7 +2379,7 @@ export default function HomePage23() {
           <div class="product-list__product-content py-3">
             <a href="/productos/${p.$id}" aria-label="${p.NAME}" title="${p.NAME}" class="block max-w-max">
               <h3 class="heading pt-2 pb-1 h6 max-w-max"><span class="link-hover-animation">${p.NAME}</span></h3>
-              <span class="text-[0.75em] text-current/50 font-medium">SKU: ${p.SKU || 'N/A'}</span>
+              <span class="text-[0.75em] text-current/50 font-medium">SKU: ${p.SKU || 'N/A'}${qty > 1 ? ` &middot; x${qty}` : ''}</span>
             </a>
             <div class="variant pb-2 text-current/70" data-loading="false">
               <div class="flex gap-[5px] items-center justify-between pr-2">
@@ -2405,18 +2388,18 @@ export default function HomePage23() {
               <form method="post" action="/cart/add" id="product-form-bundle-${p.$id}" accept-charset="UTF-8" class="shopify-product-form" enctype="multipart/form-data">
                 <input type="hidden" name="form_type" value="product" />
                 <input type="hidden" name="id" value="${p.$id}">
-                <input type="hidden" name="quantity" value="1" min="1">
+                <input type="hidden" name="quantity" value="${qty}" min="1">
                 <div class="error text-[0.8em]" role="alert"><small></small></div>
               </form>
             </div>
             <div class="price flex gap-[5px] flex-wrap">
               <div class="price__regular">
-                <span class="price-item">$${p.PRICE.toLocaleString()} CLP</span>
+                <span class="price-item">$${p.PRICE.toLocaleString()} CLP${qty > 1 ? ` &times; ${qty} = $${lineTotal.toLocaleString()} CLP` : ''}</span>
               </div>
             </div>
           </div>
         </li>
-      `).join('');
+      `;}).join('');
       bundleListWrapper.innerHTML = bundleHtml;
     }
 
@@ -2424,24 +2407,24 @@ export default function HomePage23() {
     const bundleDataScript = tempDiv.querySelector('.section-bundle-products .bundle-products__products-data');
     if (bundleDataScript) {
       const bundleData = {
-        products: BUNDLE_PACK_PRODUCTS.map(p => ({ id: p.$id, price: p.PRICE, available: true })),
-        total_price: 24990,
-        saving_percentage: 22
+        products: BUNDLE_PACK_PRODUCTS.map(p => ({ id: p.$id, price: p.PRICE * (p.quantity || 1), available: true })),
+        total_price: 15990,
+        saving_percentage: 37
       };
       bundleDataScript.innerHTML = JSON.stringify(bundleData);
     }
 
     const subtotalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--subtotal .value');
     if (subtotalEl) {
-      subtotalEl.textContent = '$32.090 CLP';
+      subtotalEl.textContent = '$25.300 CLP';
     }
     const saveEl = tempDiv.querySelector('.section-bundle-products .item-total-price--save .value');
     if (saveEl) {
-      saveEl.textContent = '$7.100 CLP';
+      saveEl.textContent = '$9.310 CLP';
     }
     const totalEl = tempDiv.querySelector('.section-bundle-products .item-total-price--total .value');
     if (totalEl) {
-      totalEl.textContent = '$24.990 CLP';
+      totalEl.textContent = '$15.990 CLP';
     }
 
     containerRef.current.innerHTML = tempDiv.innerHTML;
