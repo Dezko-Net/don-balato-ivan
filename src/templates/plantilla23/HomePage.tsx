@@ -390,12 +390,19 @@ export default function HomePage23() {
     // 1. Timer Setup — cuenta regresiva hasta el día 1 del siguiente mes (00:00 hora local).
     //    Se recalcula en cada carga, por lo que siempre apunta al próximo "1".
     const nowForTarget = new Date();
-    const targetTime = new Date(
-      nowForTarget.getFullYear(),
-      nowForTarget.getMonth() + 1,
-      1,
-      0, 0, 0, 0
-    ).getTime();
+    const targetTime = new Date(nowForTarget);
+    targetTime.setHours(12, 0, 0, 0); // 12:00 PM
+    const currentDay = nowForTarget.getDay();
+    // Calculate days until next Monday (0=Sun, 1=Mon, ...)
+    const daysUntilMonday = (1 - currentDay + 7) % 7;
+    
+    if (daysUntilMonday === 0 && nowForTarget.getHours() >= 12) {
+      // If today is Monday and it's already past 12 PM, target NEXT Monday
+      targetTime.setDate(nowForTarget.getDate() + 7);
+    } else {
+      targetTime.setDate(nowForTarget.getDate() + daysUntilMonday);
+    }
+    const targetTimeMs = targetTime.getTime();
     try {
       localStorage.removeItem('yaxsell_offers_timer_3d');
     } catch (e) {
@@ -408,7 +415,7 @@ export default function HomePage23() {
       const mEl = root.querySelector('#yaxsell-minutes');
       const sEl = root.querySelector('#yaxsell-seconds');
 
-      const diff = targetTime - Date.now();
+      const diff = targetTimeMs - Date.now();
       if (diff <= 0) {
         if (dEl) dEl.textContent = '00';
         if (hEl) hEl.textContent = '00';
@@ -2281,7 +2288,7 @@ export default function HomePage23() {
         const ctaBtn = document.createElement('div');
         ctaBtn.className = 'flex justify-center md:hidden w-full px-4 mb-4 mt-2 z-10 relative';
         ctaBtn.innerHTML = `
-          <a href="/productos?sort=price-asc" class="w-full text-center text-white font-bold py-4 rounded-xl shadow-lg hover:opacity-90 transition-opacity" style="background-color: #ec4899; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); font-size: 18px; letter-spacing: 0.5px;">
+          <a href="/productos?sort=price-asc" class="w-full text-center font-bold py-4 rounded-xl shadow-lg hover:opacity-90 transition-opacity" style="background-color: #ff9ebb; color: white !important; box-shadow: 0 4px 15px rgba(255, 158, 187, 0.5); font-size: 18px; letter-spacing: 0.5px;">
             MIRALOS AQUI:
           </a>
         `;
