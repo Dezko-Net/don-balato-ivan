@@ -2065,7 +2065,7 @@ export default function HomePage23() {
   /* ── Fetch the cleaned HTML body content ── */
   useEffect(() => {
     let aborted = false;
-    fetch('/shopify/plantilla23/body-clean.html')
+    fetch('/shopify/plantilla23/body-clean.html?v=' + Date.now())
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
