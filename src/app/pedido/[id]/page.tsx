@@ -47,19 +47,20 @@ function getBankDetails(): Record<string, string> {
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   pending:            { label: 'Pendiente',                 color: '#b45309', bg: '#fffbeb' },
+  pending_stock:      { label: 'Verificando stock',         color: '#b45309', bg: '#fffbeb' },
   confirming_stock:   { label: 'Confirmando stock',         color: '#be185d', bg: '#fdf2f8' },
+  stock_confirmed:    { label: 'Stock confirmado',          color: '#166534', bg: '#f0fdf4' },
+  partial_stock:      { label: 'Stock parcial',             color: '#e65c00', bg: '#fff3e0' },
+  waiting_payment:    { label: 'Esperando pago',            color: '#1558b0', bg: '#e8f0fe' },
   processing:         { label: 'Pago a verificar',          color: '#1558b0', bg: '#e8f0fe' },
   paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
-  assembling:         { label: 'Armando',                   color: '#7b1fa2', bg: '#f3e5f5' },
-  negotiation:        { label: 'Negociación',                color: '#be185d', bg: '#fdf2f8' },
-  preparing_shipping: { label: 'Etiqueta lista',        color: '#5d4037', bg: '#efebe9' },
-  ready_to_ship:      { label: 'Pedido listo para enviar',            color: '#00838f', bg: '#e0f7fa' },
+  assembling:         { label: 'Embalando pedido',          color: '#7b1fa2', bg: '#f3e5f5' },
+  packing:            { label: 'Embalando pedido',          color: '#d97706', bg: '#fffbeb' },
+  negotiation:        { label: 'Negociación',               color: '#be185d', bg: '#fdf2f8' },
+  preparing_shipping: { label: 'Etiqueta lista',            color: '#5d4037', bg: '#efebe9' },
+  ready_to_ship:      { label: 'Listo para enviar',         color: '#00838f', bg: '#e0f7fa' },
   shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
   delivered:          { label: 'Entregado',                 color: '#166534', bg: '#f0fdf4' },
-  waiting_payment:  { label: 'Esperando pago',           color: '#1558b0', bg: '#e8f0fe' },
-  pending_stock:    { label: 'Verificando stock',        color: '#b45309', bg: '#fffbeb' },
-  stock_confirmed:  { label: 'Stock confirmado',         color: '#166534', bg: '#f0fdf4' },
-  partial_stock:    { label: 'Stock parcial',            color: '#e65c00', bg: '#fff3e0' },
   cancelled:          { label: 'Cancelado',                 color: '#991b1b', bg: '#fff5f5' },
 };
 
@@ -88,6 +89,11 @@ const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertTy
     title: 'Armando tu Pedido',
     desc: 'Nuestro equipo en bodega está seleccionando y empaquetando tus productos con mucho cuidado. ¡Pronto estará listo para el despacho!',
     alertType: 'indigo'
+  },
+  packing: {
+    title: 'Embalando tu Pedido',
+    desc: 'Nuestro equipo en bodega está embalando tu pedido con cuidado. ¡Pronto estará listo para el despacho!',
+    alertType: 'warning'
   },
   negotiation: {
     title: 'Pedido en Negociación',
@@ -1038,6 +1044,7 @@ export default function PedidoPage() {
                 {order.STATUS === 'processing' && <Upload size={24} />}
                 {order.STATUS === 'paid' && <CheckCircle size={24} />}
                 {order.STATUS === 'assembling' && <Package size={24} />}
+                {order.STATUS === 'packing' && <Package size={24} />}
                 {order.STATUS === 'negotiation' && <MessageSquare size={24} />}
                 {order.STATUS === 'preparing_shipping' && <Tag size={24} />}
                 {order.STATUS === 'ready_to_ship' && <Receipt size={24} />}
@@ -1056,35 +1063,35 @@ export default function PedidoPage() {
         {/* ── Order Timeline (Stepper) ── */}
         {(() => {
           const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-          const isWholesaleStatus = ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment'].includes(order.STATUS);
-          const steps = isWholesaleStatus
+          const useWholesaleTimeline = isWholesale || ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment'].includes(order.STATUS);
+          const steps = useWholesaleTimeline
             ? [
-                { key: 'pending_stock',    label: 'Verificando',  icon: <Clock size={15} /> },
-                { key: 'stock_confirmed',  label: 'Stock OK',     icon: <CheckCircle size={15} /> },
-                { key: 'waiting_payment',  label: 'Esperando Pago', icon: <Clock size={15} /> },
-                { key: 'processing',       label: 'Verificando',  icon: <Upload size={15} /> },
-                { key: 'paid',             label: 'Verificado',   icon: <CheckCircle size={15} /> },
-                { key: 'assembling',       label: 'Armando',      icon: <Package size={15} /> },
-                { key: 'preparing_shipping', label: 'Etiqueta',   icon: <Tag size={15} /> },
-                { key: 'ready_to_ship',    label: 'Listo',        icon: <Box size={15} /> },
-                { key: 'shipped',          label: 'Enviado',      icon: <Truck size={15} /> },
-                { key: 'delivered',        label: 'Entregado',    icon: <CheckCircle size={15} /> },
+                { key: 'pending_stock',      label: 'Verificando Stock', icon: <Clock size={15} /> },
+                { key: 'stock_confirmed',    label: 'Stock Confirmado', icon: <CheckCircle size={15} /> },
+                { key: 'waiting_payment',    label: 'Esperando Pago',   icon: <Clock size={15} /> },
+                { key: 'processing',         label: 'Pago a Verificar', icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Pago Verificado',  icon: <CheckCircle size={15} /> },
+                { key: 'assembling',         label: 'Imprimiendo Etiqueta', icon: <Package size={15} /> },
+                { key: 'packing',            label: 'Embalando Pedido', icon: <Package size={15} /> },
+                { key: 'ready_to_ship',      label: 'Listo para Enviar',icon: <Box size={15} /> },
+                { key: 'shipped',            label: 'Enviado',          icon: <Truck size={15} /> },
+                { key: 'delivered',          label: 'Entregado',        icon: <CheckCircle size={15} /> },
               ]
             : [
-                { key: 'pending',            label: 'Pedido',       icon: <Clock size={15} /> },
-                { key: 'confirming_stock',   label: 'Stock',        icon: <Box size={15} /> },
-                { key: 'processing',         label: 'Verificando',  icon: <Upload size={15} /> },
-                { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
-                { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
-                { key: 'negotiation',        label: 'Negociación',  icon: <MessageSquare size={15} /> },
-                { key: 'preparing_shipping', label: 'Etiqueta Lista',  icon: <Tag size={15} /> },
-                { key: 'ready_to_ship',      label: 'Pedido listo para enviar',     icon: <Box size={15} /> },
-                { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
-                { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
+                { key: 'pending',            label: 'Pendiente',            icon: <Clock size={15} /> },
+                { key: 'processing',         label: 'Pago Recibido',        icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Pago Verificado',      icon: <CheckCircle size={15} /> },
+                { key: 'assembling',         label: 'Imprimiendo Etiqueta', icon: <Package size={15} /> },
+                { key: 'confirming_stock',   label: 'Confirmando Stock',    icon: <Box size={15} /> },
+                { key: 'stock_confirmed',    label: 'Stock Confirmado',     icon: <CheckCircle size={15} /> },
+                { key: 'packing',            label: 'Embalando Pedido',     icon: <Package size={15} /> },
+                { key: 'ready_to_ship',      label: 'Listo para Enviar',    icon: <Box size={15} /> },
+                { key: 'shipped',            label: 'Enviado',              icon: <Truck size={15} /> },
+                { key: 'delivered',          label: 'Entregado',            icon: <CheckCircle size={15} /> },
               ];
-          const statusOrder = isWholesaleStatus
-            ? ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered']
-            : ['pending', 'confirming_stock', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+          const statusOrder = useWholesaleTimeline
+            ? ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment', 'processing', 'paid', 'assembling', 'packing', 'ready_to_ship', 'shipped', 'delivered']
+            : ['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'ready_to_ship', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (
@@ -1101,7 +1108,7 @@ export default function PedidoPage() {
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${done ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-200 text-gray-400'} ${active ? 'ring-4 ring-pink-100 scale-110' : ''}`}>
                         {step.icon}
                       </div>
-                      <span className={`mt-2 text-[10px] text-center leading-tight max-w-[70px] ${active ? 'font-extrabold text-gray-900' : done ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>
+                      <span className={`mt-2 text-[10px] text-center leading-tight max-w-[90px] ${active ? 'font-extrabold text-gray-900' : done ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>
                         {step.label}
                       </span>
                     </div>
@@ -1110,23 +1117,86 @@ export default function PedidoPage() {
               </div>
 
               {/* Mobile vertical timeline */}
-              <div className="flex md:hidden flex-col gap-4 relative pl-2">
-                <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-gray-100 z-0" />
-                <div className="absolute left-6 top-4 w-0.5 bg-pink-400 z-1 transition-all duration-500" style={{ height: currentIdx >= 0 ? `${Math.min(100, (currentIdx / (steps.length - 1)) * 100)}%` : '0%' }} />
-                {steps.map((step, i) => {
-                  const done = i <= currentIdx;
-                  const active = i === currentIdx;
-                  return (
-                    <div key={step.key} className="flex items-center gap-4 relative z-10">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${done ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-200 text-gray-400'} ${active ? 'ring-4 ring-pink-100 scale-110' : ''}`}>
-                        {step.icon}
+              <div className="flex md:hidden flex-col gap-0 relative pl-1">
+                {(() => {
+                  const stepColors: Record<string, { bg: string; border: string; text: string; ring: string; line: string; cardBg: string; cardBorder: string }> = {
+                    pending:            { bg: '#f59e0b', border: '#f59e0b', text: '#fff', ring: '#fef3c7', line: '#fbbf24', cardBg: '#fffbeb', cardBorder: '#fde68a' },
+                    processing:         { bg: '#3b82f6', border: '#3b82f6', text: '#fff', ring: '#dbeafe', line: '#60a5fa', cardBg: '#eff6ff', cardBorder: '#bfdbfe' },
+                    paid:               { bg: '#10b981', border: '#10b981', text: '#fff', ring: '#d1fae5', line: '#34d399', cardBg: '#ecfdf5', cardBorder: '#a7f3d0' },
+                    assembling:         { bg: '#6366f1', border: '#6366f1', text: '#fff', ring: '#e0e7ff', line: '#818cf8', cardBg: '#eef2ff', cardBorder: '#c7d2fe' },
+                    confirming_stock:   { bg: '#14b8a6', border: '#14b8a6', text: '#fff', ring: '#ccfbf1', line: '#2dd4bf', cardBg: '#f0fdfa', cardBorder: '#99f6e4' },
+                    stock_confirmed:    { bg: '#65a30d', border: '#65a30d', text: '#fff', ring: '#ecfccb', line: '#84cc16', cardBg: '#f7fee7', cardBorder: '#bef264' },
+                    packing:            { bg: '#d97706', border: '#d97706', text: '#fff', ring: '#fef3c7', line: '#f59e0b', cardBg: '#fffbeb', cardBorder: '#fde68a' },
+                    preparing_shipping: { bg: '#f97316', border: '#f97316', text: '#fff', ring: '#ffedd5', line: '#fb923c', cardBg: '#fff7ed', cardBorder: '#fed7aa' },
+                    ready_to_ship:      { bg: '#06b6d4', border: '#06b6d4', text: '#fff', ring: '#cffafe', line: '#22d3ee', cardBg: '#ecfeff', cardBorder: '#a5f3fc' },
+                    shipped:            { bg: '#8b5cf6', border: '#8b5cf6', text: '#fff', ring: '#ede9fe', line: '#a78bfa', cardBg: '#f5f3ff', cardBorder: '#ddd6fe' },
+                    delivered:          { bg: '#22c55e', border: '#22c55e', text: '#fff', ring: '#dcfce7', line: '#4ade80', cardBg: '#f0fdf4', cardBorder: '#bbf7d0' },
+                    pending_stock:      { bg: '#f59e0b', border: '#f59e0b', text: '#fff', ring: '#fef3c7', line: '#fbbf24', cardBg: '#fffbeb', cardBorder: '#fde68a' },
+                    waiting_payment:    { bg: '#3b82f6', border: '#3b82f6', text: '#fff', ring: '#dbeafe', line: '#60a5fa', cardBg: '#eff6ff', cardBorder: '#bfdbfe' },
+                    partial_stock:      { bg: '#f97316', border: '#f97316', text: '#fff', ring: '#ffedd5', line: '#fb923c', cardBg: '#fff7ed', cardBorder: '#fed7aa' },
+                    negotiation:        { bg: '#ec4899', border: '#ec4899', text: '#fff', ring: '#fce7f3', line: '#f472b6', cardBg: '#fdf2f8', cardBorder: '#fbcfe8' },
+                  };
+                  const doneColor = { bg: '#9ca3af', border: '#9ca3af', text: '#fff', line: '#d1d5db' };
+                  return steps.map((step, i) => {
+                    const done = i <= currentIdx;
+                    const active = i === currentIdx;
+                    const isLast = i === steps.length - 1;
+                    const c = active ? stepColors[step.key] : done ? { ...doneColor, bg: stepColors[step.key]?.bg || '#9ca3af', border: stepColors[step.key]?.bg || '#9ca3af' } : null;
+                    const stepColor = stepColors[step.key];
+                    return (
+                    <div key={step.key} className="flex gap-3 relative">
+                      {/* Line + circle */}
+                      <div className="flex flex-col items-center shrink-0" style={{ width: 36 }}>
+                        <div
+                          className="w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all shrink-0"
+                          style={{
+                            backgroundColor: active ? stepColor?.bg : done ? stepColor?.bg : '#fff',
+                            borderColor: active ? stepColor?.border : done ? stepColor?.border : '#e5e7eb',
+                            color: active || done ? '#fff' : '#d1d5db',
+                            boxShadow: active ? `0 0 0 4px ${stepColor?.ring}` : 'none',
+                            transform: active ? 'scale(1.15)' : 'scale(1)',
+                          }}
+                        >
+                          {done && !active ? <CheckCircle size={18} /> : step.icon}
+                        </div>
+                        {!isLast && (
+                          <div
+                            className="w-0.5 flex-1 min-h-[32px] transition-colors"
+                            style={{ backgroundColor: i < currentIdx ? (stepColors[steps[i].key]?.line || '#d1d5db') : '#e5e7eb' }}
+                          />
+                        )}
                       </div>
-                      <span className={`text-xs font-semibold ${active ? 'text-pink-600 font-extrabold' : done ? 'text-gray-800' : 'text-gray-400'}`}>
-                        {step.label}
-                      </span>
+                      {/* Label card */}
+                      <div className={`flex-1 pb-5 ${isLast ? 'pb-0' : ''}`}>
+                        <div
+                          className="px-3.5 py-2.5 rounded-2xl border transition-all"
+                          style={{
+                            backgroundColor: active ? stepColor?.cardBg : done ? '#f9fafb' : 'transparent',
+                            borderColor: active ? stepColor?.cardBorder : done ? '#f3f4f6' : 'transparent',
+                            boxShadow: active ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                          }}
+                        >
+                          <span
+                            className="text-[13px] block font-bold"
+                            style={{ color: active ? stepColor?.bg : done ? '#374151' : '#9ca3af' }}
+                          >
+                            {step.label}
+                          </span>
+                          {active && (
+                            <span className="text-[10px] mt-0.5 block font-semibold flex items-center gap-1" style={{ color: stepColor?.bg }}>
+                              <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: stepColor?.bg }} />
+                              Estado actual
+                            </span>
+                          )}
+                          {done && !active && (
+                            <span className="text-[10px] text-gray-400 mt-0.5 block font-medium">✓ Completado</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   );
-                })}
+                  });
+                })()}
               </div>
             </div>
           );
@@ -1236,7 +1306,7 @@ export default function PedidoPage() {
           </div>
         )}
 
-        {/* ── WhatsApp Link Section ── */}
+        {/* ── WhatsApp Link Section (hidden) ──
         <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40 mb-4">
           <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-2">
             <MessageSquare size={18} className="text-[#25D366]" /> Recibir notificaciones
@@ -1253,6 +1323,7 @@ export default function PedidoPage() {
             <MessageSquare size={16} /> Conectar WhatsApp
           </a>
         </div>
+        */}
 
         {/* ── Order items ── */}
         <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">

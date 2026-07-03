@@ -16,14 +16,21 @@ const PINK = '#e396bf';
 
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
   pending:            { label: 'Pendiente',                 bg: '#fff8e1', color: '#f57f17' },
-  processing:         { label: 'Pago a verificar',          bg: '#e3f2fd', color: '#1565c0' },
-  paid:               { label: 'Pago verificado',           bg: '#e8f5e9', color: '#2e7d32' },
-  assembling:         { label: 'Armando',                   bg: '#f3e5f5', color: '#7b1fa2' },
-  preparing_shipping: { label: 'Etiqueta lista',        bg: '#efebe9', color: '#5d4037' },
-  ready_to_ship:      { label: 'Pedido listo para enviar',            bg: '#e0f7fa', color: '#00838f' },
-  shipped:            { label: 'Enviado',                   bg: '#fdf2f8', color: '#e396bf' },
-  delivered:          { label: 'Entregado',                 bg: '#e8f5e9', color: '#1b5e20' },
-  cancelled:          { label: 'Cancelado',                 bg: '#ffebee', color: '#c62828' },
+  pending_stock:      { label: 'Verificando stock',        bg: '#fff8e1', color: '#f57f17' },
+  confirming_stock:   { label: 'Confirmando stock',       bg: '#fdf2f8', color: '#be185d' },
+  stock_confirmed:    { label: 'Stock confirmado',        bg: '#e8f5e9', color: '#2e7d32' },
+  partial_stock:      { label: 'Stock parcial',           bg: '#fff3e0', color: '#e65c00' },
+  waiting_payment:    { label: 'Esperando pago',          bg: '#e3f2fd', color: '#1565c0' },
+  processing:         { label: 'Pago a verificar',        bg: '#e3f2fd', color: '#1565c0' },
+  paid:               { label: 'Pago verificado',         bg: '#e8f5e9', color: '#2e7d32' },
+  assembling:         { label: 'Embalando pedido',        bg: '#f3e5f5', color: '#7b1fa2' },
+  packing:            { label: 'Embalando pedido',        bg: '#fff8e1', color: '#d97706' },
+  negotiation:        { label: 'Negociación',             bg: '#fdf2f8', color: '#be185d' },
+  preparing_shipping: { label: 'Etiqueta lista',          bg: '#efebe9', color: '#5d4037' },
+  ready_to_ship:      { label: 'Listo para enviar',       bg: '#e0f7fa', color: '#00838f' },
+  shipped:            { label: 'Enviado',                 bg: '#fdf2f8', color: '#e396bf' },
+  delivered:          { label: 'Entregado',               bg: '#e8f5e9', color: '#1b5e20' },
+  cancelled:          { label: 'Cancelado',               bg: '#ffebee', color: '#c62828' },
 };
 
 const BG_PEDIDOS = 'https://img.freepik.com/free-photo/shipment-delivery-by-truck-bell-notification-delivery-transportation-concept-3d-rendering_56104-1309.jpg?semt=ais_hybrid&w=740&q=80';
@@ -131,11 +138,15 @@ export default function MisPedidosPage() {
   const statusTabs = [
     { key: 'all', label: 'Todos' },
     { key: 'pending', label: 'Pendientes' },
+    { key: 'pending_stock', label: 'Verificando stock' },
+    { key: 'stock_confirmed', label: 'Stock confirmado' },
+    { key: 'waiting_payment', label: 'Esperando pago' },
     { key: 'processing', label: 'Pago a verificar' },
     { key: 'paid', label: 'Pago verificado' },
-    { key: 'assembling', label: 'Armando' },
+    { key: 'assembling', label: 'Embalando' },
+    { key: 'packing', label: 'Embalando' },
     { key: 'preparing_shipping', label: 'Etiqueta lista' },
-    { key: 'ready_to_ship', label: 'Pedido listo para enviar' },
+    { key: 'ready_to_ship', label: 'Listo para enviar' },
     { key: 'shipped', label: 'Enviados' },
     { key: 'delivered', label: 'Entregados' },
   ];
