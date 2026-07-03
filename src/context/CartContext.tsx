@@ -121,16 +121,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const addItem = (product: Product, qty = 1, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number, isPack?: boolean) => {
-    const existing = items.find(i => i.product.$id === product.$id);
-    
-    if (existing) {
-      const isLimited = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
-      const maxStock = isLimited ? product.STOCK : 99999;
-      const newQty = (!isLimited && unlimitedStock) ? (existing.quantity + qty) : Math.min(existing.quantity + qty, maxStock);
-      setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice, isPack: isPack ?? i.isPack } : i));
-    } else {
-      setItems(prev => [...prev, { product, quantity: qty, timedOfferPrice, timedOfferExpiresAt, wholesalePrice, isPack }]);
-    }
+    // Actualización funcional sobre `prev`: los listeners DOM de las plantillas
+    // capturan un addItem viejo, y mirar `items` del closure creaba filas
+    // duplicadas del mismo producto en clicks consecutivos.
+    setItems(prev => {
+      const existing = prev.find(i => i.product.$id === product.$id);
+      if (existing) {
+        const isLimited = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
+        const maxStock = isLimited ? product.STOCK : 99999;
+        const newQty = (!isLimited && unlimitedStock) ? (existing.quantity + qty) : Math.min(existing.quantity + qty, maxStock as number);
+        return prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice, isPack: isPack ?? i.isPack } : i);
+      }
+      return [...prev, { product, quantity: qty, timedOfferPrice, timedOfferExpiresAt, wholesalePrice, isPack }];
+    });
   };
 
   const hasPackItems = items.some(i => i.isPack === true);

@@ -95,6 +95,7 @@ export interface Product {
   COMING_SOON?: boolean;
   DATE_ADDED?: string;
   section?: number;
+  DISABLE_DISCOUNTS?: boolean;
   $createdAt: string;
   $updatedAt: string;
 }

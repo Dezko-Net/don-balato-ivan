@@ -2389,7 +2389,7 @@ export default function HomePage23() {
     // Hydrate bundle products with the 12 selected products
     const bundleTitle = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list h2 span');
     if (bundleTitle) {
-      bundleTitle.textContent = 'Mega Pack Favoritos (15 Productos)';
+      bundleTitle.textContent = 'Mega Pack Favoritos (10 Productos · 15 Unidades)';
     }
 
     const bundleListWrapper = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list ul');
@@ -2500,10 +2500,11 @@ export default function HomePage23() {
         // Add the bundle as a single product (la caja)
         const BUNDLE_PRODUCT: Product = {
           $id: 'bundle-pack-caja',
-          NAME: 'Mega Pack Favoritos (15 Productos)',
+          NAME: 'Mega Pack Favoritos (10 Productos · 15 Unidades)',
           DESCRIPTION: 'Base Raspberry Tart + Iluminadores + Polvo Suelto + Paleta 4 Rubores + Corrector + Paleta Sombras Ghost Music + Toallitas + Brocha + Brillos Labial 6 Colores x3 + Brillos Love Color x4',
           PRICE: 15990,
-          STOCK: 99999,
+          // STOCK 1: máximo un pack por carrito (clicks repetidos no acumulan cantidad)
+          STOCK: 1,
           IMAGEURL: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783031423674-pegada-1783031416170.png',
           CATEGORYID: '',
           SELLERID: '',

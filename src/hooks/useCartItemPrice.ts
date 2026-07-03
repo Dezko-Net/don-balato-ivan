@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { CartItem } from '@/types';
-import { resolveProductDisplayPrice, isWholesalePromoActive, type ResolvedProductPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, isWholesalePromoActive, isDisableDiscounts, type ResolvedProductPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 
 export function useCartItemPrice(item: CartItem): {
@@ -134,7 +134,8 @@ export function useCartItemPrice(item: CartItem): {
     }
 
     // 6. Global Wholesale Promo (20% OFF for 12+ units)
-    if (item.quantity >= 12 && isWholesalePromoActive()) {
+    // No aplica a productos con descuentos bloqueados (DisableDiscounts/PROMO1)
+    if (item.quantity >= 12 && isWholesalePromoActive() && !isDisableDiscounts(item.product)) {
       const basePrice = item.product.PRICE || 0;
       const globalWholesalePrice = Math.round(basePrice * 0.8); // 20% OFF
       if (globalWholesalePrice > 0 && result.unitPrice > globalWholesalePrice) {
@@ -181,8 +182,8 @@ export function useCartPricing(items: CartItem[]) {
         unit = resolveProductDisplayPrice(item.product, apertura).displayPrice;
       }
 
-      // Apply Global Wholesale Promo override
-      if (item.quantity >= 12 && isWholesalePromoActive()) {
+      // Apply Global Wholesale Promo override (no aplica a DisableDiscounts/PROMO1)
+      if (item.quantity >= 12 && isWholesalePromoActive() && !isDisableDiscounts(item.product)) {
         const globalWholesalePrice = Math.round((item.product.PRICE || 0) * 0.8);
         if (globalWholesalePrice > 0 && unit > globalWholesalePrice) {
           unit = globalWholesalePrice;

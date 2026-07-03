@@ -198,3 +198,19 @@ export function setExactWholesaleInFeatures(features: string | string[] | null, 
   if (!isExact) return base;
   return base ? `${base}\nExactWholesale: true` : `ExactWholesale: true`;
 }
+
+export function getDisableDiscountsFromFeatures(features?: string | string[] | null): boolean {
+  const featuresStr = resolveFeaturesString(features);
+  return /DisableDiscounts:\s*true/i.test(featuresStr);
+}
+
+export function setDisableDiscountsInFeatures(features: string | string[] | null, disabled: boolean): string {
+  const featuresStr = resolveFeaturesString(features);
+  let base = featuresStr
+    .replace(/\r\n/g, '\n')
+    .replace(/\n?DisableDiscounts:\s*(true|false)/gi, '')
+    .replace(/^DisableDiscounts:\s*(true|false)\n?/gi, '')
+    .trim();
+  if (!disabled) return base;
+  return base ? `${base}\nDisableDiscounts: true` : `DisableDiscounts: true`;
+}

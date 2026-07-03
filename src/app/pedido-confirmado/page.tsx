@@ -161,11 +161,12 @@ function ConfirmadoInner() {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  // Lock body scroll on mount (prevents background scroll on mobile)
+  // Asegurar que el body sea scrolleable (algún drawer/modal previo puede
+  // haber dejado overflow:hidden pegado al navegar hasta aquí).
   useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = originalOverflow; };
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    document.body.classList.remove('overflow-hidden', 'cart-drawer-open');
   }, []);
 
   if (isLoading) {

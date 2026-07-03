@@ -19,7 +19,15 @@ export type ProductPriceLike = {
   UNIT_OFFER_EXPIRES_AT?: number | null;
   $createdAt?: string | null;
   SKU?: string | null;
+  DISABLE_DISCOUNTS?: boolean | null;
+  FEATURES?: string | string[] | null;
 };
+
+export function isDisableDiscounts(product: ProductPriceLike): boolean {
+  if (product.DISABLE_DISCOUNTS || product.SKU === 'PROMO1') return true;
+  const featuresStr = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : (product.FEATURES || '');
+  return /DisableDiscounts:\s*true/i.test(featuresStr);
+}
 
 /** Porcentaje de descuento al comprar en paquete (cuando no hay PACK_DISCOUNT_PCT específico). */
 export const PACK_BONUS_DISCOUNT_PCT = 20;
@@ -31,8 +39,7 @@ export const PACK_BONUS_DISCOUNT_PCT = 20;
 export function resolvePackUnitPrice(product: ProductPriceLike): number {
   const base = product.PRICE || 0;
   if (!base) return 0;
-  // PROMO1: no aplicar descuento de pack
-  if (product.SKU === 'PROMO1') return base;
+  if (isDisableDiscounts(product)) return base;
   if (product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0) {
     return product.WHOLESALEPRICE;
   }
@@ -140,6 +147,19 @@ export function resolveProductDisplayPrice(
   // If PRICE is 0 but WHOLESALEPRICE exists, use wholesale as base
   const effectiveBase = base > 0 ? base : (wholesale ?? 0);
 
+  // Bloquear todos los descuentos (checkbox en admin o SKU PROMO1).
+  // DEBE ir antes que Live Shopping: ese bloque retorna temprano y todo
+  // producto con $createdAt válido caía en el 20% aunque estuviera bloqueado.
+  if (isDisableDiscounts(product)) {
+    return {
+      displayPrice: effectiveBase,
+      originalPrice: null,
+      hasDiscount: false,
+      discountPercent: 0,
+      fromApertura: false,
+    };
+  }
+
   // 0. Live Shopping promotion: 20% off for 1 week, then 10% after Sunday 12AM
   const isLiveShopping = isLiveShoppingProduct(product);
   if (isLiveShopping) {
@@ -150,17 +170,6 @@ export function resolveProductDisplayPrice(
       originalPrice: effectiveBase,
       hasDiscount: true,
       discountPercent,
-      fromApertura: false,
-    };
-  }
-
-  // PROMO1: no aplicar ningun descuento (ni CURRENTPRICE, ni apertura, ni pack)
-  if (product.SKU === 'PROMO1') {
-    return {
-      displayPrice: effectiveBase,
-      originalPrice: null,
-      hasDiscount: false,
-      discountPercent: 0,
       fromApertura: false,
     };
   }
@@ -200,7 +209,7 @@ export function resolveProductDisplayPrice(
   }
 
   // Suppress apertura discount if live logic has disableApertura flag or product is PROMO1
-  const suppressApertura = liveLogic?.disableApertura === true || product.SKU === 'PROMO1';
+  const suppressApertura = liveLogic?.disableApertura === true || isDisableDiscounts(product);
 
   if (!suppressApertura && apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
     const displayPrice = getAperturaDiscountedPrice(effectiveBase, apertura.discountPercent);

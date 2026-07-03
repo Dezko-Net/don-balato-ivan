@@ -702,6 +702,10 @@ function CheckoutInner() {
       // Si el admin puso un stock real (< 99999), siempre se valida y descuenta,
       // incluso en modo unlimitedStock de la tienda.
       for (const it of items) {
+        // Bundle virtual products (e.g. Mega Pack) don't exist in DB, skip validation
+        if (it.product.SKU === 'PROMO1' || it.product.$id.startsWith('bundle-')) {
+          continue;
+        }
         const productDoc = allProductDocs[it.product.$id];
         if (!productDoc) {
           setError(`El producto "${it.product.NAME}" ya no está disponible en la tienda. Por favor, elimínalo de tu carrito para continuar.`);
@@ -752,6 +756,10 @@ function CheckoutInner() {
       const stockRollback: { productId: string; prevStock: number }[] = [];
       try {
         for (const item of items) {
+          // Bundle virtual products don't exist in DB, skip stock discount
+          if (item.product.SKU === 'PROMO1' || item.product.$id.startsWith('bundle-')) {
+            continue;
+          }
           const productDoc = allProductDocs[item.product.$id];
           if (!productDoc) {
              throw new Error(`El producto "${item.product.NAME}" ya no está disponible en la tienda.`);

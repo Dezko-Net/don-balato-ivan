@@ -21,7 +21,7 @@ import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice, resolvePackUnitPrice, PACK_BONUS_DISCOUNT_PCT, getLiveShoppingThreshold, getNextLiveShoppingTime, isLiveShoppingProduct, getLiveShoppingDiscountPercent } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, resolvePackUnitPrice, PACK_BONUS_DISCOUNT_PCT, getLiveShoppingThreshold, getNextLiveShoppingTime, isLiveShoppingProduct, getLiveShoppingDiscountPercent, isDisableDiscounts } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 import { getSkuFromFeatures } from '@/lib/product-features';
@@ -978,7 +978,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     origPrice = p.PRICE;
                   } else if (catalogMode === 'paquetes') {
                     // Si es producto de live shopping, usar el precio con descuento de live para paquete también
-                    if (isLiveShoppingProduct(p)) {
+                    // (salvo que el producto tenga los descuentos bloqueados, ej. PROMO1)
+                    if (isLiveShoppingProduct(p) && !isDisableDiscounts(p)) {
                       const liveDiscount = getLiveShoppingDiscountPercent(p.$createdAt!);
                       price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
                       origPrice = p.PRICE;
@@ -1119,7 +1120,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     price = p.WHOLESALEPRICE || p.PRICE;
                     origPrice = p.PRICE;
                   } else if (catalogMode === 'paquetes') {
-                    if (isLiveShoppingProduct(p)) {
+                    if (isLiveShoppingProduct(p) && !isDisableDiscounts(p)) {
                       const liveDiscount = getLiveShoppingDiscountPercent(p.$createdAt!);
                       price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
                       origPrice = p.PRICE;

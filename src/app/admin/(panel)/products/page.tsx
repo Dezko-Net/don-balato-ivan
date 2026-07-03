@@ -10,7 +10,7 @@ import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, Che
 import Link from 'next/link';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription, generateProductAiPack } from '@/lib/aiAdmin';
-import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures } from '@/lib/product-features';
+import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures, getDisableDiscountsFromFeatures, setDisableDiscountsInFeatures } from '@/lib/product-features';
 // Lottie imports removed to prevent React 19 crashes
 
 type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string; _details?: string; _usage?: string; _ingredients?: string };
@@ -777,6 +777,7 @@ export default function ProductsPage() {
         _details: tabs.details || '',
         _usage: tabs.usage || '',
         _ingredients: tabs.ingredients || '',
+        DISABLE_DISCOUNTS: getDisableDiscountsFromFeatures(p.FEATURES),
       },
     });
   };
@@ -860,6 +861,7 @@ export default function ProductsPage() {
           let features = d.FEATURES || '';
           features = setSkuInFeatures(features, d._sku || '');
           features = setBarcodeInFeatures(features, d._barcode || '');
+          features = setDisableDiscountsInFeatures(features, !!d.DISABLE_DISCOUNTS);
           if ((d as Product).section != null) {
             features = setSectionInFeatures(features, (d as Product).section!);
           }
@@ -1652,6 +1654,14 @@ export default function ProductsPage() {
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, section: e.target.value ? Number(e.target.value) : undefined } } : m)}
                       placeholder="Ej: 5"
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer select-none pb-2">
+                      <input type="checkbox" checked={!!modal.data.DISABLE_DISCOUNTS}
+                        onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DISABLE_DISCOUNTS: e.target.checked } } : m)}
+                        className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-800" />
+                      <span className="text-xs font-medium text-gray-700">Bloquear descuentos</span>
+                    </label>
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">

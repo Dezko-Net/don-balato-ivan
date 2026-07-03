@@ -744,22 +744,29 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const priceContainers = Array.from(root.querySelectorAll('.yaxsell-product-price-container, product-price, .product-price'));
     const mainPriceContainer = priceContainers.find(el => !el.closest('.product-card') && !el.closest('.quick-add') && !el.closest('#quick-add-drawer')) || priceContainers[0];
 
-    const originalVal = (priceResolved.originalPrice || Math.round((displayProduct.PRICE || 0) / 0.8)) * qty;
+    // Solo mostrar tachado/badge cuando el producto tiene un descuento REAL.
+    // Antes se fabricaba un precio original (PRICE/0.8) y un "-20%" para todo
+    // producto sin descuento — incluidos los bloqueados (DisableDiscounts/PROMO1).
+    const hasRealDiscount = priceResolved.hasDiscount && priceResolved.originalPrice != null && priceResolved.originalPrice > priceResolved.displayPrice;
+    const originalVal = (priceResolved.originalPrice || 0) * qty;
     const originalFormatted = formatPrice(originalVal);
-    const effectiveDiscountPercent = Math.round((1 - effectivePrice / originalVal) * 100) || 20;
+    const effectiveDiscountPercent = hasRealDiscount && originalVal > 0
+      ? Math.round((1 - effectivePrice / originalVal) * 100)
+      : 0;
 
     if (mainPriceContainer) {
-      const priceHtml = `
-        <div class="yaxsell-price-container-custom" style="display: flex !important; align-items: center !important; gap: 10px !important; flex-wrap: wrap !important; font-family: 'Bricolage Grotesque', sans-serif !important;">
-          <span class="yaxsell-price-sale-custom" style="font-size: 36px !important; font-weight: 800 !important; color: #db2777 !important; display: inline-block !important;">
-            ${formattedPrice}
-          </span>
+      const discountHtml = hasRealDiscount ? `
           <span class="yaxsell-price-regular-custom" style="font-size: 14px !important; color: #000000 !important; text-decoration: line-through !important; margin: 0 !important; display: inline-block !important; visibility: visible !important; opacity: 1 !important;">
             ${originalFormatted}
           </span>
           <span class="yaxsell-apertura-disc-badge-custom" style="display: inline-flex !important; align-items: center !important; gap: 4px !important; padding: 4px 10px !important; border-radius: 999px !important; font-size: 12px !important; font-weight: 900 !important; letter-spacing: 0.04em !important; color: #fff !important; background: linear-gradient(135deg, #f472b6 0%, #db2777 100%) !important; box-shadow: 0 2px 8px rgba(219,39,119,0.2), 0 0 0 1px rgba(255,255,255,0.35) inset !important; text-transform: uppercase !important; line-height: 1 !important; visibility: visible !important; opacity: 1 !important;">
             <span class="apertura-disc-spark">✦</span>-${effectiveDiscountPercent}%
-          </span>
+          </span>` : '';
+      const priceHtml = `
+        <div class="yaxsell-price-container-custom" style="display: flex !important; align-items: center !important; gap: 10px !important; flex-wrap: wrap !important; font-family: 'Bricolage Grotesque', sans-serif !important;">
+          <span class="yaxsell-price-sale-custom" style="font-size: 36px !important; font-weight: 800 !important; color: #db2777 !important; display: inline-block !important;">
+            ${formattedPrice}
+          </span>${discountHtml}
         </div>
       `;
       mainPriceContainer.innerHTML = priceHtml;
