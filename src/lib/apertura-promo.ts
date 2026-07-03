@@ -31,6 +31,8 @@ export const PACK_BONUS_DISCOUNT_PCT = 20;
 export function resolvePackUnitPrice(product: ProductPriceLike): number {
   const base = product.PRICE || 0;
   if (!base) return 0;
+  // PROMO1: no aplicar descuento de pack
+  if (product.SKU === 'PROMO1') return base;
   if (product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0) {
     return product.WHOLESALEPRICE;
   }
@@ -148,6 +150,17 @@ export function resolveProductDisplayPrice(
       originalPrice: effectiveBase,
       hasDiscount: true,
       discountPercent,
+      fromApertura: false,
+    };
+  }
+
+  // PROMO1: no aplicar ningun descuento (ni CURRENTPRICE, ni apertura, ni pack)
+  if (product.SKU === 'PROMO1') {
+    return {
+      displayPrice: effectiveBase,
+      originalPrice: null,
+      hasDiscount: false,
+      discountPercent: 0,
       fromApertura: false,
     };
   }
