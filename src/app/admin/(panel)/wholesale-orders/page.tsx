@@ -1536,14 +1536,21 @@ export default function WholesaleOrdersPage() {
                 )}
               </div>
 
-              {/* Footer action button */}
-              <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-center gap-3">
+              {/* Footer action buttons */}
+              <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-center gap-2">
                 <button
                   onClick={() => downloadOrderPrint(order)}
-                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/10 hover:scale-[1.01] active:scale-95"
+                  className="flex-1 py-3.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-bold transition flex items-center justify-center gap-2 active:scale-95"
                 >
                   <Printer size={16} />
-                  Imprimir / PDF del Pedido
+                  PDF
+                </button>
+                <button
+                  onClick={() => { window.location.href = `/admin/wholesale-orders/${order.$id}`; }}
+                  className="flex-[2] py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/10 hover:scale-[1.01] active:scale-95"
+                >
+                  <Eye size={16} />
+                  Ver Detalle Completo
                 </button>
               </div>
             </div>
