@@ -1030,6 +1030,11 @@ export default function PedidoPage() {
             <div className={`border rounded-3xl p-5 md:p-6 mb-8 flex items-start gap-4 transition-all duration-300 ${bgClass}`}>
               <div className={`p-3 rounded-2xl bg-white shadow-sm flex-shrink-0 ${iconColor}`}>
                 {order.STATUS === 'pending' && <Clock size={24} />}
+                {order.STATUS === 'pending_stock' && <Clock size={24} />}
+                {order.STATUS === 'confirming_stock' && <Box size={24} />}
+                {order.STATUS === 'stock_confirmed' && <CheckCircle size={24} />}
+                {order.STATUS === 'partial_stock' && <AlertTriangle size={24} />}
+                {order.STATUS === 'waiting_payment' && <Clock size={24} />}
                 {order.STATUS === 'processing' && <Upload size={24} />}
                 {order.STATUS === 'paid' && <CheckCircle size={24} />}
                 {order.STATUS === 'assembling' && <Package size={24} />}
@@ -1051,19 +1056,35 @@ export default function PedidoPage() {
         {/* ── Order Timeline (Stepper) ── */}
         {(() => {
           const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-          const steps = [
-            { key: 'pending',            label: 'Pedido',       icon: <Clock size={15} /> },
-            { key: 'confirming_stock',   label: 'Stock',        icon: <Box size={15} /> },
-            { key: 'processing',         label: 'Verificando',  icon: <Upload size={15} /> },
-            { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
-            { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
-            { key: 'negotiation',        label: 'Negociación',  icon: <MessageSquare size={15} /> },
-            { key: 'preparing_shipping', label: 'Etiqueta Lista',  icon: <Tag size={15} /> },
-            { key: 'ready_to_ship',      label: 'Pedido listo para enviar',     icon: <Box size={15} /> },
-            { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
-            { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
-          ];
-          const statusOrder = ['pending', 'confirming_stock', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+          const isWholesaleStatus = ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment'].includes(order.STATUS);
+          const steps = isWholesaleStatus
+            ? [
+                { key: 'pending_stock',    label: 'Verificando',  icon: <Clock size={15} /> },
+                { key: 'stock_confirmed',  label: 'Stock OK',     icon: <CheckCircle size={15} /> },
+                { key: 'waiting_payment',  label: 'Esperando Pago', icon: <Clock size={15} /> },
+                { key: 'processing',       label: 'Verificando',  icon: <Upload size={15} /> },
+                { key: 'paid',             label: 'Verificado',   icon: <CheckCircle size={15} /> },
+                { key: 'assembling',       label: 'Armando',      icon: <Package size={15} /> },
+                { key: 'preparing_shipping', label: 'Etiqueta',   icon: <Tag size={15} /> },
+                { key: 'ready_to_ship',    label: 'Listo',        icon: <Box size={15} /> },
+                { key: 'shipped',          label: 'Enviado',      icon: <Truck size={15} /> },
+                { key: 'delivered',        label: 'Entregado',    icon: <CheckCircle size={15} /> },
+              ]
+            : [
+                { key: 'pending',            label: 'Pedido',       icon: <Clock size={15} /> },
+                { key: 'confirming_stock',   label: 'Stock',        icon: <Box size={15} /> },
+                { key: 'processing',         label: 'Verificando',  icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
+                { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
+                { key: 'negotiation',        label: 'Negociación',  icon: <MessageSquare size={15} /> },
+                { key: 'preparing_shipping', label: 'Etiqueta Lista',  icon: <Tag size={15} /> },
+                { key: 'ready_to_ship',      label: 'Pedido listo para enviar',     icon: <Box size={15} /> },
+                { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
+                { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
+              ];
+          const statusOrder = isWholesaleStatus
+            ? ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered']
+            : ['pending', 'confirming_stock', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (
