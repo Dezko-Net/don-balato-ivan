@@ -296,7 +296,7 @@ function CarritoPageContent() {
                 <div style={{ padding: '16px 0 12px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
                     <ShoppingCart size={18} color={PINK} />
-                    {totalItems === 1 ? '1 producto' : `${totalItems} productos`}
+                    {items.length === 1 ? '1 producto' : `${items.length} productos`}{totalItems !== items.length ? ` · ${totalItems} unidades` : ''}`
                   </h1>
                 </div>
 
@@ -318,7 +318,7 @@ function CarritoPageContent() {
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.01em' }}>Resumen de compra</h2>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
-                  <span style={{ color: '#6b7280' }}>Productos ({totalItems})</span>
+                  <span style={{ color: '#6b7280' }}>Productos ({items.length}) · {totalItems} uds</span>
                   <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal + aperturaSavings)}</span>
                 </div>
 

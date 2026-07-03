@@ -859,6 +859,7 @@ function CheckoutInner() {
   }
 
   const totalItems = items.reduce((a, i) => a + i.quantity, 0);
+  const distinctProducts = items.length;
 
   return (
     <>
@@ -1281,7 +1282,7 @@ function CheckoutInner() {
                     </span>
                     Resumen de compra
                   </h2>
-                  <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af', fontFamily: FF }}>{totalItems} producto{totalItems !== 1 ? 's' : ''} en tu pedido</p>
+                  <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af', fontFamily: FF }}>{distinctProducts} producto{distinctProducts !== 1 ? 's' : ''} · {totalItems} unidad{totalItems !== 1 ? 'es' : ''}</p>
                 </div>
 
                 {/* Items */}

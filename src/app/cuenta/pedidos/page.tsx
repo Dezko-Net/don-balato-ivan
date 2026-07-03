@@ -218,7 +218,7 @@ export default function MisPedidosPage() {
                       <span style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{order.ORDERCODE}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: st.bg, color: st.color }}>{st.label}</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: '#374151', fontWeight: 500 }}>{qty} artículo{qty !== 1 ? 's' : ''} · {formatPrice(order.TOTAL)}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: '#374151', fontWeight: 500 }}>{items.length} producto{items.length !== 1 ? 's' : ''}{qty !== items.length ? ` · ${qty} uds` : ''} · {formatPrice(order.TOTAL)}</p>
                     <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>{date}</p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, alignItems: 'flex-end' }}>
