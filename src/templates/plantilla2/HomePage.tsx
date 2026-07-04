@@ -2135,8 +2135,8 @@ export default function HomePage2() {
             );
           }
           
-          // COLLAGE INTERACTIVO
-          if (section.id === 'collage' && panels.length > 0) {
+          // COLLAGE INTERACTIVO - OCULTO (pack terminado)
+          if (section.id === 'collage' && false) {
             const cS = ss('collage');
             const collageLayouts = [
               { id:'A', cells:2, grid:'repeat(2,1fr)', rows:'400px', spans:[{},{}] },
