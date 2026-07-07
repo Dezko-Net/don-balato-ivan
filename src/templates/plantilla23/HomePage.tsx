@@ -2296,14 +2296,16 @@ export default function HomePage23() {
       let anchor: Element = heroBannerSection;
       const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
       const bundleSection = tempDiv.querySelector('[id*="bundle_products"]') as HTMLElement | null;
-      // Ocultar sección bundle products (pack terminado)
-      if (bundleSection) {
-        console.log("[Plantilla23 Debug] Removing bundleSection (pack terminado)");
-        bundleSection.remove();
-      }
+      // bundleSection visible
       console.log("[Plantilla23 Debug] heroBannerSection:", !!heroBannerSection, "countdownSection:", !!countdownSection, "bundleSection:", !!bundleSection);
       if (countdownSection) {
-        heroBannerSection.insertAdjacentElement('afterend', countdownSection);
+        if (bundleSection) {
+          console.log("[Plantilla23 Debug] Reordering bundleSection before countdownSection");
+          heroBannerSection.insertAdjacentElement('afterend', bundleSection);
+          bundleSection.insertAdjacentElement('afterend', countdownSection);
+        } else {
+          heroBannerSection.insertAdjacentElement('afterend', countdownSection);
+        }
         // --- NEW: Botón rosa solo para móviles debajo del cronómetro ---
         const ctaBtn = document.createElement('div');
         ctaBtn.className = 'flex justify-center md:hidden w-full px-4 mb-4 mt-2 z-10 relative';
