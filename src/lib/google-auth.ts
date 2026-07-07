@@ -1,12 +1,15 @@
+// @ts-nocheck
 const GEMINI_SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 const GCP_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GCP_PROJECT_ID || '';
 const GCP_REGION = process.env.GOOGLE_CLOUD_REGION || 'global';
 
-let _auth: any = null;
-let _cachedToken: { token: string; expiry: number } | null = null;
+/** @type {any} */
+let _auth = null;
+/** @type {{ token: string, expiry: number } | null} */
+let _cachedToken = null;
 const TOKEN_REFRESH_BUFFER_MS = 60_000;
 
-async function getAuth(): Promise<any> {
+async function getAuth() {
   if (!_auth) {
     const { GoogleAuth } = await import(/* webpackIgnore: true */ 'google-auth-library');
     const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
@@ -20,7 +23,7 @@ async function getAuth(): Promise<any> {
   return _auth;
 }
 
-export async function getGeminiAccessToken(): Promise<string> {
+export async function getGeminiAccessToken() {
   if (_cachedToken && Date.now() < _cachedToken.expiry - TOKEN_REFRESH_BUFFER_MS) {
     return _cachedToken.token;
   }
@@ -40,9 +43,9 @@ export async function getGeminiAccessToken(): Promise<string> {
   return token;
 }
 
-export async function getGeminiAuthHeaders(): Promise<Record<string, string>> {
+export async function getGeminiAuthHeaders() {
   const token = await getGeminiAccessToken();
-  const headers: Record<string, string> = {
+  const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
   };
@@ -52,7 +55,7 @@ export async function getGeminiAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
-export function buildGeminiUrl(model: string, method: string = 'generateContent'): string {
+export function buildGeminiUrl(model, method = 'generateContent') {
   if (GCP_PROJECT_ID) {
     const base = GCP_REGION === 'global'
       ? 'https://aiplatform.googleapis.com'

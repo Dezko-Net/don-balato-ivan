@@ -9,6 +9,8 @@ tsconfig.tsbuildinfo
 *.log
 
 .vercel
+.open-next/
+.wrangler/
 .env*.local
 public/shopify/plantilla23.rar
 src/templates/plantilla23.rar
