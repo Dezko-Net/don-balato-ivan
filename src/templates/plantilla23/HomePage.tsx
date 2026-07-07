@@ -2499,12 +2499,11 @@ export default function HomePage23() {
         
         // Add the bundle as a single product (la caja)
         const BUNDLE_PRODUCT: Product = {
-          $id: 'bundle-pack-caja',
+          $id: '6a4d2d0f0006e27d56f6',
           NAME: 'Mega Pack Favoritos (10 Productos · 15 Unidades)',
           DESCRIPTION: 'Base Raspberry Tart + Iluminadores + Polvo Suelto + Paleta 4 Rubores + Corrector + Paleta Sombras Ghost Music + Toallitas + Brocha + Brillos Labial 6 Colores x3 + Brillos Love Color x4',
           PRICE: 15990,
-          // STOCK 1: máximo un pack por carrito (clicks repetidos no acumulan cantidad)
-          STOCK: 1,
+          STOCK: 100,
           IMAGEURL: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783031423674-pegada-1783031416170.png',
           CATEGORYID: '',
           SELLERID: '',
