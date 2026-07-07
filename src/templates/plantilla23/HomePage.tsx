@@ -1304,7 +1304,7 @@ export default function HomePage23() {
       }
 
       /* ── COMPACT HEADER & UTILITY BAR (MOVE NAVBAR HIGHER) ── */
-      /* Hacer la barra de utilidad (utility-bar) súper delgada */
+      /* Hacer la barra de utilidad (utility-bar) súper delgada (Global/Móvil) */
       utility-bar.header-element {
         min-height: 24px !important;
         --min-height: 24px !important;
@@ -1321,11 +1321,30 @@ export default function HomePage23() {
         margin-bottom: 0px !important;
       }
 
-      /* Reducir paddings internos del header para subir la barra y compactarla al máximo */
+      /* Reducir paddings internos del header para subir la barra (Global/Móvil) */
       custom-header.header-element {
         --top: 24px !important; /* Fuerza al header a estar pegado al utility-bar súper arriba */
         --utility-bar-gap: 0px !important;
         --announcement-bar-gap: 0px !important;
+      }
+
+      /* Sobreescritura exclusiva para PC (Barra de utilidad blanca, relativa y sin top margin/gap) */
+      @media (min-width: 1024px) {
+        utility-bar.header-element {
+          position: relative !important;
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+        }
+        utility-bar.header-element a,
+        utility-bar.header-element span,
+        utility-bar.header-element p,
+        utility-bar.header-element localization-form,
+        utility-bar.header-element * {
+          color: #e396bf !important;
+        }
+        custom-header.header-element {
+          --top: 0px !important; /* Pegado sin gaps */
+        }
       }
       custom-header.header-element .py-3,
       custom-header.header-element .lg\:pt-5,
@@ -1359,6 +1378,20 @@ export default function HomePage23() {
         .slideshow__content .custom-container {
           padding-top: 140px !important; /* Desplaza el bloque hacia abajo en desktop */
         }
+        /* Padding 15% a cada lado del hero banner en PC */
+        #shopify-section-template--27304712470809__slideshow_FBfKC8 {
+          padding-left: 15% !important;
+          padding-right: 15% !important;
+          box-sizing: border-box !important;
+        }
+        #shopify-section-template--27304712470809__slideshow_FBfKC8 .slideshow,
+        #shopify-section-template--27304712470809__slideshow_FBfKC8 custom-slideshow,
+        #shopify-section-template--27304712470809__slideshow_FBfKC8 .swiper-container,
+        #shopify-section-template--27304712470809__slideshow_FBfKC8 parallax-element-section {
+          width: 100% !important;
+          border-radius: 16px !important;
+          overflow: hidden !important;
+        }
       }
       @media (max-width: 1023px) {
         .slideshow__content .custom-container {
@@ -1366,22 +1399,26 @@ export default function HomePage23() {
         }
       }
       /* ── HEADER THREE-STATE STYLING (GLASSMORPHISM ONLY ON SCROLLED STICKY) ── */
-      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
+      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Fondo blanco, arriba de la portada */
       custom-header.header-element[data-scroll="false"],
       .header[data-id="sections--27304712208665__header"][data-scroll="false"] {
-        background: transparent !important;
-        background-color: transparent !important;
+        position: relative !important;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
         background-image: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         border: none !important;
-        border-bottom: none !important;
-        box-shadow: none !important;
-      }      /* Ocultar logo en móvil cuando no hay scroll y mostrarlo solo en el sticky (data-scroll="true") */
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+      }
+      
+      /* Asegurar que el logo se muestre siempre en móvil y PC */
+      custom-header .logo-wrapper {
+        display: block !important;
+      }
       @media (max-width: 1023px) {
-        custom-header[data-scroll="false"] .logo-wrapper {
-          display: none !important;
-        }
+        custom-header[data-scroll="false"] .logo-wrapper,
         custom-header[data-scroll="true"] .logo-wrapper {
           display: block !important;
         }
@@ -1659,38 +1696,95 @@ export default function HomePage23() {
         transform: scale(1.05) !important;
       }
 
-/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
-      custom-header.header-element[data-scroll="true"],
-      .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
-        background: #fdf2f8 !important;
-        background-color: #fdf2f8 !important;
-        background-image: none !important;
-        backdrop-filter: blur(12px) saturate(140%) !important;
-        -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
-        border: none !important;
-        border-bottom: none !important;
-        box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
+/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphic sutil, fondo blanco */
+      /* ESTILOS DE COLOR PARA MÓVIL (cuando data-scroll="true", se vuelve rosa/glassmorphic sutil y letras/logo negros) */
+      @media (max-width: 1023px) {
+        custom-header.header-element[data-scroll="true"],
+        .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
+          background: #fdf2f8 !important;
+          background-color: #fdf2f8 !important;
+          background-image: none !important;
+          backdrop-filter: blur(12px) saturate(140%) !important;
+          -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+          border: none !important;
+          border-bottom: none !important;
+          box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
+        }
+        custom-header[data-scroll="true"] .logo-wrapper img,
+        .header[data-scroll="true"] .logo-wrapper img {
+          filter: brightness(0) !important;
+        }
+        custom-header[data-scroll="true"] a[href*="/productos"],
+        custom-header[data-scroll="true"] a[href*="/paquetes"],
+        .header[data-scroll="true"] a[href*="/productos"],
+        .header[data-scroll="true"] a[href*="/paquetes"] {
+          color: #000000 !important;
+          border-color: #000000 !important;
+        }
+        custom-header[data-scroll="true"] a[href*="/productos"] *,
+        custom-header[data-scroll="true"] a[href*="/paquetes"] *,
+        .header[data-scroll="true"] a[href*="/productos"] *,
+        .header[data-scroll="true"] a[href*="/paquetes"] * {
+          color: #000000 !important;
+          fill: #000000 !important;
+          stroke: #000000 !important;
+        }
       }
 
-      /* Logo and UNIDAD/PAQUETE buttons black only when scrolled navbar appears */
-      custom-header[data-scroll="true"] .logo-wrapper img,
-      .header[data-scroll="true"] .logo-wrapper img {
-        filter: brightness(0) !important;
-      }
-      custom-header[data-scroll="true"] a[href*="/productos"],
-      custom-header[data-scroll="true"] a[href*="/paquetes"],
-      .header[data-scroll="true"] a[href*="/productos"],
-      .header[data-scroll="true"] a[href*="/paquetes"] {
-        color: #000000 !important;
-        border-color: #000000 !important;
-      }
-      custom-header[data-scroll="true"] a[href*="/productos"] *,
-      custom-header[data-scroll="true"] a[href*="/paquetes"] *,
-      .header[data-scroll="true"] a[href*="/productos"] *,
-      .header[data-scroll="true"] a[href*="/paquetes"] * {
-        color: #000000 !important;
-        fill: #000000 !important;
-        stroke: #000000 !important;
+      /* ESTILOS DE COLOR PARA PC (todo en rosa pastel #e396bf y logo rosa, sobre fondo blanco, en ambos estados) */
+      @media (min-width: 1024px) {
+        custom-header.header-element[data-scroll="true"],
+        .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+          background-image: none !important;
+          backdrop-filter: blur(12px) saturate(140%) !important;
+          -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+          border: none !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
+        }
+        custom-header.header-element,
+        .header[data-id="sections--27304712208665__header"] {
+          --header-color-text: 227, 150, 191 !important;
+          --color-links: 227, 150, 191 !important;
+          --color-links-hover: 192, 84, 122 !important;
+          --color-accent: 227, 150, 191 !important;
+          color: #e396bf !important;
+        }
+        custom-header.header-element .logo-wrapper img,
+        .header[data-id="sections--27304712208665__header"] .logo-wrapper img {
+          filter: brightness(0) saturate(100%) invert(72%) sepia(21%) saturate(1210%) hue-rotate(293deg) brightness(97%) contrast(92%) !important;
+        }
+        custom-header.header-element a[href*="/productos"],
+        custom-header.header-element a[href*="/paquetes"],
+        .header[data-id="sections--27304712208665__header"] a[href*="/productos"],
+        .header[data-id="sections--27304712208665__header"] a[href*="/paquetes"] {
+          color: #e396bf !important;
+          border-color: #e396bf !important;
+        }
+        custom-header.header-element a[href*="/productos"] *,
+        custom-header.header-element a[href*="/paquetes"] *,
+        .header[data-id="sections--27304712208665__header"] a[href*="/productos"] *,
+        .header[data-id="sections--27304712208665__header"] a[href*="/paquetes"] * {
+          color: #e396bf !important;
+          fill: #e396bf !important;
+          stroke: #e396bf !important;
+        }
+        custom-header.header-element a,
+        .header[data-id="sections--27304712208665__header"] a {
+          color: #e396bf !important;
+        }
+        custom-header.header-element a *,
+        .header[data-id="sections--27304712208665__header"] a * {
+          color: #e396bf !important;
+          fill: #e396bf !important;
+          stroke: #e396bf !important;
+        }
+        custom-header.header-element .menu-hamburger-button .line,
+        .header[data-id="sections--27304712208665__header"] .menu-hamburger-button .line {
+          background-color: #e396bf !important;
+        }
       }
 
       /* ==========================================
