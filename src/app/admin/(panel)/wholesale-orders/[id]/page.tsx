@@ -9,7 +9,7 @@ import {
   ArrowLeft, Package, User, MapPin, Clock, FileText,
   Phone, Mail, Hash, Save, Check, AlertTriangle, ExternalLink,
   Image as ImageIcon, MessageSquare, DollarSign, Printer, Send, Ban,
-  StickyNote, MapPinned, Receipt, Copy, Truck
+  StickyNote, MapPinned, Receipt, Copy, Truck, Trash2
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
@@ -239,6 +239,32 @@ export default function WholesaleOrderDetailPage() {
     navigator.clipboard.writeText(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 1500);
+  };
+
+  const removeItem = async (index: number) => {
+    if (!order) return;
+    let parsedItems: any[] = [];
+    try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    if (index < 0 || index >= parsedItems.length) return;
+    const itemName = parsedItems[index]?.name || 'este producto';
+    if (!confirm(`¿Eliminar "${itemName}" del pedido?\nEl total se recalculará automáticamente.`)) return;
+    setUpdating(true);
+    try {
+      parsedItems.splice(index, 1);
+      const newSubtotal = parsedItems.reduce((s, it) => s + (it.total || it.price * it.qty), 0);
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, order.$id, {
+        ITEMS: JSON.stringify(parsedItems),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newSubtotal,
+      });
+      setOrder(prev => prev ? { ...prev, ITEMS: JSON.stringify(parsedItems), SUBTOTAL: newSubtotal, TOTAL: newSubtotal } : prev);
+    } catch (e: any) {
+      alert('Error al eliminar producto: ' + e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const copyOrderItemsList = (type: 'barcode' | 'sku') => {
@@ -840,8 +866,18 @@ export default function WholesaleOrderDetailPage() {
                         )}
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right flex-shrink-0 flex items-center gap-2">
                       <p className="text-xs sm:text-sm font-bold text-gray-900">{fmt(it.total || it.price * it.qty)}</p>
+                      {(order.STATUS === 'partial_stock' || order.STATUS === 'negotiation') && (
+                        <button
+                          onClick={() => removeItem(i)}
+                          disabled={updating}
+                          title="Eliminar producto del pedido"
+                          className="no-print p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
