@@ -15,21 +15,16 @@ interface ProductWithStatus extends Product {
 
 async function checkImage(url: string): Promise<'ok' | 'broken' | 'empty'> {
   if (!url || url.trim() === '') return 'empty';
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch(url, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
-    clearTimeout(timeout);
-    if (res.ok) return 'ok';
-    // Try GET if HEAD fails
-    const controller2 = new AbortController();
-    const timeout2 = setTimeout(() => controller2.abort(), 10000);
-    const res2 = await fetch(url, { method: 'GET', signal: controller2.signal, redirect: 'follow' });
-    clearTimeout(timeout2);
-    return res2.ok ? 'ok' : 'broken';
-  } catch {
-    return 'broken';
-  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timeout = setTimeout(() => {
+      img.src = '';
+      resolve('broken');
+    }, 10000);
+    img.onload = () => { clearTimeout(timeout); resolve('ok'); };
+    img.onerror = () => { clearTimeout(timeout); resolve('broken'); };
+    img.src = url;
+  });
 }
 
 export default function ProductosSinImagenPage() {
