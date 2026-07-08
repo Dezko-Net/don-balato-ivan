@@ -281,16 +281,21 @@ export default function HomePage23() {
     hero1: {
       // Reemplaza estas URLs de imagen si quieres cambiar el banner de entrada (Hero 1).
       // Si las dejas vacías (''), se usará el video original de la plantilla.
-      desktopImg: '', 
-      mobileImg: '',
+      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548052215-pegada-1783548045185.png',
+      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548059310-pegada-1783548056303.png',
       title: 'Poderosamente Bella',
       btnText: 'Tienda',
       btnLink: '/productos',
     },
     hero2: {
       // Reemplaza estas URLs si quieres cambiar la imagen de Kenia (Hero 2).
-      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D',
-      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D',
+      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548052215-pegada-1783548045185.png',
+      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548059310-pegada-1783548056303.png',
+    },
+    hero3: {
+      // Reemplaza estas URLs si quieres cambiar la imagen del tercer banner (Hero 3).
+      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548052215-pegada-1783548045185.png',
+      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548059310-pegada-1783548056303.png',
     }
   };
 
@@ -851,14 +856,14 @@ export default function HomePage23() {
       /* FIX 2: Media column must start at 100vw, not 50% on desktop */
       @media (min-width: 768px) {
         .split-hero .split-hero-column.split-hero-column__media {
-          min-width: 100vw !important;
-          max-width: 100vw !important;
+          min-width: 100% !important;
+          max-width: 100% !important;
         }
 
         /* FIX 3: Collapsed state must be 50vw on desktop */
         .split-hero .split-hero-column__media.is-collapsed {
-          min-width: 50vw !important;
-          max-width: 50vw !important;
+          min-width: 50% !important;
+          max-width: 50% !important;
         }
       }
 
@@ -1304,7 +1309,7 @@ export default function HomePage23() {
       }
 
       /* ── COMPACT HEADER & UTILITY BAR (MOVE NAVBAR HIGHER) ── */
-      /* Hacer la barra de utilidad (utility-bar) súper delgada (Global/Móvil) */
+      /* Hacer la barra de utilidad (utility-bar) súper delgada */
       utility-bar.header-element {
         min-height: 24px !important;
         --min-height: 24px !important;
@@ -1321,30 +1326,11 @@ export default function HomePage23() {
         margin-bottom: 0px !important;
       }
 
-      /* Reducir paddings internos del header para subir la barra (Global/Móvil) */
+      /* Reducir paddings internos del header para subir la barra y compactarla al máximo */
       custom-header.header-element {
         --top: 24px !important; /* Fuerza al header a estar pegado al utility-bar súper arriba */
         --utility-bar-gap: 0px !important;
         --announcement-bar-gap: 0px !important;
-      }
-
-      /* Sobreescritura exclusiva para PC (Barra de utilidad blanca, relativa y sin top margin/gap) */
-      @media (min-width: 1024px) {
-        utility-bar.header-element {
-          position: relative !important;
-          background: #ffffff !important;
-          background-color: #ffffff !important;
-        }
-        utility-bar.header-element a,
-        utility-bar.header-element span,
-        utility-bar.header-element p,
-        utility-bar.header-element localization-form,
-        utility-bar.header-element * {
-          color: #e396bf !important;
-        }
-        custom-header.header-element {
-          --top: 0px !important; /* Pegado sin gaps */
-        }
       }
       custom-header.header-element .py-3,
       custom-header.header-element .lg\:pt-5,
@@ -1378,16 +1364,59 @@ export default function HomePage23() {
         .slideshow__content .custom-container {
           padding-top: 140px !important; /* Desplaza el bloque hacia abajo en desktop */
         }
-        /* Padding 15% a cada lado del hero banner en PC */
-        #shopify-section-template--27304712470809__slideshow_FBfKC8 {
-          padding-left: 15% !important;
-          padding-right: 15% !important;
+      }
+      /* Padding 5% a cada lado solo en monitores ultrawide (>1920px) */
+      @media (min-width: 1921px) {
+        /* Aplicar a todas las secciones de la plantilla */
+        #shopify-section-template--27304712470809__slideshow_FBfKC8,
+        #shopify-section-template--27304712470809__collection_list_slider_YAxwGw,
+        #shopify-section-template--27304712470809__featured_product_38eqkx,
+        #shopify-section-template--27304712470809__multimedia_collage_LJJ4Cn,
+        #shopify-section-template--27304712470809__featured_collection_aJrjzW,
+        #shopify-section-template--27304712470809__split_hero_HFdBqn,
+        #shopify-section-template--27304712470809__media_columns_columns_pb9XE3,
+        #shopify-section-template--27304712470809__product_columns_MJFLFz,
+        #shopify-section-template--27304712470809__media_with_text_dJBqha,
+        #shopify-section-template--27304712470809__media_columns_slider_zMFEzH,
+        #shopify-section-template--27304712470809__bundle_products_3zgi3T,
+        #shopify-section-template--27304712470809__flexible_columns_8WJ3XM,
+        #shopify-section-template--27304712470809__horizontal_testimonials_ficPn4,
+        #shopify-section-template--27304712470809__featured_blog_posts_slider_NPkjze,
+        #shopify-section-template--27304712470809__store_locator_GQ6jFw,
+        #shopify-section-template--27304712470809__editorial_banner_HqHd6i {
+          padding-left: 5% !important;
+          padding-right: 5% !important;
           box-sizing: border-box !important;
         }
+        /* Hero banner specific overrides */
         #shopify-section-template--27304712470809__slideshow_FBfKC8 .slideshow,
         #shopify-section-template--27304712470809__slideshow_FBfKC8 custom-slideshow,
         #shopify-section-template--27304712470809__slideshow_FBfKC8 .swiper-container,
         #shopify-section-template--27304712470809__slideshow_FBfKC8 parallax-element-section {
+          width: 100% !important;
+          border-radius: 16px !important;
+          overflow: hidden !important;
+        }
+        /* Promo banner (split-hero) specific overrides */
+        #shopify-section-template--27304712470809__split_hero_HFdBqn split-hero,
+        #shopify-section-template--27304712470809__split_hero_HFdBqn .split-hero {
+          width: 100% !important;
+          border-radius: 16px !important;
+          overflow: hidden !important;
+        }
+        @media (min-width: 768px) {
+          #shopify-section-template--27304712470809__split_hero_HFdBqn .split-hero .split-hero-column.split-hero-column__media {
+            min-width: 100% !important;
+            max-width: 100% !important;
+          }
+          #shopify-section-template--27304712470809__split_hero_HFdBqn .split-hero .split-hero-column__media.is-collapsed {
+            min-width: 50% !important;
+            max-width: 50% !important;
+          }
+        }
+        /* Mega Pack (bundle products) specific overrides */
+        #shopify-section-template--27304712470809__bundle_products_3zgi3T bundle-products,
+        #shopify-section-template--27304712470809__bundle_products_3zgi3T .bundle-products {
           width: 100% !important;
           border-radius: 16px !important;
           overflow: hidden !important;
@@ -1399,26 +1428,22 @@ export default function HomePage23() {
         }
       }
       /* ── HEADER THREE-STATE STYLING (GLASSMORPHISM ONLY ON SCROLLED STICKY) ── */
-      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Fondo blanco, arriba de la portada */
+      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
       custom-header.header-element[data-scroll="false"],
       .header[data-id="sections--27304712208665__header"][data-scroll="false"] {
-        position: relative !important;
-        background: #ffffff !important;
-        background-color: #ffffff !important;
+        background: transparent !important;
+        background-color: transparent !important;
         background-image: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         border: none !important;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-      }
-      
-      /* Asegurar que el logo se muestre siempre en móvil y PC */
-      custom-header .logo-wrapper {
-        display: block !important;
-      }
+        border-bottom: none !important;
+        box-shadow: none !important;
+      }      /* Ocultar logo en móvil cuando no hay scroll y mostrarlo solo en el sticky (data-scroll="true") */
       @media (max-width: 1023px) {
-        custom-header[data-scroll="false"] .logo-wrapper,
+        custom-header[data-scroll="false"] .logo-wrapper {
+          display: none !important;
+        }
         custom-header[data-scroll="true"] .logo-wrapper {
           display: block !important;
         }
@@ -1696,95 +1721,38 @@ export default function HomePage23() {
         transform: scale(1.05) !important;
       }
 
-/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphic sutil, fondo blanco */
-      /* ESTILOS DE COLOR PARA MÓVIL (cuando data-scroll="true", se vuelve rosa/glassmorphic sutil y letras/logo negros) */
-      @media (max-width: 1023px) {
-        custom-header.header-element[data-scroll="true"],
-        .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
-          background: #fdf2f8 !important;
-          background-color: #fdf2f8 !important;
-          background-image: none !important;
-          backdrop-filter: blur(12px) saturate(140%) !important;
-          -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
-          border: none !important;
-          border-bottom: none !important;
-          box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
-        }
-        custom-header[data-scroll="true"] .logo-wrapper img,
-        .header[data-scroll="true"] .logo-wrapper img {
-          filter: brightness(0) !important;
-        }
-        custom-header[data-scroll="true"] a[href*="/productos"],
-        custom-header[data-scroll="true"] a[href*="/paquetes"],
-        .header[data-scroll="true"] a[href*="/productos"],
-        .header[data-scroll="true"] a[href*="/paquetes"] {
-          color: #000000 !important;
-          border-color: #000000 !important;
-        }
-        custom-header[data-scroll="true"] a[href*="/productos"] *,
-        custom-header[data-scroll="true"] a[href*="/paquetes"] *,
-        .header[data-scroll="true"] a[href*="/productos"] *,
-        .header[data-scroll="true"] a[href*="/paquetes"] * {
-          color: #000000 !important;
-          fill: #000000 !important;
-          stroke: #000000 !important;
-        }
+/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
+      custom-header.header-element[data-scroll="true"],
+      .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
+        background: #fdf2f8 !important;
+        background-color: #fdf2f8 !important;
+        background-image: none !important;
+        backdrop-filter: blur(12px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+        border: none !important;
+        border-bottom: none !important;
+        box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
       }
 
-      /* ESTILOS DE COLOR PARA PC (todo en rosa pastel #e396bf y logo rosa, sobre fondo blanco, en ambos estados) */
-      @media (min-width: 1024px) {
-        custom-header.header-element[data-scroll="true"],
-        .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
-          background: #ffffff !important;
-          background-color: #ffffff !important;
-          background-image: none !important;
-          backdrop-filter: blur(12px) saturate(140%) !important;
-          -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
-          border: none !important;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
-        }
-        custom-header.header-element,
-        .header[data-id="sections--27304712208665__header"] {
-          --header-color-text: 227, 150, 191 !important;
-          --color-links: 227, 150, 191 !important;
-          --color-links-hover: 192, 84, 122 !important;
-          --color-accent: 227, 150, 191 !important;
-          color: #e396bf !important;
-        }
-        custom-header.header-element .logo-wrapper img,
-        .header[data-id="sections--27304712208665__header"] .logo-wrapper img {
-          filter: brightness(0) saturate(100%) invert(72%) sepia(21%) saturate(1210%) hue-rotate(293deg) brightness(97%) contrast(92%) !important;
-        }
-        custom-header.header-element a[href*="/productos"],
-        custom-header.header-element a[href*="/paquetes"],
-        .header[data-id="sections--27304712208665__header"] a[href*="/productos"],
-        .header[data-id="sections--27304712208665__header"] a[href*="/paquetes"] {
-          color: #e396bf !important;
-          border-color: #e396bf !important;
-        }
-        custom-header.header-element a[href*="/productos"] *,
-        custom-header.header-element a[href*="/paquetes"] *,
-        .header[data-id="sections--27304712208665__header"] a[href*="/productos"] *,
-        .header[data-id="sections--27304712208665__header"] a[href*="/paquetes"] * {
-          color: #e396bf !important;
-          fill: #e396bf !important;
-          stroke: #e396bf !important;
-        }
-        custom-header.header-element a,
-        .header[data-id="sections--27304712208665__header"] a {
-          color: #e396bf !important;
-        }
-        custom-header.header-element a *,
-        .header[data-id="sections--27304712208665__header"] a * {
-          color: #e396bf !important;
-          fill: #e396bf !important;
-          stroke: #e396bf !important;
-        }
-        custom-header.header-element .menu-hamburger-button .line,
-        .header[data-id="sections--27304712208665__header"] .menu-hamburger-button .line {
-          background-color: #e396bf !important;
-        }
+      /* Logo and UNIDAD/PAQUETE buttons black only when scrolled navbar appears */
+      custom-header[data-scroll="true"] .logo-wrapper img,
+      .header[data-scroll="true"] .logo-wrapper img {
+        filter: brightness(0) !important;
+      }
+      custom-header[data-scroll="true"] a[href*="/productos"],
+      custom-header[data-scroll="true"] a[href*="/paquetes"],
+      .header[data-scroll="true"] a[href*="/productos"],
+      .header[data-scroll="true"] a[href*="/paquetes"] {
+        color: #000000 !important;
+        border-color: #000000 !important;
+      }
+      custom-header[data-scroll="true"] a[href*="/productos"] *,
+      custom-header[data-scroll="true"] a[href*="/paquetes"] *,
+      .header[data-scroll="true"] a[href*="/productos"] *,
+      .header[data-scroll="true"] a[href*="/paquetes"] * {
+        color: #000000 !important;
+        fill: #000000 !important;
+        stroke: #000000 !important;
       }
 
       /* ==========================================
@@ -5620,8 +5588,8 @@ export default function HomePage23() {
           100% { transform: scale(1); opacity: 0.9; }
         }
         .splash-logo {
-          width: 250px;
-          max-width: 80%;
+          width: 750px;
+          max-width: 90%;
           animation: pulseLogo 2s infinite ease-in-out;
           filter: drop-shadow(0 4px 15px rgba(255,255,255,0.4));
         }
@@ -5838,7 +5806,7 @@ export default function HomePage23() {
       `}</style>
 
       <div className={`splash-screen ${!showSplash ? 'hidden' : ''}`}>
-        <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/1779087644982-pegada-1779087644061.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=PPeyi%2BvN0%2B62TLw7qyFMesh00OphZaWOazNAsjn90cANf5ob9tPgJu1KOv8ICB%2FwEfnyhPGFRdqyk%2FUY7ZyuNnWuQLDi9cFL3ntbzNVJkYHj0HEibiG%2FpQ7yUDelDFO8onHfWEZtrRSWbiEx%2FN9eTwvtLrSNoBbKnunkQrS98HqLEn%2BtZPaG4O8l%2Frf%2BR61G6Cd3y0k9gtTHoas2CDDR91hQQZ32eInhg6mMwUraWyKuTX%2FcbeQZnxcNWJrLAEwY0Lyyv6SalTqU4gtZB%2FP83u4Vvo%2FBagcexcn5T6H910iFP4QEiDX%2BiFK9iLZtbZh0l2%2FmT4opjJqhPCjuQKcxXg%3D%3D" alt="Cargando Kevin & Coco..." className="splash-logo" />
+        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783549408269-pegada-1783549405090.png" alt="Cargando Kevin & Coco..." className="splash-logo" />
       </div>
 
       <div

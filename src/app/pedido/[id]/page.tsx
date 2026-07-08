@@ -1443,8 +1443,13 @@ export default function PedidoPage() {
             </div>
             <div className="flex justify-between">
               <span>Envío</span>
-              <span className="font-bold text-green-600">{order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'A coordinar'}</span>
+              <span className="font-bold text-orange-600">{order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'Pagar contraentrega'}</span>
             </div>
+            {order.SHIPPINGCOST === 0 && order.SHIPPINGAGENCY !== 'RETIRO EN TIENDA' && (
+              <div className="text-xs text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mt-1">
+                ℹ️ El costo de envío se paga al recibir el pedido (contraentrega). No se cobra al momento de la compra.
+              </div>
+            )}
             {order.DISCOUNT && order.DISCOUNT > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-emerald-600 flex items-center gap-1">

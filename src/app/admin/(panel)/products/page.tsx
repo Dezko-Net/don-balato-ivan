@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, Fragment, useRef } from 'react';
 import EpicPagination from '@/components/admin/EpicPagination';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
@@ -97,6 +98,8 @@ export default function ProductsPage() {
   const [brokenOnly, setBrokenOnly] = useState(false);
   const [syncingImages, setSyncingImages] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ checked: 0, broken: 0 });
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [pdfExportProgress, setPdfExportProgress] = useState({ current: 0, total: 0 });
 
   const getModalImageUrls = useCallback((data?: Partial<ProductModalData> | null) => {
     return [data?.IMAGEURL, data?.IMAGEURL2, data?.IMAGEURL3, (data as any)?.IMAGEURL4]
@@ -1266,13 +1269,169 @@ export default function ProductsPage() {
       'Margen %': p.COST && p.PRICE ? Math.round(((p.PRICE - p.COST) / p.PRICE) * 100) : '',
       'Precio Mayorista': p.WHOLESALEPRICE || 0,
       'Mín. Mayorista': p.WHOLESALEMINQUANTITY || 0,
-      Vendidos: p.SOLDQUANTITY || 0,
+      'Vendidos': p.SOLDQUANTITY || 0,
+      'Sección': getSection(p)?.section ?? '',
+      'Góndola': getSection(p)?.gondola ?? '',
       'URL Imagen': p.IMAGEURL || '',
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Productos');
     XLSX.writeFile(wb, `productos_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
+  const fetchAllProductsForExport = async (): Promise<Product[]> => {
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
+    const all: Product[] = [];
+    let lastId: string | null = null;
+    const limit = 100;
+
+    while (true) {
+      const queries: any[] = [Query.limit(limit), Query.orderAsc('$id')];
+      if (lastId) queries.push(Query.cursorAfter(lastId));
+      const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+      if (res.documents.length === 0) break;
+      all.push(...(res.documents as unknown as Product[]));
+      lastId = res.documents[res.documents.length - 1].$id;
+      if (res.documents.length < limit) break;
+    }
+    return all;
+  };
+
+  const exportInventoryPDF = async () => {
+    setIsExportingPDF(true);
+    setPdfExportProgress({ current: 0, total: 0 });
+
+    let productsToExport: Product[] = [];
+    try {
+      productsToExport = await fetchAllProductsForExport();
+    } catch (e: any) {
+      alert('Error al obtener todos los productos: ' + e.message);
+      setIsExportingPDF(false);
+      return;
+    }
+
+    if (productsToExport.length === 0) {
+      alert('No hay productos para exportar');
+      setIsExportingPDF(false);
+      return;
+    }
+
+    setPdfExportProgress({ current: 0, total: productsToExport.length });
+
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
+      const cols = 5;
+      const rows = 10;
+      const cellWidth = (pageWidth - 2 * margin) / cols;
+      const cellHeight = (pageHeight - 2 * margin) / rows;
+      const textBlockHeight = 9; // space reserved for SKU + stock lines
+      const imgSize = Math.min(cellWidth - 4, cellHeight - textBlockHeight - 2);
+      const imgOffsetX = (cellWidth - imgSize) / 2;
+
+      let itemsOnPage = 0;
+
+      // Pre-fetch images in batches to speed things up while keeping memory reasonable
+      const BATCH_SIZE = 25;
+      for (let batchStart = 0; batchStart < productsToExport.length; batchStart += BATCH_SIZE) {
+        const batch = productsToExport.slice(batchStart, batchStart + BATCH_SIZE);
+        const batchImages = await Promise.all(batch.map(async p => {
+          const imgUrl = p.IMAGEURL || p.IMAGEURL2 || p.IMAGEURL3;
+          if (!imgUrl) return null;
+          try {
+            return await loadImageAsBase64(imgUrl);
+          } catch {
+            return null;
+          }
+        }));
+
+        for (let j = 0; j < batch.length; j++) {
+          const p = batch[j];
+          const imgData = batchImages[j];
+          const sku = getSku(p);
+
+          if (itemsOnPage >= cols * rows) {
+            pdf.addPage();
+            itemsOnPage = 0;
+          }
+
+          const col = itemsOnPage % cols;
+          const row = Math.floor(itemsOnPage / cols);
+          const x = margin + col * cellWidth;
+          const y = margin + row * cellHeight;
+
+          // Draw cell border
+          pdf.setDrawColor(200);
+          pdf.setLineWidth(0.1);
+          pdf.rect(x, y, cellWidth, cellHeight);
+
+          const imgX = x + imgOffsetX;
+          const imgY = y + 2;
+
+          if (imgData) {
+            try {
+              const format = imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+              pdf.addImage(imgData, format, imgX, imgY, imgSize, imgSize);
+            } catch {
+              pdf.setFillColor('#f0f0f0');
+              pdf.rect(imgX, imgY, imgSize, imgSize, 'F');
+              pdf.setFontSize(7);
+              pdf.setTextColor('#969696');
+              pdf.text('Sin imagen', x + cellWidth / 2, imgY + imgSize / 2, { align: 'center' });
+            }
+          } else {
+            pdf.setFillColor('#f0f0f0');
+            pdf.rect(imgX, imgY, imgSize, imgSize, 'F');
+            pdf.setFontSize(7);
+            pdf.setTextColor('#969696');
+            pdf.text('Sin imagen', x + cellWidth / 2, imgY + imgSize / 2, { align: 'center' });
+          }
+
+          // Add SKU below image
+          const textY = imgY + imgSize + 3.5;
+          pdf.setFontSize(6.5);
+          pdf.setTextColor('#000000');
+          pdf.text(String(sku || p.$id), x + cellWidth / 2, textY, { align: 'center', maxWidth: cellWidth - 2 });
+
+          // Add stock indicator
+          const stock = p.STOCK ?? 0;
+          pdf.setFontSize(6);
+          if (stock === 0) {
+            pdf.setTextColor('#ff0000');
+            pdf.text('SIN STOCK', x + cellWidth / 2, textY + 3.5, { align: 'center' });
+          } else if (stock < 10) {
+            pdf.setTextColor('#ffa500');
+            pdf.text(`Stock: ${stock}`, x + cellWidth / 2, textY + 3.5, { align: 'center' });
+          } else {
+            pdf.setTextColor('#009600');
+            pdf.text(`Stock: ${stock}`, x + cellWidth / 2, textY + 3.5, { align: 'center' });
+          }
+
+          itemsOnPage++;
+        }
+
+        setPdfExportProgress({ current: Math.min(batchStart + BATCH_SIZE, productsToExport.length), total: productsToExport.length });
+      }
+
+      pdf.save(`inventario_imagenes_${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch (e: any) {
+      alert('Error al generar el PDF: ' + e.message);
+    } finally {
+      setIsExportingPDF(false);
+      setPdfExportProgress({ current: 0, total: 0 });
+    }
+  };
+
+  const loadImageAsBase64 = async (url: string): Promise<string> => {
+    const res = await fetch(`/api/admin/proxy-image?url=${encodeURIComponent(url)}`);
+    if (!res.ok) throw new Error('Proxy fetch failed');
+    const data = await res.json();
+    if (!data.dataUrl) throw new Error('No dataUrl in response');
+    return data.dataUrl;
   };
 
   const toggleSort = (key: typeof sort.key) =>
@@ -1914,6 +2073,18 @@ export default function ProductsPage() {
         </button>
         <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
           <Download className="w-4 h-4" />XLSX
+        </button>
+        <button onClick={exportInventoryPDF} disabled={isExportingPDF} className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 border border-purple-200 text-purple-700 rounded-xl text-sm font-medium hover:bg-purple-100 transition disabled:opacity-50" title="Exportar TODO el inventario con imágenes (5x10 por hoja)">
+          {isExportingPDF ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {pdfExportProgress.total > 0 ? `${pdfExportProgress.current}/${pdfExportProgress.total}` : 'Generando...'}
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" /> PDF Imágenes
+            </>
+          )}
         </button>
         <button id="btn-export-shopify" onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border border-indigo-200 text-gray-900 rounded-xl text-sm font-medium hover:bg-gray-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
           <Download className="w-4 h-4" /> Shopify CSV

@@ -28,10 +28,10 @@ interface SavedAddress { id: string; alias: string; name: string; phone: string;
 
 // Fallback agencies if API fails
 const FALLBACK_AGENCIES: AgencyOption[] = [
-  { name: 'STARKEN', color: '#1a7f37', bg: '#e6f4ea', desc: 'Envío a coordinar tras confirmar', logo: '', active: true },
-  { name: 'BLUEXPRESS', color: '#1558b0', bg: '#e8f0fe', desc: 'Envío a coordinar tras confirmar', logo: '', active: true },
-  { name: 'VARMONTT', color: '#c62828', bg: '#fce8e6', desc: 'Envío a coordinar tras confirmar', logo: '', active: true },
-  { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal', logo: '', active: true },
+  { name: 'STARKEN', color: '#1a7f37', bg: '#e6f4ea', desc: 'Envío se paga contraentrega al recibir', logo: '', active: true },
+  { name: 'BLUEXPRESS', color: '#1558b0', bg: '#e8f0fe', desc: 'Envío se paga contraentrega al recibir', logo: '', active: true },
+  { name: 'VARMONTT', color: '#c62828', bg: '#fce8e6', desc: 'Envío se paga contraentrega al recibir', logo: '', active: true },
+  { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal (sin costo de envío)', logo: '', active: true },
 ];
 
 const PINK = '#e396bf'; const PINK_LIGHT = '#f5a8cf'; const PINK_BG = '#fdf2f8'; const FF = '"DM Sans", system-ui, sans-serif';
@@ -1376,9 +1376,12 @@ function CheckoutInner() {
                         <span style={{ color: '#00a650', fontWeight: 700, fontFamily: FF }}>-{formatPrice(couponDiscount)}</span>
                       </div>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, alignItems: 'center' }}>
                       <span style={{ color: '#9ca3af', fontFamily: FF }}>Envío</span>
-                      <span style={{ color: '#00a650', fontWeight: 600, fontSize: 11, fontFamily: FF }}>A coordinar</span>
+                      <span style={{ color: '#e65c00', fontWeight: 700, fontSize: 11, fontFamily: FF }}>Pagar contraentrega</span>
+                    </div>
+                    <div style={{ marginTop: 4, padding: '6px 10px', borderRadius: 8, background: '#fff3e0', border: '1px solid #ffe0b2', fontSize: 10, color: '#e65c00', fontFamily: FF, fontWeight: 600, lineHeight: 1.4 }}>
+                      ℹ️ El costo de envío se paga al recibir el pedido (contraentrega). No se cobra al momento de la compra.
                     </div>
                   </div>
                 </div>
@@ -1530,9 +1533,12 @@ function CheckoutInner() {
                   <Truck size={32} color={PINK} strokeWidth={2.5} />
                 </div>
                 <h3 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 800, color: '#111', fontFamily: FF, lineHeight: 1.2 }}>¿Por dónde enviamos tu pedido? 📦</h3>
-                <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280', fontFamily: FF, lineHeight: 1.5 }}>
+                <p style={{ margin: '0 0 12px', fontSize: 14, color: '#6b7280', fontFamily: FF, lineHeight: 1.5 }}>
                   Selecciona la agencia de envíos de tu preferencia para continuar.
                 </p>
+                <div style={{ margin: '0 0 20px', padding: '10px 14px', borderRadius: 12, background: '#fff3e0', border: '1px solid #ffe0b2', fontSize: 12, color: '#e65c00', fontFamily: FF, fontWeight: 600, lineHeight: 1.5, textAlign: 'center' }}>
+                  📦 El envío se paga contraentrega al recibir tu pedido
+                </div>
                 <div className="ck-modal-agency-grid">
                   {agencies.map(a => (
                     <button

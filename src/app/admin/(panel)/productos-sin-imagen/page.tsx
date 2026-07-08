@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { Query } from 'appwrite';
 import { Product } from '@/types';
+import { getSkuFromFeatures } from '@/lib/product-features';
 import { ImageOff, Loader2, RefreshCw, Search, Upload, X, ExternalLink, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
@@ -51,13 +53,20 @@ export default function ProductosSinImagenPage() {
       const allProducts: ProductWithStatus[] = [];
       for (const col of collections) {
         try {
-          const res = await databases.listDocuments(databaseId, col.id, []);
-          for (const doc of res.documents) {
-            allProducts.push({
-              ...doc,
-              imageStatus: 'checking',
-              collection: col.name,
-            } as ProductWithStatus);
+          let cursor: string | undefined;
+          while (true) {
+            const queries: any[] = [Query.limit(100)];
+            if (cursor) queries.push(Query.cursorAfter(cursor));
+            const res = await databases.listDocuments(databaseId, col.id, queries);
+            for (const doc of res.documents) {
+              allProducts.push({
+                ...doc,
+                imageStatus: 'checking',
+                collection: col.name,
+              } as unknown as ProductWithStatus);
+            }
+            if (res.documents.length < 100) break;
+            cursor = res.documents[res.documents.length - 1].$id;
           }
         } catch (e) {
           // Collection might not exist or be empty
@@ -295,7 +304,10 @@ export default function ProductosSinImagenPage() {
                   {p.NAME || 'Sin nombre'}
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {p.SKU && <span style={{ fontSize: 11, color: '#888', background: '#f5f5f5', padding: '2px 8px', borderRadius: 6 }}>{p.SKU}</span>}
+                  {(() => {
+                    const sku = p.SKU || getSkuFromFeatures(p.FEATURES, p.TAGS);
+                    return sku ? <span style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a', background: '#f0f0f0', padding: '2px 8px', borderRadius: 6 }}>{sku}</span> : null;
+                  })()}
                   <span style={{ fontSize: 11, color: '#aaa' }}>{p.collection}</span>
                   <span style={{ fontSize: 11, color: '#888' }}>${p.PRICE?.toLocaleString('es-CL')}</span>
                 </div>

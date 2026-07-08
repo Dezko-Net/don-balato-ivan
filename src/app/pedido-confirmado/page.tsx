@@ -472,10 +472,15 @@ function ConfirmadoInner() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#6b7280' }}>
               <span>Envío</span>
-              <span style={{ color: order.SHIPPINGCOST > 0 ? '#111' : '#16a34a', fontWeight: 600 }}>
-                {order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'A coordinar'}
+              <span style={{ color: order.SHIPPINGCOST > 0 ? '#111' : '#e65c00', fontWeight: 600 }}>
+                {order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'Pagar contraentrega'}
               </span>
             </div>
+            {order.SHIPPINGCOST === 0 && order.SHIPPINGAGENCY !== 'RETIRO EN TIENDA' && (
+              <div style={{ fontSize: 11, color: '#e65c00', background: '#fff3e0', border: '1px solid #ffe0b2', borderRadius: 8, padding: '6px 10px', marginTop: 4, fontWeight: 600 }}>
+                ℹ️ El costo de envío se paga al recibir el pedido (contraentrega). No se cobra al momento de la compra.
+              </div>
+            )}
             {order.DISCOUNT && order.DISCOUNT > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#e396bf' }}>
                 <span>Descuento {order.COUPONCODE ? `(${order.COUPONCODE})` : ''}</span>
