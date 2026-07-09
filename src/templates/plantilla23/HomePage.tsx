@@ -3756,66 +3756,6 @@ export default function HomePage23() {
       observer.observe(megamenuWrapper, { childList: true, subtree: true });
     }
 
-    // ── Inject dynamic categories into collection-list section below hero banner ──
-    const collectionList = root.querySelector('collection-list.collection-list');
-    if (collectionList) {
-      const allCats = [...categories]
-        .map(cat => ({
-          ...cat,
-          prodCount: catProductCount[cat.$id] || 0
-        }))
-        .sort((a, b) => b.prodCount - a.prodCount);
-
-      const swiperContainer = collectionList.querySelector('.swiper-container');
-      const swiperWrapper = collectionList.querySelector('.swiper-wrapper');
-      if (swiperContainer && swiperWrapper) {
-        swiperWrapper.innerHTML = '';
-        swiperContainer.setAttribute('data-items-total', String(allCats.length));
-
-        allCats.forEach((cat, idx) => {
-          const catLink = `/productos?categoria=${encodeURIComponent(cat.name)}`;
-          // Use category iconUrl as card image
-          const catImg = cat.iconUrl || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
-          const delay = (idx + 1) * 100;
-
-          const slide = document.createElement('div');
-          slide.className = 'swiper-slide w-full h-auto animation-element fade-in';
-          slide.setAttribute('style', `animation-delay: ${delay}ms`);
-          slide.innerHTML = `
-<div class="collection-card overflow-hidden h-full border-current relative w-full fade-in animation-element animation-delay-0">
-    <a href="${catLink}" aria-label="${cat.name}" title="${cat.name}" class="link link-image hover-only block">
-        <div class="collection-card__image-wrapper relative overflow-hidden hover-zoom-image-wrapper" data-ratio="square">
-            <div class="collection-card__image w-full h-full absolute top-0 left-0 transition-all duration-300 ease-in-out transform img-blur placeholder">
-                <hover-zoom-image class="w-full h-full">
-                    <img src="${catImg}" alt="${cat.name}" loading="lazy" sizes="100vw" class="object-cover w-full h-full pointer-events-none">
-                </hover-zoom-image>
-            </div>
-            <div class="overlay absolute top-0 left-0 w-full h-full transition-opacity duration-300 ease-in-out"></div>
-        </div>
-    </a>
-    <div class="collection-card__content z-10">
-        <a href="${catLink}" title="${cat.name}" aria-label="${cat.name}" class="transition-all duration-300 ease-in-out h-full w-full link">
-            <div class="py-5 pr-2 relative">
-                <h6 class="heading transition-all duration-100 ease-in-out">
-                    <span class="link-hover-animation">${cat.name}</span>
-                </h6>
-            </div>
-        </a>
-    </div>
-</div>
-          `;
-          swiperWrapper.appendChild(slide);
-        });
-        setTimeout(() => {
-          initSwiperIfField(swiperContainer);
-        }, 150);
-      }
-    }
-
-    // ── Inject dynamic products into Featured Collections tabs ──
-    if (products.length > 0) {
-      const formatCLP = (val: number) => '$' + Math.round(val).toLocaleString('es-CL');
-
       function initSwiperIfField(swiperContainer: any) {
         if (!swiperContainer || swiperContainer.swiper) return;
         const SwiperClass = (window as any).Swiper;
@@ -3901,6 +3841,66 @@ export default function HomePage23() {
           console.warn('Error initializing swiper manually:', err);
         }
       }
+    // ── Inject dynamic categories into collection-list section below hero banner ──
+    const collectionList = root.querySelector('collection-list.collection-list');
+    if (collectionList) {
+      const allCats = [...categories]
+        .map(cat => ({
+          ...cat,
+          prodCount: catProductCount[cat.$id] || 0
+        }))
+        .sort((a, b) => b.prodCount - a.prodCount);
+
+      const swiperContainer = collectionList.querySelector('.swiper-container');
+      const swiperWrapper = collectionList.querySelector('.swiper-wrapper');
+      if (swiperContainer && swiperWrapper) {
+        swiperWrapper.innerHTML = '';
+        swiperContainer.setAttribute('data-items-total', String(allCats.length));
+
+        allCats.forEach((cat, idx) => {
+          const catLink = `/productos?categoria=${encodeURIComponent(cat.name)}`;
+          // Use category iconUrl as card image
+          const catImg = cat.iconUrl || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+          const delay = (idx + 1) * 100;
+
+          const slide = document.createElement('div');
+          slide.className = 'swiper-slide w-full h-auto animation-element fade-in';
+          slide.setAttribute('style', `animation-delay: ${delay}ms`);
+          slide.innerHTML = `
+<div class="collection-card overflow-hidden h-full border-current relative w-full fade-in animation-element animation-delay-0">
+    <a href="${catLink}" aria-label="${cat.name}" title="${cat.name}" class="link link-image hover-only block">
+        <div class="collection-card__image-wrapper relative overflow-hidden hover-zoom-image-wrapper" data-ratio="square">
+            <div class="collection-card__image w-full h-full absolute top-0 left-0 transition-all duration-300 ease-in-out transform img-blur placeholder">
+                <hover-zoom-image class="w-full h-full">
+                    <img src="${catImg}" alt="${cat.name}" loading="lazy" sizes="100vw" class="object-cover w-full h-full pointer-events-none">
+                </hover-zoom-image>
+            </div>
+            <div class="overlay absolute top-0 left-0 w-full h-full transition-opacity duration-300 ease-in-out"></div>
+        </div>
+    </a>
+    <div class="collection-card__content z-10">
+        <a href="${catLink}" title="${cat.name}" aria-label="${cat.name}" class="transition-all duration-300 ease-in-out h-full w-full link">
+            <div class="py-5 pr-2 relative">
+                <h6 class="heading transition-all duration-100 ease-in-out">
+                    <span class="link-hover-animation">${cat.name}</span>
+                </h6>
+            </div>
+        </a>
+    </div>
+</div>
+          `;
+          swiperWrapper.appendChild(slide);
+        });
+        setTimeout(() => {
+          initSwiperIfField(swiperContainer);
+        }, 150);
+      }
+    }
+
+    // ── Inject dynamic products into Featured Collections tabs ──
+    if (products.length > 0) {
+      const formatCLP = (val: number) => '$' + Math.round(val).toLocaleString('es-CL');
+
 
       const createCardHtml = (product: Product) => {
         const pLink = `/productos/${product.$id}`;
