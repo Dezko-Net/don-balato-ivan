@@ -53,8 +53,12 @@ export async function POST(req: NextRequest) {
     // Add replacement items
     parsedItems.push(...replacementItems);
 
-    // Recalculate totals
-    const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
+    // Recalculate totals (ignore items that were replaced, only sum active items and the new Canje replacements)
+    const newSubtotal = parsedItems.reduce((s, it) => {
+      // Si el item fue reemplazado y NO es el nuevo item de canje, no lo sumamos al nuevo subtotal
+      if (it.replaced && !it.isCanjeReplacement) return s;
+      return s + ((it.price || 0) * (it.qty || 1));
+    }, 0);
     const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || order.DISCOUNT || 0);
 
     // 4. Update the order

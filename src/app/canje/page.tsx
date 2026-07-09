@@ -277,7 +277,7 @@ export default function CanjePage() {
                       <h3 className="font-bold text-gray-900 text-xs leading-snug line-clamp-2 mb-2 min-h-[32px]">{p.NAME}</h3>
                       <div className="flex items-baseline gap-2 mb-3">
                         <span className="font-black text-gray-950 text-base">{fmt(Math.round((p.PRICE || 0) * 0.8))}</span>
-                        <span className="text-[10px] text-gray-400 line-through">{fmt(p.PRICE)}</span>
+                        <span className="text-[11px] text-gray-400 line-through font-medium">{fmt(p.PRICE)}</span>
                       </div>
                       <button
                         onClick={() => addToCart(p)}
@@ -315,12 +315,15 @@ export default function CanjePage() {
                         <img src={it.img} alt={it.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-gray-900 truncate">{it.name}</p>
-                          <p className="text-xs text-gray-500">{fmt(it.price)} c/u</p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-baseline gap-2 mt-0.5">
+                            <span className="text-xs font-bold text-pink-600">{fmt(it.price)} c/u</span>
+                            <span className="text-[10px] text-gray-400 line-through">{fmt(it.originalPrice)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5">
                             <button onClick={() => updateQty(it.productId, -1)} className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition">-</button>
                             <span className="text-xs font-bold w-6 text-center">{it.qty}</span>
                             <button onClick={() => updateQty(it.productId, 1)} className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition">+</button>
-                            <button onClick={() => removeFromCart(it.productId)} className="ml-auto text-red-400 hover:text-red-600 text-xs">Quitar</button>
+                            <button onClick={() => removeFromCart(it.productId)} className="ml-auto text-red-400 hover:text-red-600 text-[11px]">Quitar</button>
                           </div>
                         </div>
                         <span className="text-sm font-black text-gray-900 flex-shrink-0">{fmt(it.price * it.qty)}</span>
@@ -333,17 +336,21 @@ export default function CanjePage() {
                       <span className="text-gray-500">Total canje</span>
                       <span className="font-black text-gray-900">{fmt(cartTotal)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm text-green-600 font-bold">
+                      <span>Ahorro total vs precio base</span>
+                      <span>-{fmt(cart.reduce((s, it) => s + (it.originalPrice - it.price) * it.qty, 0))}</span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-4 border-t border-gray-100 pt-3">
                       <span className="text-gray-500">Crédito disponible</span>
                       <span className="font-bold text-gray-700">{fmt(creditAmount)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Margen extra</span>
+                      <span className="text-gray-500">Margen extra tolerado</span>
                       <span className="font-bold text-gray-500">{fmt(500)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Límite máximo</span>
-                      <span className="font-bold text-gray-700">{fmt(creditWithMargin)}</span>
+                    <div className="flex justify-between text-sm bg-gray-50 p-2 rounded-lg">
+                      <span className="text-gray-700 font-bold">Límite máximo</span>
+                      <span className="font-black text-pink-600">{fmt(creditWithMargin)}</span>
                     </div>
                     <div className="border-t border-gray-100 pt-3">
                       {isOverLimit ? (
