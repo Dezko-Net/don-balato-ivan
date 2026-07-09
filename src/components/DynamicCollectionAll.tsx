@@ -26,6 +26,6 @@ export default function DynamicCollectionAll({ catalogMode, initialBrand }: { ca
     if (template === 5) return <CollectionAll5 initialBrand={initialBrand} />;
   }
   
-  // Default to plantilla 1
-  return <CollectionAll1 catalogMode={catalogMode} initialBrand={initialBrand} />;
+  // Default to plantilla 1 (no brand filter: plantilla 1 doesn't support it yet)
+  return <CollectionAll1 catalogMode={catalogMode} />;
 }
