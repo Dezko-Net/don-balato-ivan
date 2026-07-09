@@ -1524,7 +1524,72 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     // 13b. Sección 1 de imagen con badge (custom_section_9gHFi9) → imagen 1 del producto
     const imgBadgeSection = root.querySelector('#shopify-section-template--20816638607498__custom_section_9gHFi9') ||
       Array.from(root.querySelectorAll('[id*="custom_section"]')).find(el => el.querySelector('.image-with-badges'));
-    if (imgBadgeSection && pImages && pImages.length > 0) {
+    
+    if (product?.SKU === 'PROMO1' && imgBadgeSection) {
+      const megaPackHtml = `
+<div class="promo1-mega-pack" style="padding: 40px 16px; background: #fff; text-align: center;">
+  <h2 style="font-size: 26px; font-weight: 900; color: #db2777; margin-bottom: 30px; line-height: 1.2;">🎁 Mega Pack Favoritos<br><span style="font-size: 16px; font-weight: 600; color: #666;">Incluye estos 10 productos en tu pedido</span></h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; max-width: 1200px; margin: 0 auto;">
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1307.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Base Raspberry Tart</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $2.760</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1636.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Iluminador Kevin&Coco</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $1.620</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/B10123A.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Polvo Suelto</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $1.620</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1328.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Paleta 4 Rubores</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $3.000</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1068.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Corrector e Iluminador</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $3.420</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1817.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Paleta Ghost Music</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $4.308</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC12823.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Toallitas Desmaquillantes</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $1.068</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/285850.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Set Brocha + Atomizador</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $2.160</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <div style="width:100%; aspect-ratio:1; background: #ffe4e6; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">✨</div>
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Brillos Labial 6 Colores x3</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Incluido</p>
+    </div>
+    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <div style="width:100%; aspect-ratio:1; background: #ffe4e6; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">💖</div>
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Brillos Love Color x4</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Incluido</p>
+    </div>
+  </div>
+</div>
+      `;
+      imgBadgeSection.outerHTML = megaPackHtml;
+      
+      // Also remove the second badge section for PROMO1
+      const imgBadgeSection2 = root.querySelector('#shopify-section-template--20816638607498__custom_section_WB3EgX');
+      if (imgBadgeSection2) imgBadgeSection2.remove();
+      
+    } else if (imgBadgeSection && pImages && pImages.length > 0) {
       const pName = product?.NAME || 'Producto';
       const pDesc = product?.DESCRIPTION || '';
       const descText = pDesc.replace(/<[^>]*>/g, '').trim().slice(0, 220);
@@ -1732,6 +1797,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         }
         #shopify-section-template--20816638607498__custom_section_4XBchF .separator__shape {
           background: rgba(255,255,255,0.5) !important;
+        }
+        @media (max-width: 768px) {
+          #shopify-section-template--20816638607498__custom_section_4XBchF p,
+          #shopify-section-template--20816638607498__custom_section_4XBchF span {
+             padding: 0 16px !important;
+          }
         }
       `;
       (root.querySelector('head') || document.head || root).appendChild(marqueeStyle);
