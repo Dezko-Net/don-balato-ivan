@@ -3,7 +3,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getServices, getAppwriteConfig, WHOLESALE_ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, MEDIA_BUCKET_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, WHOLESALE_ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 import { Query, ID } from '@/lib/appwrite';
 import {
   ArrowLeft, Package, User, MapPin, Clock, FileText,
@@ -448,6 +449,7 @@ export default function WholesaleOrderDetailPage() {
                 <img src={order.PAYMENTPROOFURL} alt="Comprobante de pago" className="w-full h-auto max-h-[75vh] object-contain rounded-2xl" />
               )}
             </div>
+          </div>
         );
       })()}
 

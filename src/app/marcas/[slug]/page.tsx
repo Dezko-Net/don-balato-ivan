@@ -1,8 +1,9 @@
 import DynamicCollectionAll from '@/components/DynamicCollectionAll';
 
-export default function MarcaPage({ params }: { params: { slug: string } }) {
+export default async function MarcaPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   let brandName = '';
-  switch (params.slug) {
+  switch (slug) {
     case 'kevin-coco':
       brandName = 'Kevin & Coco';
       break;
@@ -17,7 +18,7 @@ export default function MarcaPage({ params }: { params: { slug: string } }) {
       break;
     default:
       // If we don't know the slug, we can pass it as is, or fallback.
-      brandName = params.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      brandName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   return (
