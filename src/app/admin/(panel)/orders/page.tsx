@@ -7,6 +7,7 @@ import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTI
 import { Order, OrderStatus } from '@/types/admin';
 import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin, Calendar, Package, Copy, Image as ImageIcon, Loader2, Printer } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures } from '@/lib/product-features';
+import { generateOrderPdf } from '@/lib/generateOrderPdf';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
 
@@ -1792,8 +1793,22 @@ function OrdersContent() {
               {/* Footer action button */}
               <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-center gap-3">
                 <button
+                  onClick={() => {
+                    try {
+                      const items = JSON.parse(order.ITEMS || '[]');
+                      generateOrderPdf(order as any, items as any);
+                    } catch (e) {
+                      console.error('Error generating PDF', e);
+                    }
+                  }}
+                  className="flex-1 py-3.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-bold transition flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <Printer size={16} />
+                  PDF
+                </button>
+                <button
                   onClick={() => window.location.href = `/admin/orders/${order.$id}`}
-                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/10 hover:scale-[1.01] active:scale-95"
+                  className="flex-[2] py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/10 hover:scale-[1.01] active:scale-95"
                 >
                   <Eye size={16} />
                   Ver Detalle Completo
