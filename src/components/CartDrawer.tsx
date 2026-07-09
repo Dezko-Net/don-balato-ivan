@@ -68,16 +68,10 @@ export default function CartDrawer({ open, onClose }: Props) {
               style={{ display: 'block', width: '100%', padding: '12px 0', background: '#fff', color: '#3483fa', border: '1.5px solid #3483fa', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none', marginBottom: 8 }}>
               Ver carrito
             </Link>
-            {typeof document !== 'undefined' && document.cookie.includes('user_country=AR') ? (
-              <button disabled style={{ display: 'block', width: '100%', padding: '12px 0', background: '#ccc', color: '#666', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', cursor: 'not-allowed' }}>
-                Ventas no disponibles en Argentina
-              </button>
-            ) : (
-              <Link href="/checkout" onClick={onClose}
-                style={{ display: 'block', width: '100%', padding: '12px 0', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>
-                Ir a pagar
-              </Link>
-            )}
+            <Link href="/checkout" onClick={onClose}
+              style={{ display: 'block', width: '100%', padding: '12px 0', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>
+              Ir a pagar
+            </Link>
           </div>
         )}
       </div>

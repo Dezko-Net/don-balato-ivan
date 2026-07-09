@@ -394,14 +394,6 @@ function CarritoPageContent() {
                   >
                     Mínimo {formatPrice(MINIMUM_ORDER_CLP)}
                   </span>
-                ) : typeof document !== 'undefined' && document.cookie.includes('user_country=AR') ? (
-                  <button
-                    disabled
-                    className="cart-checkout-btn"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: '#ccc', color: '#666', textAlign: 'center', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', cursor: 'not-allowed' }}
-                  >
-                    Ventas no disponibles en Argentina
-                  </button>
                 ) : (
                   <Link href="/checkout"
                     className="cart-checkout-btn"
