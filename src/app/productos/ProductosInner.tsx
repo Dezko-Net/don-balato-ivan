@@ -26,7 +26,7 @@ import GlobalCatalogLoader from '@/components/GlobalCatalogLoader';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
-export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
+export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?: string; lockBrand?: string } = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const catParam = lockCategoryId || searchParams.get('categoria') || '';
@@ -201,9 +201,11 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     serverPaginated: true
   });
 
-  const products = visibleProducts;
-  const filtered = visibleProducts;
-  const hasMore = !isReachingEnd;
+  const products = lockBrand
+    ? visibleProducts.filter(p => (p as any).BRAND && (p as any).BRAND.toLowerCase().trim() === lockBrand.toLowerCase().trim())
+    : visibleProducts;
+  const filtered = products;
+  const hasMore = !isReachingEnd && !lockBrand; // No infinite scroll needed when locked to brand (all loaded)
 
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
   const categoryProductCount = lockCategoryId
