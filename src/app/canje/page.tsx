@@ -158,7 +158,7 @@ export default function CanjePage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-violet-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500 font-medium">Cargando...</p>
@@ -169,14 +169,14 @@ export default function CanjePage() {
 
   if (successMsg) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-violet-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50 p-4">
         <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="text-2xl font-black text-gray-900 mb-3">¡Canje Completado!</h1>
           <p className="text-gray-600 mb-6">{successMsg}</p>
-          <Link href="/cuenta/pedidos" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+          <Link href="/cuenta/pedidos" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
             Ver mis pedidos
           </Link>
         </div>
@@ -186,7 +186,7 @@ export default function CanjePage() {
 
   if (!canjeInfo?.hasCredit) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-violet-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50 p-4">
         <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="w-10 h-10 text-gray-400" />
@@ -202,7 +202,7 @@ export default function CanjePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-violet-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-pink-100">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -210,7 +210,7 @@ export default function CanjePage() {
             <ArrowLeft className="w-5 h-5" />
             <span className="font-bold text-sm">Volver</span>
           </Link>
-          <h1 className="text-lg font-black bg-gradient-to-r from-pink-600 to-fuchsia-600 bg-clip-text text-transparent">
+          <h1 className="text-lg font-black bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
             Canje de Productos
           </h1>
           <div className="w-20" />
@@ -219,7 +219,7 @@ export default function CanjePage() {
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Credit Banner */}
-        <div className="bg-gradient-to-r from-pink-500 to-fuchsia-600 rounded-3xl p-6 mb-6 shadow-xl">
+        <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-3xl p-6 mb-6 shadow-xl">
           <div className="flex items-center gap-3 mb-2">
             <Sparkles className="w-6 h-6 text-white" />
             <h2 className="text-white font-black text-lg">Tu Crédito de Canje</h2>
@@ -242,7 +242,7 @@ export default function CanjePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-28 lg:pb-0">
           {/* Products Grid */}
           <div className="lg:col-span-2">
             <div className="mb-4">
@@ -281,7 +281,7 @@ export default function CanjePage() {
                       </div>
                       <button
                         onClick={() => addToCart(p)}
-                        className="w-full py-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:brightness-105 active:scale-95 transition-all"
+                        className="w-full py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:brightness-105 active:scale-95 transition-all"
                       >
                         <ShoppingCart className="w-3.5 h-3.5" />
                         {inCart ? `Agregar más (${inCart.qty})` : 'Agregar'}
@@ -296,7 +296,7 @@ export default function CanjePage() {
           {/* Cart Sidebar */}
           <div className="lg:sticky lg:top-20 h-fit">
             <div className="bg-white rounded-3xl border border-pink-100 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-pink-50 to-fuchsia-50 px-5 py-4 border-b border-pink-100">
+              <div className="bg-gradient-to-r from-pink-50 to-rose-50 px-5 py-4 border-b border-pink-100">
                 <h2 className="font-black text-gray-900 flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5 text-pink-500" />
                   Tu Canje
@@ -372,7 +372,7 @@ export default function CanjePage() {
                     <button
                       onClick={handleConfirm}
                       disabled={isOverLimit || confirming || cart.length === 0}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white font-black text-sm flex items-center justify-center gap-2 hover:brightness-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black text-sm flex items-center justify-center gap-2 hover:brightness-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {confirming ? (
                         <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Confirmando...</>
@@ -385,6 +385,21 @@ export default function CanjePage() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Mobile Sticky Bottom Bar (Visible only on mobile) */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-pink-100 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-50 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-500 font-bold">Total Canje</p>
+            <p className="font-black text-lg text-gray-900">{fmt(cartTotal)}</p>
+          </div>
+          <button
+            onClick={handleConfirm}
+            disabled={isOverLimit || confirming || cart.length === 0}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-40 disabled:scale-100 active:scale-95"
+          >
+            {confirming ? 'Confirmando...' : 'Confirmar'}
+          </button>
         </div>
       </div>
     </div>
