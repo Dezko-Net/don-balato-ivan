@@ -133,6 +133,7 @@ export default function WholesaleOrderDetailPage() {
   const [uploadingShippingProof, setUploadingShippingProof] = useState(false);
   const [shippingProofOpen, setShippingProofOpen] = useState(false);
   const [shippingProofIsPdf, setShippingProofIsPdf] = useState(false);
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
   
   const originalItemsRef = useRef<any[] | null>(null);
 
@@ -348,47 +349,37 @@ export default function WholesaleOrderDetailPage() {
     }
   };
 
-  const notifyStockWhatsApp = () => {
-    if (!order) return;
-    const num = order.CUSTOMERPHONE?.replace(/\D/g, '') || '';
-    if (!num) return alert('El cliente no tiene teléfono guardado.');
-    
+  const getWhatsAppSummaryText = () => {
+    if (!order) return '';
     let currentItems: any[] = [];
     try { currentItems = JSON.parse(order.ITEMS || '[]'); } catch {}
-    
     const originalItems = originalItemsRef.current || currentItems;
-    
     const currentItemNames = new Set(currentItems.map(it => it.name));
     const unavailable = originalItems.filter(it => !currentItemNames.has(it.name));
-    
-    let msg = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido mayorista #${order.REQCODE || order.$id.slice(-6)}.\n\n`;
+
+    let msg = `Hola ${order.CUSTOMERNAME || ''}, \nte escribimos de Kevin&Coco Chile por tu pedido mayorista #${order.REQCODE || order.$id.slice(-6)}.\n\n`;
     msg += `Hemos revisado tu pedido en bodega y esto es lo que tenemos disponible para ti:\n\n`;
-    
-    if (currentItems.length > 0) {
-      msg += `✅ *LO QUE SÍ HAY:*\n`;
-      currentItems.forEach(it => {
-        msg += `🟢 ${it.name} (Cant: ${it.qty})\n`;
-      });
-      msg += `\n`;
-    }
+    msg += `LO QUE SÍ HAY:\n\n`;
+    currentItems.forEach(it => {
+      msg += ` ${it.name} (Cant: ${it.qty})\n`;
+    });
     
     if (unavailable.length > 0) {
-      msg += `❌ *LO QUE NO HAY (SIN STOCK):*\n`;
+      msg += `\nLO QUE NO HAY:\n\n`;
       unavailable.forEach(it => {
-        msg += `🔴 ${it.name} (Cant: ${it.qty})\n`;
-        if (it.img) {
-          // Si la url de la imagen empieza con / agregamos el dominio
-          const imgUrl = it.img.startsWith('/') ? `https://k-me.cl${it.img}` : it.img;
-          msg += `📸 Foto: ${imgUrl}\n`;
-        }
+        msg += ` ${it.name} (Cant: ${it.qty})\n`;
       });
-      msg += `\n`;
     }
-    
-    msg += `💰 *NUEVO TOTAL:* ${fmt(order.TOTAL)}\n\n`;
-    msg += `¿Estás de acuerdo para proceder con este pedido? Quedamos atentos para enviarte los datos de transferencia.`;
-    
-    window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+
+    msg += `\n NUEVO TOTAL: ${fmt(order.TOTAL)} \n`;
+    msg += `¿Estás de acuerdo para proceder con este pedido?\n\n`;
+    msg += ` Quedamos atentos para enviarte los datos de transferencia.`;
+    return msg;
+  };
+
+  const notifyStockWhatsApp = () => {
+    if (!order) return;
+    setIsNotifyModalOpen(true);
   };
 
   const copyOrderItemsList = (type: 'barcode' | 'sku') => {
@@ -1117,6 +1108,134 @@ export default function WholesaleOrderDetailPage() {
           </div>
         </div>
       </div>
+      {/* Notify Modal */}
+      {isNotifyModalOpen && order && (() => {
+        let currentItems: any[] = [];
+        try { currentItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+        const originalItems = originalItemsRef.current || currentItems;
+        const currentItemNames = new Set(currentItems.map(it => it.name));
+        const unavailable = originalItems.filter(it => !currentItemNames.has(it.name));
+        
+        const textContent = getWhatsAppSummaryText();
+        
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 flex flex-col items-center justify-center p-4" onClick={() => setIsNotifyModalOpen(false)}>
+            <div className="w-full max-w-5xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+              
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/80">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Notificar Stock al Cliente</h3>
+                  <p className="text-xs text-gray-500">Toma una captura del resumen y envía el texto por WhatsApp</p>
+                </div>
+                <button onClick={() => setIsNotifyModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-xl transition">
+                  <Ban className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-auto p-6 flex flex-col lg:flex-row gap-6 bg-gray-50">
+                {/* Left side: Text Preview */}
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-indigo-500" />
+                      Texto para WhatsApp
+                    </h4>
+                    <button 
+                      onClick={() => copyText(textContent, 'whatsapp_text')}
+                      className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-indigo-200"
+                    >
+                      {copied === 'whatsapp_text' ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied === 'whatsapp_text' ? 'Copiado!' : 'Copiar Texto'}
+                    </button>
+                  </div>
+                  <div className="w-full h-[400px] bg-white border border-gray-200 rounded-2xl p-4 text-xs font-mono text-gray-700 whitespace-pre-wrap overflow-auto shadow-sm">
+                    {textContent}
+                  </div>
+                </div>
+
+                {/* Right side: Visual Receipt Card */}
+                <div className="flex-[1.2] flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-emerald-500" />
+                      Resumen Visual (Capturar pantalla)
+                    </h4>
+                  </div>
+                  
+                  {/* Visual Card */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm overflow-hidden flex flex-col gap-6 relative" id="whatsapp-receipt-card">
+                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+                    
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                      <div>
+                        <h2 className="text-lg font-black text-gray-900 tracking-tight">Kevin&Coco Chile</h2>
+                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Revisión de Stock</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">Pedido #{order.REQCODE || order.$id.slice(-6)}</p>
+                        <p className="text-[10px] text-gray-500">{order.CUSTOMERNAME}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-xs font-bold text-emerald-600 mb-2 flex items-center gap-1.5 bg-emerald-50 w-fit px-2 py-0.5 rounded-full"><Check className="w-3 h-3" /> CONFIRMADOS</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {currentItems.map((it, i) => (
+                            <div key={i} className="flex flex-col gap-1.5 p-2 border border-gray-100 rounded-xl bg-gray-50">
+                              <div className="w-full h-14 bg-white rounded-lg overflow-hidden border border-gray-100 flex items-center justify-center">
+                                {it.img ? <img src={it.img} alt="" className="max-w-full max-h-full object-contain" /> : <Package className="w-4 h-4 text-gray-300" />}
+                              </div>
+                              <p className="text-[9px] font-semibold text-gray-700 leading-tight line-clamp-2" title={it.name}>{it.name}</p>
+                              <div className="flex justify-between items-center mt-auto">
+                                <span className="text-[10px] font-black text-gray-900">x{it.qty}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {unavailable.length > 0 && (
+                        <div className="pt-2 border-t border-gray-100">
+                          <h3 className="text-xs font-bold text-red-600 mb-2 flex items-center gap-1.5 bg-red-50 w-fit px-2 py-0.5 rounded-full"><Ban className="w-3 h-3" /> AGOTADOS</h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {unavailable.map((it, i) => (
+                              <div key={i} className="flex flex-col gap-1.5 p-2 border border-red-50 rounded-xl bg-red-50/30 opacity-75">
+                                <div className="w-full h-14 bg-white rounded-lg overflow-hidden border border-red-100 flex items-center justify-center grayscale">
+                                  {it.img ? <img src={it.img} alt="" className="max-w-full max-h-full object-contain" /> : <Package className="w-4 h-4 text-gray-300" />}
+                                </div>
+                                <p className="text-[9px] font-semibold text-gray-500 leading-tight line-clamp-2 line-through">{it.name}</p>
+                                <div className="flex justify-between items-center mt-auto">
+                                  <span className="text-[10px] font-black text-gray-400">x{it.qty}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-end justify-between bg-gray-50 -mx-6 -mb-6 p-6">
+                      <p className="text-[10px] text-gray-500 font-medium">Captura esta pantalla y<br/>envíala por WhatsApp</p>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Nuevo Total</p>
+                        <p className="text-2xl font-black text-indigo-600 leading-none mt-0.5">{fmt(order.TOTAL)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 border-t border-gray-100 bg-white flex justify-end">
+                <button onClick={() => setIsNotifyModalOpen(false)} className="px-6 py-2 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition shadow-sm">
+                  Cerrar
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
