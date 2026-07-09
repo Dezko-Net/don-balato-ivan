@@ -834,7 +834,8 @@ export default function PedidoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: id,
-          draftItems
+          draftItems,
+          isWholesale
         })
       });
 

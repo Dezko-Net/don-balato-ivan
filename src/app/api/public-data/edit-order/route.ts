@@ -38,7 +38,8 @@ function getCustomerEditCount(o: any): number {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderId, draftItems } = body as { orderId: string; draftItems: any[] };
+    const { orderId, draftItems, isWholesale } = body as { orderId: string; draftItems: any[]; isWholesale?: boolean };
+    const targetCollection = isWholesale ? 'wholesale_orders' : ORDERS_COLLECTION;
 
     if (!orderId || !Array.isArray(draftItems)) {
       return NextResponse.json({ error: 'Faltan parámetros requeridos o formato incorrecto.' }, { status: 400 });
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Obtener pedido actual
-    const latest = await serverGetDocument(ORDERS_COLLECTION, orderId);
+    const latest = await serverGetDocument(targetCollection, orderId);
     
     // 2. Validar que el estado permita modificaciones
     const unmodifiableStatuses = ['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
     const newTotal = Math.max(0, newSubtotal - discount);
 
     try {
-      await serverUpdateDocument(ORDERS_COLLECTION, orderId, {
+      await serverUpdateDocument(targetCollection, orderId, {
         ITEMS: JSON.stringify(normalizedDraft),
         SUBTOTAL: newSubtotal,
         TOTAL: newTotal,
