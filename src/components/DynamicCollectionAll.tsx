@@ -24,7 +24,7 @@ export default function DynamicCollectionAll({ catalogMode, initialBrand }: { ca
   // If we are in 'paquetes' or 'embalajes' mode, we must use Plantilla 1 
   // because Plantilla 5 and 100 do not support them yet.
   if (!catalogMode || catalogMode === 'retail') {
-    if (template === 100) return <CollectionAll100 />;
+    if (template === 100) return <CollectionAll100 initialBrand={initialBrand} />;
     if (template === 5) return <CollectionAll5 initialBrand={initialBrand} />;
     // Template 23: use ProductosInner with brand lock
     if (template === 23) return (

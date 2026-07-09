@@ -2,10 +2,10 @@
 
 import CollectionAll5 from '@/templates/plantilla5/CollectionAll';
 
-export default function CollectionAll100() {
+export default function CollectionAll100({ initialBrand }: { initialBrand?: string } = {}) {
   return (
     <div data-template-bridge="100-collection-all">
-      <CollectionAll5 />
+      <CollectionAll5 initialBrand={initialBrand} />
     </div>
   );
 }

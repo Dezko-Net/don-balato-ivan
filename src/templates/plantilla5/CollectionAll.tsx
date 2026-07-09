@@ -9,6 +9,24 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import ProductCard5 from './ProductCard5';
 import { ChevronDown } from 'lucide-react';
 
+export const extractBrand = (name?: string): string => {
+  if (!name) return '';
+  const n = name.toLowerCase();
+  if (n.includes('sadoer')) return 'SADOER';
+  if (n.includes('kevin&coco') || n.includes('kevin & coco') || n.includes('kevincoco') || n.includes('kevin coco')) return 'Kevin & Coco';
+  if (n.includes('3q') || n.includes('3 q')) return '3Q Beauty';
+  if (n.includes('billion') || n.includes('billion beauty')) return 'Billion Beauty';
+  if (n.includes('karite') || n.includes('karité')) return 'Karite';
+  if (n.includes('kiss beauty')) return 'Kiss Beauty';
+  if (n.includes('ushas')) return 'Ushas';
+  if (n.includes('ruby rose')) return 'Ruby Rose';
+  if (n.includes('pink 21') || n.includes('pink21')) return 'Pink 21';
+  if (n.includes('hengfang')) return 'HengFang';
+  if (n.includes('peiliee')) return 'Peiliee';
+  if (n.includes('huda')) return 'Huda Beauty';
+  return '';
+};
+
 const FONT_FACE_CSS = `
 @font-face {
   font-family: Bricolage Grotesque;
@@ -346,7 +364,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
   const filteredProducts = useMemo(() => {
     const filtered = products.filter(p => {
       if (selectedCat && p.CATEGORYID !== selectedCat) return false;
-      if (selectedBrand && p.BRAND !== selectedBrand) return false;
+      if (selectedBrand && (p.BRAND || extractBrand(p.NAME)) !== selectedBrand) return false;
       if (minPrice !== null && (p.PRICE || 0) < minPrice) return false;
       if (maxPrice !== null && (p.PRICE || 0) > maxPrice) return false;
       return true;
@@ -672,7 +690,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
 
         {/* Selector de Marca en Plantilla 5 */}
         {useMemo(() => {
-          const uniqueBrands = Array.from(new Set(products.map(p => p.BRAND).filter(Boolean))) as string[];
+          const uniqueBrands = Array.from(new Set(products.map(p => p.BRAND || extractBrand(p.NAME)).filter(Boolean))) as string[];
           if (uniqueBrands.length === 0) return null;
           return (
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
