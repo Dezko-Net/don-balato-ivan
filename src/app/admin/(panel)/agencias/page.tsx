@@ -17,10 +17,13 @@ interface Agency {
 }
 
 const DEFAULTS: Agency[] = [
-  { id: '', name: 'STARKEN',          color: '#1a7f37', bg: '#e6f4ea', desc: 'Entrega rápida y confiable',   logo: 'https://media.licdn.com/dms/image/v2/C510BAQGf7frAaAcogw/company-logo_200_200/company-logo_200_200/0/1631323622266?e=2147483647&v=beta&t=PQt6O5DgEP72brYnRu0ypoR_k9rrAIQ7XAHmQL0Q1uM', active: true },
-  { id: '', name: 'BLUEXPRESS',       color: '#1558b0', bg: '#e8f0fe', desc: 'Servicio express premium',    logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSz2T8HSqmWqmSShlCx8iGNP2tkT_OGLK4cdg&s', active: true },
-  { id: '', name: 'VARMONTT',          color: '#c62828', bg: '#fce8e6', desc: 'Cobertura nacional completa', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEPQN4hjn8F2PQXVmphZVnstiaQTEs4ILyArmNbu1DjCaj2EfwPxnUnEWLEUivCr_95IE&usqp=CAU', active: true },
-  { id: '', name: 'RETIRO EN TIENDA',  color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal',  logo: '', active: true },
+  { id: '', name: 'RETIRO EN TIENDA',  color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal sin costo',  logo: 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png', active: true },
+  { id: '', name: 'STARKEN',          color: '#1a7f37', bg: '#e6f4ea', desc: 'Tarifa económica - Cobertura Nacional',   logo: 'https://starken.cl/wp-content/uploads/2021/04/starken.png', active: true },
+  { id: '', name: 'PULLMAN CARGO',    color: '#002855', bg: '#e6f0fa', desc: 'Tarifa económica - Ideal para cajas grandes', logo: 'https://www.pullmancargo.cl/wp-content/uploads/2022/02/cropped-logo-pullman-cargo-2022-300x95.png', active: true },
+  { id: '', name: 'VARMONTT',         color: '#c62828', bg: '#fce8e6', desc: 'Tarifa económica - Especialistas al Sur de Chile', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEPQN4hjn8F2PQXVmphZVnstiaQTEs4ILyArmNbu1DjCaj2EfwPxnUnEWLEUivCr_95IE&usqp=CAU', active: true },
+  { id: '', name: 'CORREOS DE CHILE', color: '#da291c', bg: '#fce8e6', desc: 'Tarifa media - Excelente cobertura rural', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Logo_Correos_de_Chile_2024.png', active: true },
+  { id: '', name: 'BLUEXPRESS',       color: '#1558b0', bg: '#e8f0fe', desc: 'Tarifa media/alta - Entrega express',    logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSz2T8HSqmWqmSShlCx8iGNP2tkT_OGLK4cdg&s', active: true },
+  { id: '', name: 'CHILEXPRESS',      color: '#ffc600', bg: '#fffde6', desc: 'Tarifa alta - La más rápida del mercado', logo: 'https://www.chilexpress.cl/Style%20Library/img/logo-chilexpress.png', active: true },
 ];
 
 const EMPTY_AGENCY: Omit<Agency, 'id'> = {
@@ -122,12 +125,21 @@ export default function AgenciasPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={loadAgencies} disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition shadow-sm disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Recargar
-          </button>
-          <button onClick={handleSave} disabled={saving}
+            <button onClick={() => {
+              if (confirm('¿Estás seguro de querer sobreescribir las agencias actuales con las de por defecto? Tendrás que presionar Guardar después.')) {
+                setAgencies(DEFAULTS);
+              }
+            }} disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition disabled:opacity-50">
+              <RefreshCw className="w-4 h-4" />
+              Cargar por Defecto
+            </button>
+            <button onClick={loadAgencies} disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-semibold transition disabled:opacity-50">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Recargar
+            </button>
+            <button onClick={handleSave} disabled={saving}
             className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white transition shadow-sm ${saved ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-60`}>
             {saving ? (
               <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Guardando...</>
