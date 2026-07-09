@@ -3806,6 +3806,9 @@ export default function HomePage23() {
           `;
           swiperWrapper.appendChild(slide);
         });
+        setTimeout(() => {
+          initSwiperIfField(swiperContainer);
+        }, 150);
       }
     }
 
@@ -3813,12 +3816,12 @@ export default function HomePage23() {
     if (products.length > 0) {
       const formatCLP = (val: number) => '$' + Math.round(val).toLocaleString('es-CL');
 
-      const initSwiperIfField = (swiperContainer: any) => {
+      function initSwiperIfField(swiperContainer: any) {
         if (!swiperContainer || swiperContainer.swiper) return;
         const SwiperClass = (window as any).Swiper;
         if (!SwiperClass) return;
 
-        const parent = swiperContainer.closest('.featured-collection__product-by-collection') || swiperContainer.closest('.product-columns-block') || swiperContainer.closest('product-columns');
+        const parent = swiperContainer.closest('.featured-collection__product-by-collection') || swiperContainer.closest('.product-columns-block') || swiperContainer.closest('product-columns') || swiperContainer.closest('.collection-list');
         if (!parent) return;
 
         const itemsPerView = parseInt(swiperContainer.dataset.itemsPerView) || 3;
@@ -3897,7 +3900,7 @@ export default function HomePage23() {
         } catch (err) {
           console.warn('Error initializing swiper manually:', err);
         }
-      };
+      }
 
       const createCardHtml = (product: Product) => {
         const pLink = `/productos/${product.$id}`;
