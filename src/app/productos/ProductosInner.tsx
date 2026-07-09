@@ -716,7 +716,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                 )}
                 {view === 'grid' ? (
                   <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
-                {visibleProducts.map(p => {
+                {filtered.map(p => {
                   const pricing = resolveProductDisplayPrice(p, apertura);
                   const price = pricing.displayPrice;
                   const hasDisc = pricing.hasDiscount;
@@ -791,7 +791,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {visibleProducts.map(p => {
+                {filtered.map(p => {
                   const pricing = resolveProductDisplayPrice(p, apertura);
                   const price = pricing.displayPrice;
                   const hasDisc = pricing.hasDiscount;
