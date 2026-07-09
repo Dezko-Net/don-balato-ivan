@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getServices, getAppwriteConfig, WHOLESALE_ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
@@ -133,6 +133,8 @@ export default function WholesaleOrderDetailPage() {
   const [uploadingShippingProof, setUploadingShippingProof] = useState(false);
   const [shippingProofOpen, setShippingProofOpen] = useState(false);
   const [shippingProofIsPdf, setShippingProofIsPdf] = useState(false);
+  
+  const originalItemsRef = useRef<any[] | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -143,6 +145,12 @@ export default function WholesaleOrderDetailPage() {
       const o = doc as unknown as WholesaleOrder;
       setOrder(o);
       setAdminNotes(o.ADMINNOTES || '');
+
+      try {
+        if (originalItemsRef.current === null && o.ITEMS) {
+          originalItemsRef.current = JSON.parse(o.ITEMS);
+        }
+      } catch (e) {}
 
       if (o.PAYMENTPROOFURL) {
         if (isPdfUrl(o.PAYMENTPROOFURL)) setPaymentProofIsPdf(true);
@@ -320,7 +328,7 @@ export default function WholesaleOrderDetailPage() {
     try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
     if (index < 0 || index >= parsedItems.length) return;
     const itemName = parsedItems[index]?.name || 'este producto';
-    if (!confirm(`¿Eliminar "${itemName}" del pedido?\nEl total se recalculará automáticamente.`)) return;
+    if (!confirm(`¿Eliminar "${itemName}" del pedido por falta de stock?\nEl total se recalculará automáticamente y el producto se perderá.`)) return;
     setUpdating(true);
     try {
       parsedItems.splice(index, 1);
@@ -338,6 +346,44 @@ export default function WholesaleOrderDetailPage() {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const notifyStockWhatsApp = () => {
+    if (!order) return;
+    const num = order.CUSTOMERPHONE?.replace(/\D/g, '') || '';
+    if (!num) return alert('El cliente no tiene teléfono guardado.');
+    
+    let currentItems: any[] = [];
+    try { currentItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    
+    const originalItems = originalItemsRef.current || currentItems;
+    
+    const currentItemNames = new Set(currentItems.map(it => it.name));
+    const unavailable = originalItems.filter(it => !currentItemNames.has(it.name));
+    
+    let msg = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido mayorista #${order.REQCODE || order.$id.slice(-6)}.\n\n`;
+    msg += `Hemos revisado tu pedido en bodega y esto es lo que tenemos disponible para ti:\n\n`;
+    
+    if (currentItems.length > 0) {
+      msg += `✅ *LO QUE SÍ HAY:*\n`;
+      currentItems.forEach(it => {
+        msg += `- ${it.name} (Cant: ${it.qty})\n`;
+      });
+      msg += `\n`;
+    }
+    
+    if (unavailable.length > 0) {
+      msg += `❌ *LO QUE NO HAY (SIN STOCK):*\n`;
+      unavailable.forEach(it => {
+        msg += `- ~${it.name}~ (Cant: ${it.qty})\n`;
+      });
+      msg += `\n`;
+    }
+    
+    msg += `💰 *NUEVO TOTAL:* ${fmt(order.TOTAL)}\n\n`;
+    msg += `¿Estás de acuerdo para proceder con este pedido? Quedamos atentos para enviarte los datos de transferencia.`;
+    
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const copyOrderItemsList = (type: 'barcode' | 'sku') => {
@@ -588,6 +634,14 @@ export default function WholesaleOrderDetailPage() {
             <button onClick={() => window.print()} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white border border-gray-250 text-gray-600 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-50 transition">
               <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir / PDF</span>
             </button>
+            {(order.STATUS === 'partial_stock' || order.STATUS === 'negotiation') && (
+              <button onClick={notifyStockWhatsApp} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-[#25D366] text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-[#128C7E] transition shadow-sm">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm.029 18.88c-1.161 0-2.305-.292-3.318-.844l-3.677.964.984-3.595c-.607-1.052-.927-2.246-.926-3.468.001-5.824 4.74-10.563 10.567-10.564 5.823 0 10.561 4.741 10.562 10.564 0 5.825-4.738 10.562-10.564 10.564z" />
+                </svg>
+                <span className="hidden sm:inline">Avisar Stock WhatsApp</span>
+              </button>
+            )}
           </div>
         </div>
 
