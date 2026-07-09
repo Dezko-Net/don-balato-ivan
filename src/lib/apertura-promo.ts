@@ -132,8 +132,8 @@ export function getLiveShoppingDiscountPercent(importedAt: string): number {
 }
 
 /** Verifica si un producto es de live shopping (tiene $createdAt válido). */
-export function isLiveShoppingProduct(product: ProductPriceLike): boolean {
-  return !!(product.$createdAt && product.$createdAt !== '1970-01-01T00:00:00.000Z');
+export function isLiveShoppingProduct(_product: ProductPriceLike): boolean {
+  return false;
 }
 
 /** Precio mostrado: oferta del producto (CURRENTPRICE) tiene prioridad sobre promoción apertura. */

@@ -377,63 +377,15 @@ export default function HomePage23() {
   }, []);
 
   // React countdown timer, Lottie, and Particles for the global timer pack
+  // DISABLED: countdown timer removed per user request
   useEffect(() => {
     if (!bodyHtml) return;
     const root = containerRef.current;
     if (!root) return;
-
-    // 1. Timer Setup — cuenta regresiva hasta el día 1 del siguiente mes (00:00 hora local).
-    //    Se recalcula en cada carga, por lo que siempre apunta al próximo "1".
-    const nowForTarget = new Date();
-    const currentDay = nowForTarget.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-    let daysUntilMonday = (1 - currentDay + 7) % 7;
-    if (daysUntilMonday === 0 && nowForTarget.getHours() >= 12) {
-      daysUntilMonday = 7;
+    const countdownEl = root.querySelector('[id*="countdown_timer"]');
+    if (countdownEl) {
+      (countdownEl as HTMLElement).style.display = 'none';
     }
-    
-    // Create a robust target date
-    const targetTime = new Date(
-      nowForTarget.getFullYear(),
-      nowForTarget.getMonth(),
-      nowForTarget.getDate() + daysUntilMonday,
-      12, 0, 0, 0
-    );
-    const targetTimeMs = targetTime.getTime();
-    console.log("Countdown targetTimeMs:", targetTimeMs, "targetDate:", targetTime.toString());
-    try {
-      localStorage.removeItem('yaxsell_offers_timer_3d');
-    } catch (e) {
-      console.error(e);
-    }
-
-    const updateDomTimer = () => {
-      const dEl = root.querySelector('#yaxsell-days');
-      const hEl = root.querySelector('#yaxsell-hours');
-      const mEl = root.querySelector('#yaxsell-minutes');
-      const sEl = root.querySelector('#yaxsell-seconds');
-
-      const diff = targetTimeMs - Date.now();
-      if (diff <= 0) {
-        if (dEl) dEl.textContent = '00';
-        if (hEl) hEl.textContent = '00';
-        if (mEl) mEl.textContent = '00';
-        if (sEl) sEl.textContent = '00';
-        return;
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      if (dEl) dEl.textContent = days.toString().padStart(2, '0');
-      if (hEl) hEl.textContent = hours.toString().padStart(2, '0');
-      if (mEl) mEl.textContent = minutes.toString().padStart(2, '0');
-      if (sEl) sEl.textContent = seconds.toString().padStart(2, '0');
-    };
-
-    updateDomTimer();
-    const timerId = setInterval(updateDomTimer, 1000);
 
     // 2. Lottie Initialization
     let lottieAnim: any = null;
@@ -570,7 +522,6 @@ export default function HomePage23() {
     }
 
     return () => {
-      clearInterval(timerId);
       if (lottieAnim) {
         lottieAnim.destroy();
       }
@@ -2356,29 +2307,15 @@ export default function HomePage23() {
       // Move the "Oferta de Apertura" countdown timer to sit directly below the hero banner.
       // (En el HTML original queda más abajo; el cliente lo quiere justo debajo del hero.)
       let anchor: Element = heroBannerSection;
-      const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
+      const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]') as HTMLElement | null;
       const bundleSection = tempDiv.querySelector('[id*="bundle_products"]') as HTMLElement | null;
-      // bundleSection visible
       console.log("[Plantilla23 Debug] heroBannerSection:", !!heroBannerSection, "countdownSection:", !!countdownSection, "bundleSection:", !!bundleSection);
       if (countdownSection) {
-        if (bundleSection) {
-          console.log("[Plantilla23 Debug] Reordering bundleSection before countdownSection");
-          heroBannerSection.insertAdjacentElement('afterend', bundleSection);
-          bundleSection.insertAdjacentElement('afterend', countdownSection);
-        } else {
-          heroBannerSection.insertAdjacentElement('afterend', countdownSection);
-        }
-        // --- NEW: Botón rosa solo para móviles debajo del cronómetro ---
-        const ctaBtn = document.createElement('div');
-        ctaBtn.className = 'flex justify-center md:hidden w-full px-4 mb-4 mt-2 z-10 relative';
-        ctaBtn.innerHTML = `
-          <a href="/productos?sort=price-asc" class="w-full text-center font-bold py-4 rounded-xl shadow-lg hover:opacity-90 transition-opacity" style="background-color: #ff9ebb; color: white !important; box-shadow: 0 4px 15px rgba(255, 158, 187, 0.5); font-size: 18px; letter-spacing: 0.5px;">
-            MIRALOS AQUI:
-          </a>
-        `;
-        countdownSection.insertAdjacentElement('afterend', ctaBtn);
-        // ---------------------------------------------------------------
-        anchor = ctaBtn;
+        countdownSection.style.display = 'none';
+      }
+      if (bundleSection) {
+        heroBannerSection.insertAdjacentElement('afterend', bundleSection);
+        anchor = bundleSection;
       }
 
       const offersCarouselRoot = document.createElement('div');
