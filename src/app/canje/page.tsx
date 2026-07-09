@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ShoppingCart, ArrowLeft, Check, AlertCircle, Tag, Sparkles } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Check, AlertCircle, Tag, Sparkles, X, ChevronUp } from 'lucide-react';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { getSkuFromFeatures } from '@/lib/product-features';
 
@@ -31,27 +31,26 @@ interface CanjeInfo {
   orders: { id: string; orderCode: string; status: string }[];
 }
 
-interface CartItem {
+interface CanjeItem {
   productId: string;
   name: string;
+  img: string;
   price: number;
   originalPrice: number;
   qty: number;
-  img: string;
-  sku: string;
 }
 
 export default function CanjePage() {
-  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-
-  const [canjeInfo, setCanjeInfo] = useState<CanjeInfo | null>(null);
+  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
+  const [canjeInfo, setCanjeInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CanjeItem[]>([]);
   const [confirming, setConfirming] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [search, setSearch] = useState('');
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const loadCanjeInfo = useCallback(async () => {
     if (!user) return;
@@ -152,8 +151,8 @@ export default function CanjePage() {
     }
   };
 
-  const filteredProducts = canjeInfo?.products.filter(p =>
-    p.NAME?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = canjeInfo?.products.filter((p: any) =>
+    p.NAME?.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
   if (authLoading || loading) {
@@ -249,8 +248,8 @@ export default function CanjePage() {
               <input
                 type="text"
                 placeholder="Buscar productos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-pink-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm"
               />
             </div>
@@ -258,7 +257,7 @@ export default function CanjePage() {
               {filteredProducts.length} productos disponibles · Todo a 20% off desde unidad 1
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {filteredProducts.map(p => {
+              {filteredProducts.map((p: any) => {
                 const discount = p.PRICE - p.WHOLESALEPRICE;
                 const inCart = cart.find(it => it.productId === p.$id);
                 return (
@@ -293,14 +292,18 @@ export default function CanjePage() {
             </div>
           </div>
 
-          {/* Cart Sidebar */}
-          <div className="lg:sticky lg:top-20 h-fit">
-            <div className="bg-white rounded-3xl border border-pink-100 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-pink-50 to-rose-50 px-5 py-4 border-b border-pink-100">
+          {/* Cart Sidebar / Drawer */}
+          <div className={`lg:sticky lg:top-20 h-fit ${isCartOpen ? 'fixed inset-0 z-[100] flex flex-col justify-end bg-black/50 lg:bg-transparent lg:static lg:z-auto lg:flex-none' : 'hidden lg:block'}`}>
+            {isCartOpen && <div className="absolute inset-0 lg:hidden" onClick={() => setIsCartOpen(false)} />}
+            <div className="bg-white lg:rounded-3xl rounded-t-3xl border border-pink-100 shadow-lg overflow-hidden relative z-10 flex flex-col max-h-[85vh] lg:max-h-none lg:block">
+              <div className="bg-gradient-to-r from-pink-50 to-rose-50 px-5 py-4 border-b border-pink-100 flex justify-between items-center flex-shrink-0">
                 <h2 className="font-black text-gray-900 flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5 text-pink-500" />
                   Tu Canje
                 </h2>
+                <button className="lg:hidden p-1 bg-white rounded-full text-gray-500 hover:bg-gray-100" onClick={() => setIsCartOpen(false)}>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
               {cart.length === 0 ? (
@@ -388,9 +391,9 @@ export default function CanjePage() {
         </div>
 
         {/* Mobile Sticky Bottom Bar (Visible only on mobile) */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-pink-100 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-50 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-500 font-bold">Total Canje</p>
+        <div className="lg:hidden fixed bottom-16 sm:bottom-0 left-0 right-0 bg-white border-t border-pink-100 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between">
+          <div onClick={() => setIsCartOpen(true)} className="flex-1 cursor-pointer group">
+            <p className="text-xs text-gray-500 font-bold flex items-center gap-1">Ver Canje <ChevronUp className="w-3 h-3 text-pink-500 group-hover:-translate-y-1 transition-transform"/></p>
             <p className="font-black text-lg text-gray-900">{fmt(cartTotal)}</p>
           </div>
           <button
