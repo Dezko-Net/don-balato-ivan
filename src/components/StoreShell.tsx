@@ -27,6 +27,8 @@ const FOOTER_LINKS = [
   ]},
 ];
 
+import GlobalCanjeBanner from '@/components/GlobalCanjeBanner';
+
 export default function StoreShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { getSectionTemplate } = useTemplate();
@@ -45,6 +47,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   return (
     <MaintenanceGuard>
     <>
+      <GlobalCanjeBanner />
       {!hideNavbarForCapturedLanding && <DynamicNavbar />}
       <PageTransition><main>{children}</main></PageTransition>
       {!hideNativeFooter && (

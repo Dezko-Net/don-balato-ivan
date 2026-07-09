@@ -308,7 +308,6 @@ export default function HomePage23() {
   const { addItem, items: cartItems, subtotal: cartTotal, updateQuantity, removeItem, getEffectivePrice } = useCart();
   const { settings: apertura } = useAperturaPromotion();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [canjeCredit, setCanjeCredit] = useState<number | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [cheapestProducts, setCheapestProducts] = useState<Product[]>([]);
@@ -376,20 +375,6 @@ export default function HomePage23() {
     }, 2500);
     return () => clearTimeout(timer);
   }, []);
-
-  // Fetch canje credit for logged-in users
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.hasCredit) setCanjeCredit(data.creditAmount);
-        }
-      } catch {}
-    })();
-  }, [user]);
 
   // React countdown timer, Lottie, and Particles for the global timer pack
   // DISABLED: countdown timer removed per user request
@@ -5210,14 +5195,6 @@ export default function HomePage23() {
 
   return (
     <>
-      {/* Canje credit banner - above page content */}
-      {canjeCredit !== null && canjeCredit > 0 && (
-        <Link href="/canje" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '12px 16px', background: 'linear-gradient(90deg, #ec4899, #d946ef)', color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>
-          <span style={{ fontSize: 18 }}>🎁</span>
-          <span>Tienes {formatPrice(canjeCredit)} en crédito de canje por productos faltantes</span>
-          <span style={{ background: 'rgba(255,255,255,0.25)', padding: '3px 12px', borderRadius: 999, fontSize: 12, fontWeight: 800 }}>Canjear →</span>
-        </Link>
-      )}
       <style>{`
         /* Tabbed FAQ Styles */
         .kc-tabbed-faq { position: relative; overflow: hidden; background: #ffffff; padding: 100px 0; font-family: system-ui, -apple-system, sans-serif; }

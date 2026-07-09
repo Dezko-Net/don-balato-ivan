@@ -1528,7 +1528,7 @@ function OrdersContent() {
         const msg2 = `Hola ${order.CUSTOMERNAME || ''}, espero que estés muy bien. Aún tenemos reservado tu pedido ${order.ORDERCODE || ''} en Kevin&Coco Chile. Como queremos que disfrutes tus productos, si realizas tu pago hoy te regalamos un 5% de descuento adicional en esta compra con el cupón PAGO5. ¿Te gustaría que te envíe los datos de transferencia?`;
         const msg3 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile. Para poder liberar el stock a otros clientes, te comentamos que tu pedido ${order.ORDERCODE || ''} se cancelará automáticamente en unas horas. Si aún deseas tus productos, puedes enviarnos el comprobante de transferencia hoy mismo para procesarlo de inmediato. ¡Quedamos atentos!`;
         
-        let msg4 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido ${order.ORDERCODE || ''}. Queríamos comentarte que lamentablemente nos quedamos sin stock de: ${missingNames || 'algunos productos'}. Puedes ingresar a este enlace para ver las opciones disponibles y seleccionar tus productos de reemplazo: ${orderLink}`;
+        let msg4 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Kevin&Coco Chile por tu pedido ${order.ORDERCODE || ''}. 😔 Lamentablemente tuvimos un problema de stock con los siguientes productos:\n\n${missingNames || 'Algunos productos'}\n\n🎁 ¡Pero te traemos una solución excelente! Hemos cargado el valor de esos productos a tu cuenta como *Crédito de Canje*.\n\n✨ *BENEFICIOS DE CANJE:*\n✅ Todo el catálogo disponible a un *20% de descuento* extra.\n✅ Usa tu saldo a favor para elegir nuevos productos. Si no te gastas todo el crédito, te guardamos el vuelto automáticamente como un cupón para tu próxima compra.\n\n📲 *¿CÓMO FUNCIONA?*\n1. Ingresa a tu pedido: ${orderLink}\n2. Haz clic en el botón fucsia "Canjear aquí"\n3. Agrega los productos que más te gusten y presiona "Confirmar Canje".\n\n¡Es muy rápido! Quedamos atentos a tu elección para poder despachar tu paquete lo antes posible. 🚚💨`;
         
         const missingWithImgs = missingItems.filter((it: any) => !!it.img);
         if (missingWithImgs.length > 0) {
@@ -2029,6 +2029,11 @@ function OrdersContent() {
                           {isWarning && (
                             <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded shrink-0 border border-amber-200 animate-pulse">
                               ⚠️ FALTAN
+                            </span>
+                          )}
+                          {order.STATUS === 'negotiation' && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded shrink-0 border border-orange-200 animate-pulse">
+                              🤝 EN CANJE
                             </span>
                           )}
                           {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded shrink-0">VENCIDO</span>}
