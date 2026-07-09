@@ -208,8 +208,9 @@ export function resolveProductDisplayPrice(
     }
   }
 
-  // Suppress apertura discount if live logic has disableApertura flag or product is PROMO1
-  const suppressApertura = liveLogic?.disableApertura === true || isDisableDiscounts(product);
+  // Suppress apertura discount if live logic has disableApertura flag, product is PROMO1, or product has PACKQTY > 1
+  const hasPackQty = (product.PACKQTY ?? 0) > 1;
+  const suppressApertura = liveLogic?.disableApertura === true || isDisableDiscounts(product) || hasPackQty;
 
   if (!suppressApertura && apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
     const displayPrice = getAperturaDiscountedPrice(effectiveBase, apertura.discountPercent);

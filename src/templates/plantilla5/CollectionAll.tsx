@@ -72,6 +72,7 @@ export default function CollectionAll5() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedCat, setSelectedCat] = useState<string | null>(searchParams.get('categoria'));
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(initialBrand || searchParams.get('marca'));
 
   const updateCategoryUrl = (catId: string | null) => {
     const url = new URL(window.location.href);
@@ -82,7 +83,17 @@ export default function CollectionAll5() {
     } else {
       url.searchParams.delete('categoria');
     }
-    window.history.replaceState({}, '', url.toString());
+    router.replace(url.toString(), { scroll: false });
+  };
+
+  const updateBrandUrl = (brand: string | null) => {
+    const url = new URL(window.location.href);
+    if (brand) {
+      url.searchParams.set('marca', brand);
+    } else {
+      url.searchParams.delete('marca');
+    }
+    router.replace(url.toString(), { scroll: false });
   };
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
@@ -335,6 +346,7 @@ export default function CollectionAll5() {
   const filteredProducts = useMemo(() => {
     const filtered = products.filter(p => {
       if (selectedCat && p.CATEGORYID !== selectedCat) return false;
+      if (selectedBrand && p.BRAND !== selectedBrand) return false;
       if (minPrice !== null && (p.PRICE || 0) < minPrice) return false;
       if (maxPrice !== null && (p.PRICE || 0) > maxPrice) return false;
       return true;
@@ -358,7 +370,7 @@ export default function CollectionAll5() {
       // Both non-live: keep original order (newest first from API)
       return 0;
     });
-  }, [products, selectedCat, minPrice, maxPrice, liveThreshold]);
+  }, [products, selectedCat, selectedBrand, minPrice, maxPrice, liveThreshold]);
 
   const gridNode = mounted ? containerRef.current?.querySelector('.product-grid') : null;
 
@@ -625,36 +637,76 @@ export default function CollectionAll5() {
         }
       `}</style>
 
-      {/* Selector de Categorías en Plantilla 5 */}
+      {/* Selector de Categorías y Marcas en Plantilla 5 */}
       <div style={{ maxWidth: 1200, margin: '20px auto 0', padding: '0 20px', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Categoría:</span>
-        <div style={{ position: 'relative' }}>
-          <select
-            value={selectedCat || ''}
-            onChange={e => { const val = e.target.value || null; setSelectedCat(val); updateCategoryUrl(val); }}
-            style={{
-              padding: '10px 36px 10px 16px',
-              borderRadius: 8,
-              border: '2px solid #111',
-              background: '#fff',
-              fontSize: 13,
-              color: '#111',
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'Bricolage Grotesque, sans-serif',
-              outline: 'none',
-              minWidth: 200,
-              appearance: 'none',
-              WebkitAppearance: 'none',
-            }}
-          >
-            <option value="">Todas las categorías</option>
-            {categories.map(c => (
-              <option key={c.$id} value={c.$id}>{c.name}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#111', pointerEvents: 'none' }} />
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Categoría:</span>
+          <div style={{ position: 'relative' }}>
+            <select
+              value={selectedCat || ''}
+              onChange={e => { const val = e.target.value || null; setSelectedCat(val); updateCategoryUrl(val); }}
+              style={{
+                padding: '10px 36px 10px 16px',
+                borderRadius: 8,
+                border: '2px solid #111',
+                background: '#fff',
+                fontSize: 13,
+                color: '#111',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: 'Bricolage Grotesque, sans-serif',
+                outline: 'none',
+                minWidth: 200,
+                appearance: 'none',
+                WebkitAppearance: 'none',
+              }}
+            >
+              <option value="">Todas las categorías</option>
+              {categories.map(c => (
+                <option key={c.$id} value={c.$id}>{c.name}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#111', pointerEvents: 'none' }} />
+          </div>
         </div>
+
+        {/* Selector de Marca en Plantilla 5 */}
+        {useMemo(() => {
+          const uniqueBrands = Array.from(new Set(products.map(p => p.BRAND).filter(Boolean))) as string[];
+          if (uniqueBrands.length === 0) return null;
+          return (
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Marca:</span>
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={selectedBrand || ''}
+                  onChange={e => { const val = e.target.value || null; setSelectedBrand(val); updateBrandUrl(val); }}
+                  style={{
+                    padding: '10px 36px 10px 16px',
+                    borderRadius: 8,
+                    border: '2px solid #111',
+                    background: '#fff',
+                    fontSize: 13,
+                    color: '#111',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'Bricolage Grotesque, sans-serif',
+                    outline: 'none',
+                    minWidth: 200,
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                  }}
+                >
+                  <option value="">Todas las marcas</option>
+                  {uniqueBrands.sort().map(brand => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#111', pointerEvents: 'none' }} />
+              </div>
+            </div>
+          );
+        }, [products, selectedBrand])}
       </div>
 
       <div

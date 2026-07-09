@@ -1035,7 +1035,7 @@ export default function PedidoPage() {
           return (
             <div className={`border rounded-3xl p-5 md:p-6 mb-8 flex items-start gap-4 transition-all duration-300 ${bgClass}`}>
               <div className={`p-3 rounded-2xl bg-white shadow-sm flex-shrink-0 ${iconColor}`}>
-                {order.STATUS === 'pending' && <Clock size={24} />}
+                {isPending && <Clock size={24} />}
                 {order.STATUS === 'pending_stock' && <Clock size={24} />}
                 {order.STATUS === 'confirming_stock' && <Box size={24} />}
                 {order.STATUS === 'stock_confirmed' && <CheckCircle size={24} />}
@@ -1066,16 +1066,18 @@ export default function PedidoPage() {
           const useWholesaleTimeline = isWholesale || ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment'].includes(order.STATUS);
           const steps = useWholesaleTimeline
             ? [
+                { key: 'pending',            label: 'Pendiente',         icon: <Clock size={15} /> },
                 { key: 'pending_stock',      label: 'Verificando Stock', icon: <Clock size={15} /> },
-                { key: 'stock_confirmed',    label: 'Stock Confirmado', icon: <CheckCircle size={15} /> },
-                { key: 'waiting_payment',    label: 'Esperando Pago',   icon: <Clock size={15} /> },
-                { key: 'processing',         label: 'Pago a Verificar', icon: <Upload size={15} /> },
-                { key: 'paid',               label: 'Pago Verificado',  icon: <CheckCircle size={15} /> },
-                { key: 'assembling',         label: 'Imprimiendo Etiqueta', icon: <Package size={15} /> },
-                { key: 'packing',            label: 'Embalando Pedido', icon: <Package size={15} /> },
-                { key: 'ready_to_ship',      label: 'Listo para Enviar',icon: <Box size={15} /> },
-                { key: 'shipped',            label: 'Enviado',          icon: <Truck size={15} /> },
-                { key: 'delivered',          label: 'Entregado',        icon: <CheckCircle size={15} /> },
+                { key: 'confirming_stock',   label: 'Confirmando Stock', icon: <Box size={15} /> },
+                { key: 'stock_confirmed',    label: 'Stock Confirmado',  icon: <CheckCircle size={15} /> },
+                { key: 'waiting_payment',    label: 'Esperando Pago',    icon: <Clock size={15} /> },
+                { key: 'processing',         label: 'Pago a Verificar',  icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Pago Verificado',   icon: <CheckCircle size={15} /> },
+                { key: 'assembling',         label: 'Armando Pedido',    icon: <Package size={15} /> },
+                { key: 'packing',            label: 'Etiqueta Lista',    icon: <Package size={15} /> },
+                { key: 'ready_to_ship',      label: 'Listo para Despachar', icon: <Box size={15} /> },
+                { key: 'shipped',            label: 'Enviado',           icon: <Truck size={15} /> },
+                { key: 'delivered',          label: 'Entregado',         icon: <CheckCircle size={15} /> },
               ]
             : [
                 { key: 'pending',            label: 'Pendiente',            icon: <Clock size={15} /> },
@@ -1085,12 +1087,12 @@ export default function PedidoPage() {
                 { key: 'confirming_stock',   label: 'Confirmando Stock',    icon: <Box size={15} /> },
                 { key: 'stock_confirmed',    label: 'Stock Confirmado',     icon: <CheckCircle size={15} /> },
                 { key: 'packing',            label: 'Embalando Pedido',     icon: <Package size={15} /> },
-                { key: 'ready_to_ship',      label: 'Listo para Enviar',    icon: <Box size={15} /> },
-                { key: 'shipped',            label: 'Enviado',              icon: <Truck size={15} /> },
-                { key: 'delivered',          label: 'Entregado',            icon: <CheckCircle size={15} /> },
+                { key: 'ready_to_ship',      label: 'Listo para Despachar', icon: <Box size={15} /> },
+                { key: 'shipped',            label: 'Salió de Tienda',      icon: <Truck size={15} /> },
+                { key: 'delivered',          label: 'Entregado a Agencia',  icon: <CheckCircle size={15} /> },
               ];
           const statusOrder = useWholesaleTimeline
-            ? ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment', 'processing', 'paid', 'assembling', 'packing', 'ready_to_ship', 'shipped', 'delivered']
+            ? ['pending', 'pending_stock', 'confirming_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment', 'processing', 'paid', 'assembling', 'packing', 'ready_to_ship', 'shipped', 'delivered']
             : ['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'ready_to_ship', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
@@ -1275,7 +1277,7 @@ export default function PedidoPage() {
                   </button>
                   
                   {/* Permitir re-subir comprobante si aún no ha sido verificado como pagado */}
-                  {(order.STATUS === 'pending' || order.STATUS === 'processing') && (
+                  {(isPending || order.STATUS === 'processing') && (
                     <label className={`flex-1 py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-150 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
                       <RefreshCw size={14} className={uploading ? 'animate-spin' : ''} />
@@ -1798,7 +1800,7 @@ export default function PedidoPage() {
             )}
 
             {/* Agency change option */}
-            {order.STATUS === 'pending' && !order.AGENCYCHANGED && (
+            {isPending && !order.AGENCYCHANGED && (
               showAgencyChange ? (
                 <div className="mt-4 p-4 bg-pink-50/20 border border-pink-100 rounded-2xl">
                   <p className="text-xs font-bold text-pink-800 mb-2">Selecciona nueva agencia de envío</p>

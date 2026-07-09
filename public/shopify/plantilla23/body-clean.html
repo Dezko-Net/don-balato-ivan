@@ -195,11 +195,12 @@
     }
 </style>
 
-
-
-  
-
-<utility-bar class="header-element utility-bar color-scheme-4 block animation-wrapper absolute w-full top-0 left-0" data-id="sections--27304712274201__utility-bar" data-color-scheme="color-scheme-4">
+<style>
+  .utility-bar[data-id="sections--27304712274201__utility-bar"] {
+    display: none !important;
+  }
+</style>
+<utility-bar class="header-element utility-bar block animation-wrapper relative w-full z-20" style="background-color: #ffffff; color: #333333;" data-id="sections--27304712274201__utility-bar">
     <div class="custom-container text-[0.85em]">
        <ul class="custom-list utility-menu flex items-center flex-wrap">
             
@@ -216,7 +217,7 @@
 </svg>
 </span>
                                     
-                                        <span class="link-hover-animation">Iniciar Sesión</span>
+                                        <span class="link-hover-animation">dezkonet</span>
                                     
                                 </a>
                             </li>
@@ -374,7 +375,8 @@
 
 
 <announcement-bar 
-    class="header-element announcement-bar block absolute top-0 left-0 w-full z-10 color-scheme-1 animation-wrapper" 
+    class="header-element announcement-bar block relative w-full z-10 animation-wrapper" 
+    style="background-color: #ffffff; color: #db2777; font-weight: bold; font-size: 14px;"
     data-id="sections--27304712274201__announcement-bar" 
     data-time-interval="5000"
     data-hidden="true"
@@ -405,9 +407,168 @@
     </div>
 </announcement-bar>
 
-</div>
+<style>
+  @media (max-width: 992px) {
+    #custom-pc-navbar { display: none !important; }
+  }
+  @media (min-width: 993px) {
+    #shopify-section-sections--27304712208665__header { display: none !important; }
+    #custom-pc-navbar { display: flex !important; }
+  }
+  
+  /* Fix gaps in main globally (both mobile and PC) */
+  main {
+    --header-height: 0px !important;
+    --visible-header-height: 0px !important;
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+  }
+  
+  @media (min-width: 993px) {
+    .tpl23-shopify-root .slideshow {
+      border-top: 30px solid #ffffff !important;
+    }
+  }
 
-    
+  #custom-pc-navbar-placeholder {
+    display: none;
+    height: 94px;
+    width: 100%;
+  }
+
+  #custom-pc-navbar {
+    position: relative;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    background-color: #f8c8d8;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    box-shadow: 0 4px 15px rgba(227, 150, 191, 0.3);
+    font-family: 'Outfit', 'Inter', sans-serif;
+    transition: top 0.2s ease, position 0s;
+  }
+  #custom-pc-navbar .navbar-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  #custom-pc-navbar .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #custom-pc-navbar .logo img {
+    height: 75px;
+    width: auto;
+    filter: brightness(0) invert(1);
+  }
+  #custom-pc-navbar .right-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #fff;
+    text-transform: uppercase;
+  }
+  #custom-pc-navbar .right-actions a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #fff;
+    transition: opacity 0.2s;
+  }
+  #custom-pc-navbar .right-actions a:hover {
+    opacity: 0.7;
+  }
+  #custom-pc-navbar .bottom-row {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  #custom-pc-navbar .bottom-row a {
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  #custom-pc-navbar .bottom-row a:hover {
+    opacity: 0.7;
+  }
+</style>
+<div id="custom-pc-navbar-placeholder"></div>
+<div id="custom-pc-navbar">
+  <div class="navbar-container">
+    <div class="top-row">
+      <a href="/" class="logo">
+        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783549408269-pegada-1783549405090.png" alt="Kevin & Coco Chile" />
+      </a>
+      <div class="right-actions">
+        <a href="/cuenta" style="font-size: 12px; justify-content: center; height: 100%;">INICIAR SESIÓN</a>
+        <div style="width:1px; height:28px; background:rgba(255,255,255,0.4);"></div>
+        <a href="/cuenta/registro" style="font-size: 12px; justify-content: center; height: 100%;">REGISTRARSE</a>
+        <div style="width:1px; height:28px; background:rgba(255,255,255,0.4);"></div>
+        <a href="/productos">
+          <span style="font-size:9px; opacity:0.85;">COMPRAR</span>
+          <span style="font-size:12px;">UNIDAD</span>
+        </a>
+        <div style="width:1px; height:28px; background:rgba(255,255,255,0.4);"></div>
+        <a href="/paquetes">
+          <span style="font-size:9px; opacity:0.85;">COMPRAR</span>
+          <span style="font-size:12px;">PAQUETE</span>
+        </a>
+        <div style="width:1px; height:28px; background:rgba(255,255,255,0.4);"></div>
+        <a href="#" data-action="open" data-object="search" style="font-size: 12px; justify-content: center; height: 100%;">BUSCAR</a>
+        <a href="#" data-action="open" data-object="cart" style="font-size: 12px; flex-direction: row; gap: 4px; justify-content: center; height: 100%;">CARRITO <span class="cart-item-size">(0)</span></a>
+      </div>
+    </div>
+    <div class="bottom-row">
+      <a href="/" style="font-weight: 800;">Inicio</a>
+      <a href="/productos">Tienda</a>
+      <a href="/paquetes">Paquetes</a>
+      <a href="/categoria/6a4f053debeebb389cda">Skincare Facial</a>
+      <a href="/categoria/6a4f053e4611fcc4e759">Otros</a>
+      <a href="/categoria/6a4f053e929ab4320ff0">Rubor e Iluminador</a>
+      <a href="/categoria/6a4f053ed1b7ef3c4dc4">Tónicos y Esencias</a>
+      <a href="/categoria/6a4f053f19114d642eb6">Cuidado del Cabello</a>
+      <a href="/categoria/6a4f053f5ff2cf8c5ed3">Limpiadores Faciales</a>
+      <a href="/categoria/6a4f053fabe210632df6">Desmaquillantes y Algodones</a>
+      <a href="/categoria/6a4f053ff3de495f553a">Exfoliantes</a>
+      <a href="/categoria/6a4f054041b659c258ce">Cuidado de Manos</a>
+      <a href="/categoria/6a4f0540954b9d038202">Cuidado de Pies</a>
+      <a href="/categoria/6a4f0540d999f8480790">Cuidado Corporal</a>
+      <a href="/categoria/6a4f05411df8350d53c7">Labios</a>
+    </div>
+  </div>
+</div>
+<script>
+  window.addEventListener('scroll', function() {
+    var nav = document.getElementById('custom-pc-navbar');
+    var placeholder = document.getElementById('custom-pc-navbar-placeholder');
+    if (nav && placeholder && window.innerWidth > 992) {
+      if (window.scrollY > 40) { // announcement bar height
+        nav.style.position = 'fixed';
+        nav.style.top = '0';
+        placeholder.style.display = 'block';
+      } else {
+        nav.style.position = 'relative';
+        nav.style.top = '0';
+        placeholder.style.display = 'none';
+      }
+    }
+  });
+</script>
 <div id="shopify-section-sections--27304712208665__header" class="shopify-section shopify-section-group-header-group section-header"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/header.css" rel="stylesheet" type="text/css" media="all" />
 
 <style data-shopify>
@@ -739,19 +900,20 @@
         touch-action: pan-y !important;
       }
 
-      /* Carousel viewport keeps the hero height via the padding-bottom trick */
+      /* Carousel viewport uses absolute positioning because the dummy image sets the height */
       .hero-carousel {
-        position: relative;
+        position: absolute !important;
+        inset: 0 !important;
         width: 100%;
+        height: 100% !important;
         overflow: hidden;
+        padding-bottom: 0 !important;
       }
       .hero-carousel-desktop {
         display: none;
-        padding-bottom: 41.67%;   /* 600/1440 */
       }
       .hero-carousel-mobile {
         display: block;
-        padding-bottom: 177.78%;  /* 16/9 */
       }
       @media (min-width: 993px) {
         .hero-carousel-desktop { display: block; }
@@ -991,7 +1153,450 @@
         </div>
 </custom-slideshow>
 
+<div id="shopify-section-template--27304712470809__media_columns_slider_zMFEzH" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/media-columns.css" rel="stylesheet" type="text/css" media="all" />
+
+<style data-shopify>
+    .media-columns[data-id="template--27304712470809__media_columns_slider_zMFEzH"]{
+        --padding-top: clamp(0px, 50vw, 50px);
+        --padding-bottom: clamp(0px, 50vw, 50px);
+
+        --overlay-opacity: 0%;
+        --column-gap: 10px;
+        --column-h-align: center;
+
+        
+            --column-justify-content: center;
+            --column-button-margin-inline: auto;
+            --margin-inline: auto;
+            --text-alignment: center;
+            --justify-content: center;
+        
+
+        
+            --column-align-items: center;
+        
+
+        --column-padding: 15px;
+        --column-border-width: 0px;
+        --column-border-radius: 20px;
+        
+        --column-extra-padding: 0;
+        --column-extra-padding-mobile: 0;
+        
+
+        --column-max-width: calc((100% / 5) - (60px / 5));
+        --column-max-width-mobile: calc((100% / 1) - (0px / 1)); 
+
+        
+        --slide-height: auto;
+        --column-min-height: 100%;
+        
+    }
+    .media-columns[data-id="template--27304712470809__media_columns_slider_zMFEzH"] .heading-section{
+        --text-font-size: 1.0em;
+
+        --text-alignment: left;
+        
+            --justify-content: start;
+        
+
+        text-align: var(--text-alignment);
+    }
+    .media-columns[data-id="template--27304712470809__media_columns_slider_zMFEzH"] .column{
+        --text-font-size: 0.0em;
+        --justify-content: var(--column-justify-content);
+
+        
+            --color-text: 42,33,32;
+            --color-background: rgb(250,250,230);
+        
+    }
+</style>
+
+
+
+<media-columns 
+    class="media-columns animation-section animation-wrapper relative overflow-hidden block color-scheme-1" 
+    data-id="template--27304712470809__media_columns_slider_zMFEzH" 
+    data-column-type="slideshow"
+    data-ratio="square"
+>
+    
+        <div class="custom-container pb-7">
+            
+
+<div class="heading-section">
+    
+    
+        <h3 class="heading py-2 animation-element fade-in animation-delay-100"><span>EXPLORA NUESTRAS MARCAS</span></h3>
+    
+    
+        <div class="body-text py-2 animation-element fade-in animation-delay-200 hyphens-auto">
+            <span><p>Tenemos todas nuestras marcas categorizadas — haz clic en cualquiera y descubre todos sus productos, colecciones y categorías en un solo lugar.</p></span>
+        </div>
+    
 </div>
+        </div>
+    
+
+    <div class="custom-container group z-10 relative" style="max-width: 100%; padding-left: 12px; padding-right: 12px;">
+         <div class="swiper-container relative"
+                data-speed="7000"
+                data-autoplay="false"
+                data-items-per-view="5"
+                data-items-per-view-mobile="1"
+                data-loop="false"
+                data-items-total="4"
+                data-gap="15"
+            >
+                <div class="swiper-wrapper">
+                    <div id="shopify-block-AcjJZaVg2QUp3L1Vnd__media_columns_text_block_f8Mp9U" class="shopify-block swiper-slide h-auto w-full">
+
+<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #f8d78a; border-radius: 24px;"
+    data-block-id="AcjJZaVg2QUp3L1Vnd__media_columns_text_block_f8Mp9U" 
+    data-type="" 
+    data-column-type="column"
+    
+    
+
+>
+    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
+        <div class="w-full">
+            <div id="shopify-block-ALzQxdUZuUG1ERzBsY__image_link_eVXLWA" class="shopify-block image-link-block">
+
+<div class="custom-theme-block" 
+    style="
+        --padding-top: 0px;
+        --padding-bottom: 0px;
+        --image-width: 100%;
+        --image-width-mobile: 100%;
+        --image-wrapper-width: 100%;
+        --image-wrapper-width-mobile: 100%;
+        --border-width: 0px;
+        --border-radius: 20px;
+        --aspect-ratio: 100 / 70;
+    "
+    
+>
+    
+    <a href="/marcas/sadoer"  class="link no-link-color morph-svg-wrapper block">
+    
+        
+        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
+            
+            <hover-zoom-image class="w-full h-full">
+            
+                
+                    <img src="https://sadoerskincare.com/wp-content/uploads/2025/12/sadoer-skincare-logo.svg" alt="SADOER" loading="lazy" class="object-contain p-4 w-full h-full pointer-events-none">
+
+            
+            </hover-zoom-image>
+            
+        </div>
+        
+    
+    </a>
+    
+</div>
+
+</div>
+<div id="shopify-block-AdmJhZ3pmKy91KytOb__heading_Lr6LDB" class="shopify-block heading-block">
+
+    <h5 class="heading py-2 custom-theme-block text-color-text" 
+    style="
+        --padding-top: 5px;
+        --padding-bottom: 5px;
+    "
+    
+><span>SADÖER</span></h5>
+
+</div>
+<div id="shopify-block-ANUZGM1BHeGxMUVZwe__text_TWkf73" class="shopify-block text-block">
+
+    <div class="body-text custom-theme-block text-color-text" 
+    style="
+        --padding-top: 5px;
+        --padding-bottom: 5px;
+        --text-font-size: 1.0em;
+    "
+    
+>
+        <span><p>El poder del colágeno para una piel firme, radiante y visiblemente más joven.</p></span>
+    </div>
+
+</div>
+
+        </div>
+    </div>
+</div>
+
+</div>
+<div id="shopify-block-AY3IvZWdoSFQ5VE9rT__media_columns_text_block_hpqyPp" class="shopify-block swiper-slide h-auto w-full">
+
+<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #FFFFFF; border-radius: 24px; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.06);"
+    data-block-id="AY3IvZWdoSFQ5VE9rT__media_columns_text_block_hpqyPp" 
+    data-type="" 
+    data-column-type="column"
+    
+    
+
+>
+    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
+        <div class="w-full">
+            <div id="shopify-block-AYU15UDhwZmh4dkhlT__image_link_BMaGjH" class="shopify-block image-link-block">
+
+<div class="custom-theme-block" 
+    style="
+        --padding-top: 10px;
+        --padding-bottom: 10px;
+        --image-width: 100%;
+        --image-width-mobile: 100%;
+        --image-wrapper-width: 100%;
+        --image-wrapper-width-mobile: 100%;
+        --border-width: 0px;
+        --border-radius: 20px;
+        --aspect-ratio: 100 / 70;
+    "
+    
+>
+    
+    <a href="/marcas/kevin-coco"  class="link no-link-color morph-svg-wrapper block">
+    
+        
+        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
+            
+            <hover-zoom-image class="w-full h-full">
+            
+                
+                    
+                    
+
+                    <img src="https://kevincococolombia.com/wp-content/uploads/2024/03/1.png" alt="Kevin & Coco" loading="lazy" class="object-cover w-full h-full pointer-events-none">
+                
+            
+            </hover-zoom-image>
+            
+        </div>
+        
+    
+    </a>
+    
+</div>
+
+</div>
+<div id="shopify-block-AejhzbjU2OHlkSVVrY__heading_Vgtdq3" class="shopify-block heading-block">
+
+    <h5 class="heading py-2 custom-theme-block text-color-text" 
+    style="
+        --padding-top: 5px;
+        --padding-bottom: 5px;
+    "
+    
+><span>Kevin & Coco</span></h5>
+
+</div>
+<div id="shopify-block-ARXMwRWx6VkpsQVUza__text_CR7fNE" class="shopify-block text-block">
+
+    <div class="body-text custom-theme-block text-color-text" 
+    style="
+        --padding-top: 5px;
+        --padding-bottom: 5px;
+        --text-font-size: 1.0em;
+    "
+    
+>
+        <span><p>Color, creatividad y tendencia para armar tus looks más vibrantes.</p></span>
+    </div>
+
+</div>
+
+        </div>
+    </div>
+</div>
+
+</div>
+<div id="shopify-block-AeGJVT1kwSCt5ekJxa__media_columns_text_block_cTTDyg" class="shopify-block swiper-slide h-auto w-full">
+
+<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #231815; color: #ffffff; border-radius: 24px; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.06);"
+    data-block-id="AeGJVT1kwSCt5ekJxa__media_columns_text_block_cTTDyg" 
+    data-type="" 
+    data-column-type="column"
+    
+    
+
+>
+    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
+        <div class="w-full">
+            <div id="shopify-block-AbXFmZ0xzV1h1TGI4Q__image_link_agadVr" class="shopify-block image-link-block">
+
+<div class="custom-theme-block" 
+    style="
+        --padding-top: 10px;
+        --padding-bottom: 10px;
+        --image-width: 100%;
+        --image-width-mobile: 100%;
+        --image-wrapper-width: 100%;
+        --image-wrapper-width-mobile: 100%;
+        --border-width: 0px;
+        --border-radius: 20px;
+        --aspect-ratio: 100 / 70;
+    "
+    
+>
+    
+    <a href="/marcas/3q-beauty"  class="link no-link-color morph-svg-wrapper block">
+    
+        
+        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
+            
+            <hover-zoom-image class="w-full h-full">
+            
+                
+                    <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783589003615-pegada-1783589002336.png" alt="3Q Beauty" loading="lazy" class="object-cover w-full h-full pointer-events-none">
+                
+            
+            </hover-zoom-image>
+            
+        </div>
+        
+    
+    </a>
+    
+</div>
+
+</div>
+<div id="shopify-block-AVHg3S05EbGZsY1ZNY__heading_kM7iaF" class="shopify-block heading-block">
+
+    <h5 class="heading py-2 custom-theme-block text-color-text" 
+    style="
+        --padding-top: 5px;
+        --padding-bottom: 5px;
+        color: white !important;
+    "
+    
+><span>3Q Beauty</span></h5>
+
+</div>
+<div id="shopify-block-AVGJxQnlsbG9IRzhJc__text_ANbhWR" class="shopify-block text-block">
+
+    <div class="body-text custom-theme-block text-color-text" 
+    style="
+        --padding-top: 5px;
+        --padding-bottom: 5px;
+        --text-font-size: 1.0em;
+        color: white !important;
+    "
+    
+>
+        <span><p>El equilibrio perfecto entre limpieza profunda y el maquillaje ideal para tu día a día.</p></span>
+    </div>
+
+</div>
+
+        </div>
+    </div>
+</div>
+
+</div>
+<div id="shopify-block-AaWRvQnFTazVTY0l6a__media_columns_text_block_nLepPx" class="shopify-block swiper-slide h-auto w-full">
+
+<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #fde1ed; border-radius: 24px; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.06);"
+    data-block-id="AaWRvQnFTazVTY0l6a__media_columns_text_block_nLepPx"
+    data-type=""
+    data-column-type="column"
+>
+    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
+        <div class="w-full">
+            <div id="shopify-block-ATFoveml2bWZkUnF0S__image_link_jB3ek4" class="shopify-block image-link-block">
+
+<div class="custom-theme-block" 
+    style="
+        --padding-top: 10px;
+        --padding-bottom: 10px;
+        --image-width: 100%;
+        --image-width-mobile: 100%;
+        --image-wrapper-width: 100%;
+        --image-wrapper-width-mobile: 100%;
+        --border-width: 0px;
+        --border-radius: 20px;
+        --aspect-ratio: 100 / 70;
+    "
+    
+>
+    
+    <a href="/marcas/billion-beauty"  class="link no-link-color morph-svg-wrapper block">
+    
+        
+        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
+            
+            <hover-zoom-image class="w-full h-full">
+            
+                
+                    
+                    
+
+                    <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783589494708-pegada-1783589490395.png" alt="Billion Beauty" loading="lazy" class="object-contain w-full h-full pointer-events-none">
+                
+            
+            </hover-zoom-image>
+            
+        </div>
+        
+    
+    </a>
+    
+</div>
+
+</div>
+<div id="shopify-block-Acy9CR1Vjb1NnZktOb__heading_hyUtXE" class="shopify-block heading-block">
+    <h5 class="heading py-2 custom-theme-block text-color-text" style="--padding-top: 5px; --padding-bottom: 5px; color: black !important;"><span>Billion Beauty</span></h5>
+</div>
+<div id="shopify-block-AK0NQclpOMUY0MjFVV__text_FrMPwb" class="shopify-block text-block">
+    <div class="body-text custom-theme-block text-color-text" style="--padding-top: 5px; --padding-bottom: 5px; --text-font-size: 1.0em; color: black !important;">
+        <span><p>Maquillaje multifuncional y de larga duración para lograr un glow radiante en segundos.</p></span>
+    </div>
+</div>
+</div>
+
+        </div>
+    </div>
+</div>
+
+</div>
+
+                </div>
+
+            
+                <div class="swiper-navigation-wrapper">
+                    <div class="button-previous button--secondary z-100 flex items-center justify-center opacity-0 group-hover:opacity-100 absolute top-0 bottom-0 my-auto left-5 w-[41px] h-[41px] cursor-pointer transition-all duration-300 ease-in-out" role="button" tabindex="0" aria-label="Anterior">
+                        <span class="visible-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+</svg></span>
+                        <span class="hover-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+</svg></span>
+                    </div>
+                    <div class="button-next button--secondary z-100 flex items-center justify-center opacity-0 absolute group-hover:opacity-100 top-0 bottom-0 my-auto right-5 w-[41px] h-[41px] cursor-pointer transition-all duration-300 ease-in-out" role="button" tabindex="0" aria-label="Siguiente">
+                        <span class="visible-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+</svg>
+</span>
+                        <span class="hover-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+</svg>
+</span>
+                    </div>
+                </div>
+            
+        </div>
+
+        
+            <div class="swiper-pagination mx-auto relative overflow-hidden rounded-[5px] opacity-0 animation-element fade-in"></div>
+        
+    </div>
+</media-columns>
+
+</div>/div>
 <div id="shopify-section-template--KEVIN & COCO CHILE_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10; display: none !important;">
 
   <!-- Fade superior removed per user request -->
@@ -1290,6 +1895,340 @@
         
     </div>
 </collection-list>
+
+</div><div id="shopify-section-template--27304712470809__bundle_products_3zgi3T" class="shopify-section section-bundle-products"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/bundle-products.css" rel="stylesheet" type="text/css" media="all" />
+
+<style data-shopify>
+    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] {
+         --padding-top: clamp(0px, 50vw, 40px);
+        --padding-bottom: clamp(0px, 50vw, 30px);
+
+        --height: 55vw;
+        --mobile-height: 160vw;
+        --media-position: absolute;
+        --mobile-media-position: absolute;
+        --overlay-opacity: 0%;
+        --hotspot-icon-color: #ffffff;
+
+        --product-list-padding: 23px;
+        --product-list-border-radius: 16px;
+        --product-list-border-width: 0px;
+
+        --product-list-shadow: 0 2px 8px rgba(0, 0, 0, var(--box-shadow-intensity));
+        
+        
+        --image-margin-inline: auto 0;
+        --product-list-left: 0;
+        --product-list-right: auto;
+        
+
+        
+        --product-list-color-background: rgb(var(--color-inner-background));
+        --product-list-color-text: var(--color-inner-text);
+        
+    }
+
+    
+    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="1"] {
+        --horizontal-pos: 37%;
+        --vertical-pos: 20%;
+        --horizontal-pos-mobile: 33%;
+        --vertical-pos-mobile: 53%;
+
+        
+            --left: 0;
+            --right: unset;
+        
+
+        
+            --top: calc(100% + 20px);
+            --bottom: unset;
+            --bottom-arrow: 100%;
+            --top-arrow: unset;
+            --arrow-rotate: 0;
+        
+
+        
+            --left-mobile: 0;
+            --right-mobile: unset;
+        
+
+        
+            --top-mobile: unset;
+            --bottom-mobile: calc(100% + 20px);
+            --bottom-arrow-mobile: unset;
+            --top-arrow-mobile: 100%;
+            --arrow-rotate-mobile: 180deg;
+        
+
+        
+    }
+    
+    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="2"] {
+        --horizontal-pos: 78%;
+        --vertical-pos: 62%;
+        --horizontal-pos-mobile: 70%;
+        --vertical-pos-mobile: 50%;
+
+        
+            --left: unset;
+            --right: 0;
+        
+
+        
+            --top: unset;
+            --bottom: calc(100% + 20px);
+            --bottom-arrow: unset;
+            --top-arrow: 100%;
+            --arrow-rotate: 180deg;
+        
+
+        
+            --left-mobile: unset;
+            --right-mobile: 0;
+        
+
+        
+            --top-mobile: calc(100% + 20px);
+            --bottom-mobile: unset;
+            --bottom-arrow-mobile: 100%;
+            --top-arrow-mobile: unset;
+            --arrow-rotate-mobile: 0;
+        
+
+        
+    }
+    
+    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="3"] {
+        --horizontal-pos: 57%;
+        --vertical-pos: 76%;
+        --horizontal-pos-mobile: 50%;
+        --vertical-pos-mobile: 60%;
+
+        
+            --left: unset;
+            --right: 0;
+        
+
+        
+            --top: unset;
+            --bottom: calc(100% + 20px);
+            --bottom-arrow: unset;
+            --top-arrow: 100%;
+            --arrow-rotate: 180deg;
+        
+
+        
+            --left-mobile: 0;
+            --right-mobile: unset;
+        
+
+        
+            --top-mobile: unset;
+            --bottom-mobile: calc(100% + 20px);
+            --bottom-arrow-mobile: unset;
+            --top-arrow-mobile: 100%;
+            --arrow-rotate-mobile: 180deg;
+        
+
+        
+    }
+    
+    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="4"] {
+        --horizontal-pos: 16%;
+        --vertical-pos: 55%;
+        --horizontal-pos-mobile: 15%;
+        --vertical-pos-mobile: 67%;
+
+        
+            --left: 0;
+            --right: unset;
+        
+
+        
+            --top: unset;
+            --bottom: calc(100% + 20px);
+            --bottom-arrow: unset;
+            --top-arrow: 100%;
+            --arrow-rotate: 180deg;
+        
+
+        
+            --left-mobile: 0;
+            --right-mobile: unset;
+        
+
+        
+            --top-mobile: unset;
+            --bottom-mobile: calc(100% + 20px);
+            --bottom-arrow-mobile: unset;
+            --top-arrow-mobile: 100%;
+            --arrow-rotate-mobile: 180deg;
+        
+
+        
+    }
+    
+    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="5"] {
+        --horizontal-pos: 94%;
+        --vertical-pos: 20%;
+        --horizontal-pos-mobile: 81%;
+        --vertical-pos-mobile: 62%;
+
+        
+            --left: unset;
+            --right: 0;
+        
+
+        
+            --top: calc(100% + 20px);
+            --bottom: unset;
+            --bottom-arrow: 100%;
+            --top-arrow: unset;
+            --arrow-rotate: 0;
+        
+
+        
+            --left-mobile: unset;
+            --right-mobile: 0;
+        
+
+        
+            --top-mobile: unset;
+            --bottom-mobile: calc(100% + 20px);
+            --bottom-arrow-mobile: unset;
+            --top-arrow-mobile: 100%;
+            --arrow-rotate-mobile: 180deg;
+        
+
+        
+    }
+    
+</style>
+
+
+
+<bundle-products class="bundle-products animation-wrapper relative overflow-x-hidden block color-scheme-9" 
+    data-id="template--27304712470809__bundle_products_3zgi3T"
+    data-product-list-input-type="secondary"
+>
+    <div class="bundle-products__inner">
+        
+        <div class="bundle-products__image-wrapper relative w-[max(70%,calc(100%-500px))] animation-element fade-in">
+            <div class="bundle-products__background w-full h-full img-blur animation-element fade-in">
+                
+
+    
+    
+    
+    <img src="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png" alt="Volverground image" srcset="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 375w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 550w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 750w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 1100w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 1500w" width="1672" height="941" loading="lazy" sizes="100vw" class="object-cover w-full h-full hidden lg:block pointer-events-none">
+
+    
+    
+    
+    <img src="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png" alt="Volverground image" srcset="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png 375w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png 550w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png 750w" width="941" height="1672" loading="lazy" sizes="100vw" class="object-cover w-full h-full lg:hidden block pointer-events-none">
+
+            </div>
+
+            
+
+            
+                
+
+
+            
+                
+
+
+            
+                
+
+
+            
+                
+
+
+            
+                
+
+
+            
+        </div>
+
+        
+        <div class="bundle-products__product-list-wrapper w-[min(30%,500px)] slide-right animation-element absolute top-0 bottom-0 h-[min(80%,800px)] my-auto z-10 mx-30 right-0 overflow-hidden border-current animation-element fade-in animation-delay-300 animation-duration-300">
+           <div class="bundle-products__product-list flex flex-col h-full overflow-hidden">
+                
+                    <h2 class="heading py-5 border-b-1 border-current/10 mb-5 h5">
+                        <span>Glass Skin in 5 Steps</span>
+                    </h2>
+                
+
+                <ul class="custom-list product-list h-full overflow-y-auto overflow-x-hidden" tabindex="-1"></ul>
+
+                <div class="py-5 border-t-1 border-current/10 mt-5">
+                    
+                    
+                        
+                        
+
+                        
+                        <div class="item-total-price pb-5">
+                            <script type="application/json" class="bundle-products__products-data">
+                                {
+                                    "products": [{"id": "10620179644697", "price": 2200, "available": true}, {"id": "10620179874073", "price": 2200, "available": true}, {"id": "10620179906841", "price": 2600, "available": true}, {"id": "10620180496665", "price": 3200, "available": true}, {"id": "10620180594969", "price": 2400, "available": true}],
+                                    "total_price": 12600,
+                                    "saving_percentage": 15
+                                }
+                            </script>
+
+                            
+                            <div class="item-total-price--subtotal text-[0.9em] opacity-70 justify-between flex gap-3">
+                                <span class="label">Subtotal:</span>
+                                <span class="value font-medium" data-with-currency="true">$126.00 USD</span>
+                            </div>
+                            <div class="item-total-price--save text-[0.9em] opacity-70 justify-between flex gap-3">
+                                <span class="label">Bundle &amp; save (15%):</span>
+                                <span class="value font-medium" data-with-currency="true">$18.90 USD</span>
+                            </div>
+                            
+                            <div class="item-total-price--total flex justify-between">
+                                <span class="label font-semibold">Precio Total:</span>
+                                <span class="value font-medium" data-with-currency="true">$107.10 USD</span>
+                            </div>
+                        </div>
+                        
+                    
+
+                    <button class="button-cart custom-button w-full cursor-pointer button--secondary" 
+                        type="button" 
+                        aria-label="Añadir all to cart" 
+                        title="Añadir all to cart" 
+                    >
+                        <span class="visible-text z-10">
+                            <span class="link-hover-animation">Añadir all to cart</span>
+                        </span>
+                        <span class="hover-text z-10">
+                            <span class="link-hover-animation">Añadir all to cart</span>
+                        </span>
+                    </button>
+
+                    
+                    <div class="info leading-none text-[0.9em] opacity-50 pt-6">
+                        <small>Pack promocional por tiempo limitado — 10 productos (15 unidades) a precio fijo de $15.990. Sin descuentos adicionales.</small>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</bundle-products>
+
+<bundle-products-popup class="bundle-products-popup fixed top-0 left-0 w-full h-screen bg-black/50 z-502 flex items-start justify-center transition-all duration-400" data-hidden="true">
+    <div class="popup__inner relative w-full h-auto max-h-[100dvh] overflow-auto px-7 pb-7 pt-[55px] transition-all duration-400 ease-in-out mt-[20%] mx-[1rem]">
+        <div class="popup__content"></div>
+    </div>
+</bundle-products-popup>
 
 </div><div id="shopify-section-template--27304712470809__featured_product_38eqkx" class="shopify-section section-product section-product--featured-product"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-product.css" rel="stylesheet" type="text/css" media="all" />
 <link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product.css" rel="stylesheet" type="text/css" media="all" />
@@ -3931,800 +4870,6 @@
 
     </div>
 </media-with-text>
-
-</div><div id="shopify-section-template--27304712470809__media_columns_slider_zMFEzH" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/media-columns.css" rel="stylesheet" type="text/css" media="all" />
-
-<style data-shopify>
-    .media-columns[data-id="template--27304712470809__media_columns_slider_zMFEzH"]{
-        --padding-top: clamp(0px, 50vw, 50px);
-        --padding-bottom: clamp(0px, 50vw, 50px);
-
-        --overlay-opacity: 0%;
-        --column-gap: 15px;
-        --column-h-align: center;
-
-        
-            --column-justify-content: center;
-            --column-button-margin-inline: auto;
-            --margin-inline: auto;
-            --text-alignment: center;
-            --justify-content: center;
-        
-
-        
-            --column-align-items: center;
-        
-
-        --column-padding: 15px;
-        --column-border-width: 0px;
-        --column-border-radius: 20px;
-        
-        --column-extra-padding: 0;
-        --column-extra-padding-mobile: 0;
-        
-
-        --column-max-width: calc((100% / 4) - (45px / 4));
-        --column-max-width-mobile: calc((100% / 1) - (0px / 1)); 
-
-        
-        --slide-height: auto;
-        --column-min-height: 100%;
-        
-    }
-    .media-columns[data-id="template--27304712470809__media_columns_slider_zMFEzH"] .heading-section{
-        --text-font-size: 1.0em;
-
-        --text-alignment: left;
-        
-            --justify-content: start;
-        
-
-        text-align: var(--text-alignment);
-    }
-    .media-columns[data-id="template--27304712470809__media_columns_slider_zMFEzH"] .column{
-        --text-font-size: 0.0em;
-        --justify-content: var(--column-justify-content);
-
-        
-            --color-text: 42,33,32;
-            --color-background: rgb(250,250,230);
-        
-    }
-</style>
-
-
-
-<media-columns 
-    class="media-columns animation-section animation-wrapper relative overflow-hidden block color-scheme-1" 
-    data-id="template--27304712470809__media_columns_slider_zMFEzH" 
-    data-column-type="slideshow"
-    data-ratio="square"
->
-    
-        <div class="custom-container pb-7">
-            
-
-<div class="heading-section">
-    
-    
-        <h3 class="heading py-2 animation-element fade-in animation-delay-100"><span>EXPLORA NUESTRAS MARCAS</span></h3>
-    
-    
-        <div class="body-text py-2 animation-element fade-in animation-delay-200 hyphens-auto">
-            <span><p>Encuentra las mejores líneas de skincare en un solo lugar. Elige la rutina ideal para tu piel y luce un rostro radiante.</p></span>
-        </div>
-    
-</div>
-        </div>
-    
-
-    <div class="custom-container group z-10 relative lg:overflow-hidden">
-         <div class="swiper-container relative"
-                data-speed="7000"
-                data-autoplay="false"
-                data-items-per-view="4"
-                data-items-per-view-mobile="1"
-                data-loop="false"
-                data-items-total="4"
-                data-gap="15"
-            >
-                <div class="swiper-wrapper">
-                    <div id="shopify-block-AcjJZaVg2QUp3L1Vnd__media_columns_text_block_f8Mp9U" class="shopify-block swiper-slide h-auto w-full">
-
-<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #f8d78a; border-radius: 24px;"
-    data-block-id="AcjJZaVg2QUp3L1Vnd__media_columns_text_block_f8Mp9U" 
-    data-type="" 
-    data-column-type="column"
-    
-    
-
->
-    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
-        <div class="w-full">
-            <div id="shopify-block-ALzQxdUZuUG1ERzBsY__image_link_eVXLWA" class="shopify-block image-link-block">
-
-<div class="custom-theme-block" 
-    style="
-        --padding-top: 10px;
-        --padding-bottom: 10px;
-        --image-width: 100%;
-        --image-width-mobile: 100%;
-        --image-wrapper-width: 100%;
-        --image-wrapper-width-mobile: 100%;
-        --border-width: 0px;
-        --border-radius: 20px;
-        --aspect-ratio: 100 / 120;
-    "
-    
->
-    
-    <a href="https://kevincocochile.cl/productos"  class="link no-link-color morph-svg-wrapper block">
-    
-        
-        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
-            
-            <hover-zoom-image class="w-full h-full">
-            
-                
-                    <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1780594613062-pegada-1780594610544.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=JdiouiZ0hVZ4Nsrxq7225fhY2hLm4pd%2FIlpUTPKmbbM2ywMGefM%2FbxEGGNOMEIe94PeDNsniUAk3wFf733TrXyXDvRd63SigTwYZOMcNeFMtjEKAi1ikMuSdLx0uXUdUeFl0eAMV6D%2FEQ01YhTo1jF0if0mR2xkPuDky1Y0axP05d%2Fch4XN4lyD7Jt%2BBuRNGdRaN105zyTDxMcV3NRp97MNFHFTpSrM8q7pqiDzNZFWIuv8PTBDfkXcKWJGaGrNRTuFF4%2FgWPe2K4QOWJzKr0MFZwZ7LH4wbayg1TKaV9YsBtFGZC7%2BFBEL8M0fB4o%2BL53WCL7Th7heitg%2Ff1ytyGg%3D%3D" alt="SADOER" loading="lazy" class="object-cover w-full h-full pointer-events-none">
-
-            
-            </hover-zoom-image>
-            
-        </div>
-        
-    
-    </a>
-    
-</div>
-
-</div>
-<div id="shopify-block-AdmJhZ3pmKy91KytOb__heading_Lr6LDB" class="shopify-block heading-block">
-
-    <h5 class="heading py-2 custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-    "
-    
-><span>SADÖER</span></h5>
-
-</div>
-<div id="shopify-block-ANUZGM1BHeGxMUVZwe__text_TWkf73" class="shopify-block text-block">
-
-    <div class="body-text custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-        --text-font-size: 1.0em;
-    "
-    
->
-        <span><p>El poder del colágeno para una piel firme, radiante y visiblemente más joven.</p></span>
-    </div>
-
-</div>
-
-        </div>
-    </div>
-</div>
-
-</div>
-<div id="shopify-block-AY3IvZWdoSFQ5VE9rT__media_columns_text_block_hpqyPp" class="shopify-block swiper-slide h-auto w-full">
-
-<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #FFFFFF; border-radius: 24px; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.06);"
-    data-block-id="AY3IvZWdoSFQ5VE9rT__media_columns_text_block_hpqyPp" 
-    data-type="" 
-    data-column-type="column"
-    
-    
-
->
-    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
-        <div class="w-full">
-            <div id="shopify-block-AYU15UDhwZmh4dkhlT__image_link_BMaGjH" class="shopify-block image-link-block">
-
-<div class="custom-theme-block" 
-    style="
-        --padding-top: 10px;
-        --padding-bottom: 10px;
-        --image-width: 100%;
-        --image-width-mobile: 100%;
-        --image-wrapper-width: 100%;
-        --image-wrapper-width-mobile: 100%;
-        --border-width: 0px;
-        --border-radius: 20px;
-        --aspect-ratio: 100 / 120;
-    "
-    
->
-    
-    <a href="/collections/routine-starter-kits"  class="link no-link-color morph-svg-wrapper block">
-    
-        
-        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
-            
-            <hover-zoom-image class="w-full h-full">
-            
-                
-                    
-                    
-
-                    <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1780594738387-pegada-1780594736977.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=V5aPu6cNuz9LfH0GbDryxWt1J2pX42FKeZzhfD1DJDuL64kMKLn%2BlQ2Gqs5G2nLj0aA7K1GPn%2Fejgw2bY5h9re77ODDWbBvxQakaIRu7RPLc5OUWdMP3FoIIMkPYoico4ARz%2F7kuzNCP%2BmOlXloBYmeT%2FCaIzmpGiUA6DThnG0wqHU8nsFzjLukHdsK9nAF%2BMlW36xPox06MOeyC2MFs%2BDPeyUctgHSNkYHHzSdCoQ7LTm0ViAf9c%2BEklJFisiRfUjJv2jRcIjuYyKOXAsS3QoZhOpUdhyZKckLmx1%2BqIG%2BinO3dXpxidXWMOoDwCpgailubK0FqfHDraTGt5sN2NQ%3D%3D" alt="Kevin & Coco" loading="lazy" class="object-cover w-full h-full pointer-events-none">
-                
-            
-            </hover-zoom-image>
-            
-        </div>
-        
-    
-    </a>
-    
-</div>
-
-</div>
-<div id="shopify-block-AejhzbjU2OHlkSVVrY__heading_Vgtdq3" class="shopify-block heading-block">
-
-    <h5 class="heading py-2 custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-    "
-    
-><span>Kevin & Coco</span></h5>
-
-</div>
-<div id="shopify-block-ARXMwRWx6VkpsQVUza__text_CR7fNE" class="shopify-block text-block">
-
-    <div class="body-text custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-        --text-font-size: 1.0em;
-    "
-    
->
-        <span><p>Color, creatividad y tendencia para armar tus looks más vibrantes.</p></span>
-    </div>
-
-</div>
-
-        </div>
-    </div>
-</div>
-
-</div>
-<div id="shopify-block-AeGJVT1kwSCt5ekJxa__media_columns_text_block_cTTDyg" class="shopify-block swiper-slide h-auto w-full">
-
-<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #231815; color: #ffffff; border-radius: 24px; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.06);"
-    data-block-id="AeGJVT1kwSCt5ekJxa__media_columns_text_block_cTTDyg" 
-    data-type="" 
-    data-column-type="column"
-    
-    
-
->
-    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
-        <div class="w-full">
-            <div id="shopify-block-AbXFmZ0xzV1h1TGI4Q__image_link_agadVr" class="shopify-block image-link-block">
-
-<div class="custom-theme-block" 
-    style="
-        --padding-top: 10px;
-        --padding-bottom: 10px;
-        --image-width: 100%;
-        --image-width-mobile: 100%;
-        --image-wrapper-width: 100%;
-        --image-wrapper-width-mobile: 100%;
-        --border-width: 0px;
-        --border-radius: 20px;
-        --aspect-ratio: 100 / 120;
-    "
-    
->
-    
-    <a href="/productos?sort=date-added"  class="link no-link-color morph-svg-wrapper block">
-    
-        
-        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
-            
-            <hover-zoom-image class="w-full h-full">
-            
-                
-                    <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1780601772963-pegada-1780601769508.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=FrAtD%2B6vHQwtu7gS3XAhKO2Az0DXFU99qV8SUBE0RLotl9dYCN%2BdqrhBlwvW1foxCSiSmaH8NQ2LTSUdgE7H0jhCAq4gCc79kT39660ZHKHGl7xiOrZoDjjsXiwTCyfgLsSsvie4fsCK2bdQXHgFjlPsmezelcMr1XsvTDp2aNw4AMgOpG7fmQPAZfQUygds5qVVNovDaYBxAETz0KK4Tw5EF7UsAeHE4meDCJhvCpaTUjNraAXvffDTmaqbeH5vT%2BIvu91LAqfWc0oznFLWFHMtdJl52G0ZL5TPXMtHfgd00XH%2FYXWYj5q8epcL52pknan8Kitk5q4IRemkP8SZdA%3D%3D" alt="3Q Beauty" loading="lazy" class="object-cover w-full h-full pointer-events-none">
-                
-            
-            </hover-zoom-image>
-            
-        </div>
-        
-    
-    </a>
-    
-</div>
-
-</div>
-<div id="shopify-block-AVHg3S05EbGZsY1ZNY__heading_kM7iaF" class="shopify-block heading-block">
-
-    <h5 class="heading py-2 custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-        color: white !important;
-    "
-    
-><span>3Q Beauty</span></h5>
-
-</div>
-<div id="shopify-block-AVGJxQnlsbG9IRzhJc__text_ANbhWR" class="shopify-block text-block">
-
-    <div class="body-text custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-        --text-font-size: 1.0em;
-        color: white !important;
-    "
-    
->
-        <span><p>El equilibrio perfecto entre limpieza profunda y el maquillaje ideal para tu día a día.</p></span>
-    </div>
-
-</div>
-
-        </div>
-    </div>
-</div>
-
-</div>
-<div id="shopify-block-AaWRvQnFTazVTY0l6a__media_columns_text_block_nLepPx" class="shopify-block swiper-slide h-auto w-full">
-
-<div class="column h-full overflow-hidden relative w-full animation-element fade-in" style="background-color: #fde1ed; border-radius: 24px; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.06);"
-    data-block-id="AaWRvQnFTazVTY0l6a__media_columns_text_block_nLepPx" 
-    data-type="" 
-    data-column-type="column"
-    
-    
-
->
-    <div class="column__content w-full h-full z-10 flex" style="padding: 16px; flex-direction: column;">
-        <div class="w-full">
-            <div id="shopify-block-ATFoveml2bWZkUnF0S__image_link_jB3ek4" class="shopify-block image-link-block">
-
-<div class="custom-theme-block" 
-    style="
-        --padding-top: 10px;
-        --padding-bottom: 10px;
-        --image-width: 100%;
-        --image-width-mobile: 100%;
-        --image-wrapper-width: 100%;
-        --image-wrapper-width-mobile: 100%;
-        --border-width: 0px;
-        --border-radius: 20px;
-        --aspect-ratio: 100 / 120;
-    "
-    
->
-    
-    <a href="/collections/summer-edit"  class="link no-link-color morph-svg-wrapper block">
-    
-        
-        <div class="morph-svg-inner image w-full animation-element fade-in img-blur overflow-hidden border-current">
-            
-            <hover-zoom-image class="w-full h-full">
-            
-                
-                    <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1780603511246-pegada-1780603504539.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=VF1%2B%2FvWiV3B0rGtV9DKU2xuNjM1YxUjQ1VLVCCA%2B0NATtdWH%2B80rgmCBaEHMs5iL7qe9FhNAj6enBRBTXl0rnTx161%2FikAqIQpbtECVYlCwkVVJVJThsr4l%2FKapTlxoMaiwIzy3kMKShW3K6Q7eYqecI%2FNISu8rHnJykn%2FF2XaleaSDRGrR4WwZqyHdutdG2%2Fd2vOKaWUDsLQdDbVejksciByO68wGWK97NUOu53dV1fkpyTVVyQR3Y5DDyftjzB0Y4k0zgtaPZusnUgCVGWR2NeFoYwpiP82DLqlDZHQi7vrMQ%2FcQrIqQijGtGdzKhiUsu8kCFgMg4Us%2FG6j4niSA%3D%3D" alt="Billion Beauty" loading="lazy" class="object-cover w-full h-full pointer-events-none">
-            
-            </hover-zoom-image>
-            
-        </div>
-        
-    
-    </a>
-    
-</div>
-
-</div>
-<div id="shopify-block-Acy9CR1Vjb1NnZktOb__heading_hyUtXE" class="shopify-block heading-block">
-
-    <h5 class="heading py-2 custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-        color: black !important;
-    "
-    
-><span>Billion Beauty</span></h5>
-
-</div>
-<div id="shopify-block-AK0NQclpOMUY0MjFVV__text_FrMPwb" class="shopify-block text-block">
-
-    <div class="body-text custom-theme-block text-color-text" 
-    style="
-        --padding-top: 5px;
-        --padding-bottom: 5px;
-        --text-font-size: 1.0em;
-        color: black !important;
-    "
-    
->
-        <span><p>Maquillaje multifuncional y de larga duración para lograr un glow radiante en segundos.</p></span>
-    </div>
-
-</div>
-
-        </div>
-    </div>
-</div>
-
-</div>
-
-                </div>
-
-            
-                <div class="swiper-navigation-wrapper">
-                    <div class="button-previous button--secondary z-100 flex items-center justify-center opacity-0 group-hover:opacity-100 absolute top-0 bottom-0 my-auto left-5 w-[41px] h-[41px] cursor-pointer transition-all duration-300 ease-in-out" role="button" tabindex="0" aria-label="Anterior">
-                        <span class="visible-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-</svg></span>
-                        <span class="hover-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-</svg></span>
-                    </div>
-                    <div class="button-next button--secondary z-100 flex items-center justify-center opacity-0 absolute group-hover:opacity-100 top-0 bottom-0 my-auto right-5 w-[41px] h-[41px] cursor-pointer transition-all duration-300 ease-in-out" role="button" tabindex="0" aria-label="Siguiente">
-                        <span class="visible-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-</svg>
-</span>
-                        <span class="hover-text"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-</svg>
-</span>
-                    </div>
-                </div>
-            
-        </div>
-
-        
-            <div class="swiper-pagination mx-auto relative overflow-hidden rounded-[5px] opacity-0 animation-element fade-in"></div>
-        
-    </div>
-</media-columns>
-
-</div><div id="shopify-section-template--27304712470809__bundle_products_3zgi3T" class="shopify-section section-bundle-products"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/bundle-products.css" rel="stylesheet" type="text/css" media="all" />
-
-<style data-shopify>
-    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] {
-         --padding-top: clamp(0px, 50vw, 40px);
-        --padding-bottom: clamp(0px, 50vw, 30px);
-
-        --height: 55vw;
-        --mobile-height: 160vw;
-        --media-position: absolute;
-        --mobile-media-position: absolute;
-        --overlay-opacity: 0%;
-        --hotspot-icon-color: #ffffff;
-
-        --product-list-padding: 23px;
-        --product-list-border-radius: 16px;
-        --product-list-border-width: 0px;
-
-        --product-list-shadow: 0 2px 8px rgba(0, 0, 0, var(--box-shadow-intensity));
-        
-        
-        --image-margin-inline: auto 0;
-        --product-list-left: 0;
-        --product-list-right: auto;
-        
-
-        
-        --product-list-color-background: rgb(var(--color-inner-background));
-        --product-list-color-text: var(--color-inner-text);
-        
-    }
-
-    
-    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="1"] {
-        --horizontal-pos: 37%;
-        --vertical-pos: 20%;
-        --horizontal-pos-mobile: 33%;
-        --vertical-pos-mobile: 53%;
-
-        
-            --left: 0;
-            --right: unset;
-        
-
-        
-            --top: calc(100% + 20px);
-            --bottom: unset;
-            --bottom-arrow: 100%;
-            --top-arrow: unset;
-            --arrow-rotate: 0;
-        
-
-        
-            --left-mobile: 0;
-            --right-mobile: unset;
-        
-
-        
-            --top-mobile: unset;
-            --bottom-mobile: calc(100% + 20px);
-            --bottom-arrow-mobile: unset;
-            --top-arrow-mobile: 100%;
-            --arrow-rotate-mobile: 180deg;
-        
-
-        
-    }
-    
-    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="2"] {
-        --horizontal-pos: 78%;
-        --vertical-pos: 62%;
-        --horizontal-pos-mobile: 70%;
-        --vertical-pos-mobile: 50%;
-
-        
-            --left: unset;
-            --right: 0;
-        
-
-        
-            --top: unset;
-            --bottom: calc(100% + 20px);
-            --bottom-arrow: unset;
-            --top-arrow: 100%;
-            --arrow-rotate: 180deg;
-        
-
-        
-            --left-mobile: unset;
-            --right-mobile: 0;
-        
-
-        
-            --top-mobile: calc(100% + 20px);
-            --bottom-mobile: unset;
-            --bottom-arrow-mobile: 100%;
-            --top-arrow-mobile: unset;
-            --arrow-rotate-mobile: 0;
-        
-
-        
-    }
-    
-    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="3"] {
-        --horizontal-pos: 57%;
-        --vertical-pos: 76%;
-        --horizontal-pos-mobile: 50%;
-        --vertical-pos-mobile: 60%;
-
-        
-            --left: unset;
-            --right: 0;
-        
-
-        
-            --top: unset;
-            --bottom: calc(100% + 20px);
-            --bottom-arrow: unset;
-            --top-arrow: 100%;
-            --arrow-rotate: 180deg;
-        
-
-        
-            --left-mobile: 0;
-            --right-mobile: unset;
-        
-
-        
-            --top-mobile: unset;
-            --bottom-mobile: calc(100% + 20px);
-            --bottom-arrow-mobile: unset;
-            --top-arrow-mobile: 100%;
-            --arrow-rotate-mobile: 180deg;
-        
-
-        
-    }
-    
-    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="4"] {
-        --horizontal-pos: 16%;
-        --vertical-pos: 55%;
-        --horizontal-pos-mobile: 15%;
-        --vertical-pos-mobile: 67%;
-
-        
-            --left: 0;
-            --right: unset;
-        
-
-        
-            --top: unset;
-            --bottom: calc(100% + 20px);
-            --bottom-arrow: unset;
-            --top-arrow: 100%;
-            --arrow-rotate: 180deg;
-        
-
-        
-            --left-mobile: 0;
-            --right-mobile: unset;
-        
-
-        
-            --top-mobile: unset;
-            --bottom-mobile: calc(100% + 20px);
-            --bottom-arrow-mobile: unset;
-            --top-arrow-mobile: 100%;
-            --arrow-rotate-mobile: 180deg;
-        
-
-        
-    }
-    
-    .bundle-products[data-id="template--27304712470809__bundle_products_3zgi3T"] .bundle-products__hotspot[data-index="5"] {
-        --horizontal-pos: 94%;
-        --vertical-pos: 20%;
-        --horizontal-pos-mobile: 81%;
-        --vertical-pos-mobile: 62%;
-
-        
-            --left: unset;
-            --right: 0;
-        
-
-        
-            --top: calc(100% + 20px);
-            --bottom: unset;
-            --bottom-arrow: 100%;
-            --top-arrow: unset;
-            --arrow-rotate: 0;
-        
-
-        
-            --left-mobile: unset;
-            --right-mobile: 0;
-        
-
-        
-            --top-mobile: unset;
-            --bottom-mobile: calc(100% + 20px);
-            --bottom-arrow-mobile: unset;
-            --top-arrow-mobile: 100%;
-            --arrow-rotate-mobile: 180deg;
-        
-
-        
-    }
-    
-</style>
-
-
-
-<bundle-products class="bundle-products animation-wrapper relative overflow-x-hidden block color-scheme-9" 
-    data-id="template--27304712470809__bundle_products_3zgi3T"
-    data-product-list-input-type="secondary"
->
-    <div class="bundle-products__inner">
-        
-        <div class="bundle-products__image-wrapper relative w-[max(70%,calc(100%-500px))] animation-element fade-in">
-            <div class="bundle-products__background w-full h-full img-blur animation-element fade-in">
-                
-
-    
-    
-    
-    <img src="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png" alt="Volverground image" srcset="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 375w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 550w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 750w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 1100w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_25_18_PM.png 1500w" width="1672" height="941" loading="lazy" sizes="100vw" class="object-cover w-full h-full hidden lg:block pointer-events-none">
-
-    
-    
-    
-    <img src="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png" alt="Volverground image" srcset="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png 375w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png 550w, /shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/ChatGPT_Image_May_14_2026_02_31_20_PM.png 750w" width="941" height="1672" loading="lazy" sizes="100vw" class="object-cover w-full h-full lg:hidden block pointer-events-none">
-
-            </div>
-
-            
-
-            
-                
-
-
-            
-                
-
-
-            
-                
-
-
-            
-                
-
-
-            
-                
-
-
-            
-        </div>
-
-        
-        <div class="bundle-products__product-list-wrapper w-[min(30%,500px)] slide-right animation-element absolute top-0 bottom-0 h-[min(80%,800px)] my-auto z-10 mx-30 right-0 overflow-hidden border-current animation-element fade-in animation-delay-300 animation-duration-300">
-           <div class="bundle-products__product-list flex flex-col h-full overflow-hidden">
-                
-                    <h2 class="heading py-5 border-b-1 border-current/10 mb-5 h5">
-                        <span>Glass Skin in 5 Steps</span>
-                    </h2>
-                
-
-                <ul class="custom-list product-list h-full overflow-y-auto overflow-x-hidden" tabindex="-1"></ul>
-
-                <div class="py-5 border-t-1 border-current/10 mt-5">
-                    
-                    
-                        
-                        
-
-                        
-                        <div class="item-total-price pb-5">
-                            <script type="application/json" class="bundle-products__products-data">
-                                {
-                                    "products": [{"id": "10620179644697", "price": 2200, "available": true}, {"id": "10620179874073", "price": 2200, "available": true}, {"id": "10620179906841", "price": 2600, "available": true}, {"id": "10620180496665", "price": 3200, "available": true}, {"id": "10620180594969", "price": 2400, "available": true}],
-                                    "total_price": 12600,
-                                    "saving_percentage": 15
-                                }
-                            </script>
-
-                            
-                            <div class="item-total-price--subtotal text-[0.9em] opacity-70 justify-between flex gap-3">
-                                <span class="label">Subtotal:</span>
-                                <span class="value font-medium" data-with-currency="true">$126.00 USD</span>
-                            </div>
-                            <div class="item-total-price--save text-[0.9em] opacity-70 justify-between flex gap-3">
-                                <span class="label">Bundle &amp; save (15%):</span>
-                                <span class="value font-medium" data-with-currency="true">$18.90 USD</span>
-                            </div>
-                            
-                            <div class="item-total-price--total flex justify-between">
-                                <span class="label font-semibold">Precio Total:</span>
-                                <span class="value font-medium" data-with-currency="true">$107.10 USD</span>
-                            </div>
-                        </div>
-                        
-                    
-
-                    <button class="button-cart custom-button w-full cursor-pointer button--secondary" 
-                        type="button" 
-                        aria-label="Añadir all to cart" 
-                        title="Añadir all to cart" 
-                    >
-                        <span class="visible-text z-10">
-                            <span class="link-hover-animation">Añadir all to cart</span>
-                        </span>
-                        <span class="hover-text z-10">
-                            <span class="link-hover-animation">Añadir all to cart</span>
-                        </span>
-                    </button>
-
-                    
-                    <div class="info leading-none text-[0.9em] opacity-50 pt-6">
-                        <small>Pack promocional por tiempo limitado — 10 productos (15 unidades) a precio fijo de $15.990. Sin descuentos adicionales.</small>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>
-    </div>
-</bundle-products>
-
-<bundle-products-popup class="bundle-products-popup fixed top-0 left-0 w-full h-screen bg-black/50 z-502 flex items-start justify-center transition-all duration-400" data-hidden="true">
-    <div class="popup__inner relative w-full h-auto max-h-[100dvh] overflow-auto px-7 pb-7 pt-[55px] transition-all duration-400 ease-in-out mt-[20%] mx-[1rem]">
-        <div class="popup__content"></div>
-    </div>
-</bundle-products-popup>
 
 </div><div id="shopify-section-template--27304712470809__flexible_columns_8WJ3XM" class="shopify-section">
 <link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/flexible-columns.css" rel="stylesheet" type="text/css" media="all" />
@@ -9718,7 +9863,7 @@
 
 
 
-<newsletter-popup class="newsletter-popup popup fixed w-[calc(100%-2rem)] max-w-[360px] h-max transition-all duration-400 ease-in-out top-auto z-502" style="left: 16px !important; bottom: 16px !important; z-index: 999999 !important;"
+<!-- <newsletter-popup class="newsletter-popup popup fixed w-[calc(100%-2rem)] max-w-[360px] h-max transition-all duration-400 ease-in-out top-auto z-502" style="left: 16px !important; bottom: 16px !important; z-index: 999999 !important;"
     data-vertical-position="bottom" 
     inert
     data-hidden="true"
@@ -9846,7 +9991,7 @@
 </svg></span>
         </span>
     </a>
-
+-->
 </div><div id="shopify-section-sections--27304712241433__product-compare-popup" class="shopify-section shopify-section-group-overlay-group section-product-compare-popup"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-bottom-sheet.css" rel="stylesheet" type="text/css" media="all" />
 <link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-popup.css" rel="stylesheet" type="text/css" media="all" />
 

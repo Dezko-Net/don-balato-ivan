@@ -44,7 +44,7 @@ function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
-  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem, hasPackItems, getEffectiveItemTotal, getEffectivePrice } = useCart();
+  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem, hasPackItems, getEffectiveItemTotal, getEffectivePrice, updateQuantity } = useCart();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
@@ -1321,6 +1321,38 @@ function CheckoutInner() {
                                 <p style={{ margin: '0 0 2px', fontSize: 10, color: '#9ca3af', textDecoration: 'line-through', fontFamily: FF }}>{formatPrice(pricing.originalPrice * item.quantity)}</p>
                               )}
                               <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#e396bf' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (item.quantity > 1) {
+                                      updateQuantity(item.product.$id, item.quantity - 1);
+                                    } else {
+                                      removeItem(item.product.$id);
+                                    }
+                                  }}
+                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #fce7f3', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#ec4899', cursor: 'pointer' }}
+                                >
+                                  -
+                                </button>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', minWidth: 16, textAlign: 'center' }}>
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    updateQuantity(item.product.$id, item.quantity + 1);
+                                  }}
+                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #fce7f3', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#ec4899', cursor: 'pointer' }}
+                                >
+                                  +
+                                </button>
+                              </div>
                             </div>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

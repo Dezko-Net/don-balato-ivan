@@ -3,8 +3,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getServices, getAppwriteConfig, WHOLESALE_ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { Query } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, WHOLESALE_ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, MEDIA_BUCKET_ID } from '@/lib/appwrite-admin';
+import { Query, ID } from '@/lib/appwrite';
 import {
   ArrowLeft, Package, User, MapPin, Clock, FileText,
   Phone, Mail, Hash, Save, Check, AlertTriangle, ExternalLink,
@@ -32,6 +32,7 @@ interface WholesaleOrder {
   STATUS: string;
   CREATEDAT: number;
   PAYMENTPROOFURL?: string;
+  SHIPPINGPROOFURL?: string;
   CUSTOMERNOTE?: string;
   ADMINNOTES?: string;
   $createdAt: string;
@@ -127,6 +128,10 @@ export default function WholesaleOrderDetailPage() {
   const [productStocks, setProductStocks] = useState<Record<string, number>>({});
   const [proofOpen, setProofOpen] = useState(false);
   const [paymentProofIsPdf, setPaymentProofIsPdf] = useState(false);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [uploadingShippingProof, setUploadingShippingProof] = useState(false);
+  const [shippingProofOpen, setShippingProofOpen] = useState(false);
+  const [shippingProofIsPdf, setShippingProofIsPdf] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -137,6 +142,24 @@ export default function WholesaleOrderDetailPage() {
       const o = doc as unknown as WholesaleOrder;
       setOrder(o);
       setAdminNotes(o.ADMINNOTES || '');
+
+      if (o.PAYMENTPROOFURL) {
+        if (isPdfUrl(o.PAYMENTPROOFURL)) setPaymentProofIsPdf(true);
+        else {
+          fetch(o.PAYMENTPROOFURL, { method: 'HEAD' })
+            .then(res => setPaymentProofIsPdf(!!res.headers.get('content-type')?.includes('application/pdf')))
+            .catch(() => setPaymentProofIsPdf(false));
+        }
+      }
+      
+      if (o.SHIPPINGPROOFURL) {
+        if (isPdfUrl(o.SHIPPINGPROOFURL)) setShippingProofIsPdf(true);
+        else {
+          fetch(o.SHIPPINGPROOFURL, { method: 'HEAD' })
+            .then(res => setShippingProofIsPdf(!!res.headers.get('content-type')?.includes('application/pdf')))
+            .catch(() => setShippingProofIsPdf(false));
+        }
+      }
 
       let items: { id?: string }[] = [];
       try { items = JSON.parse(o.ITEMS || '[]'); } catch {}
@@ -189,6 +212,55 @@ export default function WholesaleOrderDetailPage() {
       setPaymentProofIsPdf(false);
     }
   }, [order?.PAYMENTPROOFURL]);
+
+  const handleAdminUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !order) return;
+    setUploadingProof(true);
+    try {
+      const { storage, databases } = getServices();
+      const { databaseId, endpoint, projectId } = getAppwriteConfig();
+      const fileId = ID.unique();
+      await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
+      await databases.updateDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, orderId, {
+        PAYMENTPROOFURL: url,
+        STATUS: order.STATUS === 'waiting_payment' || order.STATUS === 'stock_confirmed' || order.STATUS === 'pending' ? 'processing' : order.STATUS,
+      });
+      await load();
+    } catch (err: any) {
+      alert('Error al subir comprobante: ' + (err?.message || err));
+    } finally {
+      setUploadingProof(false);
+    }
+  };
+
+  const handleAdminUploadShippingProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !order) return;
+    setUploadingShippingProof(true);
+    try {
+      const { storage, databases } = getServices();
+      const { databaseId, endpoint, projectId } = getAppwriteConfig();
+      const fileId = ID.unique();
+      await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
+
+      await databases.updateDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, orderId, {
+        SHIPPINGPROOFURL: url,
+        UPDATEDAT: Date.now(),
+      });
+      setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: url } : prev);
+      window.open(url, '_blank');
+      await load();
+    } catch (err: any) {
+      alert('Error al subir comprobante de envío: ' + (err?.message || err));
+    } finally {
+      setUploadingShippingProof(false);
+    }
+  };
 
   const updateStatus = async (newStatus: string) => {
     if (!order) return;
@@ -374,6 +446,36 @@ export default function WholesaleOrderDetailPage() {
                 </div>
               ) : (
                 <img src={order.PAYMENTPROOFURL} alt="Comprobante de pago" className="w-full h-auto max-h-[75vh] object-contain rounded-2xl" />
+              )}
+            </div>
+        );
+      })()}
+
+      {/* MODAL COMPROBANTE DE ENVÍO */}
+      {shippingProofOpen && order.SHIPPINGPROOFURL && (() => {
+        const isPdf = isPdfUrl(order.SHIPPINGPROOFURL) || shippingProofIsPdf;
+        return (
+          <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8" onClick={() => setShippingProofOpen(false)}>
+            <div className="no-print flex gap-4 mb-4">
+              <a href={order.SHIPPINGPROOFURL} target="_blank" rel="noreferrer"
+                className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 hover:bg-indigo-700 transition">
+                <ExternalLink className="w-4 h-4" /> Abrir archivo / Descargar
+              </a>
+              <button onClick={() => setShippingProofOpen(false)} className="px-4 py-2 bg-white/20 text-white text-xs font-bold rounded-xl hover:bg-white/30 transition">
+                Cerrar
+              </button>
+            </div>
+            <div className="relative max-w-3xl max-h-[80vh] w-full flex items-center justify-center p-6 bg-gray-900 rounded-2xl" onClick={e => e.stopPropagation()}>
+              {isPdf ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-12 text-white">
+                  <Truck size={64} className="text-indigo-400 animate-pulse" />
+                  <p className="text-sm font-semibold text-gray-300">Este comprobante es un archivo PDF</p>
+                  <a href={order.SHIPPINGPROOFURL} target="_blank" rel="noreferrer" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition font-bold text-xs flex items-center gap-2 no-underline">
+                    <ExternalLink size={14} /> Abrir y ver PDF en nueva pestaña
+                  </a>
+                </div>
+              ) : (
+                <img src={order.SHIPPINGPROOFURL} alt="Comprobante de envío" className="w-full h-auto max-h-[75vh] object-contain rounded-2xl" />
               )}
             </div>
           </div>
@@ -779,7 +881,66 @@ export default function WholesaleOrderDetailPage() {
                     <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                   </button>
                 ) : (
-                  <p className="text-xs text-gray-400 italic text-center py-3">El cliente aún no ha subido el comprobante de pago.</p>
+                  <label className="flex items-center justify-center w-full p-2.5 sm:p-3 border-2 border-dashed border-gray-200 rounded-lg sm:rounded-xl bg-gray-50 hover:bg-gray-100 hover:border-gray-300 cursor-pointer transition group">
+                    <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadProof} className="hidden" disabled={uploadingProof} />
+                    <div className="flex flex-col items-center gap-1">
+                      {uploadingProof ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                          <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Subiendo comprobante...</p>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 text-gray-400 group-hover:text-amber-500 transition-colors" />
+                          <p className="text-[10px] sm:text-xs text-gray-500 font-medium group-hover:text-amber-700">Subir comprobante</p>
+                        </>
+                      )}
+                    </div>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Envío Proof */}
+            <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-violet-500" />
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Envío</p>
+              </div>
+              <div className="p-3 sm:p-5 space-y-2.5 sm:space-y-3">
+                {order.SHIPPINGPROOFURL ? (
+                  <button onClick={() => {
+                    const url = order.SHIPPINGPROOFURL!;
+                    if (isPdfUrl(url) || shippingProofIsPdf) window.open(url, '_blank');
+                    else setShippingProofOpen(true);
+                  }}
+                    className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl hover:bg-violet-100 transition group w-full text-left">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                      <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] sm:text-xs font-semibold text-violet-700">Comprobante de envío</p>
+                      <p className="text-[9px] sm:text-[10px] text-violet-500">Click para ver</p>
+                    </div>
+                    <ExternalLink className="w-3 h-3 text-violet-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                  </button>
+                ) : (
+                  <label className="flex items-center justify-center w-full p-2.5 sm:p-3 border-2 border-dashed border-gray-200 rounded-lg sm:rounded-xl bg-gray-50 hover:bg-gray-100 hover:border-gray-300 cursor-pointer transition group">
+                    <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadShippingProof} className="hidden" disabled={uploadingShippingProof} />
+                    <div className="flex flex-col items-center gap-1">
+                      {uploadingShippingProof ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                          <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subiendo comprobante...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Truck className="w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" />
+                          <p className="text-[10px] sm:text-xs text-gray-500 font-medium group-hover:text-violet-700">Subir comprobante de envío</p>
+                        </>
+                      )}
+                    </div>
+                  </label>
                 )}
               </div>
             </div>

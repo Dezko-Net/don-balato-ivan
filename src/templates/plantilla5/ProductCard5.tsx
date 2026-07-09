@@ -140,6 +140,32 @@ export default function ProductCard5({ product }: { product: Product }) {
           </div>
           
           <div className="product-card__content flex flex-col items-start gap-1 mt-4">
+            {(product as any).BRAND && (
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                padding: '2px 8px',
+                borderRadius: 20,
+                display: 'inline-block',
+                marginBottom: 2,
+                backgroundColor:
+                  (product as any).BRAND === 'Kevin & Coco' ? '#ffe4f0' :
+                  (product as any).BRAND === '3Q Beauty' ? '#231815' :
+                  (product as any).BRAND === 'SADOER' ? '#e8f5e9' :
+                  (product as any).BRAND === 'Billion Beauty' ? '#fde1ed' :
+                  '#f3f4f6',
+                color:
+                  (product as any).BRAND === 'Kevin & Coco' ? '#c2185b' :
+                  (product as any).BRAND === '3Q Beauty' ? '#ffffff' :
+                  (product as any).BRAND === 'SADOER' ? '#2e7d32' :
+                  (product as any).BRAND === 'Billion Beauty' ? '#ad1457' :
+                  '#374151',
+              }}>
+                {(product as any).BRAND}
+              </span>
+            )}
             <h3 className="product-card__title h6">
               <Link href={url} className="reversed-link__text font-bold text-gray-900" style={{ fontSize: 16 }}>{productName}</Link>
             </h3>

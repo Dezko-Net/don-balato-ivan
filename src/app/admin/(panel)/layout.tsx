@@ -88,7 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '/admin/embalajes', label: 'Embalajes', icon: Ico.Inventario },
     { href: '', label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders', children: [
       { href: '/admin/orders',            label: 'Todos los Pedidos', icon: Ico.Pedidos, badge: 'orders' },
-      { href: '/admin/wholesale-orders',  label: 'Pedidos Mayoristas', icon: Ico.Mayoristas },
+      { href: '/admin/wholesale-orders',  label: 'Pedidos Mayoristas', icon: Ico.Mayoristas, badge: 'wholesale' },
       { href: '/admin/orders/negotiation', label: 'Negociación',       icon: Ico.Pedidos },
       { href: '/admin/blocked-products',  label: 'Productos Bloqueados', icon: Ico.Sparkles },
     ]},
@@ -340,6 +340,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const data = await res.json();
         setPendingOrders(data.pendingOrders);
         setProcessingOrders(data.processingOrders || 0);
+        if (data.pendingWholesale !== undefined) setPendingWholesale(data.pendingWholesale);
       }
     } catch { /* silent */ }
   }, []);

@@ -26,6 +26,7 @@ export interface Product {
   PACK_OFFER_MIN_PACKS?: number;
   UNIT_OFFER_EXPIRES_AT?: number;
   PACK_STOCK?: number;
+  BRAND?: string;
   TAGS?: string[];
   FEATURES?: string[];
   SOLDQUANTITY?: number;

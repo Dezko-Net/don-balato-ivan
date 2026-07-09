@@ -216,7 +216,7 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number; bundleUnitPrice?: nu
     DESCRIPTION: 'Paleta de Sombras Serie Ghost Music de 18 Colores',
     PRICE: 4350,
     STOCK: 99999,
-    IMAGEURL: 'https://yesbella.qianji.us./be/statics/resources/61ea8b265d8a2ea7a67c8627a792c50c.jpg',
+    IMAGEURL: 'https://yesbella1.tooerp3.com/be/statics/resources/106ca38b2ef108b81c3a17d263f1f0db.jpg',
     CATEGORYID: '',
     SELLERID: '',
     SKU: 'KC1817',
@@ -281,21 +281,21 @@ export default function HomePage23() {
     hero1: {
       // Reemplaza estas URLs de imagen si quieres cambiar el banner de entrada (Hero 1).
       // Si las dejas vacías (''), se usará el video original de la plantilla.
-      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548052215-pegada-1783548045185.png',
-      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548059310-pegada-1783548056303.png',
+      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783586640034-pegada-1783586638070.png',
+      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783586630110-pegada-1783586626835.png',
       title: 'Poderosamente Bella',
       btnText: 'Tienda',
       btnLink: '/productos',
     },
     hero2: {
       // Reemplaza estas URLs si quieres cambiar la imagen de Kenia (Hero 2).
-      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548052215-pegada-1783548045185.png',
-      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548059310-pegada-1783548056303.png',
+      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783576611119-pegada-1783576608583.png',
+      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783576469419-pegada-1783576466867.png',
     },
     hero3: {
       // Reemplaza estas URLs si quieres cambiar la imagen del tercer banner (Hero 3).
-      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548052215-pegada-1783548045185.png',
-      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783548059310-pegada-1783548056303.png',
+      desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D',
+      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D',
     }
   };
 
@@ -1146,7 +1146,9 @@ export default function HomePage23() {
         45% { transform: scale(1.08) translateY(-6px) rotate(1.5deg); }
         55% { transform: scale(1.02) translateY(-2px) rotate(0deg); }
       }
+      newsletter-popup { display: none !important; }
       .button-newsletter {
+        display: none !important;
         --newsletter-popup-color-button-background: #FBCAC9 !important;
         --newsletter-popup-color-button-text: #ffffff !important;
         background: #FBCAC9 !important;
@@ -1379,6 +1381,7 @@ export default function HomePage23() {
         }
       }
       /* ── HEADER THREE-STATE STYLING (GLASSMORPHISM ONLY ON SCROLLED STICKY) ── */
+      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
       /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
       custom-header.header-element[data-scroll="false"],
       .header[data-id="sections--27304712208665__header"][data-scroll="false"] {
@@ -2304,20 +2307,31 @@ export default function HomePage23() {
     // Insert Live Shopping, Wholesale Offers and Latest Products placeholders right after the Hero banner (slideshow)
     const heroBannerSection = tempDiv.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
     if (heroBannerSection) {
-      // Move the "Oferta de Apertura" countdown timer to sit directly below the hero banner.
-      // (En el HTML original queda más abajo; el cliente lo quiere justo debajo del hero.)
-      let anchor: Element = heroBannerSection;
-      const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]') as HTMLElement | null;
-      const bundleSection = tempDiv.querySelector('[id*="bundle_products"]') as HTMLElement | null;
-      console.log("[Plantilla23 Debug] heroBannerSection:", !!heroBannerSection, "countdownSection:", !!countdownSection, "bundleSection:", !!bundleSection);
+      // Move the "Oferta de Apertura" countdown timer to hide it (it's display:none already)
+      const countdownSection = tempDiv.querySelector('[id*="countdown_timer\"]') as HTMLElement | null;
       if (countdownSection) {
         countdownSection.style.display = 'none';
       }
+
+      // ORDEN DESEADO: Hero → Explora Nuestras Marcas → Mega Pack → (Novedades / carrusel / etc.)
+      // Insertamos en orden INVERSO después del hero (cada insertAdjacentElement 'afterend' empuja al siguiente)
+      let anchor: Element = heroBannerSection;
+
+      // 1. Primero: Explora Nuestras Marcas (media_columns_slider)
+      const exploraSection = tempDiv.querySelector('#shopify-section-template--27304712470809__media_columns_slider_zMFEzH') as HTMLElement | null;
+      if (exploraSection) {
+        anchor.insertAdjacentElement('afterend', exploraSection);
+        anchor = exploraSection;
+      }
+
+      // 2. Segundo: Mega Pack (bundle_products)
+      const bundleSection = tempDiv.querySelector('#shopify-section-template--27304712470809__bundle_products_3zgi3T') as HTMLElement | null;
       if (bundleSection) {
-        heroBannerSection.insertAdjacentElement('afterend', bundleSection);
+        anchor.insertAdjacentElement('afterend', bundleSection);
         anchor = bundleSection;
       }
 
+      // 3. Después del Mega Pack van todos los roots dinámicos de React
       const offersCarouselRoot = document.createElement('div');
       offersCarouselRoot.id = 'yaxsell-offers-carousel-root';
       anchor.insertAdjacentElement('afterend', offersCarouselRoot);
@@ -2334,6 +2348,7 @@ export default function HomePage23() {
       latestProductsRoot.id = 'yaxsell-latest-products-root';
       wholesaleOffersRoot.insertAdjacentElement('afterend', latestProductsRoot);
     }
+
 
     // Clear mockup product listings to prevent flashing native Shopify products (but keep container elements for hydration selectors)
     tempDiv.querySelectorAll('.featured-collection__products').forEach(section => {
@@ -2403,7 +2418,7 @@ export default function HomePage23() {
         return `
         <li class="product-list__product-info flex gap-3 py-5 flex-wrap border-b-1 border-current/10" data-product-id="${p.$id}">
           <div class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)]">
-            <a href="/productos/${p.$id}" aria-label="${p.NAME}" title="${p.NAME}" class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)]" tabindex="-1">
+            <div aria-label="${p.NAME}" title="${p.NAME}" class="flex-1 w-full min-w-[min(20vw,150px)] max-w-[min(20vw,150px)] lg:min-w-[min(10vw,150px)] lg:max-w-[min(10vw,150px)] cursor-default" tabindex="-1">
               <div class="product-list__product-image-wrapper w-full pt-[100%] relative hover-zoom-image-wrapper" style="position:relative;">
                 <div class="product-list__product-image placeholder absolute w-full h-full top-0 left-0">
                   <hover-zoom-image class="w-full h-full">
@@ -2411,13 +2426,13 @@ export default function HomePage23() {
                   </hover-zoom-image>
                 </div>
               </div>
-            </a>
+            </div>
           </div>
           <div class="product-list__product-content py-3">
-            <a href="/productos/${p.$id}" aria-label="${p.NAME}" title="${p.NAME}" class="block max-w-max">
-              <h3 class="heading pt-2 pb-1 h6 max-w-max"><span class="link-hover-animation">${p.NAME}</span></h3>
+            <div aria-label="${p.NAME}" title="${p.NAME}" class="block max-w-max cursor-default">
+              <h3 class="heading pt-2 pb-1 h6 max-w-max"><span>${p.NAME}</span></h3>
               <span class="text-[0.75em] text-current/50 font-medium">SKU: ${p.SKU || 'N/A'}${qty > 1 ? ` &middot; x${qty}` : ''}</span>
-            </a>
+            </div>
             <div class="variant pb-2 text-current/70" data-loading="false">
               <div class="flex gap-[5px] items-center justify-between pr-2">
                 <span class="text-[0.9em]">Precio Unitario</span>
@@ -2480,6 +2495,23 @@ export default function HomePage23() {
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
     setHtmlInjected(true);
+
+    // ── FORZAR ORDEN EN EL DOM REAL (después de inyectar innerHTML) ──
+    // Movemos las secciones directamente en el DOM ya renderizado,
+    // sin depender del orden de tempDiv ni de ninguna caché.
+    {
+      const realHero = containerRef.current.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
+      const realExplora = containerRef.current.querySelector('#shopify-section-template--27304712470809__media_columns_slider_zMFEzH');
+      const realBundle = containerRef.current.querySelector('#shopify-section-template--27304712470809__bundle_products_3zgi3T');
+      if (realHero) {
+        // Insertar Explora justo después del hero
+        if (realExplora) realHero.insertAdjacentElement('afterend', realExplora);
+        // Insertar Bundle después de Explora (o después del hero si Explora no existe)
+        const afterExplora = realExplora ?? realHero;
+        if (realBundle) afterExplora.insertAdjacentElement('afterend', realBundle);
+      }
+    }
+
 
     // Setup Click listener to Bundle buy button
     const bundleCartBtn = containerRef.current.querySelector('.section-bundle-products .button-cart');
@@ -2584,10 +2616,59 @@ export default function HomePage23() {
         heroBg.dataset.heroCarouselBound = '1';
         heroBg.style.position = heroBg.style.position || 'relative';
 
+        // Add hidden dummy images to force the container height to match the image aspect ratio
+        let dummyStyle = heroBg.querySelector('#dummy-style');
+        if (!dummyStyle) {
+          dummyStyle = document.createElement('style');
+          dummyStyle.id = 'dummy-style';
+          dummyStyle.textContent = `
+            @media (max-width: 1023px) { .dummy-desk { display: none !important; } .dummy-mob { display: block !important; } }
+            @media (min-width: 1024px) { .dummy-desk { display: block !important; } .dummy-mob { display: none !important; } }
+          `;
+          heroBg.appendChild(dummyStyle);
+        }
+
+        if (MANUAL_HERO_CONFIG.hero1.desktopImg) {
+          let dummyDesk = heroBg.querySelector('.dummy-desk') as HTMLImageElement;
+          if (!dummyDesk) {
+            dummyDesk = document.createElement('img');
+            dummyDesk.className = 'dummy-desk';
+            dummyDesk.style.cssText = 'visibility:hidden; width:100%; height:auto; position:relative; pointer-events:none; margin:0; padding:0;';
+            heroBg.appendChild(dummyDesk);
+          }
+          dummyDesk.src = MANUAL_HERO_CONFIG.hero1.desktopImg;
+        }
+
+        if (MANUAL_HERO_CONFIG.hero1.mobileImg) {
+          let dummyMob = heroBg.querySelector('.dummy-mob') as HTMLImageElement;
+          if (!dummyMob) {
+            dummyMob = document.createElement('img');
+            dummyMob.className = 'dummy-mob';
+            dummyMob.style.cssText = 'visibility:hidden; width:100%; height:auto; position:relative; pointer-events:none; margin:0; padding:0;';
+            heroBg.appendChild(dummyMob);
+          }
+          dummyMob.src = MANUAL_HERO_CONFIG.hero1.mobileImg;
+        }
+
         // Las dos pistas (PC/móvil); solo una está visible a la vez vía CSS.
         const carousels = Array.from(heroBg.querySelectorAll('.hero-carousel')) as HTMLElement[];
         const slidesByCarousel = carousels.map(c => Array.from(c.querySelectorAll('.hero-slide')) as HTMLElement[]);
         const total = slidesByCarousel[0]?.length || 0;
+
+        // Actualizar fondos de portada directamente desde MANUAL_HERO_CONFIG
+        if (slidesByCarousel.length >= 2) {
+          const deskSlides = slidesByCarousel[0];
+          const mobSlides = slidesByCarousel[1];
+          
+          if (deskSlides[0] && MANUAL_HERO_CONFIG.hero1.desktopImg) deskSlides[0].style.backgroundImage = `url('${MANUAL_HERO_CONFIG.hero1.desktopImg}')`;
+          if (mobSlides[0] && MANUAL_HERO_CONFIG.hero1.mobileImg) mobSlides[0].style.backgroundImage = `url('${MANUAL_HERO_CONFIG.hero1.mobileImg}')`;
+          
+          if (deskSlides[1] && MANUAL_HERO_CONFIG.hero2.desktopImg) deskSlides[1].style.backgroundImage = `url('${MANUAL_HERO_CONFIG.hero2.desktopImg}')`;
+          if (mobSlides[1] && MANUAL_HERO_CONFIG.hero2.mobileImg) mobSlides[1].style.backgroundImage = `url('${MANUAL_HERO_CONFIG.hero2.mobileImg}')`;
+          
+          if (deskSlides[2] && MANUAL_HERO_CONFIG.hero3.desktopImg) deskSlides[2].style.backgroundImage = `url('${MANUAL_HERO_CONFIG.hero3.desktopImg}')`;
+          if (mobSlides[2] && MANUAL_HERO_CONFIG.hero3.mobileImg) mobSlides[2].style.backgroundImage = `url('${MANUAL_HERO_CONFIG.hero3.mobileImg}')`;
+        }
 
         if (total > 1) {
           let idx = 0;
@@ -2639,77 +2720,7 @@ export default function HomePage23() {
         }
       }
 
-      // Inyectar Countdown Timer de Oferta Flash a las 21:00 en la primera slide
-      if (heroBg && !heroBg.dataset.flashTimerBound) {
-        heroBg.dataset.flashTimerBound = '1';
-        const firstSlides = heroBg.querySelectorAll('.hero-carousel-desktop .hero-slide:first-child, .hero-carousel-mobile .hero-slide:first-child');
-        firstSlides.forEach(slide => {
-           const timerContainer = document.createElement('div');
-          timerContainer.className = 'hero-flash-timer';
-          timerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
-          timerContainer.innerHTML = `
-            <div class="text-white font-black text-sm sm:text-base mb-2 drop-shadow-md text-center w-full uppercase tracking-wide" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">ESTA PROMOCION TERMINA EN :</div>
-            <div class="flex gap-2 sm:gap-4 items-center bg-white/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/40">
-              <div class="flex flex-col items-center">
-                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-days">00</div>
-                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Días</span>
-              </div>
-              <span class="text-white font-black text-3xl drop-shadow-md pb-5">:</span>
-              <div class="flex flex-col items-center">
-                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-hrs">00</div>
-                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Horas</span>
-              </div>
-              <span class="text-white font-black text-3xl drop-shadow-md pb-5">:</span>
-              <div class="flex flex-col items-center">
-                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-mins">00</div>
-                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Minutos</span>
-              </div>
-              <span class="text-white font-black text-3xl drop-shadow-md pb-5">:</span>
-              <div class="flex flex-col items-center">
-                <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl text-[#ff5c8d] font-black text-3xl shadow-sm time-secs">00</div>
-                <span class="text-[10px] sm:text-xs font-bold text-white mt-1 uppercase tracking-wider drop-shadow-md">Segundos</span>
-              </div>
-            </div>
-          `;
-          slide.appendChild(timerContainer);
-        });
-
-        const updateHeroTimer = () => {
-          const now = new Date();
-          const currentDay = now.getDay();
-          let daysUntilMonday = (1 - currentDay + 7) % 7;
-          if (daysUntilMonday === 0 && now.getHours() >= 12) {
-            daysUntilMonday = 7;
-          }
-          const target = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() + daysUntilMonday,
-            12, 0, 0, 0
-          );
-          
-          let diff = target.getTime() - now.getTime();
-          if (diff < 0) diff = 0; // Terminado
-
-          const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-          const m = Math.floor((diff / 1000 / 60) % 60);
-          const s = Math.floor((diff / 1000) % 60);
-
-          const pad = (n: number) => n.toString().padStart(2, '0');
-
-          heroBg.querySelectorAll('.time-days').forEach(el => el.textContent = pad(d));
-          heroBg.querySelectorAll('.time-hrs').forEach(el => el.textContent = pad(h));
-          heroBg.querySelectorAll('.time-mins').forEach(el => el.textContent = pad(m));
-          heroBg.querySelectorAll('.time-secs').forEach(el => el.textContent = pad(s));
-        };
-
-        if (firstSlides.length > 0) {
-          updateHeroTimer();
-          if ((window as any)._heroFlashInterval) clearInterval((window as any)._heroFlashInterval);
-          (window as any)._heroFlashInterval = setInterval(updateHeroTimer, 1000);
-        }
-      }
+      // Temporizador removido a petición del usuario.
     } catch (e) { console.error('[TPL23] Hero carousel error', e); }
 
     // 🧭 Header/drawer móvil: (1) eliminar "COMPRA DESDE: UNIDAD/PAQUETE" del header,
@@ -4127,7 +4138,7 @@ export default function HomePage23() {
                 <!-- Image Side -->
                 <div class="w-full md:w-1/2 flex justify-center">
                   <div class="w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 p-2 flex items-center justify-center">
-                    <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781068461246-pegada-1781068460086.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=kh%2FdeNArvZsaE3RP4l1oG%2FUoR%2BWCorcf1kBT9X%2BVbfw8NAZmdLlM%2F05x%2FD0493PS5d21eaoUupxBqcUKNnqiBFGA92OKZn8aCtYzWd3W5xu21FSyaX7Q%2BV8tScONvEiu0xWk8MD5joSc8ceU67ntjvY5mkHS7bnGwFgakl6DW7qWtATDeJf52L0txmp90lvzEYOnjUfPw2dTVrsjMt6VsbbqKF2SIwztH9ykdpkJWUVsUbca8MSx9SvvA5mT2VZvnI%2FrsCIF9Fr2Q4TMkAFskQ9iG386vT2SmLRLaqkHw11ccjIZg62ciP%2BQTsEOa6k95k7SrSPNjmw4dTrONMY%2BZA%3D%3D" class="max-w-full max-h-full object-contain">
+                    <img src="https://placehold.co/400x400/fdf2f8/e396bf?text=Set+de+Brochas" class="max-w-full max-h-full object-contain">
                   </div>
                 </div>
                 
@@ -4619,9 +4630,10 @@ export default function HomePage23() {
         }, 500);
         setTimeout(() => clearInterval(revealInterval), 10000);
 
-        // ═══ Logo Instant Load Reveal ═══
+        // ═══ Logo Instant Load Reveal & Override ═══
         const logo = document.querySelector('.header img.logo') as HTMLImageElement;
         if (logo) {
+          logo.src = "https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/KEVIN%26COCO%2F%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=a5def232-086e-4ae8-a49b-476b8f4397a7";
           if (logo.complete) {
             logo.classList.add('is-loaded');
           } else {
@@ -5530,6 +5542,11 @@ export default function HomePage23() {
           animation: pulseLogo 2s infinite ease-in-out;
           filter: drop-shadow(0 4px 15px rgba(255,255,255,0.4));
         }
+        @media (max-width: 768px) {
+          .splash-logo {
+            width: 280px;
+          }
+        }
 
         /* Hero Banner 1 auto-height to match image aspect ratio */
         .tpl23-shopify-root .slideshow {
@@ -5553,6 +5570,16 @@ export default function HomePage23() {
           width: 100% !important;
           display: block !important;
           background-color: transparent !important;
+        }
+        /* Ensure all slide media (videos/images) are absolute so only the dummy dictates height */
+        .tpl23-shopify-root .slideshow__background video,
+        .tpl23-shopify-root .slideshow__background img:not(.dummy-desk):not(.dummy-mob) {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
         }
         /* Hero images are now absolute overlays — let inline styles + HTML classes handle them */
         .tpl23-shopify-root #hero1-image-desktop,
@@ -5743,7 +5770,7 @@ export default function HomePage23() {
       `}</style>
 
       <div className={`splash-screen ${!showSplash ? 'hidden' : ''}`}>
-        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783549408269-pegada-1783549405090.png" alt="Cargando Kevin & Coco..." className="splash-logo" />
+        <img src="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/KEVIN%26COCO%2F%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=a5def232-086e-4ae8-a49b-476b8f4397a7" alt="Cargando Kevin & Coco..." className="splash-logo" />
       </div>
 
       <div

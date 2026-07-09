@@ -4,7 +4,7 @@ import CollectionAll5 from '@/templates/plantilla5/CollectionAll';
 import CollectionAll1 from '@/templates/plantilla1/CollectionAll';
 import CollectionAll100 from '@/templates/plantilla100/CollectionAll';
 
-export default function DynamicCollectionAll({ catalogMode }: { catalogMode?: 'retail' | 'paquetes' | 'embalajes' } = {}) {
+export default function DynamicCollectionAll({ catalogMode, initialBrand }: { catalogMode?: 'retail' | 'paquetes' | 'embalajes'; initialBrand?: string } = {}) {
   const { isLoading, getSectionTemplate } = useTemplate();
   
   if (isLoading) {
@@ -23,9 +23,9 @@ export default function DynamicCollectionAll({ catalogMode }: { catalogMode?: 'r
   // because Plantilla 5 and 100 do not support them yet.
   if (!catalogMode || catalogMode === 'retail') {
     if (template === 100) return <CollectionAll100 />;
-    if (template === 5) return <CollectionAll5 />;
+    if (template === 5) return <CollectionAll5 initialBrand={initialBrand} />;
   }
   
   // Default to plantilla 1
-  return <CollectionAll1 catalogMode={catalogMode} />;
+  return <CollectionAll1 catalogMode={catalogMode} initialBrand={initialBrand} />;
 }

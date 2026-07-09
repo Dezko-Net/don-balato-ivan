@@ -106,7 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         : 20;
       
       const packPriceUnit = Math.round(originalPrice * (1 - packDiscPct / 100));
-      const remainderPriceUnit = Math.round(originalPrice * 0.90);
+      const remainderPriceUnit = originalPrice;
       
       return (fullPacks * packQty * packPriceUnit) + (remainder * remainderPriceUnit);
     }
