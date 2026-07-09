@@ -647,7 +647,7 @@ export async function POST(req: NextRequest) {
 
     const cleanedFrom = fromPhone.replace(/\D/g, '').trim();
     const keniaConfig = await getKeniaConfig();
-    keniaConfig.isEnabled = false; // 🛑 KILLED PER USER REQUEST (TEMPORARY)
+    
     const debugMode = keniaConfig.debugMode === true;
     const DEBUG_PHONE = '56992139185';
     let isAdmin = ADMIN_PHONES.includes(cleanedFrom);
