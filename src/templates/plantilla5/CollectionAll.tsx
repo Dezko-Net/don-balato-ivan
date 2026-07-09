@@ -59,7 +59,7 @@ const JS_FILES = [
   { src: `/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/product-form.js`, module: true },
 ];
 
-export default function CollectionAll5() {
+export default function CollectionAll5({ initialBrand }: { initialBrand?: string } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
 
