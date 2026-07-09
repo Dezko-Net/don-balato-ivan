@@ -359,22 +359,57 @@ export default function WholesaleOrderDetailPage() {
 
     let msg = `Hola ${order.CUSTOMERNAME || ''}, \nte escribimos de Kevin&Coco Chile por tu pedido mayorista #${order.REQCODE || order.$id.slice(-6)}.\n\n`;
     msg += `Hemos revisado tu pedido en bodega y esto es lo que tenemos disponible para ti:\n\n`;
-    msg += `LO QUE SÍ HAY:\n\n`;
+    msg += `✅ LO QUE SÍ HAY:\n\n`;
     currentItems.forEach(it => {
-      msg += ` ${it.name} (Cant: ${it.qty})\n`;
+      msg += `🛍️ ${it.name} (Cant: ${it.qty})\n${it.img ? `🔗 Ver imagen: ${it.img}\n` : ''}`;
     });
     
     if (unavailable.length > 0) {
-      msg += `\nLO QUE NO HAY:\n\n`;
+      msg += `\n❌ LO QUE NO HAY:\n\n`;
       unavailable.forEach(it => {
-        msg += ` ${it.name} (Cant: ${it.qty})\n`;
+        msg += `🚫 ${it.name} (Cant: ${it.qty})\n${it.img ? `🔗 Ver imagen: ${it.img}\n` : ''}`;
       });
     }
 
-    msg += `\n NUEVO TOTAL: ${fmt(order.TOTAL)} \n`;
+    msg += `\n💵 NUEVO TOTAL: ${fmt(order.TOTAL)} \n\n`;
     msg += `¿Estás de acuerdo para proceder con este pedido?\n\n`;
-    msg += ` Quedamos atentos para enviarte los datos de transferencia.`;
+    msg += `Quedamos atentos para enviarte los datos de transferencia.`;
     return msg;
+  };
+
+  const generateReceiptImage = async () => {
+    try {
+      if ((window as any).html2canvas) {
+        doGenerateImage();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      script.onload = doGenerateImage;
+      document.body.appendChild(script);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const doGenerateImage = async () => {
+    const el = document.getElementById('whatsapp-receipt-card');
+    if (el && (window as any).html2canvas) {
+      const originalMaxH = el.style.maxHeight;
+      const originalOverflow = el.style.overflow;
+      el.style.maxHeight = 'none';
+      el.style.overflow = 'visible';
+      
+      const canvas = await (window as any).html2canvas(el, { scale: 2, useCORS: true });
+      const imgUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = imgUrl;
+      a.download = `Pedido-${order?.REQCODE || 'resumen'}.png`;
+      a.click();
+      
+      el.style.maxHeight = originalMaxH;
+      el.style.overflow = originalOverflow;
+    }
   };
 
   const notifyStockWhatsApp = () => {
@@ -1135,18 +1170,27 @@ export default function WholesaleOrderDetailPage() {
               <div className="flex-1 overflow-auto p-6 flex flex-col lg:flex-row gap-6 bg-gray-50">
                 {/* Left side: Text Preview */}
                 <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <div className="flex items-center justify-between mt-2">
+                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                       <MessageSquare className="w-4 h-4 text-indigo-500" />
                       Texto para WhatsApp
                     </h4>
-                    <button 
-                      onClick={() => copyText(textContent, 'whatsapp_text')}
-                      className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-indigo-200"
-                    >
-                      {copied === 'whatsapp_text' ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copied === 'whatsapp_text' ? 'Copiado!' : 'Copiar Texto'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={generateReceiptImage}
+                        className="px-3 py-1.5 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-pink-200"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Descargar Imagen
+                      </button>
+                      <button 
+                        onClick={() => copyText(textContent, 'whatsapp_text')}
+                        className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-indigo-200"
+                      >
+                        {copied === 'whatsapp_text' ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copied === 'whatsapp_text' ? 'Copiado!' : 'Copiar Texto'}
+                      </button>
+                    </div>
                   </div>
                   <div className="w-full h-[400px] bg-white border border-gray-200 rounded-2xl p-4 text-xs font-mono text-gray-700 whitespace-pre-wrap overflow-auto shadow-sm">
                     {textContent}
