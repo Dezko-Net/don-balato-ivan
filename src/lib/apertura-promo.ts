@@ -147,6 +147,17 @@ export function resolveProductDisplayPrice(
   // If PRICE is 0 but WHOLESALEPRICE exists, use wholesale as base
   const effectiveBase = base > 0 ? base : (wholesale ?? 0);
 
+  // If a product has a wholesale price from 1 unit or less, that is its final display price.
+  if (wholesale && wholesale > 0 && product.WHOLESALEMINQUANTITY != null && product.WHOLESALEMINQUANTITY <= 1) {
+    return {
+      displayPrice: wholesale,
+      originalPrice: base > wholesale ? base : null,
+      hasDiscount: base > wholesale,
+      discountPercent: base > wholesale ? Math.round(((base - wholesale) / base) * 100) : 0,
+      fromApertura: false,
+    };
+  }
+
   // Bloquear todos los descuentos (checkbox en admin o SKU PROMO1).
   // DEBE ir antes que Live Shopping: ese bloque retorna temprano y todo
   // producto con $createdAt válido caía en el 20% aunque estuviera bloqueado.

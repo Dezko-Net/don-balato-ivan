@@ -1068,7 +1068,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
                           )}
                         </div>
-                        {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes' && p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY && p.WHOLESALEPRICE > 0) ? (
+                        {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes' && p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 1 && p.WHOLESALEPRICE > 0) ? (
                           <div style={{ fontSize: 10.5, color: '#ec4899', fontWeight: 700, marginTop: 6, marginBottom: 2, lineHeight: 1.2 }}>
                             Llevando {p.WHOLESALEMINQUANTITY}+ uds a {formatPrice(p.WHOLESALEPRICE)} c/u
                           </div>
@@ -1181,7 +1181,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
                           )}
                         </div>
-                        {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes' && p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY && p.WHOLESALEPRICE > 0) ? (
+                        {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes' && p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 1 && p.WHOLESALEPRICE > 0) ? (
                           <div style={{ fontSize: 10.5, color: '#ec4899', fontWeight: 700, marginTop: 6, lineHeight: 1.2 }}>
                             Llevando {p.WHOLESALEMINQUANTITY}+ uds a {formatPrice(p.WHOLESALEPRICE)} c/u
                           </div>
