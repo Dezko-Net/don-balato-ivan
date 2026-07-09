@@ -97,6 +97,7 @@ export default function CuentaPage() {
   const [currentLevel, setCurrentLevel] = useState<string>('bronze');
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [medalError, setMedalError] = useState(false);
+  const [canjeCredit, setCanjeCredit] = useState<number | null>(null);
 
   useEffect(() => {
     console.log('[CuentaPage] useEffect trigger. isLoggedIn:', isLoggedIn, 'user.id:', user?.id);
@@ -119,6 +120,17 @@ export default function CuentaPage() {
           const loyaltyData = await LoyaltyService.getLoyaltyData(user.id);
           console.log('[CuentaPage] Loyalty data received:', loyaltyData);
           setCurrentLevel(loyaltyData.currentLevel);
+        }
+
+        // Check canje credit
+        if (user?.id) {
+          try {
+            const res = await fetch(`/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.hasCredit) setCanjeCredit(data.creditAmount);
+            }
+          } catch {}
         }
       } catch (err) {
         console.error('[CuentaPage] Error loading details:', err);
@@ -446,6 +458,22 @@ export default function CuentaPage() {
 
 
 
+        {/* Canje Credit Banner (Desktop) */}
+        {canjeCredit !== null && canjeCredit > 0 && (
+          <Link href="/canje" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '18px 24px', marginBottom: 24, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', borderRadius: 20, border: '1px solid rgba(227,150,191,0.25)', boxShadow: '0 4px 16px rgba(227,150,191,0.12)', textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, #ec4899, #d946ef)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Gift size={24} color="#fff" />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#831843' }}>Tienes crédito de canje disponible</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: '#be185d' }}>{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(canjeCredit)} para canjear por productos</p>
+              </div>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#ec4899', whiteSpace: 'nowrap' }}>Canjear ahora →</span>
+          </Link>
+        )}
+
         {/* Quick Actions Icons (PC) */}
         <style>{`
           @keyframes qa-float-desk { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
@@ -703,6 +731,22 @@ export default function CuentaPage() {
             </Link>
           </div>
         </div>
+
+        {/* Canje Credit Banner (Mobile) */}
+        {canjeCredit !== null && canjeCredit > 0 && (
+          <Link href="/canje" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '0 16px 16px', padding: '16px 18px', background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', borderRadius: 18, border: '1px solid rgba(227,150,191,0.25)', boxShadow: '0 4px 16px rgba(227,150,191,0.1)', textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, #ec4899, #d946ef)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Gift size={20} color="#fff" />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#831843' }}>Crédito de canje disponible</p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#be185d' }}>{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(canjeCredit)} para canjear</p>
+              </div>
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#ec4899', whiteSpace: 'nowrap' }}>Canjear →</span>
+          </Link>
+        )}
 
         {/* ── QUICK ACTIONS: gradient pill cards ── */}
         <div style={{ padding: '0 16px 10px' }}>

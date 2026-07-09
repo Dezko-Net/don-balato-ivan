@@ -1438,6 +1438,18 @@ export default function PedidoPage() {
             })}
           </div>
 
+          {order.STATUS === 'negotiation' && items.some(x => x.missing) && (
+            <div className="mt-4 bg-gradient-to-r from-pink-50 to-fuchsia-50 border border-pink-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3 justify-between">
+              <div className="text-center sm:text-left">
+                <p className="font-black text-pink-900 text-sm">🎁 ¿Tienes productos faltantes?</p>
+                <p className="text-pink-600 text-xs mt-0.5">Canjea tu crédito por otros productos de la tienda</p>
+              </div>
+              <a href="/canje" className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white font-black text-sm rounded-xl shadow-lg hover:brightness-105 active:scale-95 transition-all whitespace-nowrap">
+                Canjear aquí →
+              </a>
+            </div>
+          )}
+
           <div className="border-t border-gray-100 pt-4 flex flex-col gap-2 text-sm text-gray-500">
             <div className="flex justify-between">
               <span>Subtotal</span>
