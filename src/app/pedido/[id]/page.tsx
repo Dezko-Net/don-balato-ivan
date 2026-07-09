@@ -589,13 +589,22 @@ export default function PedidoPage() {
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
       const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
-      await databases.updateDocument(databaseId, coll, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
+      try {
+        await databases.updateDocument(databaseId, coll, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
+      } catch (updateErr: any) {
+        // Si falla con STATUS (schema diferente), intentar solo con PAYMENTPROOFURL
+        console.warn('[handleUpload] updateDocument with STATUS failed, retrying without STATUS:', updateErr);
+        await databases.updateDocument(databaseId, coll, id, { PAYMENTPROOFURL: url });
+      }
       setUploaded(true);
       await load();
 
       // Notify admin about payment upload
       notifyPaymentUploaded(order?.ORDERCODE || id, order?.CUSTOMERNAME || 'Cliente').catch(() => {});
-    } catch { alert('Error al subir el comprobante. Intenta de nuevo.'); }
+    } catch (err: any) { 
+      console.error('[handleUpload]', err);
+      alert('Error al subir el comprobante: ' + (err?.message || 'Intenta de nuevo.')); 
+    }
     finally { setUploading(false); }
   }
 

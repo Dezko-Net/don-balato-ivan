@@ -1,6 +1,8 @@
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, COUPONS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 
+const WHOLESALE_ORDERS_COLLECTION = 'wholesale_orders';
+
 interface LoyaltyData {
   userId: string;
   currentLevel: string;
@@ -40,13 +42,25 @@ export class LoyaltyService {
       const { databaseId } = getAppwriteConfig();
 
       // Contar pedidos pagados (cualquier estado posterior a pendiente/verificación)
-      const ordersRes = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-        Query.equal('USERID', userId),
-        Query.equal('STATUS', ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered']),
+      const paidStatuses = ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+      const [ordersRes, wholesaleRes] = await Promise.all([
+        databases.listDocuments(databaseId, ORDERS_COLLECTION, [
+          Query.equal('USERID', userId),
+          Query.equal('STATUS', paidStatuses),
+          Query.limit(500),
+        ]).catch(() => ({ total: 0, documents: [] })),
+        databases.listDocuments(databaseId, WHOLESALE_ORDERS_COLLECTION, [
+          Query.equal('USERID', userId),
+          Query.equal('STATUS', paidStatuses),
+          Query.limit(500),
+        ]).catch(() => ({ total: 0, documents: [] })),
       ]);
 
-      const paidOrdersCount = ordersRes.total;
-      const totalSpent = ordersRes.documents.reduce((sum: number, order: any) => sum + (order.TOTAL || 0), 0);
+      const paidOrdersCount = ordersRes.total + wholesaleRes.total;
+      const totalSpent = [
+        ...ordersRes.documents,
+        ...wholesaleRes.documents,
+      ].reduce((sum: number, order: any) => sum + (order.TOTAL || 0), 0);
 
       // Obtener nivel actual desde prefs
       const { account } = getServices();
