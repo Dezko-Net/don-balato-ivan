@@ -2592,8 +2592,15 @@ export default function OrderDetailPage() {
 
             let msg = `Hola ${nombre} 👋, te escribimos de Kevin & Coco Chile por tu pedido ${codigo}.\n\n`;
             msg += `Lamentablemente, al revisar tu pedido en bodega nos dimos cuenta que hay productos agotados:\n\n`;
-            missingItems.forEach((it: any) => { msg += `🚫 ${it.name} (Cant: ${it.qty})\n`; });
-            msg += `\n💸 *TIENES UN SALDO A FAVOR DE ${fmt(missingTotal)}*\n\n`;
+            missingItems.forEach((it: any) => { 
+              msg += `🚫 ${it.name} (Cant: ${it.qty})\n`;
+              if (it.img) {
+                // Agregar enlace a la imagen para que el cliente la vea
+                msg += `📸 Foto: ${it.img}\n`;
+              }
+              msg += `\n`;
+            });
+            msg += `💸 *MONTO FALTANTE A TU FAVOR: ${fmt(missingTotal)}*\n\n`;
             msg += `Para solucionar esto rápido, hemos habilitado una zona especial de CANJE donde puedes elegir qué productos quieres llevar en reemplazo con tu saldo.\n\n`;
             msg += `✨ ¡En la zona de canje *TODO TIENE 20% DE DESCUENTO* desde la unidad 1! ✨\n\n`;
             msg += `Ingresa aquí para elegir tus productos:\n`;
