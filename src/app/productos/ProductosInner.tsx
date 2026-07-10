@@ -78,17 +78,35 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
+    let ticking = false;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      // Hide category bar/toolbar actions only if scrolled past 350px AND scrolling down
-      if (currentScrollY > 350 && currentScrollY > lastScrollY) {
-        setIsScrolled(true);
-      } else if (currentScrollY <= 150 || currentScrollY < lastScrollY) {
-        // Re-show when scrolling up or near the top
-        setIsScrolled(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const diff = currentScrollY - lastScrollY;
+
+          // Only change state if scroll movement is significant (e.g. > 15px) to prevent layout shift flickers
+          if (currentScrollY > 350) {
+            if (diff > 15) {
+              // Scrolling down significantly -> hide
+              setIsScrolled(true);
+            } else if (diff < -25) {
+              // Scrolling up significantly -> show
+              setIsScrolled(false);
+            }
+          } else if (currentScrollY <= 150) {
+            // Near the top -> always show
+            setIsScrolled(false);
+          }
+          
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
       }
-      lastScrollY = currentScrollY;
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -468,7 +486,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
               </div>
               {!lockCategoryId && (
               <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(227,150,191,0.15)' }}>
-                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#e396bf' }}>{categories.length}</span>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#e396bf' }}>{Object.values(serverCategoryCounts || {}).filter(c => c > 0).length}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Categorías</span>
               </div>
               )}
