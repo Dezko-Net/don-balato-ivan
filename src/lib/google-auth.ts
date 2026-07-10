@@ -2,6 +2,7 @@
 const GEMINI_SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 const GCP_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GCP_PROJECT_ID || '';
 const GCP_REGION = process.env.GOOGLE_CLOUD_REGION || 'global';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 /** @type {any} */
 let _auth = null;
@@ -24,6 +25,8 @@ async function getAuth() {
 }
 
 export async function getGeminiAccessToken() {
+  if (GEMINI_API_KEY) return ''; // Bypassed by API key
+  
   if (_cachedToken && Date.now() < _cachedToken.expiry - TOKEN_REFRESH_BUFFER_MS) {
     return _cachedToken.token;
   }
@@ -44,11 +47,17 @@ export async function getGeminiAccessToken() {
 }
 
 export async function getGeminiAuthHeaders() {
-  const token = await getGeminiAccessToken();
   const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
   };
+  
+  if (GEMINI_API_KEY) {
+    return headers; // API key is passed in URL
+  }
+  
+  const token = await getGeminiAccessToken();
+  headers['Authorization'] = `Bearer ${token}`;
+  
   if (GCP_PROJECT_ID) {
     headers['x-goog-user-project'] = GCP_PROJECT_ID;
   }
@@ -56,11 +65,20 @@ export async function getGeminiAuthHeaders() {
 }
 
 export function buildGeminiUrl(model, method = 'generateContent') {
+  // If we have an API Key, use AI Studio URL always
+  if (GEMINI_API_KEY) {
+    // Strip models/ prefix if passed, as AI Studio sometimes prefers bare name, but we append it
+    const cleanModel = model.replace('models/', '');
+    return `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:${method}?key=${GEMINI_API_KEY}`;
+  }
+  
+  // Otherwise use Vertex AI
   if (GCP_PROJECT_ID) {
     const base = GCP_REGION === 'global'
       ? 'https://aiplatform.googleapis.com'
       : `https://${GCP_REGION}-aiplatform.googleapis.com`;
     return `${base}/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/${model}:${method}`;
   }
-  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}`;
+  
+  throw new Error("Missing GEMINI_API_KEY or GCP_PROJECT_ID credentials.");
 }
