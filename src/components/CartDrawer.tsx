@@ -86,12 +86,16 @@ function CartDrawerRow({
   removeItem,
 }: {
   item: CartItem;
-  updateQuantity: (id: string, qty: number) => void;
+  updateQuantity: (id: string, qty: number, isPack?: boolean) => void;
   removeItem: (id: string) => void;
 }) {
   const { unitPrice, pricing } = useCartItemPrice(item);
   const p = item.product;
   const [incrementMode, setIncrementMode] = useState<'unit' | 'pack'>(item.isPack ? 'pack' : 'unit');
+
+  useEffect(() => {
+    setIncrementMode(item.isPack ? 'pack' : 'unit');
+  }, [item.isPack]);
 
   return (
     <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
@@ -126,7 +130,18 @@ function CartDrawerRow({
           {p.PACKQTY && p.PACKQTY > 1 && (
             <select
               value={incrementMode}
-              onChange={(e) => setIncrementMode(e.target.value as 'unit' | 'pack')}
+              onChange={(e) => {
+                const val = e.target.value as 'unit' | 'pack';
+                setIncrementMode(val);
+                if (val === 'pack') {
+                  const packSize = p.PACKQTY || 1;
+                  const remainder = item.quantity % packSize;
+                  const newQty = remainder === 0 ? Math.max(packSize, item.quantity) : Math.ceil(item.quantity / packSize) * packSize;
+                  updateQuantity(p.$id, newQty, true);
+                } else {
+                  updateQuantity(p.$id, item.quantity, false);
+                }
+              }}
               style={{
                 fontSize: 11,
                 padding: '2px 4px',

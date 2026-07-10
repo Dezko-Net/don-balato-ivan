@@ -15,7 +15,7 @@ interface CartContextType {
   addItem: (product: Product, qty?: number, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number, isPack?: boolean) => void;
   hasPackItems: boolean;
   removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, qty: number) => void;
+  updateQuantity: (productId: string, qty: number, isPack?: boolean) => void;
   clearCart: () => void;
   updateCartWithLiveProducts: (liveProducts: Product[]) => void;
   totalItems: number;
@@ -143,13 +143,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems(updated);
   };
 
-  const updateQuantity = (productId: string, qty: number) => {
+  const updateQuantity = (productId: string, qty: number, isPack?: boolean) => {
     if (qty <= 0) { removeItem(productId); return; }
     setItems(prev => prev.map(i => {
       if (i.product.$id !== productId) return i;
       const isLimited = i.product.STOCK !== undefined && i.product.STOCK !== null && i.product.STOCK < 99999;
       const maxStock = isLimited ? i.product.STOCK : 99999;
-      return { ...i, quantity: (!isLimited && unlimitedStock) ? qty : Math.min(qty, maxStock) };
+      return { 
+        ...i, 
+        quantity: (!isLimited && unlimitedStock) ? qty : Math.min(qty, maxStock),
+        isPack: isPack !== undefined ? isPack : i.isPack
+      };
     }));
   };
 

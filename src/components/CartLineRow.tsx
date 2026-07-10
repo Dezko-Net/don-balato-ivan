@@ -14,7 +14,7 @@ const PINK = '#e396bf';
 
 type Props = {
   item: CartItem;
-  onUpdateQty: (id: string, qty: number) => void;
+  onUpdateQty: (id: string, qty: number, isPack?: boolean) => void;
   onRemove: (id: string) => void;
 };
 
@@ -27,6 +27,10 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
   const [incrementMode, setIncrementMode] = useState<'unit' | 'pack'>(item.isPack ? 'pack' : 'unit');
 
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setIncrementMode(item.isPack ? 'pack' : 'unit');
+  }, [item.isPack]);
+
   useEffect(() => {
     if (!zoomSrc) return;
     const prev = document.body.style.overflow;
@@ -104,7 +108,18 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
             {p.PACKQTY && p.PACKQTY > 1 && (
               <select
                 value={incrementMode}
-                onChange={(e) => setIncrementMode(e.target.value as 'unit' | 'pack')}
+                onChange={(e) => {
+                  const val = e.target.value as 'unit' | 'pack';
+                  setIncrementMode(val);
+                  if (val === 'pack') {
+                    const packSize = p.PACKQTY || 1;
+                    const remainder = item.quantity % packSize;
+                    const newQty = remainder === 0 ? Math.max(packSize, item.quantity) : Math.ceil(item.quantity / packSize) * packSize;
+                    onUpdateQty(p.$id, newQty, true);
+                  } else {
+                    onUpdateQty(p.$id, item.quantity, false);
+                  }
+                }}
                 style={{
                   fontSize: 11,
                   padding: '4px 6px',
