@@ -224,6 +224,7 @@ export function useProductsCache({
     const subSubcategoryCounts: Record<string, number> = {};
     modeProducts.forEach((p: Product) => {
       if (p.ISACTIVE === false) return;
+      if (brand && !productMatchesBrand(p, brand)) return;
       if (p.CATEGORYID) {
         categoryCounts[p.CATEGORYID] = (categoryCounts[p.CATEGORYID] || 0) + 1;
       }

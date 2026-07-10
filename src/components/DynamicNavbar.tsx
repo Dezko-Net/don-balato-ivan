@@ -11,7 +11,8 @@ import Navbar101 from '@/templates/plantilla101/Navbar';
 export default function DynamicNavbar() {
   const pathname = usePathname();
   const { template, isLoading, getSectionTemplate } = useTemplate();
-  if (isLoading) return null;
+  // Fallback to Navbar1 during initial loading/hydration to prevent bottom mobile nav flickering
+  if (isLoading) return <Navbar1 />;
 
   const isProductDetail = pathname.includes('/producto/') || pathname.includes('/productos/');
   const isCatalog = pathname.includes('/collections/all') || pathname === '/productos' || pathname === '/catalogo';

@@ -26,6 +26,7 @@ import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { useProductsCache } from '@/hooks/useProductsCache';
+import { extractBrand, HOUSE_BRAND } from '@/lib/brands';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -1007,6 +1008,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
                   const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                   const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+                  const pBrand = p.BRAND || extractBrand(p.NAME) || HOUSE_BRAND;
+                  const isSadoer = pBrand.toLowerCase() === 'sadoer';
+                  const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
+                  const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
                   const effectiveStock = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? packStockAvailable(p) : (p.STOCK || 0);
                   const outOfStock = effectiveStock <= 0;
                   return (
@@ -1029,6 +1034,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                           <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             {cardSku && <span className="pk-card-sku">SKU: {cardSku}</span>}
+                            {pBrand && (
+                              <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999 }}>
+                                {pBrand}
+                              </span>
+                            )}
                             <ProductBadges product={p} />
                           </div>
                           <button
@@ -1148,6 +1158,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
                   const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                   const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+                  const pBrand = p.BRAND || extractBrand(p.NAME) || HOUSE_BRAND;
+                  const isSadoer = pBrand.toLowerCase() === 'sadoer';
+                  const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
+                  const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
                   const effectiveStockL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? packStockAvailable(p) : (p.STOCK || 0);
                   const outOfStockL = effectiveStockL <= 0;
                   return (
@@ -1165,7 +1179,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        {cardSku && <div className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                          {cardSku && <span className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700 }}>SKU: {cardSku}</span>}
+                          {pBrand && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '1px 6px', borderRadius: 999 }}>
+                              {pBrand}
+                            </span>
+                          )}
+                        </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>

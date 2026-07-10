@@ -36,6 +36,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   const isAuth        = pathname.startsWith('/login');
   const landingTemplate = getSectionTemplate('landing');
   const hideNavbarForCapturedLanding = (pathname === '/' || pathname.startsWith('/preview/plantilla/')) && landingTemplate === 101;
+  const isSadoerBrand = pathname.startsWith('/marcas/sadoer');
 
   if (isAdmin || isAuth) {
     return <>{children}</>;

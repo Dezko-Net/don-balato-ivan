@@ -23,12 +23,6 @@ export default async function MarcaPage({ params }: { params: Promise<{ slug: st
 
   return (
     <main>
-      <div className="bg-gray-50 py-8 border-b">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Marca: {brandName}</h1>
-          <p className="text-gray-600">Explora todos los productos, colecciones y categorías de {brandName}.</p>
-        </div>
-      </div>
       <DynamicCollectionAll initialBrand={brandName} />
     </main>
   );

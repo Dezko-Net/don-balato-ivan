@@ -5,6 +5,7 @@ import { X, Phone, Mail, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSectionSettings, isSectionEnabled, SectionConfig } from '@/lib/section-config';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { usePathname } from 'next/navigation';
 
 const STORAGE_KEY = 'announcement_dismissed';
 const DEFAULT_TEXT = '🔥 Envío gratis en compras sobre $30.000 — ¡Aprovecha!';
@@ -65,6 +66,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
   const [mounted, setMounted] = useState(false);
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const { settings: storeSettings } = useStoreSettings();
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
@@ -82,8 +84,9 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
     }
   }, [storeSettings]);
 
+  const isSadoerBrand = pathname.includes('/marcas/sadoer') || (typeof window !== 'undefined' && window.location.search.includes('brand=SADOER'));
   const settings = sectionCfg ? getSectionSettings(sectionCfg, 'announcement_bar') : {};
-  const text = settings.title || DEFAULT_TEXT;
+  const text = isSadoerBrand ? "Kevin & Coco te da la bienvenida al apartado de Sadoer." : (settings.title || DEFAULT_TEXT);
   const link = settings.buttonLink || '/productos';
   const enabled = sectionCfg ? isSectionEnabled(sectionCfg, 'announcement_bar') : true;
   const padding = settings.padding ?? 12; // Usar padding del editor, default 12px (mínimo para botón X)
@@ -270,7 +273,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
             {/* Mensaje principal (centro o derecha) */}
             <div className="announcement-bar__message" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', flex: storeInfo?.showInAnnouncementBar ? '0 1 auto' : '1' }}>
               {textContent}
-              {link && announceButton}
+              {link && !isSadoerBrand && announceButton}
             </div>
 
             {/* Botón cerrar */}

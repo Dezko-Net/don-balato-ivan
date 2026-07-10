@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container, Store, LayoutGrid, Truck, Compass } from 'lucide-react';
+import { Search, ShoppingCart, ShoppingBag, User, Heart, Menu, X, MapPin, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container, Store, LayoutGrid, Truck, Compass } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
@@ -22,6 +22,11 @@ import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
 const ORANGE_PRIMARY = '#e396bf';
 const PINK_LIGHT = '#f5a8cf';
 const LOGO_URL = '';
+
+const ANNOUNCEMENTS = [
+  '🌸 Venta por mayor desde $20.000',
+  '✨ Belleza auténtica, calidad garantizada'
+];
 
 function getFilePreviewUrl(fileId: string): string {
   const { endpoint, projectId } = getAppwriteConfig();
@@ -43,6 +48,37 @@ export default function Navbar1() {
   const [searchQuery, setSearchQuery] = useState('');
   const [accountOpen, setAccountOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+
+  const [announcementIndex, setAnnouncementIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnnouncementIndex((prev) => (prev + 1) % ANNOUNCEMENTS.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Detect native theme drawers (menu / search / cart) opening — observe their open-state attributes directly
+  const [nativeDrawerOpen, setNativeDrawerOpen] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const menuDrawer = document.getElementById('mobile-menu-drawer');
+      const searchDrawer = document.getElementById('search-drawer');
+      const cartDrawer = document.querySelector('cart-drawer');
+      const anyOpen =
+        (menuDrawer?.getAttribute('aria-hidden') === 'false') ||
+        (searchDrawer?.getAttribute('data-hidden') === 'false') ||
+        (cartDrawer?.getAttribute('data-hidden') === 'false') ||
+        document.body.style.overflow === 'hidden';
+      setNativeDrawerOpen(!!anyOpen);
+    };
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['aria-hidden', 'data-hidden', 'style'] });
+    return () => obs.disconnect();
+  }, []);
+  // Capsule (center pill) hides while any drawer — native or React-controlled cart — is open
+  const capsuleHidden = nativeDrawerOpen || cartOpen || menuOpen || searchOpen;
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loyaltyLevelId, setLoyaltyLevelId] = useState<string | null>(null);
   const { primaryAddress } = usePrimaryAddress();
@@ -415,6 +451,23 @@ export default function Navbar1() {
           display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
           box-shadow: 0 2px 8px rgba(236,72,153,0.5); line-height: 1;
         }
+        /* Avatar alignment in bottom nav */
+        .tpl1-bottom-nav-item .yaxsel-nav-avatar-wrap {
+          width: 28px !important; height: 28px !important;
+        }
+        .tpl1-bottom-nav-item .yaxsel-nav-avatar-wrap > div {
+          top: 3px !important; left: 3px !important;
+          width: 22px !important; height: 22px !important;
+        }
+        .tpl1-bottom-nav-item .yaxsel-nav-avatar-wrap img {
+          width: 22px !important; height: 22px !important;
+        }
+        .tpl1-bottom-nav-item .yaxsel-nav-avatar-wrap .yaxsel-nav-avatar-ring {
+          inset: 0 !important;
+        }
+        .tpl1-bottom-nav-item .yaxsel-nav-avatar-wrap img[alt]:last-of-type {
+          display: none !important;
+        }
 
         /* FAB central */
         .tpl1-fab-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
@@ -502,11 +555,37 @@ export default function Navbar1() {
         @keyframes tpl1SearchSlideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         /* Mobile fabs (WhatsApp + ChatBot) in navbar */
         .tpl1-nav-mobile-fabs { display: none; align-items: center; gap: 6px; flex-shrink: 0; flex-grow: 0; }
+        .tpl1-nav-mobile-right-fabs { display: none; align-items: center; gap: 6px; flex-shrink: 0; flex-grow: 0; }
         .tpl1-nav-mobile-fab { width: 20px !important; height: 20px !important; max-width: 20px !important; max-height: 20px !important; min-width: 20px !important; min-height: 20px !important; aspect-ratio: 1 !important; border-radius: 50% !important; border: none !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: transform 0.2s !important; overflow: hidden !important; flex-shrink: 0 !important; flex-grow: 0 !important; padding: 0 !important; line-height: 0 !important; font-size: 0 !important; text-decoration: none !important; align-self: center !important; box-sizing: border-box !important; }
         .tpl1-nav-mobile-fab:hover { transform: scale(1.05); }
         .tpl1-nav-mobile-fab svg { width: 12px !important; height: 12px !important; min-width: 12px !important; min-height: 12px !important; max-width: 12px !important; max-height: 12px !important; flex-shrink: 0 !important; display: block !important; }
         .tpl1-nav-mobile-fab--wa { background: #25D366 !important; }
         .tpl1-nav-mobile-fab--cb { background: linear-gradient(135deg, #3483fa, #6366f1) !important; }
+
+        /* Floating WhatsApp widget — swaps in once the pill scrolls/compresses */
+        .tpl1-nav-floating-wa {
+          position: fixed;
+          bottom: 90px;
+          left: 20px;
+          z-index: 9980;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: #25D366;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+          opacity: 0;
+          transform: translateY(16px) scale(0.85);
+          pointer-events: none;
+          transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        .tpl1-nav-floating-wa--visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          pointer-events: auto;
+        }
         @media (max-width: 768px) {
           .tpl1-bottom-nav { display: block; }
         }
@@ -540,9 +619,11 @@ export default function Navbar1() {
             animation: dropdownIn 0.2s ease !important;
           }
           .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
-          .tpl1-nav.tpl1-nav-home { border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 6px 80px 0 !important; position: absolute !important; top: 24px !important; left: 0 !important; right: 0 !important; }
+          .tpl1-nav.tpl1-nav-home { border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 6px 16px 0 !important; position: absolute !important; top: 24px !important; left: 0 !important; right: 0 !important; }
           .tpl1-nav.tpl1-nav-home.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
           .tpl1-nav.tpl1-nav-page { display: none !important; }
+          /* Hide the ENTIRE capsule navbar (with animation) while any drawer — menu, search or cart — is open */
+          .tpl1-nav.tpl1-nav-drawer-open { opacity: 0 !important; transform: translateY(-12px) scale(0.96) !important; pointer-events: none !important; }
           .tpl1-nav.scrolled .tpl1-nav-inner { height: 48px !important; min-height: 48px !important; padding: 0 12px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn { width: 34px !important; height: 34px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn svg { width: 17px !important; height: 17px !important; }
@@ -552,14 +633,20 @@ export default function Navbar1() {
           .tpl1-nav.scrolled .tpl1-nav-mobile-fab svg { width: 14px !important; height: 14px !important; }
           .tpl1-nav-links { display: none !important; }
           .tpl1-nav-logo { display: none !important; }
-          .tpl1-nav.scrolled .tpl1-nav-logo { display: flex !important; }
-          .tpl1-nav.scrolled .tpl1-nav-mobile-fabs { display: none !important; }
+          .tpl1-nav.scrolled .tpl1-nav-logo { display: none !important; }
+          .tpl1-nav.scrolled .tpl1-nav-mobile-fabs { display: flex !important; }
           .tpl1-nav-mobile-fabs { display: flex !important; }
           .tpl1-nav-hamburger { display: none !important; }
+          .tpl1-nav-mobile-right-fabs { display: flex !important; }
+          .tpl1-nav-mobile-tools { display: none !important; }
+          .tpl1-nav-account, .tpl1-nav-auth-wrap { display: none !important; }
           .tpl1-nav-inner { padding: 0 10px !important; height: 48px !important; min-height: 48px !important; gap: 0 !important; justify-content: space-between !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; position: relative !important; }
-          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #c084a0 !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fdf2f8, #fdf2f8) !important; border: 1px solid rgba(227,150,191,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; animation: tpl1AddrIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both !important; z-index: 10 !important; }
+          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 11px !important; color: #c084a0 !important; white-space: nowrap !important; max-width: calc(100% - 160px) !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fdf2f8, #fdf2f8) !important; border: 1px solid rgba(227,150,191,0.25) !important; border-radius: 999px !important; padding: 5px 14px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; animation: tpl1AddrIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both !important; z-index: 10 !important; opacity: 1 !important; transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1) !important; }
           @keyframes tpl1AddrIn { from { opacity: 0; transform: translate(-50%, calc(-50% - 6px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
+          .tpl1-nav-mobile-center.tpl1-capsule-hidden { opacity: 0 !important; transform: translate(-50%, -50%) scale(0.8) !important; pointer-events: none !important; }
           .tpl1-nav-mobile-center svg { flex-shrink: 0 !important; }
+          /* WA icon lives in the pill only while unscrolled; the floating widget takes over once scrolled */
+          .tpl1-nav.scrolled .tpl1-nav-mobile-fab--wa { display: none !important; }
           .tpl1-nav-logo img { height: 22px !important; max-width: 58px !important; }
           .tpl1-nav.scrolled .tpl1-nav-logo img { height: 18px !important; max-width: 48px !important; }
           .tpl1-nav-btn { width: 32px !important; height: 32px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
@@ -569,12 +656,9 @@ export default function Navbar1() {
           .tpl1-nav-account-btn { gap: 2px !important; }
           .tpl1-nav-actions { gap: 1px !important; }
 
-          /* Herramientas móvil: lupa + notificaciones juntas a la derecha */
+          /* Lupa inline (búsqueda expandible) reemplazada por el ícono de búsqueda en tpl1-nav-mobile-right-fabs */
           .tpl1-nav-mobile-tools {
-            display: flex !important;
-            align-items: center !important;
-            gap: 2px !important;
-            margin-left: auto !important;
+            display: none !important;
           }
           .tpl1-nav-notif-link {
             display: flex !important;
@@ -582,7 +666,7 @@ export default function Navbar1() {
 
           /* Hide favorites and cart on mobile (están en bottom nav) */
           .tpl1-nav-actions a[href="/favoritos"],
-          .tpl1-nav-actions button[title="Carrito"] {
+          .tpl1-nav-actions > button[title="Carrito"] {
             display: none !important;
           }
 
@@ -609,7 +693,7 @@ export default function Navbar1() {
 
       {/* Top navbar: on mobile only show on homepage */}
       <nav
-        className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav-home' : 'tpl1-nav-page'}`}
+        className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav-home' : 'tpl1-nav-page'}${capsuleHidden ? ' tpl1-nav-drawer-open' : ''}`}
         style={{
           background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff',
           borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}`,
@@ -625,27 +709,66 @@ export default function Navbar1() {
         }}
       >
         <div className="tpl1-nav-inner">
-          {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
-          {isMobile && scrolled && (
-            <a href="/cuenta/direcciones" className="tpl1-nav-mobile-center" aria-live="polite" style={{ textDecoration: 'none' }}>
-              <MapPin size={10} color={ORANGE_PRIMARY} />
-              <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
-            </a>
+          {/* Mobile center text (capsule mode has rotating announcements, scroll mode has address) */}
+          {isMobile && (
+            <div
+              className={`tpl1-nav-mobile-center${capsuleHidden ? ' tpl1-capsule-hidden' : ''}`}
+              style={{
+                textDecoration: 'none',
+                maxWidth: scrolled ? '200px' : '320px',
+                fontSize: scrolled ? '10px' : '11px',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {scrolled ? (
+                <a href="/cuenta/direcciones" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'inherit', textDecoration: 'none' }}>
+                  <MapPin size={10} color={ORANGE_PRIMARY} />
+                  <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    {primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}
+                  </span>
+                </a>
+              ) : (
+                <span style={{ transition: 'opacity 0.3s ease' }}>
+                  {ANNOUNCEMENTS[announcementIndex]}
+                </span>
+              )}
+            </div>
           )}
+
           <a href="/" className="tpl1-nav-logo" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>
             {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ opacity: 0, transition: 'opacity 0.4s ease', animation: 'tpl1LogoFadeIn 0.4s ease forwards' }} /> : null}
           </a>
 
-          {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}
-          <div className="tpl1-nav-mobile-fabs">
+          {/* Mobile fabs - Hamburger + WhatsApp + Search + Cart */}
+          <div className="tpl1-nav-mobile-fabs" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Hamburger — opens theme drawer */}
+            <button 
+              className="tpl1-nav-btn" 
+              onClick={() => {
+                // Trigger the theme's native mobile drawer directly (plantilla 23)
+                const drawer = document.querySelector('#mobile-menu-drawer') as any;
+                if (drawer && typeof drawer.openDrawer === 'function') {
+                  drawer.openDrawer();
+                } else {
+                  // Fallback: click the hidden button which the theme wired up
+                  const themeBtn = document.querySelector('#button-mobile-menu-drawer') as HTMLElement | null;
+                  if (themeBtn) {
+                    themeBtn.click();
+                  } else {
+                    setMenuOpen(!menuOpen);
+                  }
+                }
+              }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, width: '30px', height: '30px', color: '#e396bf' }}
+              title="Menú"
+            >
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            {/* WhatsApp — lives in the pill while unscrolled; swaps to the floating widget once scrolled */}
             <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--wa" title="WhatsApp">
               <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             </a>
-            {keniaEnabled && (
-              <a href={`https://wa.me/56936599658?text=${encodeURIComponent('Hola Kenia! 👋 Te escribo desde la tienda, quiero hacer una consulta 🌸')}`} target="_blank" rel="noopener noreferrer" className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--cb" title="Hablar con Kenia">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
-              </a>
-            )}
           </div>
 
           <div className="tpl1-nav-links">
@@ -667,6 +790,38 @@ export default function Navbar1() {
           </div>
 
           <div className="tpl1-nav-actions">
+            {/* Mobile-only: Search + Cart on the right (theme drawers) */}
+            <div className="tpl1-nav-mobile-right-fabs" style={{ alignItems: 'center', gap: '6px' }}>
+              <button
+                className="tpl1-nav-btn"
+                onClick={() => {
+                  const searchEl = document.querySelector('.search-icon[data-action="open"]') as HTMLElement | null;
+                  if (searchEl) { searchEl.click(); }
+                  else {
+                    const searchDrawer = document.querySelector('#search-drawer') as any;
+                    if (searchDrawer && typeof searchDrawer.openDrawer === 'function') searchDrawer.openDrawer();
+                    else setSearchOpen(true);
+                  }
+                }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, width: '30px', height: '30px', color: '#e396bf' }}
+                title="Buscar"
+              >
+                <Search size={18} />
+              </button>
+              <button
+                className="tpl1-nav-btn"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, width: '30px', height: '30px', color: '#e396bf', position: 'relative' }}
+                onClick={() => setCartOpen(true)}
+                title="Carrito"
+              >
+                <ShoppingBag size={18} />
+                {totalItems > 0 && (
+                  <span style={{ position: 'absolute', top: '-2px', right: '-4px', background: '#e396bf', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                    {totalItems > 9 ? '9+' : totalItems}
+                  </span>
+                )}
+              </button>
+            </div>
             <div className={`tpl1-nav-search-wrap ${searchOpen ? 'open' : ''}`}>
               <form onSubmit={handleSearch}>
                 <Search size={16} color={ORANGE_PRIMARY} style={{ marginRight: 8, flexShrink: 0 }} />
@@ -789,6 +944,19 @@ export default function Navbar1() {
           )}
         </div>
       </nav>
+
+      {/* Floating WhatsApp widget — rendered outside <nav> so position:fixed isn't trapped by its backdrop-filter containing block. Appears once the pill is scrolled/compressed, replacing the pill's WA icon */}
+      {isMobile && isHome && (
+        <a
+          href={getWhatsAppUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`tpl1-nav-floating-wa${scrolled ? ' tpl1-nav-floating-wa--visible' : ''}`}
+          title="WhatsApp"
+        >
+          <svg viewBox="0 0 24 24" fill="#fff" width="22" height="22"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+      )}
 
       {/* â”€â”€ Cart Drawer â”€â”€ */}
       {cartOpen && (

@@ -282,7 +282,7 @@ export default function HomePage23() {
       // Reemplaza estas URLs de imagen si quieres cambiar el banner de entrada (Hero 1).
       // Si las dejas vacías (''), se usará el video original de la plantilla.
       desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783586640034-pegada-1783586638070.png',
-      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783586630110-pegada-1783586626835.png',
+      mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783675932133-pegada-1783675928798.png',
       title: 'Poderosamente Bella',
       btnText: 'Tienda',
       btnLink: '/productos',
@@ -325,6 +325,16 @@ export default function HomePage23() {
   const { isEnabled: keniaEnabled } = useKeniaStatus();
   const [themeSections, setThemeSections] = useState<SectionConfig[]>([]);
   const [isThemeConfigLoaded, setIsThemeConfigLoaded] = useState(false);
+  const [showWaFloating, setShowWaFloating] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show floating button only if scrolled down past 150px
+      setShowWaFloating(window.scrollY > 150);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     getSectionConfigAsync()
@@ -1472,9 +1482,17 @@ export default function HomePage23() {
         /* Hero banner mobile: remove description */
         .slideshow .body-text { display: none !important; }
 
-        /* Hide Navbar1 top section and overlays on mobile, keep ONLY bottom mobile nav */
-        .tpl1-nav { display: none !important; }
-        .tpl1-nav-mobile-overlay { display: none !important; }
+        /* Keep Navbar1 top section visible on mobile */
+        .tpl1-nav { display: block !important; }
+
+        /* Hide theme's native hamburger, search and cart in hero header — capsule navbar handles them */
+        .menu-hamburger-button,
+        #button-mobile-menu-drawer,
+        .search-icon[data-action="open"],
+        .cart-icon[data-action="open"] { display: none !important; }
+
+        /* Permanently hide the announcement bar on mobile */
+        announcement-bar, #shopify-section-sections--27304712274201__announcement-bar { display: none !important; }
 
         /* Center "Poderosamente Bella" title horizontally on mobile */
         #shopify-block-AWVVEUzRxSzlKZnpON__giant_heading_3cqAMy,
@@ -1492,9 +1510,11 @@ export default function HomePage23() {
         }
       }
 
-      /* Globally hide Navbar1 top sections for Plantilla 23 */
-      .tpl1-nav { display: none !important; }
-      .tpl1-nav-mobile-overlay { display: none !important; }
+      /* Globally hide Navbar1 top sections for Plantilla 23 only on desktop */
+      @media (min-width: 769px) {
+        .tpl1-nav { display: none !important; }
+        .tpl1-nav-mobile-overlay { display: none !important; }
+      }
 
       /* ── MANOS SUAVES BLOCK CUSTOM LAYOUT ── */
       [data-block-id="AMXRRQ2RsU3J0dWQzY__multimedia_collage_image_block_hThbgy"] .multimedia-collage-block__inner {
@@ -1714,6 +1734,7 @@ export default function HomePage23() {
          ========================================== */
       featured-product[data-id="template--27304712470809__featured_product_38eqkx"] {
         display: block !important;
+        position: relative !important;
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.5) 100%) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
@@ -1725,6 +1746,26 @@ export default function HomePage23() {
         padding: 32px !important;
         overflow: hidden !important;
         transition: all 0.3s ease !important;
+      }
+      /* "Producto Destacado" badge/ribbon */
+      featured-product[data-id="template--27304712470809__featured_product_38eqkx"]::before {
+        content: "✨ Producto Destacado";
+        position: absolute !important;
+        top: 20px !important;
+        left: 20px !important;
+        z-index: 6 !important;
+        background: linear-gradient(135deg, #e396bf 0%, #f472b6 100%) !important;
+        color: #fff !important;
+        font-family: 'DM Sans', system-ui, sans-serif !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.06em !important;
+        text-transform: uppercase !important;
+        padding: 7px 14px !important;
+        border-radius: 999px !important;
+        box-shadow: 0 6px 16px rgba(227, 150, 191, 0.45) !important;
+        pointer-events: none !important;
+        white-space: nowrap !important;
       }
       
       .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-container {
@@ -1878,26 +1919,47 @@ export default function HomePage23() {
 
       @media screen and (max-width: 768px) {
         featured-product[data-id="template--27304712470809__featured_product_38eqkx"] {
-          margin: 16px 8px !important;
-          padding: 16px !important;
-          border-radius: 20px !important;
+          margin: 20px 12px !important;
+          padding: 14px !important;
+          border-radius: 22px !important;
+          background: linear-gradient(160deg, rgba(255,255,255,0.9) 0%, rgba(253,242,248,0.7) 100%) !important;
+          box-shadow: 0 12px 32px rgba(219, 39, 119, 0.08) !important;
+        }
+        featured-product[data-id="template--27304712470809__featured_product_38eqkx"]::before {
+          top: 24px !important;
+          left: 24px !important;
+          font-size: 10px !important;
+          padding: 6px 12px !important;
         }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-container {
           flex-direction: column !important;
-          gap: 16px !important;
+          gap: 18px !important;
+          align-items: stretch !important;
         }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-media,
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content {
           max-width: 100% !important;
           width: 100% !important;
         }
+        /* ── Media: consistent square showcase so ANY product image (portrait/square/wide) looks good ── */
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] product-media {
+          border-radius: 18px !important;
+          background: radial-gradient(circle at 50% 35%, #ffffff 0%, #fdf2f8 100%) !important;
+          box-shadow: inset 0 0 0 1px rgba(227,150,191,0.12), 0 8px 24px rgba(0,0,0,0.04) !important;
+        }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] media-wrapper {
           padding-top: 0 !important;
-          height: 280px !important;
+          height: auto !important;
+          aspect-ratio: 1 / 1 !important;
+          display: block !important;
         }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .image-wrapper {
-          position: relative !important;
+          position: absolute !important;
+          inset: 0 !important;
           height: 100% !important;
+          width: 100% !important;
+          padding: 22px !important;
+          box-sizing: border-box !important;
         }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .image-wrapper img {
           object-fit: contain !important;
@@ -1905,7 +1967,7 @@ export default function HomePage23() {
           width: 100% !important;
         }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content {
-          padding: 0 !important;
+          padding: 0 4px !important;
         }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content > div {
           padding: 0 !important;
@@ -1923,25 +1985,42 @@ export default function HomePage23() {
         .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container span.text-\[10px\] {
           font-size: 7px !important;
         }
-        /* Typography overrides */
+        /* ── Typography: clear hierarchy ── */
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .vendor {
+          font-size: 10px !important;
+          margin-bottom: 4px !important;
+        }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] h3.heading {
-          font-size: 18px !important;
-          margin-bottom: 6px !important;
+          font-size: 19px !important;
+          line-height: 1.25 !important;
+          margin-bottom: 8px !important;
         }
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .price-item--sale,
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .price-item {
-          font-size: 20px !important;
+          font-size: 22px !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="6"] {
+          font-size: 13px !important;
+          color: #6b7280 !important;
+          line-height: 1.5 !important;
+          margin: 6px 0 2px !important;
+          display: -webkit-box !important;
+          -webkit-line-clamp: 2 !important;
+          -webkit-box-orient: vertical !important;
+          overflow: hidden !important;
         }
         /* Tighten accordions on mobile */
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .accordion-heading {
-          padding: 10px 0 !important;
+          padding: 11px 0 !important;
           font-size: 12px !important;
         }
-        /* Compact cart button on mobile */
+        /* Full-width prominent CTA on mobile */
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .button-cart {
-          font-size: 12px !important;
-          padding: 12px 16px !important;
-          border-radius: 10px !important;
+          font-size: 13px !important;
+          padding: 15px 16px !important;
+          border-radius: 14px !important;
+          width: 100% !important;
+          box-shadow: 0 8px 20px rgba(227, 150, 191, 0.4) !important;
         }
       }
 
@@ -2038,33 +2117,27 @@ export default function HomePage23() {
       }
 
       @media (max-width: 992px) {
+        /* Hide the theme's native header on mobile — capsule navbar replaces it entirely */
         .tpl23-shopify-root custom-header.header-element {
-          position: absolute !important;
-          top: 0px !important;
-          margin-top: 0px !important;
-          padding-top: 2px !important;
-          padding-bottom: 2px !important;
+          display: none !important;
         }
-        .tpl23-shopify-root .header-element .logo-wrapper {
-          margin-top: 0px !important;
-          padding-top: 0px !important;
-          padding-bottom: 0px !important;
+
+        /* Push the hero slideshow down so it starts below the fixed capsule navbar (56px).
+           No margin-top blanco: usamos un filler pintado del mismo rosa base del hero
+           (#tpl23-hero-gap-filler, insertado por JS) para que no se vea un espacio en blanco
+           detrás del navbar cápsula flotante. */
+        #shopify-section-template--27304712470809__slideshow_FBfKC8 {
+          margin-top: 0 !important;
         }
-        .tpl23-shopify-root .header-element .logo-wrapper img {
-          max-height: 36px !important;
-          padding-top: 0 !important;
-          padding-bottom: 0 !important;
+        #tpl23-hero-gap-filler {
+          display: block !important;
+          height: 56px;
+          width: 100%;
+          background: #FBCAC9;
         }
-        .tpl23-shopify-root .header-element .menu-hamburger-button {
-          margin-top: 0px !important;
-          margin-bottom: 0px !important;
-          height: 18px !important;
-        }
-        .tpl23-shopify-root .header-element .flex.justify-between.relative.gap-3.py-3 {
-          padding-top: 0px !important;
-          padding-bottom: 0px !important;
-          margin-top: -8px !important;
-        }
+      }
+      #tpl23-hero-gap-filler {
+        display: none;
       }
 
       /* Fades for herobanner and latest products section */
@@ -2307,6 +2380,15 @@ export default function HomePage23() {
     // Insert Live Shopping, Wholesale Offers and Latest Products placeholders right after the Hero banner (slideshow)
     const heroBannerSection = tempDiv.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
     if (heroBannerSection) {
+      // Mobile: filler rosa detrás del navbar cápsula flotante, para que el hueco que
+      // deja el "margin-top" del hero (espacio reservado para el navbar) no se vea en
+      // blanco/gris sino del mismo tono base que el fondo del hero (#FBCAC9).
+      if (!tempDiv.querySelector('#tpl23-hero-gap-filler')) {
+        const heroGapFiller = document.createElement('div');
+        heroGapFiller.id = 'tpl23-hero-gap-filler';
+        heroBannerSection.insertAdjacentElement('beforebegin', heroGapFiller);
+      }
+
       // Move the "Oferta de Apertura" countdown timer to hide it (it's display:none already)
       const countdownSection = tempDiv.querySelector('[id*="countdown_timer\"]') as HTMLElement | null;
       if (countdownSection) {
@@ -2446,14 +2528,14 @@ export default function HomePage23() {
             </div>
             <div class="price flex gap-[5px] flex-wrap items-center">
               <div class="price__regular">
-                <span class="price-item" style="text-decoration: line-through; color: #9ca3af; font-size: 0.85em;">$${p.PRICE.toLocaleString()} CLP${qty > 1 ? ` &times; ${qty}` : ''}</span>
+                <span class="price-item" style="text-decoration: line-through; color: #9ca3af; font-size: 0.85em;">${formatPrice(p.PRICE)}${qty > 1 ? ` &times; ${qty}` : ''}</span>
               </div>
               <div class="price__sale" style="display:flex; align-items:center; gap:6px;">
-                <span class="price-item price-item--sale" style="font-weight:800; color:#db2777; font-size:1.05em;">$${bundleLineTotal.toLocaleString()} CLP</span>
+                <span class="price-item price-item--sale" style="font-weight:800; color:#db2777; font-size:1.05em;">${formatPrice(bundleLineTotal)}</span>
                 <span style="background:#db2777; color:#fff; font-size:0.7em; font-weight:800; padding:2px 8px; border-radius:999px; line-height:1.2;">-${lineDiscountPct}%</span>
               </div>
               <div style="width:100%; margin-top:2px;">
-                <span style="font-size:0.75em; color:#10b981; font-weight:700;">Ahorras $${lineSavings.toLocaleString()} CLP</span>
+                <span style="font-size:0.75em; color:#10b981; font-weight:700;">Ahorras ${formatPrice(lineSavings)}</span>
               </div>
             </div>
           </div>
@@ -2683,9 +2765,8 @@ export default function HomePage23() {
           };
           const goTo = (i: number) => { idx = ((i % total) + total) % total; render(); };
           const restart = () => {
-            // Autoplay deshabilitado por solicitud del usuario
-            // window.clearInterval(timer);
-            // timer = window.setInterval(() => goTo(idx + 1), 5000);
+            window.clearInterval(timer);
+            timer = window.setInterval(() => goTo(idx + 1), 5000);
           };
 
           // Puntos
@@ -4685,7 +4766,7 @@ export default function HomePage23() {
         // ═══ Logo Instant Load Reveal & Override ═══
         const logo = document.querySelector('.header img.logo') as HTMLImageElement;
         if (logo) {
-          logo.src = "https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/KEVIN%26COCO%2F%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=a5def232-086e-4ae8-a49b-476b8f4397a7";
+          logo.src = "https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04";
           if (logo.complete) {
             logo.classList.add('is-loaded');
           } else {
@@ -4960,7 +5041,7 @@ export default function HomePage23() {
                           </h6>
                       </a>
                       <div style="display:flex; align-items:center; justify-content:space-between;">
-                          <div style="font-weight:800; font-size:15px; color:#111827;">$${price.toLocaleString()}</div>
+                          <div style="font-weight:800; font-size:15px; color:#111827;">${formatPrice(price)}</div>
                           <div style="display:flex; align-items:center; background:#fff; border-radius:50px; padding:3px; border: 1px solid #e5e7eb;">
                               <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; border-radius:50%; cursor:pointer; font-weight:600; font-size:15px; color:#9ca3af; transition:all 0.15s;">−</button>
                               <span style="font-size:13px; font-weight:700; width:24px; text-align:center; color:#111827;">${item.quantity}</span>
@@ -4988,7 +5069,7 @@ export default function HomePage23() {
         <div style="padding: 14px 0 12px; border-top: 1px solid #f3f4f6;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="font-size: 13px; font-weight: 600; color: #6b7280;">Subtotal</span>
-            <span style="font-size: 20px; font-weight: 800; color: #111827;">$${(cartTotal || 0).toLocaleString()}</span>
+            <span style="font-size: 20px; font-weight: 800; color: #111827;">${formatPrice(cartTotal || 0)}</span>
           </div>
           <p style="font-size: 11px; color: #b0b0b0; margin: 0;">Impuestos y envío calculados al pagar</p>
         </div>
@@ -5118,7 +5199,7 @@ export default function HomePage23() {
                 <p style="margin:0; font-size:11.5px; font-weight:600; line-height:1.4; color:#4b5563; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${pName}</p>
               </a>
               <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">
-                <span style="font-size:14px; font-weight:800; color:#111827;">$${(currentPrice||0).toLocaleString()}</span>
+                <span style="font-size:14px; font-weight:800; color:#111827;">${formatPrice(currentPrice || 0)}</span>
                 <button class="pk-grid-add-to-cart" data-product-id="${p.$id}" style="background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); border:none; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition: all 0.2s; box-shadow: 0 2px 8px rgba(251,202,201,0.3);" aria-label="Agregar al carrito">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
@@ -5154,8 +5235,8 @@ export default function HomePage23() {
               <div style="flex:1; min-width:0;">
                 <p style="margin:0 0 4px; font-size:13px; font-weight:600; color:#374151; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${pName}</p>
                 <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:14px; font-weight:800; color:#111827;">$${(currentPrice||0).toLocaleString()}</span>
-                  ${hasDiscount ? `<span style="font-size:11px; color:#9ca3af; text-decoration:line-through;">$${p.PRICE.toLocaleString()}</span>` : ''}
+                  <span style="font-size:14px; font-weight:800; color:#111827;">${formatPrice(currentPrice || 0)}</span>
+                  ${hasDiscount ? `<span style="font-size:11px; color:#9ca3af; text-decoration:line-through;">${formatPrice(p.PRICE)}</span>` : ''}
                 </div>
               </div>
               <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
@@ -5907,16 +5988,18 @@ export default function HomePage23() {
         }
         @media (max-width: 767.98px) {
           .whatsapp-floating-btn {
-            bottom: 90px !important; /* Evitar que el menú de navegación móvil lo tape */
-            width: 48px !important;
-            height: 48px !important;
-            left: 16px !important;
+            display: none !important;
           }
+        }
+        .whatsapp-floating-btn.hidden-wa {
+          opacity: 0 !important;
+          pointer-events: none !important;
+          transform: scale(0) !important;
         }
       `}</style>
 
       <div className={`splash-screen ${!showSplash ? 'hidden' : ''}`}>
-        <img src="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/KEVIN%26COCO%2F%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=a5def232-086e-4ae8-a49b-476b8f4397a7" alt="Cargando Kevin & Coco..." className="splash-logo" />
+        <img src="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04" alt="Cargando Kevin & Coco..." className="splash-logo" />
       </div>
 
       <div
@@ -5929,7 +6012,7 @@ export default function HomePage23() {
         href="https://wa.me/56999149712"
         target="_blank"
         rel="noopener noreferrer"
-        className="whatsapp-floating-btn"
+        className={`whatsapp-floating-btn ${!showWaFloating ? 'hidden-wa' : ''}`}
       >
         <img
           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAZfIMxTRshRuJdTJu-mi52yWPxiF3ghQsSw&s"
