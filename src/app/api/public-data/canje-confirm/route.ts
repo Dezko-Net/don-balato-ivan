@@ -61,12 +61,14 @@ export async function POST(req: NextRequest) {
     }, 0);
     const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || order.DISCOUNT || 0);
 
-    // 4. Update the order
+    // 4. Update the order - keep in negotiation so bodegueros verify stock
+    const currentCanjeCount = (order as any).CANJE_COUNT || 0;
     await databases.updateDocument(databaseId, coll, orderId, {
       ITEMS: JSON.stringify(parsedItems),
       SUBTOTAL: newSubtotal,
       TOTAL: newTotal,
-      STATUS: 'stock_confirmed',
+      STATUS: 'negotiation',
+      CANJE_COUNT: currentCanjeCount + 1,
       UPDATEDAT: Date.now(),
     });
 
@@ -95,7 +97,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       orderId,
-      newStatus: 'stock_confirmed',
+      newStatus: 'negotiation',
       couponCode,
       remainingCredit,
       message: remainingCredit > 0

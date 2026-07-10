@@ -33,7 +33,33 @@ export async function notifyAdmin(message: string): Promise<void> {
 
 export async function notifyNewOrder(orderCode: string, customerName: string, total: number, itemsCount: number): Promise<void> {
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
-  await notifyAdmin(`🛒 *NUEVO PEDIDO* #${orderCode}\nCliente: ${customerName}\nTotal: ${fmt(total)}\nProductos: ${itemsCount}`);
+  
+  try {
+    const { sendWhatsAppTemplate, formatWhatsAppPhone } = await import('@/lib/whatsapp');
+    
+    const phone = await getAdminAlertPhone();
+    const formattedPhone = formatWhatsAppPhone(phone);
+    const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+    
+    if (WA_TOKEN) {
+      const components = [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: orderCode },
+            { type: 'text', text: customerName },
+            { type: 'text', text: fmt(total) },
+            { type: 'text', text: String(itemsCount) }
+          ]
+        }
+      ];
+      await sendWhatsAppTemplate(formattedPhone, 'alerta_nuevo_pedido_admin', 'es_CL', components, WA_TOKEN);
+    }
+  } catch (e) {
+    console.error('[notifyNewOrder] Failed to send template:', e);
+    // Fallback just in case
+    await notifyAdmin(`🛒 *NUEVO PEDIDO* #${orderCode}\nCliente: ${customerName}\nTotal: ${fmt(total)}\nProductos: ${itemsCount}`);
+  }
 }
 
 export async function notifyPaymentUploaded(orderCode: string, customerName: string, imageUrl?: string, orderId?: string): Promise<void> {

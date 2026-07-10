@@ -208,17 +208,29 @@ export default function NegotiationOrdersPage() {
 
   type NegotiationStatus = 'not_opened' | 'in_progress' | 'partial' | 'complete';
 
-  const getNegotiationStatus = (order: Order): { status: NegotiationStatus; missingCount: number; replacedCount: number; openedAt?: number } => {
+  const getNegotiationStatus = (order: Order): { status: NegotiationStatus; missingCount: number; replacedCount: number; openedAt?: number; missingValue: number; missingItemsList: string[] } => {
     let parsed: any[] = [];
     try { parsed = JSON.parse(order.ITEMS || '[]'); } catch {}
-    const missingCount = parsed.filter(it => it.missing === true).length;
+    
+    let missingCount = 0;
+    let missingValue = 0;
+    const missingItemsList: string[] = [];
+    
+    for (const it of parsed) {
+      if (it.missing === true) {
+        missingCount++;
+        missingValue += (it.price || 0) * (it.qty || 1);
+        missingItemsList.push(`${it.name} (x${it.qty || 1})`);
+      }
+    }
+    
     const replacedCount = parsed.filter(it => it.replaced === true).length;
     const openedAt = (order as any).NEGOTIATION_OPENED_AT as number | undefined;
 
-    if (missingCount === 0 && replacedCount > 0) return { status: 'complete', missingCount, replacedCount, openedAt };
-    if (missingCount > 0 && replacedCount > 0) return { status: 'partial', missingCount, replacedCount, openedAt };
-    if (openedAt) return { status: 'in_progress', missingCount, replacedCount, openedAt };
-    return { status: 'not_opened', missingCount, replacedCount, openedAt };
+    if (missingCount === 0 && replacedCount > 0) return { status: 'complete', missingCount, replacedCount, openedAt, missingValue, missingItemsList };
+    if (missingCount > 0 && replacedCount > 0) return { status: 'partial', missingCount, replacedCount, openedAt, missingValue, missingItemsList };
+    if (openedAt) return { status: 'in_progress', missingCount, replacedCount, openedAt, missingValue, missingItemsList };
+    return { status: 'not_opened', missingCount, replacedCount, openedAt, missingValue, missingItemsList };
   };
 
   const statusConfig: Record<NegotiationStatus, { label: string; bg: string; text: string; border: string; icon: string; dot: string }> = {
@@ -232,13 +244,14 @@ export default function NegotiationOrdersPage() {
     const s = getNegotiationStatus(o);
     acc[s.status]++;
     acc.total++;
+    acc.totalCredit += s.missingValue;
     return acc;
-  }, { not_opened: 0, in_progress: 0, partial: 0, complete: 0, total: 0 });
+  }, { not_opened: 0, in_progress: 0, partial: 0, complete: 0, total: 0, totalCredit: 0 });
 
   const statsCards = [
-    { key: 'total', label: 'Total', value: stats.total, icon: Inbox, color: 'from-pink-500 to-rose-500' },
-    { key: 'not_opened', label: 'No abiertos', value: stats.not_opened, icon: Eye, color: 'from-gray-400 to-gray-500' },
-    { key: 'in_progress', label: 'En proceso', value: stats.in_progress + stats.partial, icon: Clock, color: 'from-amber-400 to-orange-500' },
+    { key: 'total', label: 'Total Pedidos', value: stats.total, icon: Inbox, color: 'from-pink-500 to-rose-500' },
+    { key: 'credit', label: 'Total Crédito a Favor', value: fmt(stats.totalCredit), icon: Sparkles, color: 'from-fuchsia-500 to-purple-600' },
+    { key: 'in_progress', label: 'En proceso / Nuevos', value: stats.in_progress + stats.partial + stats.not_opened, icon: Clock, color: 'from-amber-400 to-orange-500' },
     { key: 'complete', label: 'Completos', value: stats.complete, icon: CheckCircle2, color: 'from-emerald-400 to-teal-500' },
   ];
 
@@ -283,58 +296,64 @@ export default function NegotiationOrdersPage() {
       </div>
 
       {/* Input Card */}
-      <div className="bg-white rounded-2xl border border-gray-150 p-5 shadow-sm space-y-4">
-        <div className="flex items-center gap-2">
+      <details className="bg-white rounded-2xl border border-gray-150 p-5 shadow-sm space-y-4 group">
+        <summary className="flex items-center gap-2 cursor-pointer list-none select-none">
           <div className="w-7 h-7 rounded-lg bg-pink-100 flex items-center justify-center">
             <Package className="w-4 h-4 text-pink-600" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-gray-800">Agregar Pedidos a Negociación</h2>
-            <p className="text-xs text-gray-400">Ingresa los números de pedido separados por comas o saltos de línea (ej: 9, 91, 13, ORD-00001).</p>
+            <h2 className="text-sm font-bold text-gray-800 group-open:text-pink-600 transition-colors">Agregar Pedidos a Negociación</h2>
+            <p className="text-xs text-gray-400 group-open:hidden mt-0.5">Haz clic para ingresar códigos de pedido manualmente...</p>
           </div>
+          <div className="ml-auto w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-open:rotate-180 transition-transform">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </summary>
+
+        <div className="pt-4 border-t border-gray-100 mt-4 space-y-4">
+          <p className="text-xs text-gray-400">Ingresa los números de pedido separados por comas o saltos de línea (ej: 9, 91, 13, ORD-00001).</p>
+          <form onSubmit={handleAddOrders} className="space-y-3">
+            <textarea
+              value={orderInput}
+              onChange={e => setOrderInput(e.target.value)}
+              placeholder="Ej: 9, 91, 13, 1"
+              rows={3}
+              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition resize-none"
+            />
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmitting || !orderInput.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-rose-700 transition disabled:opacity-50 shadow-sm"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  'Establecer en Negociación'
+                )}
+              </button>
+            </div>
+          </form>
+
+          {successMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-800 flex items-center gap-1.5">
+              <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-800 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+              <span>{error}</span>
+            </div>
+          )}
         </div>
-
-        <form onSubmit={handleAddOrders} className="space-y-3">
-          <textarea
-            value={orderInput}
-            onChange={e => setOrderInput(e.target.value)}
-            placeholder="Ej: 9, 91, 13, 1"
-            rows={3}
-            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition resize-none"
-          />
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={isSubmitting || !orderInput.trim()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-rose-700 transition disabled:opacity-50 shadow-sm"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin" />
-                  Procesando...
-                </>
-              ) : (
-                'Establecer en Negociación'
-              )}
-            </button>
-          </div>
-        </form>
-
-        {successMsg && (
-          <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-800 flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-800 flex items-center gap-1.5">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
-            <span>{error}</span>
-          </div>
-        )}
-      </div>
+      </details>
 
       {/* Orders List */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -375,98 +394,118 @@ export default function NegotiationOrdersPage() {
 
               const negStatus = getNegotiationStatus(order);
               const sc = statusConfig[negStatus.status];
+              const canjeCount = (order as any).CANJE_COUNT || 0;
+              const hasCanjeReplacement = itemsCount > 0 && (() => { try { return JSON.parse(order.ITEMS || '[]').some((it: any) => it.isCanjeReplacement); } catch { return false; } })();
 
               return (
-                <div key={order.$id} className="p-5 hover:bg-gray-50/40 transition group">
-                  <div className="flex justify-between items-start gap-4 flex-wrap">
-                    <div className="space-y-2 min-w-0 flex-1">
+                <div key={order.$id} className="p-5 hover:bg-gray-50/40 transition group border-b border-gray-100 last:border-0">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+                    
+                    {/* Left: Info */}
+                    <div className="space-y-3 flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-extrabold text-sm text-gray-900">#{order.ORDERCODE}</span>
-                        <span className={'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ' + sc.bg + ' ' + sc.text + ' border ' + sc.border}>
-                          <span className={'w-1.5 h-1.5 rounded-full ' + sc.dot} />
+                        <span className="font-extrabold text-lg text-gray-900">#{order.ORDERCODE}</span>
+                        <span className={'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ' + sc.bg + ' ' + sc.text + ' border ' + sc.border}>
+                          <span className={'w-2 h-2 rounded-full ' + sc.dot} />
                           {sc.icon} {sc.label}
                         </span>
-                        {hasMissing && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                            <AlertTriangle className="w-3 h-3" />
-                            Faltantes
+                        {(canjeCount > 0 || hasCanjeReplacement) && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
+                            🎁 Canje {canjeCount > 0 ? canjeCount : 1} aplicado
                           </span>
                         )}
+                        <span className="flex items-center gap-1 text-xs text-gray-500 font-medium ml-2">
+                          <User className="w-4 h-4 text-gray-400" />
+                          {order.CUSTOMERNAME}
+                        </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <User className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="font-semibold">{order.CUSTOMERNAME}</span>
-                        <span className="text-gray-300">·</span>
-                        <span className="text-gray-500">{fmt(order.TOTAL)}</span>
-                      </div>
-
-                      <div className="flex items-center gap-3 text-[11px] text-gray-400 flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
+                      <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                        <span className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                          <Clock className="w-3.5 h-3.5" />
                           {date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Package className="w-3 h-3" />
-                          {itemsCount} productos
+                        <span className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                          <Package className="w-3.5 h-3.5" />
+                          {itemsCount} productos ({fmt(order.TOTAL)})
                         </span>
-                        {negStatus.missingCount > 0 && (
-                          <span className="flex items-center gap-1 text-red-500 font-semibold">
-                            <AlertCircle className="w-3 h-3" />
-                            Faltan: {negStatus.missingCount}
-                          </span>
-                        )}
-                        {negStatus.replacedCount > 0 && (
-                          <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Reemplazados: {negStatus.replacedCount}
-                          </span>
-                        )}
                         {negStatus.openedAt && (
-                          <span className="flex items-center gap-1 text-amber-600">
-                            <Eye className="w-3 h-3" />
-                            Abierto: {new Date(negStatus.openedAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg border border-amber-200">
+                            <Eye className="w-3.5 h-3.5" />
+                            Visto: {new Date(negStatus.openedAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                       </div>
+
+                      {/* Missing Products Details */}
+                      {negStatus.missingCount > 0 && (
+                        <div className="mt-3 p-3 bg-red-50/50 border border-red-100 rounded-xl space-y-1.5">
+                          <p className="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                            <AlertCircle className="w-4 h-4" /> 
+                            Productos faltantes ({negStatus.missingCount}):
+                          </p>
+                          <ul className="text-xs text-red-700 list-disc list-inside space-y-0.5 ml-1">
+                            {negStatus.missingItemsList.slice(0, 3).map((name, idx) => (
+                              <li key={idx} className="truncate max-w-sm">{name}</li>
+                            ))}
+                            {negStatus.missingItemsList.length > 3 && (
+                              <li className="font-medium">...y {negStatus.missingItemsList.length - 3} más</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {hasMissing && (
-                        <button
-                          onClick={() => handleSendToIa(order.$id)}
-                          disabled={sendingIaId !== null}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl text-xs font-bold hover:from-pink-700 hover:to-rose-700 transition disabled:opacity-50 shadow-sm"
-                        >
-                          {sendingIaId === order.$id ? (
-                            <>
-                              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                              Enviando...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-3.5 h-3.5" />
-                              Negociar IA
-                            </>
+                    {/* Right: Credit & Actions */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0 w-full md:w-auto bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                      {/* Credit Display */}
+                      <div className="text-center sm:text-right sm:pr-4 sm:border-r border-gray-200 w-full sm:w-auto">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Saldo a Favor</p>
+                        <p className="text-xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-rose-600">
+                          {fmt(negStatus.missingValue)}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex sm:flex-col gap-2 w-full sm:w-auto">
+                        {hasMissing && (
+                          <button
+                            onClick={() => handleSendToIa(order.$id)}
+                            disabled={sendingIaId !== null}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl text-xs font-bold hover:from-pink-700 hover:to-rose-700 transition disabled:opacity-50 shadow-sm"
+                          >
+                            {sendingIaId === order.$id ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4" />
+                                Negociar IA
+                              </>
+                            )}
+                          </button>
+                        )}
+                        <div className="flex gap-2 flex-1">
+                          {order.CUSTOMERPHONE && (
+                            <button
+                              onClick={() => handleOpenChat(order.CUSTOMERPHONE!, order.CUSTOMERNAME || 'Cliente')}
+                              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition shadow-sm"
+                            >
+                              <MessageSquare className="w-4 h-4 text-emerald-600" />
+                              Chat
+                            </button>
                           )}
-                        </button>
-                      )}
-                      {order.CUSTOMERPHONE && (
-                        <button
-                          onClick={() => handleOpenChat(order.CUSTOMERPHONE!, order.CUSTOMERNAME || 'Cliente')}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-sm"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          Chat
-                        </button>
-                      )}
-                      <Link
-                        href={'/admin/orders/' + order.$id}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-sm"
-                      >
-                        Abrir
-                        <Play className="w-3 h-3 fill-white stroke-none" />
-                      </Link>
+                          <Link
+                            href={'/admin/orders/' + order.$id}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition shadow-sm"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-indigo-700" />
+                            Abrir
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

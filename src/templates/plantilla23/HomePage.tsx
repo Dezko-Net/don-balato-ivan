@@ -3479,7 +3479,10 @@ export default function HomePage23() {
   /* ── INJECT DYNAMIC CATEGORIES INTO NAVBAR MEGAMENU (separate effect) ── */
   useEffect(() => {
     if (!containerRef.current || !containerRef.current.dataset.htmlSet) return;
-    if (categories.length === 0 || subcategories.length === 0) return;
+    // Solo las categorías son imprescindibles: la tienda puede no tener subcategorías.
+    // (Exigir subcategories > 0 saltaba TODO este efecto: productos sin hidratar,
+    // secciones vacías y el video del split-hero sin su observer de reproducción.)
+    if (categories.length === 0) return;
     if (containerRef.current.dataset.navInjected) return;
 
     const root = containerRef.current;
@@ -3530,6 +3533,19 @@ export default function HomePage23() {
           .map(sc => ({ ...sc, prodCount: subProductCount[sc.$id] || 0 }))
           .filter(sc => sc.prodCount > 0)
           .sort((a, b) => b.prodCount - a.prodCount);
+
+        // Sin subcategorías no hay megamenú que desplegar: link directo a la categoría
+        if (catSubs.length === 0) {
+          const plainLi = document.createElement('li');
+          plainLi.className = 'inline-block group py-2 px-1 shrink-0 no-keyboard-focus';
+          plainLi.innerHTML = `
+            <a href="/productos?categoria=${encodeURIComponent(cat.name)}" title="${cat.name}" aria-label="${cat.name}" class="flex items-center no-keyboard-focus" data-menu-tier="1">
+                <span class="link-hover-animation">${cat.name}</span>
+            </a>
+          `;
+          desktopMenu.appendChild(plainLi);
+          return;
+        }
 
         const navLi = document.createElement('li');
         navLi.className = 'inline-block group py-2 px-1 shrink-0 no-keyboard-focus';
@@ -4321,7 +4337,13 @@ export default function HomePage23() {
           }
         });
       }, { threshold: 0.1 });
-      scrollVideos.forEach(v => videoObserver.observe(v));
+      scrollVideos.forEach(v => {
+        const video = v as HTMLVideoElement;
+        // El clip dura ~5s: sin loop muere en el último frame y el hero se ve congelado
+        video.loop = true;
+        video.muted = true;
+        videoObserver.observe(video);
+      });
     }
 
     // ═══ MOBILE: Inject Profile icon next to Buscar / Carrito in mobile header ═══
@@ -4453,16 +4475,35 @@ export default function HomePage23() {
         });
       }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-      document.querySelectorAll('.animation-element, .animation-wrapper').forEach(el => {
+      const observeAnimEl = (el: Element) => {
         if (!el.closest('split-hero')) {
           observer.observe(el);
         }
+      };
+      document.querySelectorAll('.animation-element, .animation-wrapper').forEach(observeAnimEl);
+
+      // Los productos y carruseles se inyectan DESPUÉS de este init (hidratación
+      // asíncrona de Appwrite): sin esto, los nodos nuevos jamás reciben .in-view
+      // y quedan en opacity:0 por el CSS del tema (animation.css).
+      const prevLateObserver = (window as any).__tpl23LateAnimObserver as MutationObserver | undefined;
+      if (prevLateObserver) prevLateObserver.disconnect();
+      const lateObserver = new MutationObserver(mutations => {
+        mutations.forEach(m => {
+          m.addedNodes.forEach(node => {
+            if (!(node instanceof Element)) return;
+            if (node.matches('.animation-element, .animation-wrapper')) observeAnimEl(node);
+            node.querySelectorAll('.animation-element, .animation-wrapper').forEach(observeAnimEl);
+          });
+        });
       });
-      
-      // Forzar autoplay en videos del split hero
+      lateObserver.observe(document.body, { childList: true, subtree: true });
+      (window as any).__tpl23LateAnimObserver = lateObserver;
+
+      // Forzar autoplay en videos del split hero (clip corto: loop para que no muera)
       document.querySelectorAll('split-hero video, .split-hero video').forEach(el => {
         const video = el as HTMLVideoElement;
         video.muted = true;
+        video.loop = true;
         video.play().catch(() => {});
       });
     };
@@ -4677,6 +4718,100 @@ export default function HomePage23() {
 
     return () => { (window as any).__tpl23ScriptsLoaded = false; };
   }, [bodyHtml, categories]);
+
+  /* ═══ Scroll FX extra: barra de progreso, parallax profundo y skew por velocidad ═══ */
+  useEffect(() => {
+    // htmlInjected: los targets de parallax/skew viven en el HTML inyectado;
+    // con solo bodyHtml el efecto correría antes de que existan en el DOM.
+    if (!bodyHtml || !htmlInjected) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // 1) Barra de progreso de lectura con el gradiente de la marca
+    let bar = document.getElementById('tpl23-scroll-progress') as HTMLElement | null;
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'tpl23-scroll-progress';
+      bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:100%;z-index:9999;pointer-events:none;background:linear-gradient(90deg,#e396bf,#c0547a 60%,#f5c8dd);transform-origin:0 50%;transform:scaleX(0);will-change:transform;';
+      document.body.appendChild(bar);
+    }
+
+    // 2) Parallax profundo en fondos grandes — solo desktop con mouse.
+    //    Los targets viven en contenedores overflow-hidden; el scale extra
+    //    evita que asomen bordes vacíos al desplazarlos.
+    //    Se re-coleccionan periódicamente: morph-svg y otros scripts del tema
+    //    clonan/re-crean nodos después del primer render.
+    const isDesktop = window.innerWidth >= 1024 && window.matchMedia('(hover: hover)').matches;
+    // (media-with-text queda fuera: morph-svg re-clona sus nodos en cada frame)
+    const PARALLAX_TARGETS: [string, number, number][] = [
+      ['.marquee__background-media', 40, 1.15],
+      ['.editorial-banner .editorial-banner__column:nth-child(odd)', 16, 1],
+      ['.editorial-banner .editorial-banner__column:nth-child(even)', 30, 1],
+    ];
+    const parallaxItems = new Map<HTMLElement, { depth: number; scale: number }>();
+    // 3) Skew sutil del contenido del marquee según velocidad de scroll
+    let skewTargets: HTMLElement[] = [];
+
+    const refreshTargets = () => {
+      if (isDesktop) {
+        PARALLAX_TARGETS.forEach(([selector, depth, scale]) => {
+          document.querySelectorAll<HTMLElement>(selector).forEach(el => {
+            if (!parallaxItems.has(el)) {
+              el.style.willChange = 'transform';
+              parallaxItems.set(el, { depth, scale });
+            }
+          });
+        });
+      }
+      skewTargets = Array.from(document.querySelectorAll<HTMLElement>('custom-marquee .marquee__content'));
+    };
+    refreshTargets();
+
+    let lastY = window.scrollY;
+    let renderedY = -1;
+    let skew = 0;
+    let raf = 0;
+    let running = true;
+    let frameCount = 0;
+
+    const frame = () => {
+      if (!running) return;
+      if (++frameCount % 60 === 0) refreshTargets();
+      const y = window.scrollY;
+      const velocity = y - lastY;
+      lastY = y;
+
+      if (y !== renderedY || skew !== 0) {
+        renderedY = y;
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - window.innerHeight;
+        if (bar) bar.style.transform = `scaleX(${max > 0 ? Math.min(y / max, 1) : 0})`;
+
+        const vh = window.innerHeight;
+        parallaxItems.forEach(({ depth, scale }, el) => {
+          const rect = el.getBoundingClientRect();
+          if (rect.bottom < -100 || rect.top > vh + 100) return;
+          // -1..1 según qué tan lejos está el centro del elemento del centro del viewport
+          const progress = ((rect.top + rect.height / 2) - vh / 2) / vh;
+          el.style.transform = `translate3d(0, ${(-progress * depth).toFixed(1)}px, 0) scale(${scale})`;
+        });
+
+        skew += (Math.max(-6, Math.min(6, velocity * 0.06)) - skew) * 0.12;
+        if (Math.abs(skew) < 0.02) skew = 0;
+        skewTargets.forEach(el => { el.style.transform = skew === 0 ? '' : `skewX(${skew.toFixed(2)}deg)`; });
+      }
+
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+
+    return () => {
+      running = false;
+      cancelAnimationFrame(raf);
+      bar?.remove();
+      parallaxItems.forEach((_cfg, el) => { el.style.transform = ''; el.style.willChange = ''; });
+      skewTargets.forEach(el => { el.style.transform = ''; });
+    };
+  }, [bodyHtml, htmlInjected]);
   /* ═══ GRID ADD TO CART DELEGATION ═══ */
   useEffect(() => {
     const root = containerRef.current;

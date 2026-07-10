@@ -353,23 +353,7 @@ export default function PedidoPage() {
         }
       }
 
-      if (oldSku) {
-        try {
-          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
-            Query.equal('sku', oldSku),
-            Query.limit(1)
-          ]);
-          if (blockedResp.documents.length === 0) {
-            await databases.createDocument(databaseId, 'blocked_products', ID.unique(), {
-              sku: oldSku,
-              name: oldName,
-              imageUrl: oldImg
-            });
-          }
-        } catch {}
-      }
-
-      // 2. Block old product stock instead of deleting
+      // 2. Set old product stock to 0
       if (oldItem.id) {
         try {
           await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, oldItem.id, {
@@ -1449,14 +1433,44 @@ export default function PedidoPage() {
           </div>
 
           {order.STATUS === 'negotiation' && items.some(x => x.missing) && (
-            <div className="mt-4 bg-gradient-to-r from-pink-50 to-fuchsia-50 border border-pink-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3 justify-between">
-              <div className="text-center sm:text-left">
-                <p className="font-black text-pink-900 text-sm">🎁 ¿Tienes productos faltantes?</p>
-                <p className="text-pink-600 text-xs mt-0.5">Canjea tu crédito por otros productos de la tienda</p>
+            <div className="mt-4 bg-gradient-to-br from-pink-50 via-fuchsia-50 to-purple-50 border border-pink-200 rounded-2xl p-5 space-y-4">
+              {/* Kenia AI message */}
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center text-white text-lg shrink-0 shadow-md">
+                  🤖
+                </div>
+                <div className="flex-1">
+                  <p className="font-black text-pink-900 text-sm">¡Hola! Soy Kenia, tu asistente de compras 💕</p>
+                  <p className="text-pink-700 text-xs mt-1 leading-relaxed">
+                    Veo que algunos productos de tu pedido no están disponibles. Pero no te preocupes, ¡yo te ayudo! Tienes <span className="font-bold">2 opciones</span>:
+                  </p>
+                </div>
               </div>
-              <a href="/canje" className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white font-black text-sm rounded-xl shadow-lg hover:brightness-105 active:scale-95 transition-all whitespace-nowrap">
-                Canjear aquí →
-              </a>
+
+              {/* Option 1: Quick replacement */}
+              <div className="bg-white/80 rounded-xl p-3.5 border border-blue-100">
+                <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-black">1</span>
+                  Reemplazo rápido con IA
+                </p>
+                <p className="text-blue-600 text-[11px] mt-1 ml-6 leading-relaxed">
+                  Te recomiendo el mejor producto según tu categoría y el que más se parece al que te falta. ¡Solo dale al botón "Elegir reemplazo" abajo!
+                </p>
+              </div>
+
+              {/* Option 2: Canje */}
+              <div className="bg-white/80 rounded-xl p-3.5 border border-fuchsia-100">
+                <p className="text-xs font-bold text-fuchsia-900 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-fuchsia-100 text-fuchsia-700 flex items-center justify-center text-[10px] font-black">2</span>
+                  Canjear tu saldo a favor
+                </p>
+                <p className="text-fuchsia-600 text-[11px] mt-1 ml-6 leading-relaxed">
+                  Usa tu crédito para elegir otros productos de la tienda con un <span className="font-bold">20% de descuento extra</span>. Y si no gastas todo, el sobrante se descontará automáticamente en tu próximo pedido. 🎁
+                </p>
+                <a href="/canje" className="mt-2.5 ml-6 inline-flex px-4 py-2 bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white font-black text-xs rounded-xl shadow-lg hover:brightness-105 active:scale-95 transition-all whitespace-nowrap">
+                  Ir a canjear →
+                </a>
+              </div>
             </div>
           )}
 

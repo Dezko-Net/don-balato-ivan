@@ -385,6 +385,29 @@ function OrdersContent() {
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));
 
+  const bulkDeleteOrders = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`¿Estás seguro de que quieres eliminar PERMANENTEMENTE ${selected.size} pedido(s) de Appwrite? Esta acción no se puede deshacer y los números de pedido no se reutilizarán.`)) return;
+    setBulkUpdating(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const selectedOrders = orders.filter(o => selected.has(o.$id));
+      
+      for (const order of selectedOrders) {
+        await databases.deleteDocument(databaseId, ORDERS_COLLECTION_ID, order.$id);
+      }
+      
+      alert(`${selectedOrders.length} pedido(s) eliminado(s)`);
+      setSelected(new Set());
+      load(1);
+    } catch (err: any) {
+      alert(err.message || 'Error al eliminar pedidos');
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
   const bulkUpdateStatus = async (newStatus: string) => {
     if (selected.size === 0) return;
     setBulkUpdating(true);
@@ -1582,9 +1605,16 @@ function OrdersContent() {
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider block mb-1">Estado Actual</span>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full inline-block shadow-sm" style={{ background: statusBg, color: statusColor }}>
-                      {statusLabel}
-                    </span>
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <span className="text-xs font-bold px-3 py-1 rounded-full inline-block shadow-sm" style={{ background: statusBg, color: statusColor }}>
+                        {statusLabel}
+                      </span>
+                      {(() => { try { const it = JSON.parse(order.ITEMS || '[]'); const cc = (order as any).CANJE_COUNT || 0; const hasCanje = it.some((i: any) => i.isCanjeReplacement); return (cc > 0 || hasCanje); } catch { return false; } })() && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
+                          🎁 Canje aplicado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1855,6 +1885,10 @@ function OrdersContent() {
             </button>
           ))}
           <button onClick={() => setSelected(new Set())} className="ml-auto text-xs text-indigo-500 hover:text-indigo-700">Limpiar</button>
+          <button onClick={bulkDeleteOrders} disabled={bulkUpdating}
+            className="px-3 py-1 rounded-xl text-xs font-bold transition disabled:opacity-60 bg-red-100 text-red-700 hover:bg-red-200 border border-red-200">
+            Eliminar {selected.size}
+          </button>
         </div>
       )}
 
@@ -1914,6 +1948,11 @@ function OrdersContent() {
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: (isRetiro ? '#fdf4ff' : STATUS_COLORS[order.STATUS]?.bg) || '#f3f4f6', color: statusColor }}>
                         {isRetiro ? 'Retirar' : (SHORT_LABEL[order.STATUS] || scfg?.label || order.STATUS)}
                       </span>
+                      {(() => { try { const it = JSON.parse(order.ITEMS || '[]'); const cc = (order as any).CANJE_COUNT || 0; const hasCanje = it.some((i: any) => i.isCanjeReplacement); return (cc > 0 || hasCanje); } catch { return false; } })() && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
+                          🎁 Canje
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -2090,14 +2129,21 @@ function OrdersContent() {
                         {order.PAYMENTMETHOD && <p className="text-[10px] text-gray-400 mt-0.5">{order.PAYMENTMETHOD}</p>}
                       </td>
                       <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => setTimelineOrderId(order.$id)}
-                          disabled={isUpdating}
-                          className="text-xs font-bold px-2.5 py-1.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 transition hover:opacity-80 inline-flex items-center gap-1.5"
-                          style={{ background: (isRetiro ? '#fdf4ff' : STATUS_COLORS[order.STATUS]?.bg) || '#f3f4f6', color: statusColor }}>
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
-                          {isRetiro ? 'Retirar' : (SHORT_LABEL[order.STATUS] || STATUS_CONFIG[order.STATUS]?.label || order.STATUS)}
-                        </button>
+                        <div className="flex items-center gap-1.5 justify-center flex-wrap">
+                          <button
+                            onClick={() => setTimelineOrderId(order.$id)}
+                            disabled={isUpdating}
+                            className="text-xs font-bold px-2.5 py-1.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 transition hover:opacity-80 inline-flex items-center gap-1.5"
+                            style={{ background: (isRetiro ? '#fdf4ff' : STATUS_COLORS[order.STATUS]?.bg) || '#f3f4f6', color: statusColor }}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
+                            {isRetiro ? 'Retirar' : (SHORT_LABEL[order.STATUS] || STATUS_CONFIG[order.STATUS]?.label || order.STATUS)}
+                          </button>
+                          {(() => { try { const it = JSON.parse(order.ITEMS || '[]'); const cc = (order as any).CANJE_COUNT || 0; const hasCanje = it.some((i: any) => i.isCanjeReplacement); return (cc > 0 || hasCanje); } catch { return false; } })() && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 whitespace-nowrap">
+                              🎁 Canje
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <p className="text-xs text-gray-600 font-medium">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</p>

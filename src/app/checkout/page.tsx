@@ -468,8 +468,14 @@ function CheckoutInner() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const { Query } = await import('appwrite');
-      const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.limit(1)]);
-      return (res.total || 0) + 1;
+      const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
+        Query.orderDesc('ORDERINDEX'),
+        Query.limit(1)
+      ]);
+      if (res.documents.length > 0) {
+        return (res.documents[0].ORDERINDEX || res.total || 0) + 1;
+      }
+      return 1;
     } catch {
       return Math.floor(Date.now() / 1000) % 100000;
     }

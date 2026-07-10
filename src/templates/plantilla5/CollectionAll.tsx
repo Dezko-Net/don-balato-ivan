@@ -92,6 +92,12 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
   const [selectedCat, setSelectedCat] = useState<string | null>(searchParams.get('categoria'));
   const [selectedBrand, setSelectedBrand] = useState<string | null>(initialBrand || searchParams.get('marca'));
 
+  useEffect(() => {
+    if (initialBrand) {
+      setSelectedBrand(initialBrand);
+    }
+  }, [initialBrand]);
+
   const updateCategoryUrl = (catId: string | null) => {
     const url = new URL(window.location.href);
     if (catId) {

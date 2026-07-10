@@ -143,6 +143,7 @@ export interface KeniaUsageEntry {
   blocked: boolean;
   updatedAt: string;
   maintenanceNotified?: boolean;
+  maintenanceNotifiedTs?: number;
   hasNoPendingOrders?: boolean;
   testAsClient?: boolean;
   adminTakeover?: boolean;
@@ -405,6 +406,7 @@ export async function recordKeniaUsage(
     responseTokens?: number;
     totalTokens?: number;
     maintenanceNotified?: boolean;
+    maintenanceNotifiedTs?: number;
     testAsClient?: boolean;
     adminTakeover?: boolean;
     escalated?: boolean;

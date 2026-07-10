@@ -92,20 +92,14 @@ export default function BulkAddPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Load all existing categories, subcategories and blocked products first to minimize API calls
-      const [categoriesResp, subcategoriesResp, blockedResp] = await Promise.all([
+      // Load all existing categories and subcategories first to minimize API calls
+      const [categoriesResp, subcategoriesResp] = await Promise.all([
         databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
         databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(100)]),
-        databases.listDocuments(databaseId, 'blocked_products', [Query.limit(1000)])
       ]);
 
       const categoriesCache = [...categoriesResp.documents];
       const subcategoriesCache = [...subcategoriesResp.documents];
-      const blockedSkus = new Set(
-        blockedResp.documents
-          .map((d: any) => d.sku?.trim().toLowerCase())
-          .filter(Boolean)
-      );
 
       let created = 0;
       let updated = 0;
@@ -116,12 +110,6 @@ export default function BulkAddPage() {
         try {
           if (!row.name) {
             errors.push(`Fila con SKU ${row.sku || 'N/A'}: El nombre del producto es requerido.`);
-            continue;
-          }
-
-          const cleanSku = row.sku?.trim().toLowerCase();
-          if (cleanSku && blockedSkus.has(cleanSku)) {
-            errors.push(`SKU ${row.sku} está BLOQUEADO. Se omitió la importación.`);
             continue;
           }
 

@@ -172,10 +172,11 @@ export default function OrderDetailPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Block old product SKU
       let oldSku = oldItem.sku || '';
-      let oldName = oldItem.name;
+      let oldName = oldItem.name || '';
       let oldImg = oldItem.img || '';
+
+      // Delete old product
       if (oldItem.id) {
         try {
           const oldProd: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, oldItem.id);
@@ -183,19 +184,6 @@ export default function OrderDetailPage() {
           oldName = oldProd.NAME || oldName;
           oldImg = oldProd.IMAGEURL || oldImg;
         } catch {}
-      }
-      if (oldSku) {
-        try {
-          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
-            Query.equal('sku', oldSku),
-            Query.limit(1)
-          ]);
-          if (blockedResp.documents.length === 0) {
-            await databases.createDocument(databaseId, 'blocked_products', ID.unique(), {
-              sku: oldSku, name: oldName, imageUrl: oldImg
-            });
-          }
-        } catch (err) { console.error("Error writing to blocked_products:", err); }
       }
       if (oldItem.id) {
         try { await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION_ID, oldItem.id); } catch {}
@@ -311,19 +299,6 @@ export default function OrderDetailPage() {
         SUBTOTAL: newSubtotal,
         TOTAL: newTotal
       });
-
-      // Unblock the original product SKU
-      if (origItem.sku) {
-        try {
-          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
-            Query.equal('sku', origItem.sku),
-            Query.limit(1)
-          ]);
-          if (blockedResp.documents.length > 0) {
-            await databases.deleteDocument(databaseId, 'blocked_products', blockedResp.documents[0].$id);
-          }
-        } catch (err) { console.error("Error unblocking product:", err); }
-      }
 
       // Re-create the original product document if it was deleted
       if (origItem.id) {
@@ -972,24 +947,6 @@ export default function OrderDetailPage() {
         }
       }
 
-      if (oldSku) {
-        try {
-          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
-            Query.equal('sku', oldSku),
-            Query.limit(1)
-          ]);
-          if (blockedResp.documents.length === 0) {
-            await databases.createDocument(databaseId, 'blocked_products', ID.unique(), {
-              sku: oldSku,
-              name: oldName,
-              imageUrl: oldImg
-            });
-          }
-        } catch (err) {
-          console.error("Error writing to blocked_products:", err);
-        }
-      }
-
       if (oldItem.id) {
         try {
           await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION_ID, oldItem.id);
@@ -1041,7 +998,7 @@ export default function OrderDetailPage() {
       setSearchResults([]);
       setIsSimilarSearch(false);
       await load();
-      alert('Producto reemplazado y bloqueado exitosamente.');
+      alert('Producto reemplazado exitosamente.');
     } catch (e: any) {
       alert('Error al reemplazar el producto: ' + e.message);
     }

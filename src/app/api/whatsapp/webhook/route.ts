@@ -933,16 +933,35 @@ export async function POST(req: NextRequest) {
         // Si el admin está en modo cliente, permite bypass del mantenimiento
         if (!testAsClient) {
           if (!isAdmin) {
-            // Cliente real: enviar aviso de mantenimiento una sola vez
+            // Cliente real: enviar aviso de mantenimiento
             const usageMaint = await getKeniaUsage(fromPhone);
-            if (!usageMaint.maintenanceNotified) {
+            const now = Date.now();
+            const lastMaint = usageMaint.maintenanceNotifiedTs || 0;
+            
+            // Responder con el mensaje de "fase de pruebas" (1 vez cada 4 horas para no hacer spam si insisten)
+            if (now - lastMaint > 4 * 60 * 60 * 1000) {
               const customerFirstName = usageMaint.customerName ? usageMaint.customerName.split(' ')[0] : '';
-              const welcomeReply = customerFirstName
-                ? `¡Hola ${customerFirstName}! 🌸 Soy Kenia, tu asistente personal de Kevin&Coco Chile 🇨🇱✨\n\n¡Ya estoy activa! 💖 Puedo ayudarte con:\n\n🛍️ Información de productos y precios\n📦 Estado de tus pedidos\n💳 Datos para transferir\n🎁 Ofertas y novedades\n✨ Y mucho más\n\n¿En qué te puedo ayudar hoy, bella? �`
-                : `¡Hola bella! 🌸 Soy Kenia, tu asistente personal de Kevin&Coco Chile 🇨🇱✨\n\n¡Ya estoy activa! 💖 Puedo ayudarte con:\n\n🛍️ Información de productos y precios\n📦 Estado de tus pedidos\n💳 Datos para transferir\n🎁 Ofertas y novedades\n✨ Y mucho más\n\n¿En qué te puedo ayudar hoy? �`;
+              const welcomeReply = `Hola${customerFirstName ? ' ' + customerFirstName : ''}, estoy en fase de pruebas aún, todavía me están configurando y estoy mejorando.
+
+Mira, ¿necesitas alguna consulta? Toma este número: *+56 9 9914 9712*
+
+Este es el número de un asesor que te va a ayudar, escríbele. De igual forma, yo voy a comunicarme con él para que te escriba.
+
+Lamento no poder ayudarte por ahora porque aún estoy en proceso de aprendizaje, pero muy pronto podré asesorarte en varias cositas más. Por ahora solamente te puedo notificar.
+
+Muchas gracias por tu interés.`;
+              
               await addToHistory(fromPhone, 'assistant', welcomeReply, msgId);
               await sendWhatsAppMessage(fromPhone, welcomeReply, WA_TOKEN);
-              await recordKeniaUsage(fromPhone, { maintenanceNotified: true });
+              await recordKeniaUsage(fromPhone, { maintenanceNotifiedTs: now });
+              
+              // Notificar al humano (asesor)
+              const alertMsg = `⚠️ *CLIENTE REQUIERE ATENCIÓN*
+El cliente +${fromPhone} le escribió a Kenia (pero Kenia está en pruebas).
+Por favor contáctalo para ayudarle.
+
+👉 Link de WhatsApp: https://wa.me/${fromPhone}`;
+              await sendWhatsAppMessage('56999149712', alertMsg, WA_TOKEN);
             }
             return NextResponse.json({ status: 'maintenance' });
           }

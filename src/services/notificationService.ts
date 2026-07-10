@@ -55,6 +55,7 @@ export function getNotificationLink(doc: Record<string, unknown>): string | unde
 
 const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'pending',
+  'pending_stock',
   'paid',
   'confirming_stock',
   'stock_confirmed',
@@ -66,6 +67,10 @@ const ORDER_STATUS_COPY: Record<
   OrderStatus,
   { title: string; buildMessage: (code: string) => string } | null
 > = {
+  pending_stock: {
+    title: 'Pedido Mayorista Recibido',
+    buildMessage: (c) => `¡Hemos recibido tu pedido mayorista ${c}! Estamos verificando el stock.`,
+  },
   pending: {
     title: 'Pedido Recibido',
     buildMessage: (c) => `¡Hemos recibido tu pedido ${c}! Estamos a la espera del pago.`,
