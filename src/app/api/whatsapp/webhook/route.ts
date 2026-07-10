@@ -31,7 +31,7 @@ const FALLBACK_ADMINS = '56936599658,56992139185,56935623858,56967115685';
 const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_MODELS   = GEMINI_TEXT_MODELS;
-const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
+const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl';
 
 // ── In-memory caches to reduce Appwrite calls ──────────────────────────────
 let _catCache: { data: any[]; ts: number } | null = null;

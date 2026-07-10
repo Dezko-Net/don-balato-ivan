@@ -80,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <CartProvider>
                   <TemplateProvider>
                     <StoreShell>{children}</StoreShell>
+                    <WhatsAppButton />
                     <HomeOnlyWidgets />
                     <BackToTop />
                     <ScrollToTop />
