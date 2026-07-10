@@ -5,6 +5,7 @@ import { Product } from '@/types';
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { productMatchesBrand } from '@/lib/brands';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -15,6 +16,7 @@ interface UseProductsParams {
   sortBy?: string;
   search?: string;
   tag?: string;
+  brand?: string;
   priceMin?: number;
   priceMax?: number;
   ofertasOnly?: boolean;
@@ -34,6 +36,7 @@ export function useProductsCache({
   sortBy = 'newest',
   search,
   tag,
+  brand,
   priceMin,
   priceMax,
   ofertasOnly,
@@ -77,12 +80,13 @@ export function useProductsCache({
     if (sortBy) params.set('sortBy', sortBy);
     if (search) params.set('search', search);
     if (tag) params.set('tag', tag);
+    if (brand) params.set('brand', brand);
     if (priceMin !== undefined) params.set('priceMin', String(priceMin));
     if (priceMax !== undefined) params.set('priceMax', String(priceMax));
     if (ofertasOnly) params.set('ofertasOnly', 'true');
     if (catalogMode && catalogMode !== 'retail') params.set('mode', catalogMode);
     return params;
-  }, [categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, priceMin, priceMax, ofertasOnly, catalogMode]);
+  }, [categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, brand, priceMin, priceMax, ofertasOnly, catalogMode]);
 
   // ===========================================================================
   // LEGACY MODE: download everything once, filter/sort/paginate client-side.
@@ -134,7 +138,7 @@ export function useProductsCache({
     } else {
       setPage(1);
     }
-  }, [categoryId, subcategoryId, subSubcategoryId, search, tag, sortBy, priceMin, priceMax, ofertasOnly, catalogMode, serverPaginated, setSize]);
+  }, [categoryId, subcategoryId, subSubcategoryId, search, tag, brand, sortBy, priceMin, priceMax, ofertasOnly, catalogMode, serverPaginated, setSize]);
 
   // Keep loading true until both data arrives AND the minimum premium delay has passed
   const isLoadingInitialData = (!data && !error) || !isMinWaitDone;
@@ -163,6 +167,9 @@ export function useProductsCache({
     }
     if (subSubcategoryId) {
       filtered = filtered.filter(p => p.SUBSUBCATEGORYID === subSubcategoryId);
+    }
+    if (brand) {
+      filtered = filtered.filter(p => productMatchesBrand(p, brand));
     }
     if (ofertasOnly) {
       filtered = filtered.filter(p =>
@@ -310,7 +317,7 @@ export function useProductsCache({
       subSubcategoryCounts,
       allTags: data.allTags || [],
     };
-  }, [data, categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, priceMin, priceMax, ofertasOnly, catalogMode, apertura]);
+  }, [data, categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, brand, priceMin, priceMax, ofertasOnly, catalogMode, apertura]);
 
   const paginatedProducts = useMemo(() => {
     return processedData.products.slice(0, page * limit);

@@ -23,23 +23,10 @@ import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { useProductsCache } from '@/hooks/useProductsCache';
 
-export const extractBrand = (name?: string): string => {
-  if (!name) return '';
-  const n = name.toLowerCase();
-  if (n.includes('sadoer')) return 'SADOER';
-  if (n.includes('kevin&coco') || n.includes('kevin & coco') || n.includes('kevincoco') || n.includes('kevin coco')) return 'Kevin & Coco';
-  if (n.includes('3q') || n.includes('3 q')) return '3Q Beauty';
-  if (n.includes('billion') || n.includes('billion beauty')) return 'Billion Beauty';
-  if (n.includes('karite') || n.includes('karité')) return 'Karite';
-  if (n.includes('kiss beauty')) return 'Kiss Beauty';
-  if (n.includes('ushas')) return 'Ushas';
-  if (n.includes('ruby rose')) return 'Ruby Rose';
-  if (n.includes('pink 21') || n.includes('pink21')) return 'Pink 21';
-  if (n.includes('hengfang')) return 'HengFang';
-  if (n.includes('peiliee')) return 'Peiliee';
-  if (n.includes('huda')) return 'Huda Beauty';
-  return '';
-};
+// Helper movido a lib compartida (el API de products también lo usa para el
+// filtro server-side); se re-exporta para no romper imports existentes.
+import { extractBrand, productMatchesBrand } from '@/lib/brands';
+export { extractBrand };
 
 import GlobalCatalogLoader from '@/components/GlobalCatalogLoader';
 
@@ -214,17 +201,17 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
     sortBy,
     search: debouncedSearch || undefined,
     tag: selectedTag || undefined,
+    brand: lockBrand || undefined,
     priceMin: debouncedPriceRange ? debouncedPriceRange[0] : undefined,
     priceMax: debouncedPriceRange ? debouncedPriceRange[1] : undefined,
     ofertasOnly: selectedOfertasOnly,
     serverPaginated: true
   });
 
+  // El servidor ya filtra por marca (param brand del hook); este filtro queda
+  // como respaldo y debe usar la MISMA regla (incluida la marca de la casa).
   const products = lockBrand
-    ? visibleProducts.filter(p => {
-        const b = (p as any).BRAND || extractBrand(p.NAME);
-        return b && b.toLowerCase().trim() === lockBrand.toLowerCase().trim();
-      })
+    ? visibleProducts.filter(p => productMatchesBrand(p as any, lockBrand))
     : visibleProducts;
   const filtered = products;
   const hasMore = !isReachingEnd; // No infinite scroll needed when locked to brand (all loaded)

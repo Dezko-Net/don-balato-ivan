@@ -26,14 +26,16 @@ export default function DynamicCollectionAll({ catalogMode, initialBrand }: { ca
   if (!catalogMode || catalogMode === 'retail') {
     if (template === 100) return <CollectionAll100 initialBrand={initialBrand} />;
     if (template === 5) return <CollectionAll5 initialBrand={initialBrand} />;
-    // Template 23: use ProductosInner with brand lock
-    if (template === 23) return (
+    // Template 23 siempre usa ProductosInner; el resto (plantilla 1 incluida)
+    // también cae aquí cuando hay marca activa, porque CollectionAll1 no filtra
+    // por marca y mostraría el catálogo completo en /marcas/[slug].
+    if (template === 23 || initialBrand) return (
       <Suspense fallback={<div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 40, height: 40, border: '3px solid #f3f4f6', borderTopColor: '#e396bf', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /><style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style></div>}>
         <ProductosInner lockBrand={initialBrand} />
       </Suspense>
     );
   }
-  
-  // Default to plantilla 1 (no brand filter: plantilla 1 doesn't support it yet)
+
+  // Default to plantilla 1
   return <CollectionAll1 catalogMode={catalogMode} />;
 }
