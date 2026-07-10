@@ -27,12 +27,11 @@ const SADOER_IMG = 'https://sadoerskincare.com/wp-content/uploads';
 const LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783672676241-pegada-1783672673183.png';
 
 const CATEGORIES = [
-  { name: 'Tónicos y Esencias', realName: 'Tónicos y Esencias', img: `${SADOER_IMG}/2026/03/sadoer-eye-creams-300x300.webp` },
-  { name: 'Exfoliantes', realName: 'Exfoliantes', img: `${SADOER_IMG}/2026/03/sadoer-eye-masks-300x300.webp` },
-  { name: 'Skincare Facial', realName: 'Skincare Facial', img: `${SADOER_IMG}/2026/03/sadoer-face-creams-300x300.webp` },
-  { name: 'Otros', realName: 'Otros', img: `${SADOER_IMG}/2026/03/sadoer-face-masks-300x300.webp` },
-  { name: 'Limpiadores Faciales', realName: 'Limpiadores Faciales', img: `${SADOER_IMG}/2026/03/sadoer-facial-cleansers-300x300.webp` },
-  { name: 'Labiales', realName: 'Labiales', img: `${SADOER_IMG}/2026/03/sadoer-lip-balms-300x300.webp` },
+  { name: 'Skincare Facial (49)', realName: 'Skincare Facial', img: `${SADOER_IMG}/2026/03/sadoer-face-creams-300x300.webp` },
+  { name: 'Tónicos y Esencias (12)', realName: 'Tónicos y Esencias', img: `${SADOER_IMG}/2026/03/sadoer-eye-creams-300x300.webp` },
+  { name: 'Limpiadores Faciales (12)', realName: 'Limpiadores Faciales', img: `${SADOER_IMG}/2026/03/sadoer-facial-cleansers-300x300.webp` },
+  { name: 'Otros (2)', realName: 'Otros', img: `${SADOER_IMG}/2026/03/sadoer-face-masks-300x300.webp` },
+  { name: 'Rubor e Iluminador (1)', realName: 'Rubor e Iluminador', img: `${SADOER_IMG}/2026/03/sadoer-eye-masks-300x300.webp` },
 ];
 
 const REVIEWS_24K = [
@@ -95,7 +94,8 @@ export default function SadoerLanding() {
   // Load real Sadoer products dynamically from Cache Hook
   const { products: realProducts, isLoadingInitialData: isLoading } = useProductsCache({
     brand: 'SADOER',
-    serverPaginated: false
+    serverPaginated: true,
+    pageSize: 8
   });
 
   // Filter products for showcase categories
@@ -303,7 +303,7 @@ export default function SadoerLanding() {
           <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-2">Explora</p>
           <h2 className="text-3xl font-bold text-gray-900">Comprar por Categoría</h2>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {CATEGORIES.map((cat) => (
             <Link key={cat.name} href={`/marcas/sadoer/productos?categoria=${encodeURIComponent(cat.realName)}`} className="group cursor-pointer block" style={{ textDecoration: 'none' }}>
               <div className="aspect-square rounded-2xl overflow-hidden bg-[#ffeef2]/50 mb-3 transition-all group-hover:shadow-lg group-hover:scale-105">
