@@ -5,11 +5,13 @@ import { usePathname } from 'next/navigation';
 import { getWhatsAppUrl } from '@/lib/store-contact';
 
 export default function WhatsAppButton() {
+  const [mounted, setMounted] = useState(false);
   const [hover, setHover] = useState(false);
   const [hidden, setHidden] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
+    setMounted(true);
     const check = () => {
       const injected = !!document.getElementById('tpl1-whatsapp-button');
       const mobileHome = pathname === '/' && window.innerWidth <= 768;
@@ -25,6 +27,7 @@ export default function WhatsAppButton() {
     };
   }, [pathname]);
 
+  if (!mounted) return null;
   if (pathname.startsWith('/admin') || pathname.startsWith('/login') || pathname.startsWith('/inventario') || hidden) return null;
 
   const url = getWhatsAppUrl();

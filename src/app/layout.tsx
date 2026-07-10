@@ -11,12 +11,10 @@ import ChatBot from '@/components/ChatBot';
 import BackToTop from '@/components/BackToTop';
 import { ToastProvider } from '@/components/Toast';
 import { NotificationProvider } from '@/context/NotificationContext';
+import WhatsAppButton from '@/components/WhatsAppButton';
 import ScrollToTop from '@/components/ScrollToTop';
 import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import ClientFetchCache from '@/components/ClientFetchCache';
-import dynamic from 'next/dynamic';
-
-const WhatsAppButton = dynamic(() => import('@/components/WhatsAppButton'), { ssr: false });
 
 export const metadata: Metadata = {
   title: 'Kevin & Coco | Tienda',
