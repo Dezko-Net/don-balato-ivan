@@ -227,7 +227,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
       })
     : visibleProducts;
   const filtered = products;
-  const hasMore = !isReachingEnd && !lockBrand; // No infinite scroll needed when locked to brand (all loaded)
+  const hasMore = !isReachingEnd; // No infinite scroll needed when locked to brand (all loaded)
 
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
   const categoryProductCount = lockCategoryId
