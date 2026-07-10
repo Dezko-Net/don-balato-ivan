@@ -440,7 +440,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
               <Sparkles size={13} /> {lockCategoryId ? 'Categoría' : 'Nuestra tienda'}
             </div>
             <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
-              {lockedCategory?.name || 'Productos'} (Paginado v2)
+              {lockBrand ? lockBrand : (lockedCategory?.name || 'Productos')}
             </h1>
             <p className="pk-hero-subtitle" style={{ fontSize: 15, color: '#6b7280', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
               {lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Descubrí nuestra selección de productos exclusivos'}
