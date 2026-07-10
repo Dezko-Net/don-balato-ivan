@@ -11,7 +11,7 @@ import ChatBot from '@/components/ChatBot';
 import BackToTop from '@/components/BackToTop';
 import { ToastProvider } from '@/components/Toast';
 import { NotificationProvider } from '@/context/NotificationContext';
-import WhatsAppButton from '@/components/WhatsAppButton';
+import ClientSideWidgets from '@/components/ClientSideWidgets';
 import ScrollToTop from '@/components/ScrollToTop';
 import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import ClientFetchCache from '@/components/ClientFetchCache';
@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <CartProvider>
                   <TemplateProvider>
                     <StoreShell>{children}</StoreShell>
-                    <WhatsAppButton />
+                    <ClientSideWidgets />
                     <HomeOnlyWidgets />
                     <BackToTop />
                     <ScrollToTop />
