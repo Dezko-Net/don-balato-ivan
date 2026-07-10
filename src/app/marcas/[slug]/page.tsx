@@ -1,4 +1,5 @@
 import DynamicCollectionAll from '@/components/DynamicCollectionAll';
+import SadoerLanding from '../sadoer-landing';
 
 export default async function MarcaPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -23,7 +24,11 @@ export default async function MarcaPage({ params }: { params: Promise<{ slug: st
 
   return (
     <main>
-      <DynamicCollectionAll initialBrand={brandName} />
+      {slug === 'sadoer' ? (
+        <SadoerLanding />
+      ) : (
+        <DynamicCollectionAll initialBrand={brandName} />
+      )}
     </main>
   );
 }
