@@ -24,7 +24,7 @@ import {
 } from '@/lib/appwrite-admin';
 
 // ─── Config ────────────────────────────────────────────────────────────────────
-const WA_TOKEN        = process.env.WHATSAPP_ACCESS_TOKEN || '';
+const WA_TOKEN        = process.env.WHATSAPP_ACCESS_TOKEN || 'EAAjQT0EIDHUBRxClDmZC8CkfCba7b8aeylKimDeUNADaqv5AyjZCfZAtoaX5ZCOmdjRQhoMnbQCiUuolG1YHlY6ZAW2EddKTlTbZCLhuF4MxZBy0DE4SNLfVa8pfXzsQgingT1gMDc7aWeJ5KS97ZALxfmiQzBUDOTPOGJBE5CigpDcbeN9ZBkZAdWrFAGFG1r2vntSQZDZD';
 const VERIFY_TOKEN    = process.env.WHATSAPP_VERIFY_TOKEN || 'yaxsel_webhook_2026';
 const ENV_ADMINS = process.env.ADMIN_WHATSAPP_NUMBER || '';
 const FALLBACK_ADMINS = '56936599658,56992139185,56935623858,56967115685';

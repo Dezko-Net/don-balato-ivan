@@ -3,7 +3,8 @@
  * Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/messages
  */
 
-const WA_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+const WA_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '1301749033014628';
+const HARDCODED_TOKEN = 'EAAjQT0EIDHUBRxClDmZC8CkfCba7b8aeylKimDeUNADaqv5AyjZCfZAtoaX5ZCOmdjRQhoMnbQCiUuolG1YHlY6ZAW2EddKTlTbZCLhuF4MxZBy0DE4SNLfVa8pfXzsQgingT1gMDc7aWeJ5KS97ZALxfmiQzBUDOTPOGJBE5CigpDcbeN9ZBkZAdWrFAGFG1r2vntSQZDZD';
 const WA_API_BASE = `https://graph.facebook.com/v20.0`;
 
 import { serverListDocuments, serverCreateDocument, serverDeleteDocument } from './appwrite-server';
@@ -103,7 +104,8 @@ export async function clearHistory(phone: string): Promise<void> {
 
 // ─── Send a plain text message ─────────────────────────────────────────────────
 export async function sendWhatsAppMessage(to: string, text: string, token: string): Promise<void> {
-  if (!token || !WA_PHONE_NUMBER_ID) {
+  const finalToken = token || HARDCODED_TOKEN;
+  if (!finalToken || !WA_PHONE_NUMBER_ID) {
     throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
   }
 
