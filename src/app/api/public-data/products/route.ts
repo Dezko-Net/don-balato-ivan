@@ -167,13 +167,16 @@ export async function GET(request: NextRequest) {
       return resolveProductDisplayPrice(p, apertura).displayPrice;
     };
 
-    // Universo de productos del modo actual (para counts y priceRange coherentes)
-    const modeProducts = isPackMode
+    let modeProducts = isPackMode
       ? allProducts.filter(p => {
           const qty = p.PACKQTY ? Number(p.PACKQTY) : 0;
           return !isNaN(qty) && qty > 1;
         })
       : allProducts;
+
+    if (brand) {
+      modeProducts = modeProducts.filter(p => productMatchesBrand(p, brand));
+    }
 
     // Calculate Category, Subcategory and SubSubcategory Counts (across all active products in DB)
     const categoryCounts: Record<string, number> = {};

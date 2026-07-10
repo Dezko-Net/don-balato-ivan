@@ -25,7 +25,7 @@ import { useProductsCache } from '@/hooks/useProductsCache';
 
 // Helper movido a lib compartida (el API de products también lo usa para el
 // filtro server-side); se re-exporta para no romper imports existentes.
-import { extractBrand, productMatchesBrand } from '@/lib/brands';
+import { extractBrand, productMatchesBrand, HOUSE_BRAND } from '@/lib/brands';
 export { extractBrand };
 
 import GlobalCatalogLoader from '@/components/GlobalCatalogLoader';
@@ -77,8 +77,17 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
+    let lastScrollY = window.scrollY;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 120);
+      const currentScrollY = window.scrollY;
+      // Hide category bar/toolbar actions only if scrolled past 350px AND scrolling down
+      if (currentScrollY > 350 && currentScrollY > lastScrollY) {
+        setIsScrolled(true);
+      } else if (currentScrollY <= 150 || currentScrollY < lastScrollY) {
+        // Re-show when scrolling up or near the top
+        setIsScrolled(false);
+      }
+      lastScrollY = currentScrollY;
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -411,12 +420,12 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
   return (
     <div className="pk-page" style={{ fontFamily: FF, minHeight: '100vh', position: 'relative' }}>
       <div className="pk-bg-fixed" style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        <img className="pk-bg-image" src="https://img.freepik.com/free-psd/3d-rendering-beauty-banner_23-2150159867.jpg?semt=ais_hybrid&w=740&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 10%,rgba(227,150,191,0.16),transparent 32%), linear-gradient(180deg,rgba(255,245,248,0.72) 0%,rgba(255,255,255,0.92) 100%)' }} />
+        <img className="pk-bg-image" src={lockBrand?.toLowerCase() === 'sadoer' ? 'https://sadoerskincare.com/wp-content/uploads/2026/03/sadoer-skincare-hero.webp' : 'https://img.freepik.com/free-psd/3d-rendering-beauty-banner_23-2150159867.jpg?semt=ais_hybrid&w=740&q=80'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', inset: 0, background: lockBrand?.toLowerCase() === 'sadoer' ? 'radial-gradient(circle at 15% 10%,rgba(236,72,153,0.2),transparent 32%), linear-gradient(180deg,rgba(253,242,248,0.72) 0%,rgba(255,255,255,0.92) 100%)' : 'radial-gradient(circle at 15% 10%,rgba(227,150,191,0.16),transparent 32%), linear-gradient(180deg,rgba(255,245,248,0.72) 0%,rgba(255,255,255,0.92) 100%)' }} />
       </div>
       <div className="pk-products-container" style={{ position: 'relative', zIndex: 1, maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
         {/* Hero header */}
-        <div className="pk-hero-header" style={{ marginBottom: 24, borderRadius: 28, border: '1px solid rgba(255,237,213,0.9)', boxShadow: '0 18px 50px rgba(227,150,191,0.12)', overflow: 'hidden', background: '#fff' }}>
+        <div className="pk-hero-header" style={{ marginBottom: 24, borderRadius: 28, border: lockBrand?.toLowerCase() === 'sadoer' ? '1px solid #fbcfe8' : '1px solid rgba(255,237,213,0.9)', boxShadow: '0 18px 50px rgba(227,150,191,0.12)', overflow: 'hidden', background: lockBrand?.toLowerCase() === 'sadoer' ? 'linear-gradient(135deg,#fdf2f8,#fbcfe8)' : '#fff' }}>
           <div className="pk-hero-banner" style={{ position: 'relative' }}>
             {(!heroImgLoaded || (!lockedCategory?.iconUrl && !lockCategoryId)) && <div className="pk-hero-banner-skeleton" style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: heroImgLoaded ? 0 : 1, transition: 'opacity 0.4s ease' }} />}
             {lockedCategory?.iconUrl ? (
@@ -424,6 +433,10 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
             ) : lockCategoryId ? (
               <div className="pk-hero-banner-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: '#fff', fontSize: 56, fontWeight: 900, position: 'relative', zIndex: 2 }}>
                 {(lockedCategory?.name || 'C').charAt(0).toUpperCase()}
+              </div>
+            ) : lockBrand?.toLowerCase() === 'sadoer' ? (
+              <div className="pk-hero-banner-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#fdf2f8,#fbcfe8)', position: 'relative', zIndex: 2 }}>
+                <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783620841037-pegada-1783620839239.png" alt="SADOER" style={{ height: 56, objectFit: 'contain', filter: 'none' }} onLoad={() => setHeroImgLoaded(true)} />
               </div>
             ) : (
               <img className="pk-hero-banner-img" src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="Portada catálogo" onLoad={() => setHeroImgLoaded(true)} style={{ position: 'relative', zIndex: 2, opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
@@ -437,13 +450,16 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           </div>
           <div className="pk-hero-text">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.92)', color: '#e396bf', padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 10, border: '1px solid #fce7f3' }}>
-              <Sparkles size={13} /> {lockCategoryId ? 'Categoría' : 'Nuestra tienda'}
+              <Sparkles size={13} /> {lockBrand?.toLowerCase() === 'sadoer' ? 'Distribuidor Oficial' : (lockCategoryId ? 'Categoría' : 'Nuestra tienda')}
             </div>
             <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
-              {lockBrand ? lockBrand : (lockedCategory?.name || 'Productos')}
+              {lockBrand?.toLowerCase() === 'sadoer' ? 'Colección SADOER' : (lockBrand ? lockBrand : (lockedCategory?.name || 'Productos'))}
             </h1>
             <p className="pk-hero-subtitle" style={{ fontSize: 15, color: '#6b7280', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
-              {lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Descubrí nuestra selección de productos exclusivos'}
+              {lockBrand?.toLowerCase() === 'sadoer'
+                ? 'Explora el catálogo oficial de skincare y cuidado facial Sadoer en Chile. Productos importados 100% auténticos.'
+                : (lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Descubrí nuestra selección de productos exclusivos')
+              }
             </p>
             <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(227,150,191,0.15)' }}>
@@ -712,6 +728,10 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
                   const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                   const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+                  const pBrand = p.BRAND || extractBrand(p.NAME) || HOUSE_BRAND;
+                  const isSadoer = pBrand.toLowerCase() === 'sadoer';
+                  const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
+                  const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
                       <div className="pk-card-media-link" onClick={() => handleCardImageClick(p)} style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
@@ -732,6 +752,11 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                           <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             {cardSku && <span className="pk-card-sku">SKU: {cardSku}</span>}
+                            {pBrand && (
+                              <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999 }}>
+                                {pBrand}
+                              </span>
+                            )}
                             <ProductBadges product={p} />
                           </div>
                           <button
@@ -787,6 +812,11 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
                   const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                   const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+                  const pBrand = p.BRAND || extractBrand(p.NAME) || HOUSE_BRAND;
+                  const isSadoer = pBrand.toLowerCase() === 'sadoer';
+                  const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
+                  const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
+
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       {hasDisc && (
@@ -798,7 +828,14 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                         {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        {cardSku && <div className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                          {cardSku && <span className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700 }}>SKU: {cardSku}</span>}
+                          {pBrand && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '1px 6px', borderRadius: 999 }}>
+                              {pBrand}
+                            </span>
+                          )}
+                        </div>
                         <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
