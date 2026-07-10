@@ -21,7 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProductsCache } from '@/hooks/useProductsCache';
 import { getProductImageUrl } from '@/lib/product-images';
 import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
-import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, formatPrice } from '@/lib/appwrite';
 
 const SADOER_IMG = 'https://sadoerskincare.com/wp-content/uploads';
 const LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783672676241-pegada-1783672673183.png';
@@ -159,19 +159,9 @@ export default function SadoerLanding() {
       `}</style>
 
       {/* Announcement Bar */}
-      {showAnnouncement && (
-        <div className="w-full bg-[#d08395] text-white py-2.5 px-4 text-center text-xs font-semibold tracking-wider relative flex items-center justify-center min-h-[36px]">
-          <span>
-            Kevin & Coco te da la bienvenida al apartado de Sadoer. Aquí encontrarás todos los productos de Sadoer.{' '}
-            <button 
-              onClick={() => setShowAnnouncement(false)} 
-              className="underline hover:text-white/80 ml-2 font-bold focus:outline-none"
-            >
-              Cerrar
-            </button>
-          </span>
-        </div>
-      )}
+      <div className="w-full bg-[#d08395] text-white py-2.5 px-4 text-center text-xs font-semibold tracking-wider relative flex items-center justify-center min-h-[36px]">
+        <span>Kevin & Coco te da la bienvenida al apartado de Sadoer.</span>
+      </div>
 
       {/* Bespoke Header */}
       <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-100 px-4 py-2 md:py-2.5 md:px-8 flex items-center justify-between min-h-[56px] md:min-h-[64px]">
@@ -214,7 +204,7 @@ export default function SadoerLanding() {
           )}
           
           <Link href="/carrito" className="flex items-center gap-1.5 p-2 hover:text-[#ca7d90] transition-colors">
-            <span className="text-xs font-bold text-gray-600 hidden sm:inline">${subtotal.toFixed(2)}</span>
+            <span className="text-xs font-bold text-gray-600 hidden sm:inline">{formatPrice(subtotal)}</span>
             <div className="relative">
               <ShoppingBag size={16} className="text-gray-700" />
               <span className="absolute -top-1.5 -right-1.5 bg-[#ca7d90] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
