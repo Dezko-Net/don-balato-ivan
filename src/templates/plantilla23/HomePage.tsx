@@ -4440,23 +4440,31 @@ export default function HomePage23() {
       document.body.appendChild(s);
     });
 
-    const forceInView = () => {
-      // Forzar .in-view SOLO en elementos FUERA del split-hero
-      // El split-hero maneja sus propios .animation-element via setCollapsed
+    const initScrollAnimations = () => {
+      // Usar IntersectionObserver para añadir .in-view al hacer scroll
+      // Esto reactiva las animaciones CSS/GSAP que estaban congeladas
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            // Dejar de observar para que la animacion no se reinicie si el usuario sube y baja rapido
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
       document.querySelectorAll('.animation-element, .animation-wrapper').forEach(el => {
         if (!el.closest('split-hero')) {
-          el.classList.add('in-view');
+          observer.observe(el);
         }
       });
+      
       // Forzar autoplay en videos del split hero
       document.querySelectorAll('split-hero video, .split-hero video').forEach(el => {
         const video = el as HTMLVideoElement;
         video.muted = true;
         video.play().catch(() => {});
       });
-      // NO forzar .is-collapsed ni re-inicializar split-hero:
-      // el split-hero debe empezar DESCOLAPSADO (100vw imagen)
-      // ScrollMagic maneja el colapso durante el scroll
     };
 
     (async () => {
@@ -4465,7 +4473,7 @@ export default function HomePage23() {
       }
 
       setTimeout(() => {
-        forceInView();
+        initScrollAnimations();
 
         // ═══ Stacked Seamless Video Alternator & Hover Hunter ═══
         const collageVideoInterval = setInterval(() => {
