@@ -48,23 +48,30 @@ type AuthUserFull = {
 
 async function listAuthUsers(usersApi: Users): Promise<AuthUserFull[]> {
   const all: AuthUserFull[] = [];
-  const limit = 10;
+  const limit = 100;
   try {
-    const res = await usersApi.list({ queries: [Query.limit(limit)] });
-    all.push(...(res.users || []).map(u => ({
-      $id: u.$id,
-      email: u.email,
-      name: u.name,
-      phone: u.phone,
-      status: u.status,
-      labels: u.labels,
-      emailVerification: u.emailVerification,
-      phoneVerification: u.phoneVerification,
-      registration: u.registration,
-      accessedAt: u.accessedAt,
-      passwordUpdate: u.passwordUpdate,
-      $createdAt: u.$createdAt,
-    })));
+    let cursor: string | undefined;
+    while (true) {
+      const queries = [Query.limit(limit)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      const res = await usersApi.list({ queries });
+      all.push(...(res.users || []).map(u => ({
+        $id: u.$id,
+        email: u.email,
+        name: u.name,
+        phone: u.phone,
+        status: u.status,
+        labels: u.labels,
+        emailVerification: u.emailVerification,
+        phoneVerification: u.phoneVerification,
+        registration: u.registration,
+        accessedAt: u.accessedAt,
+        passwordUpdate: u.passwordUpdate,
+        $createdAt: u.$createdAt,
+      })));
+      if (!res.users || res.users.length < limit) break;
+      cursor = res.users[res.users.length - 1].$id;
+    }
   } catch {}
   return all;
 }
@@ -90,9 +97,15 @@ async function fetchAuthPrefsBatch(usersApi: Users, ids: string[], concurrency =
 async function listProfiles(databases: Databases, databaseId: string): Promise<UserProfileDoc[]> {
   const all: UserProfileDoc[] = [];
   try {
-    const queries = [Query.orderDesc('$createdAt'), Query.limit(10)];
-    const resp = await databases.listDocuments(databaseId, 'users', queries);
-    all.push(...(resp.documents as unknown as UserProfileDoc[]));
+    let cursor: string | undefined;
+    while (true) {
+      const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      const resp = await databases.listDocuments(databaseId, 'users', queries);
+      all.push(...(resp.documents as unknown as UserProfileDoc[]));
+      if (resp.documents.length < 100) break;
+      cursor = resp.documents[resp.documents.length - 1].$id;
+    }
   } catch {}
   return all;
 }
@@ -109,9 +122,15 @@ type OrderDoc = {
 async function listAllOrders(databases: Databases, databaseId: string) {
   const all: OrderDoc[] = [];
   try {
-    const queries = [Query.orderDesc('$createdAt'), Query.limit(10)];
-    const resp = await databases.listDocuments(databaseId, 'orders', queries);
-    all.push(...(resp.documents as unknown as OrderDoc[]));
+    let cursor: string | undefined;
+    while (true) {
+      const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      const resp = await databases.listDocuments(databaseId, 'orders', queries);
+      all.push(...(resp.documents as unknown as OrderDoc[]));
+      if (resp.documents.length < 100) break;
+      cursor = resp.documents[resp.documents.length - 1].$id;
+    }
   } catch {}
   return all;
 }

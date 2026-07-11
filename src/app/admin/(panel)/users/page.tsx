@@ -246,7 +246,7 @@ function UsersPageInner() {
           </button>
           <button type="button" onClick={load} disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium disabled:opacity-60 hover:bg-indigo-700 transition">
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Cargar últimos 10 clientes
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Cargar clientes
           </button>
         </div>
       </div>
