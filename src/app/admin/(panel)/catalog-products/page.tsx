@@ -91,7 +91,7 @@ export default function CatalogProductsPage() {
       // product. Note: the endpoint excludes products with negative STOCK; those
       // fall through to the CATALOG_PRODUCTS / INVENTORY_PRODUCTS passes below.
       try {
-        const prodRes = await fetch('/api/public-data/products?limit=10000', { cache: 'no-store' });
+        const prodRes = await fetch('/api/public-data/products?limit=10000&includeOutOfStock=true', { cache: 'no-store' });
         const prodJson = await prodRes.json();
         const cachedById: Record<string, any> = {};
         for (const p of (prodJson.products || [])) cachedById[p.$id] = p;

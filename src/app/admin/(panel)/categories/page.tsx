@@ -51,7 +51,7 @@ export default function CategoriesPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const catsResp = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.orderAsc('$createdAt'), Query.limit(100)]);
-      const prodsRes = await fetch('/api/public-data/products?limit=5000');
+      const prodsRes = await fetch('/api/public-data/products?limit=5000&includeOutOfStock=true');
       const prodsData = prodsRes.ok ? await prodsRes.json() : { products: [] };
       
       setCategories(catsResp.documents as unknown as Category[]);

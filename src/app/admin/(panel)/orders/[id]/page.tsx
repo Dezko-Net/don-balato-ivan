@@ -483,7 +483,7 @@ export default function OrderDetailPage() {
       // Fallback: búsqueda vía endpoint cacheado del servidor (0 lecturas
       // Appwrite). Antes descargaba hasta 2.000 productos directo de la BD.
       try {
-        const res = await fetch(`/api/public-data/products?search=${encodeURIComponent(q)}&limit=30`);
+        const res = await fetch(`/api/public-data/products?search=${encodeURIComponent(q)}&limit=30&includeOutOfStock=true`);
         if (res.ok) {
           const data = await res.json();
           setAddProductResults(data.products || []);

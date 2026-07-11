@@ -32,7 +32,7 @@ export default function OfertasAdminPage() {
       }
 
       // 2. Fetch all products from public products API
-      const prodRes = await fetch('/api/public-data/products?limit=1000');
+      const prodRes = await fetch('/api/public-data/products?limit=1000&includeOutOfStock=true');
       if (prodRes.ok) {
         const prodData = await prodRes.json();
         setProducts(prodData.products || []);

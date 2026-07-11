@@ -34,7 +34,7 @@ export default function CotizacionPage() {
     if (!term.trim()) { setResults([]); return; }
     setSearching(true);
     try {
-      const res = await fetch(`/api/public-data/products?search=${encodeURIComponent(term)}&limit=100`, { cache: 'no-store' });
+      const res = await fetch(`/api/public-data/products?search=${encodeURIComponent(term)}&limit=100&includeOutOfStock=true`, { cache: 'no-store' });
       const data = await res.json();
       const products: QuoteProduct[] = (data.products || []).map((p: any) => {
         const features = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES || '';

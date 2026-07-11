@@ -154,7 +154,15 @@ export async function GET(request: NextRequest) {
       getCachedActiveOffers(),
       getCachedAperturaSettings()
     ]);
-    const allProducts = allProductsRaw as any[];
+    // 🛒 Ocultar productos SIN STOCK del catálogo que ve el cliente.
+    // Un producto con STOCK <= 0 desaparece por completo de la tienda
+    // (listados, categorías, buscador, rango de precios y conteos).
+    // El panel de administración puede pedir los agotados con
+    // ?includeOutOfStock=true. STOCK nulo o 99999 (ilimitado) se conservan.
+    const includeOutOfStock = searchParams.get('includeOutOfStock') === 'true';
+    const allProducts = (includeOutOfStock
+      ? (allProductsRaw as any[])
+      : (allProductsRaw as any[]).filter((p: any) => p.STOCK == null || p.STOCK > 0));
 
     // Precio efectivo según modo (pack multiplica por PACKQTY)
     const isPackMode = mode === 'paquetes' || mode === 'embalajes';

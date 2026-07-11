@@ -7,7 +7,7 @@ import jsPDF from 'jspdf';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload, FileSpreadsheet, FileText, ShoppingBag, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription, generateProductAiPack } from '@/lib/aiAdmin';
@@ -100,6 +100,7 @@ export default function ProductsPage() {
   const [syncProgress, setSyncProgress] = useState({ checked: 0, broken: 0 });
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [pdfExportProgress, setPdfExportProgress] = useState({ current: 0, total: 0 });
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   const getModalImageUrls = useCallback((data?: Partial<ProductModalData> | null) => {
     return [data?.IMAGEURL, data?.IMAGEURL2, data?.IMAGEURL3, (data as any)?.IMAGEURL4]
@@ -1068,7 +1069,7 @@ export default function ProductsPage() {
     }
 
     try {
-      const res = await fetch('/api/public-data/products?limit=5000').then(r => {
+      const res = await fetch('/api/public-data/products?limit=5000&includeOutOfStock=true').then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       });
@@ -2060,64 +2061,94 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Toolbar de acciones secundarias */}
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={() => setStockModal(true)} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50" title="Ajuste masivo de stock">
-          <Boxes className="w-4 h-4" /> Stock
-        </button>
-        <button onClick={() => setPriceModal(true)} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50" title="Ajuste masivo de precios">
-          <Percent className="w-4 h-4" /> Precios
-        </button>
-        <button onClick={exportCSV} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
-          <Download className="w-4 h-4" />CSV
-        </button>
-        <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
-          <Download className="w-4 h-4" />XLSX
-        </button>
-        <button onClick={exportInventoryPDF} disabled={isExportingPDF} className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 border border-purple-200 text-purple-700 rounded-xl text-sm font-medium hover:bg-purple-100 transition disabled:opacity-50" title="Exportar TODO el inventario con imágenes (5x10 por hoja)">
-          {isExportingPDF ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              {pdfExportProgress.total > 0 ? `${pdfExportProgress.current}/${pdfExportProgress.total}` : 'Generando...'}
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4" /> PDF Imágenes
-            </>
-          )}
-        </button>
-        <button id="btn-export-shopify" onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border border-indigo-200 text-gray-900 rounded-xl text-sm font-medium hover:bg-gray-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
-          <Download className="w-4 h-4" /> Shopify CSV
-        </button>
-        <Link href="/admin/products/import-images" className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-sm font-medium hover:bg-amber-100 transition" title="Importar imágenes por SKU">
-          <Upload className="w-4 h-4" /> Importar Imágenes
-        </Link>
-        <button onClick={syncBrokenImages} disabled={syncingImages || products.length === 0}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 ${
-            syncingImages ? 'bg-amber-50 border border-amber-200 text-amber-700' :
-            Object.keys(brokenImages).length > 0 ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100' :
-            'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-          }`} title="Verificar imágenes rotas">
-          {syncingImages ? <><Loader2 className="w-4 h-4 animate-spin" />{syncProgress.checked}/{products.flatMap(p => [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean)).length}</> :
-           Object.keys(brokenImages).length > 0 ? <><ImageOff className="w-4 h-4" />{Object.keys(brokenImages).length} rotas</> :
-           <><ImageOff className="w-4 h-4" />Verificar fotos</>}
-        </button>
-        <button onClick={deleteAll} disabled={isDeletingAll || products.length === 0}
-          title="Borrar todos los productos"
-          className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition disabled:opacity-50">
-          <OctagonX className={`w-4 h-4 ${isDeletingAll ? 'animate-spin' : ''}`} />
-          {isDeletingAll ? 'Borrando...' : 'Borrar todo'}
-        </button>
-        {showDuplicates && duplicates.length > 0 && (
-          <button onClick={deleteZeroStockDuplicates} disabled={isDeletingBulkDups}
-            className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-            <Trash2 className={`w-4 h-4 ${isDeletingBulkDups ? 'animate-spin' : ''}`} />
-            {isDeletingBulkDups && bulkDeleteProgress
-              ? `Eliminando ${bulkDeleteProgress.done}/${bulkDeleteProgress.total}...`
-              : 'Eliminar repetidos stock 0'}
-          </button>
-        )}
-      </div>
+      {/* Acciones secundarias — agrupadas en un menú para mantener el orden */}
+      {(() => {
+        const menuItem = 'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition text-left disabled:opacity-40 disabled:cursor-not-allowed';
+        const menuLabel = 'px-2.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400';
+        const brokenCount = Object.keys(brokenImages).length;
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <button onClick={() => setToolsOpen(v => !v)}
+                className="flex items-center gap-2 px-3.5 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition shadow-sm">
+                <Wrench className="w-4 h-4 text-gray-500" /> Herramientas
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${toolsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {toolsOpen && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setToolsOpen(false)} />
+                  <div className="absolute left-0 mt-2 z-30 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl ring-1 ring-black/5 p-2 flex flex-col">
+                    <p className={menuLabel}>Edición masiva</p>
+                    <button onClick={() => { setToolsOpen(false); setStockModal(true); }} disabled={filtered.length === 0} className={menuItem}>
+                      <Boxes className="w-4 h-4 text-gray-400" /> Ajustar stock
+                    </button>
+                    <button onClick={() => { setToolsOpen(false); setPriceModal(true); }} disabled={filtered.length === 0} className={menuItem}>
+                      <Percent className="w-4 h-4 text-gray-400" /> Ajustar precios
+                    </button>
+
+                    <div className="my-1.5 border-t border-gray-100" />
+                    <p className={menuLabel}>Exportar</p>
+                    <button onClick={() => { setToolsOpen(false); exportCSV(); }} disabled={filtered.length === 0} className={menuItem}>
+                      <FileText className="w-4 h-4 text-gray-400" /> CSV
+                    </button>
+                    <button onClick={() => { setToolsOpen(false); exportXLSX(); }} disabled={filtered.length === 0} className={menuItem}>
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500" /> Excel (XLSX)
+                    </button>
+                    <button onClick={() => { setToolsOpen(false); exportInventoryPDF(); }} disabled={isExportingPDF} className={menuItem}>
+                      <FileText className="w-4 h-4 text-purple-500" />
+                      {isExportingPDF ? `PDF ${pdfExportProgress.total > 0 ? `${pdfExportProgress.current}/${pdfExportProgress.total}` : '...'}` : 'PDF con imágenes'}
+                    </button>
+                    <button id="btn-export-shopify" onClick={() => { setToolsOpen(false); exportShopifyCSV(); }} disabled={products.length === 0} className={menuItem}>
+                      <ShoppingBag className="w-4 h-4 text-gray-400" /> Shopify CSV
+                    </button>
+
+                    <div className="my-1.5 border-t border-gray-100" />
+                    <p className={menuLabel}>Imágenes</p>
+                    <Link href="/admin/products/import-images" onClick={() => setToolsOpen(false)} className={menuItem}>
+                      <Upload className="w-4 h-4 text-gray-400" /> Importar imágenes
+                    </Link>
+                    <button onClick={() => { setToolsOpen(false); syncBrokenImages(); }} disabled={syncingImages || products.length === 0} className={menuItem}>
+                      <ImageOff className={`w-4 h-4 ${brokenCount > 0 ? 'text-red-500' : 'text-gray-400'}`} />
+                      {syncingImages ? 'Verificando…' : 'Verificar fotos'}
+                      {brokenCount > 0 && !syncingImages && (
+                        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">{brokenCount}</span>
+                      )}
+                    </button>
+
+                    <div className="my-1.5 border-t border-gray-100" />
+                    <button onClick={() => { setToolsOpen(false); deleteAll(); }} disabled={isDeletingAll || products.length === 0}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition text-left disabled:opacity-40 disabled:cursor-not-allowed">
+                      <OctagonX className={`w-4 h-4 ${isDeletingAll ? 'animate-spin' : ''}`} />
+                      {isDeletingAll ? 'Borrando…' : 'Borrar todos los productos'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Estado de procesos en curso (fuera del menú, siempre visible) */}
+            {(isExportingPDF || syncingImages) && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-medium text-gray-500">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {isExportingPDF
+                  ? `PDF ${pdfExportProgress.current}/${pdfExportProgress.total}`
+                  : `Fotos ${syncProgress.checked}/${products.flatMap(p => [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean)).length}`}
+              </span>
+            )}
+
+            {/* Acción contextual: eliminar repetidos con stock 0 */}
+            {showDuplicates && duplicates.length > 0 && (
+              <button onClick={deleteZeroStockDuplicates} disabled={isDeletingBulkDups}
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                <Trash2 className={`w-4 h-4 ${isDeletingBulkDups ? 'animate-spin' : ''}`} />
+                {isDeletingBulkDups && bulkDeleteProgress
+                  ? `Eliminando ${bulkDeleteProgress.done}/${bulkDeleteProgress.total}...`
+                  : 'Eliminar repetidos stock 0'}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Progress bar de eliminación masiva */}
       {bulkDeleteProgress && (
@@ -2141,8 +2172,10 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Stock quick filter */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Filtros — búsqueda, categorías y estado de stock en una sola tarjeta */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col-reverse gap-3">
+      <div className="flex gap-2 flex-wrap items-center">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mr-1">Stock</span>
         {([['all','Todos'], ['instock','En stock'], ['low','Stock bajo'], ['out','Agotados']] as const).map(([k, label]) => {
           const cnt = k === 'all' ? products.length : k === 'instock' ? products.filter(p => (p.STOCK ?? 0) > 0).length : k === 'low' ? products.filter(p => (p.STOCK ?? 0) > 0 && (p.STOCK ?? 0) <= 10).length : products.filter(p => (p.STOCK ?? 0) === 0).length;
           return (
@@ -2216,26 +2249,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {categories.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button onClick={() => { setCatFilter(''); setSubCatFilter(''); }}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition ${!catFilter ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-            Todas
-          </button>
-          {categories.map(c => {
-            return (
-              <button key={c.$id} onClick={() => {
-                const nextVal = catFilter === c.$id ? '' : c.$id;
-                setCatFilter(nextVal);
-                setSubCatFilter('');
-              }}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${catFilter === c.$id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                {c.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      </div>{/* /Filtros */}
 
       {/* Live Shopping Legend Indicator */}
       <div className="bg-white border border-gray-150 rounded-xl p-3 flex flex-wrap gap-4 items-center text-xs">

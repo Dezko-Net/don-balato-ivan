@@ -98,7 +98,7 @@ export default function PorUnidadPage() {
       // product for 24h (unstable_cache) and is invalidated on-demand when a
       // product is edited (/api/revalidate?tag=products), so opening this page
       // costs ~0 Appwrite reads instead of ~800.
-      const prodRes = await fetch('/api/public-data/products?limit=10000', { cache: 'no-store' });
+      const prodRes = await fetch('/api/public-data/products?limit=10000&includeOutOfStock=true', { cache: 'no-store' });
       const prodJson = await prodRes.json();
       const all = (prodJson.products || []) as Product[];
       setProducts(all);
