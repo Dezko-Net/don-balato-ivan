@@ -32,29 +32,39 @@ export function generateOrderPdf(
   items: OrderItem[],
   productExtraInfo?: Record<string, ProductExtraInfo>,
 ) {
-  const hasSku = (productExtraInfo && items.some(i => i.id && productExtraInfo[i.id]?.sku)) || items.some(i => (i as any).sku);
-  const hasLocations = productExtraInfo && items.some(i => i.id && productExtraInfo[i.id]?.location?.label);
-  const hasImages = items.some(i => (i as any).img || (i as any).imageUrl);
+  const printableItems = items.filter(i => !(i as any).missing);
+  const hasSku = (productExtraInfo && printableItems.some(i => i.id && productExtraInfo[i.id]?.sku)) || printableItems.some(i => (i as any).sku);
+  const hasLocations = productExtraInfo && printableItems.some(i => i.id && productExtraInfo[i.id]?.location?.label);
+  const hasImages = printableItems.some(i => (i as any).img || (i as any).imageUrl);
   const statusLabel = STATUS_LABELS[order.STATUS] || order.STATUS;
   const date = formatDate(order.CREATEDAT);
   const subtotal = order.SUBTOTAL || items.reduce((s, i) => s + (i.total || i.price * i.qty), 0);
   const total = order.TOTAL || subtotal;
   const discount = order.DISCOUNT || (order as any).DISCOUNTAMOUNT || (subtotal - total > 0 ? subtotal - total : 0);
 
-  const itemsHtml = items.map(i => {
+  const itemsHtml = printableItems.map(i => {
     const extra = i.id ? productExtraInfo?.[i.id] : null;
     const loc = extra?.location?.label || null;
     const sku = extra?.sku || (i as any).sku || '';
     const note = (i as any).note || '';
+    const isReplacement = !!(i as any).isCanjeReplacement;
+    const original = (i as any).replacedOriginal;
     const img = (i as any).img || (i as any).imageUrl || '';
     const imgHtml = img
       ? `<img src="${img}" style="width:48px;height:48px;object-fit:contain;border:1px solid #e5e7eb;border-radius:6px;padding:2px;background:#fff;" />`
       : `<div style="width:48px;height:48px;border:1px solid #e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#f9fafb;font-size:9px;color:#9ca3af;">Sin img</div>`;
+    const replacementLabel = isReplacement
+      ? `<span style="display:inline-block;margin-left:6px;padding:2px 6px;border-radius:4px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:10px;font-weight:700;">(Reemplazado)</span>`
+      : '';
+    const originalHtml = isReplacement && original?.name
+      ? `<div style="margin-top:5px;padding:4px 6px;border-left:3px solid #f59e0b;background:#fffbeb;color:#92400e;font-size:10px;">Anterior faltante: ${original.name}${original.sku ? ` · SKU: ${original.sku}` : ''}</div>`
+      : '';
     return `
     <tr style="page-break-inside:avoid;break-inside:avoid;">
       ${hasImages ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;text-align:center;">${imgHtml}</td>` : ''}
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#333;">
-        <div style="font-weight:600;">${i.name}</div>
+        <div style="font-weight:600;">${i.name}${replacementLabel}</div>
+        ${originalHtml}
         ${note ? `<div style="font-size:11px;color:#d97706;background:#fffbeb;border:1px solid #fef3c7;padding:3px 6px;border-radius:4px;margin-top:4px;display:inline-block;">💬 Nota: ${note}</div>` : ''}
       </td>
       ${hasSku ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#7c3aed;text-align:center;font-weight:600;font-family:monospace;">${sku || '—'}</td>` : ''}

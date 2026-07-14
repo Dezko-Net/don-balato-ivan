@@ -28,19 +28,30 @@ export async function POST(req: NextRequest) {
     let parsedItems: any[] = [];
     try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
 
-    // 3. Build replacement items
-    const replacementItems = items.map((item: any) => ({
-      id: item.productId,
-      name: item.name,
-      price: item.price,
-      originalPrice: item.originalPrice,
-      qty: item.qty,
-      img: item.img,
-      total: item.price * item.qty,
-      sku: item.sku || '',
-      replaced: true,
-      isCanjeReplacement: true,
-    }));
+    // 3. Build replacement items and preserve the missing product reference
+    const missingItems = parsedItems.filter((it: any) => it.missing && !it.replaced);
+    const replacementItems = items.map((item: any, index: number) => {
+      const original = missingItems[index];
+      return {
+        id: item.productId,
+        name: item.name,
+        price: item.price,
+        originalPrice: item.originalPrice,
+        qty: item.qty,
+        img: item.img,
+        total: item.price * item.qty,
+        sku: item.sku || '',
+        replaced: true,
+        isCanjeReplacement: true,
+        replacedOriginal: original ? {
+          name: original.name || '',
+          sku: original.sku || '',
+          qty: original.qty || 1,
+          price: original.price || 0,
+          img: original.img || original.imageUrl || '',
+        } : null,
+      };
+    });
 
     // Mark missing items as replaced
     parsedItems = parsedItems.map((it: any) => {
