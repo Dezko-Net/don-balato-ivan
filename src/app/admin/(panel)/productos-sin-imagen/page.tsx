@@ -34,7 +34,7 @@ export default function ProductosSinImagenPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'broken' | 'empty'>('all');
+  const [filter, setFilter] = useState<'problems' | 'all' | 'broken' | 'empty'>('problems');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editUrl, setEditUrl] = useState('');
   const [saving, setSaving] = useState(false);
@@ -50,6 +50,7 @@ export default function ProductosSinImagenPage() {
         { name: 'inventory_products', id: INVENTORY_PRODUCTS_COLLECTION_ID },
       ];
 
+      const seen = new Set<string>();
       const allProducts: ProductWithStatus[] = [];
       for (const col of collections) {
         try {
@@ -59,9 +60,13 @@ export default function ProductosSinImagenPage() {
             if (cursor) queries.push(Query.cursorAfter(cursor));
             const res = await databases.listDocuments(databaseId, col.id, queries);
             for (const doc of res.documents) {
+              const dedupKey = `${doc.NAME || ''}|${doc.SKU || getSkuFromFeatures(doc.FEATURES, doc.TAGS) || ''}`.toLowerCase().trim();
+              if (seen.has(dedupKey)) continue;
+              seen.add(dedupKey);
+              const imageUrl = (doc as any).IMAGEURL || '';
               allProducts.push({
                 ...doc,
-                imageStatus: 'checking',
+                imageStatus: imageUrl.trim() === '' ? 'empty' : 'checking',
                 collection: col.name,
               } as unknown as ProductWithStatus);
             }
@@ -75,11 +80,12 @@ export default function ProductosSinImagenPage() {
       setProducts(allProducts);
       setIsLoading(false);
 
-      // Check images in background
+      // Only check images for products that have a URL (skip empty ones)
+      const toCheck = allProducts.filter(p => p.imageStatus === 'checking');
       setChecking(true);
       const batchSize = 8;
-      for (let i = 0; i < allProducts.length; i += batchSize) {
-        const batch = allProducts.slice(i, i + batchSize);
+      for (let i = 0; i < toCheck.length; i += batchSize) {
+        const batch = toCheck.slice(i, i + batchSize);
         await Promise.all(batch.map(async (p) => {
           const status = await checkImage(p.IMAGEURL || '');
           setProducts(prev => prev.map(item =>
@@ -123,8 +129,11 @@ export default function ProductosSinImagenPage() {
   const brokenCount = products.filter(p => p.imageStatus === 'broken').length;
   const emptyCount = products.filter(p => p.imageStatus === 'empty').length;
   const okCount = products.filter(p => p.imageStatus === 'ok').length;
+  const checkingCount = products.filter(p => p.imageStatus === 'checking').length;
+  const problemsCount = brokenCount + emptyCount;
 
   const filtered = products.filter(p => {
+    if (filter === 'problems' && p.imageStatus !== 'broken' && p.imageStatus !== 'empty') return false;
     if (filter === 'broken' && p.imageStatus !== 'broken') return false;
     if (filter === 'empty' && p.imageStatus !== 'empty') return false;
     if (search && !p.NAME?.toLowerCase().includes(search.toLowerCase()) && !p.SKU?.toLowerCase().includes(search.toLowerCase())) return false;
@@ -166,10 +175,10 @@ export default function ProductosSinImagenPage() {
           border: '1px solid #f0f0f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <CheckCircle2 size={22} color="#4caf50" />
+            <AlertTriangle size={22} color="#ff9800" />
             <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#1a1a1a' }}>{okCount}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>Imágenes OK</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#ff9800' }}>{problemsCount}</div>
+              <div style={{ fontSize: 12, color: '#888' }}>Con problemas</div>
             </div>
           </div>
         </div>
@@ -197,6 +206,18 @@ export default function ProductosSinImagenPage() {
             </div>
           </div>
         </div>
+        <div style={{
+          flex: 1, background: '#fff', borderRadius: 14, padding: '20px 24px',
+          border: '1px solid #f0f0f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CheckCircle2 size={22} color="#4caf50" />
+            <div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#1a1a1a' }}>{products.length}</div>
+              <div style={{ fontSize: 12, color: '#888' }}>Productos únicos {checkingCount > 0 ? `(${checkingCount} revisando)` : ''}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -217,9 +238,10 @@ export default function ProductosSinImagenPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {[
-            { key: 'all', label: 'Todos' },
-            { key: 'broken', label: 'Rotos' },
-            { key: 'empty', label: 'Sin imagen' },
+            { key: 'problems', label: `Con problemas (${problemsCount})` },
+            { key: 'broken', label: `Rotos (${brokenCount})` },
+            { key: 'empty', label: `Sin imagen (${emptyCount})` },
+            { key: 'all', label: `Todos (${products.length})` },
           ].map(f => (
             <button
               key={f.key}
