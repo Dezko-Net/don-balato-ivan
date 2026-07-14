@@ -47,8 +47,8 @@ export function generateOrderPdf(
     const loc = extra?.location?.label || null;
     const sku = extra?.sku || (i as any).sku || '';
     const note = (i as any).note || '';
-    const isReplacement = !!(i as any).isCanjeReplacement;
-    const original = (i as any).replacedOriginal;
+    const original = (i as any).replacedOriginal || (i as any).originalItem;
+    const isReplacement = !!(i as any).isCanjeReplacement || !!((i as any).replaced && original);
     const img = (i as any).img || (i as any).imageUrl || '';
     const imgHtml = img
       ? `<img src="${img}" style="width:48px;height:48px;object-fit:contain;border:1px solid #e5e7eb;border-radius:6px;padding:2px;background:#fff;" />`

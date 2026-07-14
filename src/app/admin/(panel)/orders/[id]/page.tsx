@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { MEDIA_BUCKET_ID, MEDIA_PREFIXES, ORDER_BOX_PHOTOS_BUCKET_ID, ID, Query } from '@/lib/appwrite';
 import { Order, OrderStatus } from '@/types/admin';
-import { generateOrderPdf, generateReplacementPdf } from '@/lib/generateOrderPdf';
+import { generateOrderPdf } from '@/lib/generateOrderPdf';
 import {
   ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock, FileText,
   Phone, Mail, Hash, ChevronDown, Save, CheckCircle, Copy, Check,
@@ -2129,50 +2129,9 @@ export default function OrderDetailPage() {
           </button>
           <button
             onClick={() => {
-              const replacedItems = items.filter((it: any) => it.replaced && it.originalItem);
-              if (replacedItems.length > 0) {
-                // Group replaced items: first item with originalItem starts a group,
-                // subsequent replaced items without originalItem belong to the same group
-                const replacements: { original: any; newItems: any[] }[] = [];
-                let currentGroup: { original: any; newItems: any[] } | null = null;
-                for (const it of items) {
-                  if ((it as any).replaced && (it as any).originalItem) {
-                    // Start new group
-                    if (currentGroup) replacements.push(currentGroup);
-                    currentGroup = {
-                      original: {
-                        name: (it as any).originalItem.name || '',
-                        sku: (it as any).originalItem.sku || '',
-                        price: (it as any).originalItem.price || 0,
-                        qty: it.qty || 1,
-                        img: (it as any).originalItem.img || '',
-                      },
-                      newItems: [{
-                        name: it.name || '',
-                        sku: (it.id ? productSkus[it.id] : '') || (it as any).sku || '',
-                        price: it.price || 0,
-                        qty: it.qty || 1,
-                        img: it.img || '',
-                      }],
-                    };
-                  } else if ((it as any).replaced && currentGroup) {
-                    // Add to current group
-                    currentGroup.newItems.push({
-                      name: it.name || '',
-                      sku: (it.id ? productSkus[it.id] : '') || (it as any).sku || '',
-                      price: it.price || 0,
-                      qty: it.qty || 1,
-                      img: it.img || '',
-                    });
-                  }
-                }
-                if (currentGroup) replacements.push(currentGroup);
-                generateReplacementPdf(order?.ORDERCODE || order?.$id || 'Pedido', replacements);
-              } else {
-                generateOrderPdf(order as any, items as any, Object.fromEntries(
-                  Object.entries(productSkus).map(([id, sku]) => [id, { sku, location: productLocations[id] || null }])
-                ));
-              }
+              generateOrderPdf(order as any, items as any, Object.fromEntries(
+                Object.entries(productSkus).map(([id, sku]) => [id, { sku, location: productLocations[id] || null }])
+              ));
             }}
             className="flex items-center gap-1.5 px-2 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition"
           >
