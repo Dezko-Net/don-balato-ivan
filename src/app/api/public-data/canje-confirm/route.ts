@@ -62,13 +62,13 @@ export async function POST(req: NextRequest) {
     const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || order.DISCOUNT || 0);
 
     // 4. Update the order - keep in negotiation so bodegueros verify stock
-    const currentCanjeCount = (order as any).CANJE_COUNT || 0;
+    // CANJE_COUNT is not part of the orders schema; the replacement item itself
+    // is the source of truth for detecting an applied canje.
     await databases.updateDocument(databaseId, coll, orderId, {
       ITEMS: JSON.stringify(parsedItems),
       SUBTOTAL: newSubtotal,
       TOTAL: newTotal,
       STATUS: 'negotiation',
-      CANJE_COUNT: currentCanjeCount + 1,
       UPDATEDAT: Date.now(),
     });
 

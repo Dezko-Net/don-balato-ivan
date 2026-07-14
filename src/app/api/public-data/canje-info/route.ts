@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
           id: o.$id,
           orderCode: o.ORDERCODE || o.REQCODE || o.$id,
           status: o.STATUS,
+          isWholesale: o.$collectionId === WHOLESALE_ORDERS_COLLECTION_ID,
         })),
       });
     }
@@ -112,6 +113,7 @@ export async function GET(req: NextRequest) {
         id: o.$id,
         orderCode: o.ORDERCODE || o.REQCODE || o.$id,
         status: o.STATUS,
+        isWholesale: o.$collectionId === WHOLESALE_ORDERS_COLLECTION_ID,
       })),
     });
   } catch (error: any) {

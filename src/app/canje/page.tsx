@@ -134,7 +134,7 @@ export default function CanjePage() {
           userId: user?.id,
           email: user?.email,
           orderId: order.id,
-          isWholesale: false,
+          isWholesale: !!order.isWholesale,
           items: cart,
           remainingCredit: remainingCredit > 0 ? remainingCredit : 0,
         }),
