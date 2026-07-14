@@ -66,6 +66,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <head>
+        {/* Force one-time hard reload for all users after deploy to clear stale chunks */}
+        {/* biome-ignore lint: intentional dangerouslySetInnerHTML for cache-busting */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var v='kc_force_reload_v1';var s=sessionStorage.getItem(v);if(!s){sessionStorage.setItem(v,'1');if(window.performance&&window.performance.navigation&&window.performance.navigation.type!==1){window.location.reload(true);}}}catch(e){}})();` }} />
         {/* Importmap para el tema Pebble (Plantilla 5) — resuelve @theme/ a archivos locales */}
         {/* biome-ignore lint: intentional dangerouslySetInnerHTML for importmap */}
         <script type="importmap" dangerouslySetInnerHTML={{ __html: pebbleImportMap }} />
