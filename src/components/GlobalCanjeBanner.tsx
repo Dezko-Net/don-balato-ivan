@@ -17,15 +17,17 @@ export default function GlobalCanjeBanner() {
       setCanjeCredit(null);
       return;
     }
+    let cancelled = false;
     const fetchCredit = async () => {
       try {
-        const res = await fetch(`/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`);
+        const res = await fetch(
+          `/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}&lightweight=1`,
+          { cache: 'no-store' }
+        );
         if (res.ok) {
           const data = await res.json();
-          if (data.hasCredit) {
-            setCanjeCredit(data.creditAmount);
-          } else {
-            setCanjeCredit(null);
+          if (!cancelled) {
+            setCanjeCredit(data.hasCredit ? data.creditAmount : null);
           }
         }
       } catch (e) {
@@ -33,7 +35,21 @@ export default function GlobalCanjeBanner() {
       }
     };
     fetchCredit();
+    // Poll every 30 seconds so the banner appears quickly after an order
+    // enters negotiation status, without requiring a page reload.
+    const interval = setInterval(fetchCredit, 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, [user]);
+
+  // Re-fetch immediately when the user navigates to a new page
+  useEffect(() => {
+    if (user) {
+      fetch(`/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}&lightweight=1`, { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setCanjeCredit(data.hasCredit ? data.creditAmount : null); })
+        .catch(() => {});
+    }
+  }, [pathname, user]);
 
   if (!canjeCredit || canjeCredit <= 0) return null;
   

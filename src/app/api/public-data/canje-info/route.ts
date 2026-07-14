@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
     const email = searchParams.get('email');
+    const lightweight = searchParams.get('lightweight') === '1';
 
     if (!userId && !email) {
       return NextResponse.json({ error: 'userId or email required' }, { status: 400 });
@@ -71,6 +72,21 @@ export async function GET(req: NextRequest) {
         creditWithMargin: 0,
         products: [],
         orders: [],
+      });
+    }
+
+    // Lightweight mode: skip fetching 500 products, only return credit info
+    if (lightweight) {
+      return NextResponse.json({
+        hasCredit: true,
+        creditAmount,
+        creditWithMargin: creditAmount + 500,
+        products: [],
+        orders: negotiationOrders.map((o: any) => ({
+          id: o.$id,
+          orderCode: o.ORDERCODE || o.REQCODE || o.$id,
+          status: o.STATUS,
+        })),
       });
     }
 

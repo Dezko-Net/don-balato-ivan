@@ -138,8 +138,6 @@ function OrdersContent() {
   // Stats cache — persists until manual refresh
   const [statsCache, setStatsCache] = useState<{ totalToday: number; countToday: number; topCustomer: { name: string; total: number } | null; avgTicket: number; totalPaid: number; countPaid: number; byStatus: Record<string, number>; byStatusAll: Record<string, number>; byStatusYesterday: Record<string, number>; byStatusDayBefore: Record<string, number>; allOrdersRaw: any[]; totalYesterday: number; countYesterday: number; totalAll: number; countAll: number; } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
-  // page cursors: key = page number, value = cursor to use to reach that page
-  const pageCursorsRef = React.useRef<Map<number, string | null>>(new Map([[1, null]]));
 
   // Load stats — cacheado en sessionStorage 3 min (≈92 lecturas por refresco;
   // sin el cache, cada visita/navegación al panel repetía todas las consultas)
@@ -299,7 +297,7 @@ function OrdersContent() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const queries = [Query.orderDesc('CREATEDAT'), Query.limit(PAGE_SIZE)];
+      const queries = [Query.orderDesc('CREATEDAT'), Query.limit(PAGE_SIZE), Query.offset((page - 1) * PAGE_SIZE)];
       if (activeFilter === 'paid_group') {
         queries.push(Query.equal('STATUS', [
           'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing',
@@ -308,20 +306,12 @@ function OrdersContent() {
       } else if (activeFilter !== 'all') {
         queries.push(Query.equal('STATUS', activeFilter));
       }
-      // Use stored cursor for the requested page
-      const pageCursor = pageCursorsRef.current.get(page) ?? null;
-      if (pageCursor) queries.push(Query.cursorAfter(pageCursor));
 
       const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, queries);
       const newOrders = resp.documents as unknown as Order[];
       setOrders(newOrders);
       setTotalCount(resp.total);
       setCurrentPage(page);
-
-      // Store the last doc cursor so next page can use it
-      if (newOrders.length > 0) {
-        pageCursorsRef.current.set(page + 1, newOrders[newOrders.length - 1].$id);
-      }
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
   }, [activeFilter]);
@@ -367,7 +357,6 @@ function OrdersContent() {
 
   // Reset pagination when filter changes — always fetch fresh, no sessionStorage cache
   useEffect(() => {
-    pageCursorsRef.current = new Map([[1, null]]);
     setCurrentPage(1);
     load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -792,7 +781,7 @@ function OrdersContent() {
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-pink-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-pink-700 transition">
             <Printer className="w-4 h-4" /><span className="hidden sm:inline">Imprimir Checklist</span>
           </button>
-          <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); loadStats(true); }} disabled={isLoading}
+          <button onClick={() => { load(1); loadStats(true); }} disabled={isLoading}
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Actualizar</span>
           </button>
@@ -1823,10 +1812,25 @@ function OrdersContent() {
               {/* Footer action button */}
               <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-center gap-3">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     try {
                       const items = JSON.parse(order.ITEMS || '[]');
-                      generateOrderPdf(order as any, items as any);
+                      const ids = items.map((i: any) => i.id).filter(Boolean) as string[];
+                      const extraInfo: Record<string, { sku?: string; location?: any }> = {};
+                      if (ids.length > 0) {
+                        const { databases } = getServices();
+                        const { databaseId } = getAppwriteConfig();
+                        for (const pid of ids) {
+                          if (extraInfo[pid]) continue;
+                          try {
+                            const doc: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
+                            const sku = getSkuFromFeatures(doc.FEATURES, doc.TAGS, doc.JUMPSSELLERID, doc.SKU);
+                            const wh = getWarehouseLocationFromFeatures(doc.FEATURES);
+                            extraInfo[pid] = { sku: sku || undefined, location: wh };
+                          } catch {}
+                        }
+                      }
+                      generateOrderPdf(order as any, items as any, Object.keys(extraInfo).length > 0 ? extraInfo : undefined);
                     } catch (e) {
                       console.error('Error generating PDF', e);
                     }

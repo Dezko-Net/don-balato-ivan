@@ -32,8 +32,9 @@ export function generateOrderPdf(
   items: OrderItem[],
   productExtraInfo?: Record<string, ProductExtraInfo>,
 ) {
-  const hasSku = productExtraInfo && items.some(i => i.id && productExtraInfo[i.id]?.sku);
+  const hasSku = (productExtraInfo && items.some(i => i.id && productExtraInfo[i.id]?.sku)) || items.some(i => (i as any).sku);
   const hasLocations = productExtraInfo && items.some(i => i.id && productExtraInfo[i.id]?.location?.label);
+  const hasImages = items.some(i => (i as any).img || (i as any).imageUrl);
   const statusLabel = STATUS_LABELS[order.STATUS] || order.STATUS;
   const date = formatDate(order.CREATEDAT);
   const subtotal = order.SUBTOTAL || items.reduce((s, i) => s + (i.total || i.price * i.qty), 0);
@@ -43,10 +44,15 @@ export function generateOrderPdf(
   const itemsHtml = items.map(i => {
     const extra = i.id ? productExtraInfo?.[i.id] : null;
     const loc = extra?.location?.label || null;
-    const sku = extra?.sku || '';
+    const sku = extra?.sku || (i as any).sku || '';
     const note = (i as any).note || '';
+    const img = (i as any).img || (i as any).imageUrl || '';
+    const imgHtml = img
+      ? `<img src="${img}" style="width:48px;height:48px;object-fit:contain;border:1px solid #e5e7eb;border-radius:6px;padding:2px;background:#fff;" />`
+      : `<div style="width:48px;height:48px;border:1px solid #e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#f9fafb;font-size:9px;color:#9ca3af;">Sin img</div>`;
     return `
     <tr style="page-break-inside:avoid;break-inside:avoid;">
+      ${hasImages ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;text-align:center;">${imgHtml}</td>` : ''}
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#333;">
         <div style="font-weight:600;">${i.name}</div>
         ${note ? `<div style="font-size:11px;color:#d97706;background:#fffbeb;border:1px solid #fef3c7;padding:3px 6px;border-radius:4px;margin-top:4px;display:inline-block;">💬 Nota: ${note}</div>` : ''}
@@ -119,6 +125,7 @@ export function generateOrderPdf(
   <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
     <thead>
       <tr style="background:#f8f9fa;">
+        ${hasImages ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Img</th>' : ''}
         <th style="padding:10px 6px;text-align:left;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Producto</th>
         ${hasSku ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">SKU</th>' : ''}
         ${hasLocations ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Sección</th>' : ''}
