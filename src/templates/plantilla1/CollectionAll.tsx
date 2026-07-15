@@ -596,9 +596,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             </div>
             <div ref={carouselRef} className="pk-carousel-no-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
               {carouselPaquetes.map(p => {
-                const packPrice = (p.WHOLESALEPRICE || p.PRICE) * (p.PACKQTY || 1);
+                const packUnitPrice = isDisableDiscounts(p) ? (p.PRICE || 0) : Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
+                const packPrice = packUnitPrice * (p.PACKQTY || 1);
                 const origPackPrice = p.PRICE * (p.PACKQTY || 1);
-                const discPct = origPackPrice > packPrice ? Math.round((1 - packPrice / origPackPrice) * 100) : 0;
+                const discPct = !isDisableDiscounts(p) && origPackPrice > 0 ? PACK_BONUS_DISCOUNT_PCT : 0;
                 const cFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
                 const cTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                 const cSku = getSkuFromFeatures(cFeatures, cTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
@@ -631,9 +632,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         <span style={{ fontSize: 19, fontWeight: 900, color: '#c68b59', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(packPrice)}</span>
                         {discPct > 0 && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(origPackPrice)}</span>}
                       </div>
-                      <div style={{ fontSize: 10, color: '#b0b0b0', fontWeight: 600 }}>{formatPrice(p.WHOLESALEPRICE || p.PRICE)} por unidad</div>
+                      <div style={{ fontSize: 10, color: '#b0b0b0', fontWeight: 600 }}>{formatPrice(packUnitPrice)} por unidad</div>
                       <button
-                        onClick={() => packStockAvailable(p) > 0 && addItem(p, p.PACKQTY || 1, undefined, undefined, p.WHOLESALEPRICE || p.PRICE, true)}
+                        onClick={() => packStockAvailable(p) > 0 && addItem(p, p.PACKQTY || 1, undefined, undefined, isDisableDiscounts(p) ? (p.PRICE || 0) : packUnitPrice, true)}
                         disabled={packStockAvailable(p) <= 0}
                         style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: packStockAvailable(p) <= 0 ? '#f3f4f6' : 'linear-gradient(135deg,#faf0e6,#eed9c4)', color: packStockAvailable(p) <= 0 ? '#9ca3af' : '#5c3d24', fontSize: 12, fontWeight: 700, cursor: packStockAvailable(p) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF }}
                       >

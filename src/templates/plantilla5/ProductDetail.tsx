@@ -21,7 +21,7 @@ import { Query } from 'appwrite';
 import { Product, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, PACK_BONUS_DISCOUNT_PCT, isDisableDiscounts } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import ReviewSection from '@/components/ReviewSection';
 import ProductQuestions from '@/components/ProductQuestions';
@@ -342,7 +342,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
         const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
 
-        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined, isPaquetesMode);
+        const targetPackOverride = isPaquetesMode && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : targetPackOverride, isPaquetesMode);
         const textContent = newBtn.querySelector('.add-to-cart-text__content');
         if (textContent) {
           const originalText = textContent.textContent;
@@ -366,7 +367,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
         const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
 
-        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined, isPaquetesMode);
+        const targetPackOverrideBuy = isPaquetesMode && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : targetPackOverrideBuy, isPaquetesMode);
         router.push('/carrito');
       });
     }
@@ -453,14 +455,26 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
     const isWholesaleQty = hasWholesale && (isExact ? qty === (displayProduct.WHOLESALEMINQUANTITY || 0) : qty >= (displayProduct.WHOLESALEMINQUANTITY || 0));
 
-    const priceResolved = activeOffer ? {
+    const basePriceResolved = activeOffer ? {
       displayPrice: activeOffer.discountPrice,
       originalPrice: activeOffer.originalPrice,
       hasDiscount: true,
       discountPercent: activeOffer.discountPercentage,
       fromApertura: false
     } : resolveProductDisplayPrice(displayProduct, apertura);
+
+    // En modo paquetes, forzar 20% de descuento sobre PRICE
+    const priceResolved = isPaquetesMode && !activeOffer ? (() => {
+      const base = displayProduct.PRICE || 0;
+      if (isDisableDiscounts(displayProduct) || base <= 0) {
+        return { displayPrice: base, originalPrice: null as number | null, hasDiscount: false, discountPercent: 0, fromApertura: false };
+      }
+      const packUnitPrice = Math.round(base * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
+      return { displayPrice: packUnitPrice, originalPrice: base, hasDiscount: true, discountPercent: PACK_BONUS_DISCOUNT_PCT, fromApertura: false };
+    })() : basePriceResolved;
+
     const displayPrice = priceResolved.displayPrice;
+    const packOverridePrice = isPaquetesMode && !isDisableDiscounts(displayProduct) ? Math.round((displayProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
     const effectivePrice = (isWholesaleQty ? displayProduct.WHOLESALEPRICE! : displayPrice) * qty;
     const formattedPrice = formatPrice(effectivePrice);
 
@@ -1296,7 +1310,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
           const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
 
-          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : undefined, isPaquetesMode);
+          const currentPackOverride = isPaquetesMode && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : currentPackOverride, isPaquetesMode);
           
           const textContent = newBtn.querySelector('.add-to-cart-text__content');
           if (textContent) {
@@ -1376,7 +1391,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
             const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
 
-            addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : undefined);
+            const currentPackOverrideBuy = isPaquetesMode && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+            addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : currentPackOverrideBuy, isPaquetesMode);
             
             router.push('/carrito');
           });
@@ -1863,13 +1879,24 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const root = refElement;
     
     // Resolve prices
-    const priceResolved = activeOffer ? {
+    const basePriceResolved = activeOffer ? {
       displayPrice: activeOffer.discountPrice,
       originalPrice: activeOffer.originalPrice,
       hasDiscount: true,
       discountPercent: activeOffer.discountPercentage,
       fromApertura: false
     } : resolveProductDisplayPrice(product, apertura);
+
+    // En modo paquetes, forzar 20% de descuento sobre PRICE
+    const priceResolved = isPaquetesMode && !activeOffer ? (() => {
+      const base = product.PRICE || 0;
+      if (isDisableDiscounts(product) || base <= 0) {
+        return { displayPrice: base, originalPrice: null as number | null, hasDiscount: false, discountPercent: 0, fromApertura: false };
+      }
+      const packUnitPrice = Math.round(base * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
+      return { displayPrice: packUnitPrice, originalPrice: base, hasDiscount: true, discountPercent: PACK_BONUS_DISCOUNT_PCT, fromApertura: false };
+    })() : basePriceResolved;
+
     const displayPrice = priceResolved.displayPrice;
     const formattedPrice = formatPrice(displayPrice);
 
