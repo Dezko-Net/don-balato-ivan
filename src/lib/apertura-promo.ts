@@ -58,9 +58,9 @@ export type ResolvedProductPrice = {
 };
 
 const DEFAULT_SETTINGS: AperturaSettings = {
-  isActive: false,
-  discountPercent: 20,
-  minPurchase: 62500,
+  isActive: true,
+  discountPercent: 10,
+  minPurchase: 0,
 };
 
 export function getAperturaDiscountedPrice(price: number, discountPercent: number): number {
@@ -219,9 +219,8 @@ export function resolveProductDisplayPrice(
     }
   }
 
-  // Suppress apertura discount if live logic has disableApertura flag, product is PROMO1, or product has PACKQTY > 1
-  const hasPackQty = (product.PACKQTY ?? 0) > 1;
-  const suppressApertura = liveLogic?.disableApertura === true || isDisableDiscounts(product) || hasPackQty;
+  // Suppress apertura discount if live logic has disableApertura flag or product is PROMO1
+  const suppressApertura = liveLogic?.disableApertura === true || isDisableDiscounts(product);
 
   if (!suppressApertura && apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
     const displayPrice = getAperturaDiscountedPrice(effectiveBase, apertura.discountPercent);
@@ -255,8 +254,8 @@ export async function fetchAperturaSettings(): Promise<AperturaSettings> {
     const d = res.documents[0] as Record<string, unknown>;
     return {
       isActive: !!d.isActive,
-      discountPercent: typeof d.discountPercent === 'number' ? d.discountPercent : 20,
-      minPurchase: typeof d.minPurchase === 'number' ? d.minPurchase : 62500,
+      discountPercent: typeof d.discountPercent === 'number' ? d.discountPercent : 10,
+      minPurchase: typeof d.minPurchase === 'number' ? d.minPurchase : 0,
     };
   } catch {
     return DEFAULT_SETTINGS;

@@ -9,9 +9,9 @@ const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#e396bf';
 
 export default function AperturaPage() {
-  const [isActive, setIsActive] = useState(false);
-  const [discountPercent, setDiscountPercent] = useState(20);
-  const [minPurchase, setMinPurchase] = useState(62500);
+  const [isActive, setIsActive] = useState(true);
+  const [discountPercent, setDiscountPercent] = useState(10);
+  const [minPurchase, setMinPurchase] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -27,16 +27,16 @@ export default function AperturaPage() {
       
       if (res.documents.length > 0) {
         const settings = res.documents[0] as any;
-        setIsActive(settings.isActive || false);
-        setDiscountPercent(settings.discountPercent || 20);
-        setMinPurchase(settings.minPurchase || 62500);
+        setIsActive(settings.isActive ?? true);
+        setDiscountPercent(settings.discountPercent || 10);
+        setMinPurchase(settings.minPurchase || 0);
       }
     } catch (e: any) {
       // If collection doesn't exist, just use defaults
       console.error('Error loading settings (collection may not exist yet):', e.message);
-      setIsActive(false);
-      setDiscountPercent(20);
-      setMinPurchase(62500);
+      setIsActive(true);
+      setDiscountPercent(10);
+      setMinPurchase(0);
     } finally {
       setLoading(false);
     }

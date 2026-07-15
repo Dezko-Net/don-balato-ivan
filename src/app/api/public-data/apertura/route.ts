@@ -22,9 +22,9 @@ let memoryCacheAperturaTime = 0;
 const MEMORY_CACHE_TTL = 60000; // 60 seconds
 
 const DEFAULT_SETTINGS = {
-  isActive: false,
-  discountPercent: 20,
-  minPurchase: 62500,
+  isActive: true,
+  discountPercent: 10,
+  minPurchase: 0,
 };
 
 const getCachedAperturaSettings = unstable_cache(
@@ -43,8 +43,8 @@ const getCachedAperturaSettings = unstable_cache(
       const d = response.documents[0];
       result = {
         isActive: !!d.isActive,
-        discountPercent: typeof d.discountPercent === 'number' ? d.discountPercent : 20,
-        minPurchase: typeof d.minPurchase === 'number' ? d.minPurchase : 62500,
+        discountPercent: typeof d.discountPercent === 'number' ? d.discountPercent : 10,
+        minPurchase: typeof d.minPurchase === 'number' ? d.minPurchase : 0,
       };
     }
 

@@ -30,7 +30,7 @@ async function loadApertura(isLoggedIn: boolean): Promise<{ settings: AperturaSe
       const res = await fetch('/api/public-data/apertura');
       const globalSettings: AperturaSettings = res.ok
         ? await res.json()
-        : { isActive: false, discountPercent: 20, minPurchase: 62500 };
+        : { isActive: true, discountPercent: 10, minPurchase: 0 };
 
       let claimed = false;
       let firstPurchaseActive = false;
