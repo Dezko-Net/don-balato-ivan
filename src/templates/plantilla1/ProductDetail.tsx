@@ -242,8 +242,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     fromApertura: false
   } : resolveProductDisplayPrice(product, apertura);
 
-  // En modo paquetes, forzar 20% de descuento sobre PRICE
-  const priceResolved = isPaquetesMode && !activeOffer ? (() => {
+  // En modo paquetes, 20% solo cuando qty >= PACKQTY; si no, precio normal
+  const packQtyVal = product.PACKQTY || 0;
+  const isPackQtyReached = isPaquetesMode && packQtyVal > 1 && qty >= packQtyVal;
+  const priceResolved = isPackQtyReached && !activeOffer ? (() => {
     const base = product.PRICE || 0;
     if (isDisableDiscounts(product) || base <= 0) {
       return { displayPrice: base, originalPrice: null as number | null, hasDiscount: false, discountPercent: 0, fromApertura: false };
@@ -260,7 +262,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES || '';
   const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
   const isWholesaleQty = hasWholesale && (isExact ? qty === (product.WHOLESALEMINQUANTITY || 0) : qty >= (product.WHOLESALEMINQUANTITY || 0));
-  const effectivePrice = isPaquetesMode ? displayPrice : (isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice);
+  const effectivePrice = isPackQtyReached ? displayPrice : (isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice);
   const lineTotal = effectivePrice * qty;
   const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
   const stock = isLimitedStock ? product.STOCK! : 99999;
@@ -274,7 +276,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const outOfStock = stock <= 0;
 
   function handleAdd() {
-    const packOverridePrice = isPaquetesMode && !isDisableDiscounts(product!) ? Math.round((product!.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+    const packOverridePrice = isPackQtyReached && !isDisableDiscounts(product!) ? Math.round((product!.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
     addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : packOverridePrice, isPaquetesMode);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -384,7 +386,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           </div>
           <button type="button" onClick={() => {
             if (outOfStock) return;
-            const packOverridePriceBuy = isPaquetesMode && !isDisableDiscounts(product!) ? Math.round((product!.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+            const packOverridePriceBuy = isPackQtyReached && !isDisableDiscounts(product!) ? Math.round((product!.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
             addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : packOverridePriceBuy, isPaquetesMode);
             router.push('/carrito');
           }} style={{ width: '100%', padding: '12px 18px', background: ORANGE_PRIMARY, color: '#fff', border: `1.5px solid ${ORANGE_PRIMARY}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, transition: 'all 0.2s' }}>

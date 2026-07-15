@@ -342,7 +342,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
         const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
 
-        const targetPackOverride = isPaquetesMode && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+        const targetPackQty = targetProduct.PACKQTY || 0;
+        const targetIsPackQty = isPaquetesMode && targetPackQty > 1 && qty >= targetPackQty;
+        const targetPackOverride = targetIsPackQty && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
         addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : targetPackOverride, isPaquetesMode);
         const textContent = newBtn.querySelector('.add-to-cart-text__content');
         if (textContent) {
@@ -367,7 +369,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
         const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
 
-        const targetPackOverrideBuy = isPaquetesMode && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+        const targetPackQtyBuy = targetProduct.PACKQTY || 0;
+        const targetIsPackQtyBuy = isPaquetesMode && targetPackQtyBuy > 1 && qty >= targetPackQtyBuy;
+        const targetPackOverrideBuy = targetIsPackQtyBuy && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
         addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : targetPackOverrideBuy, isPaquetesMode);
         router.push('/carrito');
       });
@@ -463,8 +467,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       fromApertura: false
     } : resolveProductDisplayPrice(displayProduct, apertura);
 
-    // En modo paquetes, forzar 20% de descuento sobre PRICE
-    const priceResolved = isPaquetesMode && !activeOffer ? (() => {
+    // En modo paquetes, 20% solo cuando qty >= PACKQTY; si no, precio normal
+    const packQty = displayProduct.PACKQTY || 0;
+    const isPackQtyReached = isPaquetesMode && packQty > 1 && qty >= packQty;
+    const priceResolved = isPackQtyReached && !activeOffer ? (() => {
       const base = displayProduct.PRICE || 0;
       if (isDisableDiscounts(displayProduct) || base <= 0) {
         return { displayPrice: base, originalPrice: null as number | null, hasDiscount: false, discountPercent: 0, fromApertura: false };
@@ -474,8 +480,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     })() : basePriceResolved;
 
     const displayPrice = priceResolved.displayPrice;
-    const packOverridePrice = isPaquetesMode && !isDisableDiscounts(displayProduct) ? Math.round((displayProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-    const effectivePrice = (isPaquetesMode ? displayPrice : (isWholesaleQty ? displayProduct.WHOLESALEPRICE! : displayPrice)) * qty;
+    const packOverridePrice = isPackQtyReached && !isDisableDiscounts(displayProduct) ? Math.round((displayProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+    const effectivePrice = (isPackQtyReached ? displayPrice : (isWholesaleQty ? displayProduct.WHOLESALEPRICE! : displayPrice)) * qty;
     const formattedPrice = formatPrice(effectivePrice);
 
     // 1. Inject variant thumbnails — clicking switches inline, no navigation
@@ -814,7 +820,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         `;
         
+        const wsCheaper = (displayProduct.WHOLESALEPRICE || 0) < displayPrice;
         if (isWholesaleQty) {
+          const savingsHtml = wsCheaper ? `<span style="font-size: 13px; font-weight: 700; color: #047857;">¡Ahorras ${formatPrice(displayPrice - displayProduct.WHOLESALEPRICE!)} por unidad!</span>` : `<span style="font-size: 13px; font-weight: 700; color: #6b7280;">Precio mayorista activado</span>`;
           wholesaleBox.innerHTML = `
             <div style="margin-top: 20px; padding: 4px 0; width: 100%;">
               <!-- Minimal Success Indicator inline -->
@@ -822,9 +830,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                 <span style="display: inline-flex; align-items: center; justify-content: center; background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
                   🎉 Mayorista Activado
                 </span>
-                <span style="font-size: 13px; font-weight: 700; color: #047857;">
-                  ¡Ahorras ${formatPrice(displayPrice - displayProduct.WHOLESALEPRICE!)} por unidad!
-                </span>
+                ${savingsHtml}
               </div>
               
               <!-- Glow Progress Bar (100% full) -->
@@ -841,9 +847,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           `;
         } else {
           const needed = displayProduct.WHOLESALEMINQUANTITY! - qty;
-          const message = isExact
+          const wsPriceLabel = wsCheaper ? `Paga solo <span style="color: #db2777; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)} c/u</span> comprando ${displayProduct.WHOLESALEMINQUANTITY}+` : `Precio mayorista <span style="color: #db2777; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)} c/u</span> comprando ${displayProduct.WHOLESALEMINQUANTITY}+`;
+          const footerMsg = isExact
             ? `Lleva ${displayProduct.WHOLESALEMINQUANTITY} unidades para activar`
-            : `Lleva ${needed} más y paga solo`;
+            : (wsCheaper ? `Lleva ${needed} más y paga solo` : `Lleva ${needed} más para precio mayorista`);
           
           wholesaleBox.innerHTML = `
             <div style="margin-top: 20px; padding: 4px 0; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -854,7 +861,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                     🏷️ Oferta Mayorista
                   </span>
                   <span style="font-size: 13px; font-weight: 700; color: #374151;">
-                    Paga solo <span style="color: #db2777; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)} c/u</span> comprando ${displayProduct.WHOLESALEMINQUANTITY}+
+                    ${wsPriceLabel}
                   </span>
                 </div>
                 <span style="font-size: 12px; font-weight: 800; color: #9ca3af;">
@@ -882,7 +889,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               <!-- Footer checkpoint note -->
               <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 6px;">
                 <span>🎯</span>
-                <span>${message} <strong>${formatPrice(displayProduct.WHOLESALEPRICE!)}</strong></span>
+                <span>${footerMsg} <strong>${formatPrice(displayProduct.WHOLESALEPRICE!)}</strong></span>
               </div>
             </div>
           `;
@@ -1216,12 +1223,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           e.preventDefault();
           e.stopPropagation();
           if (isSoldOut) return;
-          setQty(q => {
-            const next = Math.max(1, q - 1);
-            qtyInput.value = String(next);
-            return next;
-          });
-          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+          const currentVal = parseInt(qtyInput.value) || 1;
+          const next = Math.max(1, currentVal - 1);
+          qtyInput.value = String(next);
+          setQty(next);
         });
 
         newPlus.addEventListener('click', (e) => {
@@ -1229,12 +1234,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           e.stopPropagation();
           if (isSoldOut) return;
           const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
-          setQty(q => {
-            const next = Math.min(maxLimit, q + 1);
-            qtyInput.value = String(next);
-            return next;
-          });
-          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+          const currentVal = parseInt(qtyInput.value) || 1;
+          const next = Math.min(maxLimit, currentVal + 1);
+          qtyInput.value = String(next);
+          setQty(next);
         });
 
         // Allow the user to type freely; only validate on blur/change
@@ -1250,20 +1253,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           if (val > maxLimit) val = maxLimit;
           qtyInput.value = String(val);
           setQty(val);
-          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
         };
 
         qtyInput.addEventListener('blur', commitQty);
-        qtyInput.addEventListener('change', () => {
-          // Triggered programmatically by +/- buttons; commit then too
-          const raw = parseInt(qtyInput.value);
-          const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
-          let val = isNaN(raw) ? 1 : raw;
-          if (val < 1) val = 1;
-          if (val > maxLimit) val = maxLimit;
-          if (parseInt(qtyInput.value) !== val) qtyInput.value = String(val);
-          setQty(val);
-        });
       }
     }
 
@@ -1310,7 +1302,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
           const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
 
-          const currentPackOverride = isPaquetesMode && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+          const currentPackQty = currentProduct.PACKQTY || 0;
+          const currentIsPackQty = isPaquetesMode && currentPackQty > 1 && qty >= currentPackQty;
+          const currentPackOverride = currentIsPackQty && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
           addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : currentPackOverride, isPaquetesMode);
           
           const textContent = newBtn.querySelector('.add-to-cart-text__content');
@@ -1391,7 +1385,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
             const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
 
-            const currentPackOverrideBuy = isPaquetesMode && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+            const currentPackQtyBuy = currentProduct.PACKQTY || 0;
+            const currentIsPackQtyBuy = isPaquetesMode && currentPackQtyBuy > 1 && qty >= currentPackQtyBuy;
+            const currentPackOverrideBuy = currentIsPackQtyBuy && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
             addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : currentPackOverrideBuy, isPaquetesMode);
             
             router.push('/carrito');
@@ -1887,8 +1883,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       fromApertura: false
     } : resolveProductDisplayPrice(product, apertura);
 
-    // En modo paquetes, forzar 20% de descuento sobre PRICE
-    const priceResolved = isPaquetesMode && !activeOffer ? (() => {
+    // En modo paquetes, 20% solo cuando qty >= PACKQTY; si no, precio normal
+    const initPackQty = product.PACKQTY || 0;
+    const initIsPackQty = isPaquetesMode && initPackQty > 1 && qty >= initPackQty;
+    const priceResolved = initIsPackQty && !activeOffer ? (() => {
       const base = product.PRICE || 0;
       if (isDisableDiscounts(product) || base <= 0) {
         return { displayPrice: base, originalPrice: null as number | null, hasDiscount: false, discountPercent: 0, fromApertura: false };

@@ -36,7 +36,9 @@ export default function ProductCardPreview({ product, onClose, isPackMode }: Pro
   }, []);
 
   const basePricing = resolveProductDisplayPrice(product, apertura);
-  const pricing = isPackMode && !isDisableDiscounts(product) ? (() => {
+  const packQty = product.PACKQTY || 0;
+  const isPackQtyReached = isPackMode && packQty > 1;
+  const pricing = isPackQtyReached && !isDisableDiscounts(product) ? (() => {
     const base = product.PRICE || 0;
     if (base <= 0) return basePricing;
     const packUnitPrice = Math.round(base * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
@@ -55,8 +57,9 @@ export default function ProductCardPreview({ product, onClose, isPackMode }: Pro
 
   function handleBuy() {
     if (outOfStock) return;
-    const packOverride = isPackMode && !isDisableDiscounts(product) ? Math.round((product.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-    addItem(product, isPackMode && product.PACKQTY ? product.PACKQTY : 1, undefined, undefined, packOverride, isPackMode);
+    const buyQty = isPackMode && product.PACKQTY ? product.PACKQTY : 1;
+    const packOverride = isPackQtyReached && !isDisableDiscounts(product) ? Math.round((product.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+    addItem(product, buyQty, undefined, undefined, packOverride, isPackMode);
     close();
   }
 
