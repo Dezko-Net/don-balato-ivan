@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Product } from '@/types';
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, PACK_BONUS_DISCOUNT_PCT } from '@/lib/apertura-promo';
 import { productMatchesBrand } from '@/lib/brands';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -241,7 +241,7 @@ export function useProductsCache({
       if (catalogMode === 'embalajes') {
         price = p.WHOLESALEPRICE || p.PRICE;
       } else if (catalogMode === 'paquetes') {
-        price = p.WHOLESALEPRICE || p.PRICE;
+        price = Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
       }
       if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
         price *= p.PACKQTY;
@@ -260,7 +260,7 @@ export function useProductsCache({
         if (catalogMode === 'embalajes') {
           price = p.WHOLESALEPRICE || p.PRICE;
         } else if (catalogMode === 'paquetes') {
-          price = p.WHOLESALEPRICE || p.PRICE;
+          price = Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
         }
         if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
           price *= p.PACKQTY;

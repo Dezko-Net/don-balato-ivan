@@ -978,15 +978,13 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     price = p.WHOLESALEPRICE || p.PRICE;
                     origPrice = p.PRICE;
                   } else if (catalogMode === 'paquetes') {
-                    // Si es producto de live shopping, usar el precio con descuento de live para paquete también
-                    // (salvo que el producto tenga los descuentos bloqueados, ej. PROMO1)
-                    if (isLiveShoppingProduct(p) && !isDisableDiscounts(p)) {
-                      const liveDiscount = getLiveShoppingDiscountPercent(p.$createdAt!);
-                      price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
-                      origPrice = p.PRICE;
+                    // Forzar 20% de descuento en todos los paquetes
+                    const basePrice = p.PRICE || 0;
+                    if (isDisableDiscounts(p)) {
+                      price = basePrice;
+                      origPrice = null;
                     } else {
-                      // Usa resolvePackUnitPrice para respetar WHOLESALEPRICE o PACK_DISCOUNT_PCT
-                      price = resolvePackUnitPrice(p);
+                      price = Math.round(basePrice * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
                       origPrice = p.PRICE;
                     }
                   } else if (!activeOffer && p.PACKQTY && p.PACKQTY > 1) {
@@ -1085,7 +1083,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         ) : null}
                         <button onClick={() => {
                           const qtyToAdd = (catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY ? p.PACKQTY : 1;
-                          const overridePrice = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? (p.WHOLESALEPRICE || p.PRICE) : undefined;
+                          const overridePrice = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? (catalogMode === 'paquetes' && !isDisableDiscounts(p) ? Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : (p.WHOLESALEPRICE || p.PRICE)) : undefined;
                           !outOfStock && addItem(p, qtyToAdd, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, overridePrice, (catalogMode === 'paquetes' || catalogMode === 'embalajes'));
                         }} disabled={outOfStock} className="pk-add-btn"
                           style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: outOfStock ? '#f3f4f6' : gradientColor, color: outOfStock ? '#9ca3af' : buttonTextColor, fontSize: 12, fontWeight: 700, cursor: outOfStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: outOfStock ? 'none' : `0 4px 14px ${shadowColor}`, fontFamily: 'inherit' }}>
@@ -1135,12 +1133,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     price = p.WHOLESALEPRICE || p.PRICE;
                     origPrice = p.PRICE;
                   } else if (catalogMode === 'paquetes') {
-                    if (isLiveShoppingProduct(p) && !isDisableDiscounts(p)) {
-                      const liveDiscount = getLiveShoppingDiscountPercent(p.$createdAt!);
-                      price = Math.round((p.PRICE || 0) * (1 - liveDiscount / 100));
-                      origPrice = p.PRICE;
+                    const basePrice = p.PRICE || 0;
+                    if (isDisableDiscounts(p)) {
+                      price = basePrice;
+                      origPrice = null;
                     } else {
-                      price = resolvePackUnitPrice(p);
+                      price = Math.round(basePrice * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
                       origPrice = p.PRICE;
                     }
                   }
@@ -1238,7 +1236,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         </button>
                         <button className="pk-list-cart-btn" onClick={() => {
                           const qtyToAddL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY ? p.PACKQTY : 1;
-                          const overridePriceL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? (p.WHOLESALEPRICE || p.PRICE) : undefined;
+                          const overridePriceL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? (catalogMode === 'paquetes' && !isDisableDiscounts(p) ? Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : (p.WHOLESALEPRICE || p.PRICE)) : undefined;
                           !outOfStockL && addItem(p, qtyToAddL, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, overridePriceL, (catalogMode === 'paquetes' || catalogMode === 'embalajes'));
                         }} disabled={outOfStockL} title={outOfStockL ? "Sin stock" : ((catalogMode === 'paquetes' || catalogMode === 'embalajes') ? "Comprar paquete" : "Agregar al carrito")}
                           style={{ width: 40, height: 40, borderRadius: '50%', background: outOfStockL ? '#e5e7eb' : lightBgColor, border: outOfStockL ? 'none' : `1.5px solid ${lightBorderColor}`, color: outOfStockL ? '#9ca3af' : primaryColor, cursor: outOfStockL ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: outOfStockL ? 'none' : `0 2px 8px ${shadowColorLight}` }}>

@@ -168,9 +168,14 @@ export async function GET(request: NextRequest) {
     const isPackMode = mode === 'paquetes' || mode === 'embalajes';
     const priceOf = (p: any): number => {
       if (isPackMode) {
-        let price = p.WHOLESALEPRICE || p.PRICE || 0;
-        if (p.PACKQTY) price *= p.PACKQTY;
-        return price;
+        let base = p.PRICE || 0;
+        if (mode === 'paquetes' && !p.DISABLE_DISCOUNTS && p.SKU !== 'PROMO1') {
+          base = Math.round(base * (1 - 20 / 100));
+        } else if (mode === 'embalajes') {
+          base = p.WHOLESALEPRICE || p.PRICE || 0;
+        }
+        if (p.PACKQTY) base *= p.PACKQTY;
+        return base;
       }
       return resolveProductDisplayPrice(p, apertura).displayPrice;
     };
