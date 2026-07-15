@@ -475,7 +475,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
     const displayPrice = priceResolved.displayPrice;
     const packOverridePrice = isPaquetesMode && !isDisableDiscounts(displayProduct) ? Math.round((displayProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-    const effectivePrice = (isWholesaleQty ? displayProduct.WHOLESALEPRICE! : displayPrice) * qty;
+    const effectivePrice = (isPaquetesMode ? displayPrice : (isWholesaleQty ? displayProduct.WHOLESALEPRICE! : displayPrice)) * qty;
     const formattedPrice = formatPrice(effectivePrice);
 
     // 1. Inject variant thumbnails — clicking switches inline, no navigation

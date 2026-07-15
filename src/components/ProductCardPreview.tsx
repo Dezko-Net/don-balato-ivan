@@ -9,17 +9,18 @@ import { formatPrice } from '@/lib/appwrite';
 import { getProductImageUrl } from '@/lib/product-images';
 import { useCart } from '@/context/CartContext';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, PACK_BONUS_DISCOUNT_PCT, isDisableDiscounts } from '@/lib/apertura-promo';
 import { getSkuFromFeatures } from '@/lib/product-features';
 
 interface Props {
   product: Product;
   onClose: () => void;
+  isPackMode?: boolean;
 }
 
 type Phase = 'entering' | 'open' | 'closing';
 
-export default function ProductCardPreview({ product, onClose }: Props) {
+export default function ProductCardPreview({ product, onClose, isPackMode }: Props) {
   const { addItem } = useCart();
   const { settings: apertura } = useAperturaPromotion();
   const [phase, setPhase] = useState<Phase>('entering');
@@ -34,7 +35,13 @@ export default function ProductCardPreview({ product, onClose }: Props) {
     };
   }, []);
 
-  const pricing = resolveProductDisplayPrice(product, apertura);
+  const basePricing = resolveProductDisplayPrice(product, apertura);
+  const pricing = isPackMode && !isDisableDiscounts(product) ? (() => {
+    const base = product.PRICE || 0;
+    if (base <= 0) return basePricing;
+    const packUnitPrice = Math.round(base * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
+    return { displayPrice: packUnitPrice, originalPrice: base, hasDiscount: true, discountPercent: PACK_BONUS_DISCOUNT_PCT, fromApertura: false };
+  })() : basePricing;
   const price = pricing.displayPrice;
   const outOfStock = product.STOCK === 0;
   const isOpen = phase === 'open';
@@ -48,7 +55,8 @@ export default function ProductCardPreview({ product, onClose }: Props) {
 
   function handleBuy() {
     if (outOfStock) return;
-    addItem(product);
+    const packOverride = isPackMode && !isDisableDiscounts(product) ? Math.round((product.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+    addItem(product, isPackMode && product.PACKQTY ? product.PACKQTY : 1, undefined, undefined, packOverride, isPackMode);
     close();
   }
 
@@ -140,7 +148,10 @@ export default function ProductCardPreview({ product, onClose }: Props) {
           <div style={{ margin: '0 0 14px', display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
             <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#e396bf' }}>{formatPrice(price)}</p>
             {pricing.hasDiscount && pricing.originalPrice != null && (
-              <p style={{ margin: 0, fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
+              <>
+                <p style={{ margin: 0, fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#10b981' }}>-{pricing.discountPercent}% OFF</span>
+              </>
             )}
           </div>
           <button
@@ -157,7 +168,7 @@ export default function ProductCardPreview({ product, onClose }: Props) {
           >
             <ShoppingCart size={18} /> {outOfStock ? 'Sin stock' : 'Comprar ahora'}
           </button>
-          <Link prefetch={false} href={`/productos/${product.$id}`}
+          <Link prefetch={false} href={`/productos/${product.$id}${isPackMode ? '?mode=paquetes' : ''}`}
             onClick={close}
             style={{
               display: 'block', width: '100%', padding: 13, borderRadius: 14, textAlign: 'center',

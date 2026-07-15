@@ -260,7 +260,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES || '';
   const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
   const isWholesaleQty = hasWholesale && (isExact ? qty === (product.WHOLESALEMINQUANTITY || 0) : qty >= (product.WHOLESALEMINQUANTITY || 0));
-  const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice;
+  const effectivePrice = isPaquetesMode ? displayPrice : (isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice);
   const lineTotal = effectivePrice * qty;
   const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
   const stock = isLimitedStock ? product.STOCK! : 99999;

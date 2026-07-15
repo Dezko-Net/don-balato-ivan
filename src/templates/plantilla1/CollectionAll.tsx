@@ -1372,7 +1372,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       )}
 
       {/* Quick View Modal */}
-      {previewProduct && <ProductCardPreview product={previewProduct} onClose={() => setPreviewProduct(null)} />}
+      {previewProduct && <ProductCardPreview product={previewProduct} onClose={() => setPreviewProduct(null)} isPackMode={isPaquetes || isEmbalajes} />}
 
       {/* Image Zoom Modal */}
       {zoomImage && <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />}
