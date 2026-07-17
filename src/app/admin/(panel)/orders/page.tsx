@@ -1814,6 +1814,12 @@ function OrdersContent() {
                 <button
                   onClick={async () => {
                     try {
+                      // Open window IMMEDIATELY on click to avoid popup blocker
+                      const printWindow = window.open('', '_blank');
+                      if (printWindow) {
+                        printWindow.document.write('<html><head><title>Cargando PDF...</title></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><p style="color:#999;font-size:16px;">Generando PDF...</p></body></html>');
+                        printWindow.document.close();
+                      }
                       const items = JSON.parse(order.ITEMS || '[]');
                       const ids = items.map((i: any) => i.id).filter(Boolean) as string[];
                       const extraInfo: Record<string, { sku?: string; location?: any }> = {};
@@ -1830,7 +1836,7 @@ function OrdersContent() {
                           } catch {}
                         }
                       }
-                      generateOrderPdf(order as any, items as any, Object.keys(extraInfo).length > 0 ? extraInfo : undefined);
+                      generateOrderPdf(order as any, items as any, Object.keys(extraInfo).length > 0 ? extraInfo : undefined, printWindow);
                     } catch (e) {
                       console.error('Error generating PDF', e);
                     }

@@ -31,6 +31,7 @@ export function generateOrderPdf(
   order: Order,
   items: OrderItem[],
   productExtraInfo?: Record<string, ProductExtraInfo>,
+  existingWindow?: Window | null,
 ) {
   const printableItems = items.filter(i => !(i as any).missing);
   const hasSku = (productExtraInfo && printableItems.some(i => i.id && productExtraInfo[i.id]?.sku)) || printableItems.some(i => (i as any).sku);
@@ -185,8 +186,9 @@ export function generateOrderPdf(
 </body>
 </html>`;
 
-  const printWindow = window.open('', '_blank');
+  const printWindow = existingWindow || window.open('', '_blank');
   if (printWindow) {
+    printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
     // Auto-trigger print dialog after a brief delay
