@@ -232,10 +232,28 @@ export default function ProductsPage() {
   };
 
   const startAiCategorization = async () => {
-    // 1. Filter products based on mode
-    let targets = products;
+    // 1. Fetch ALL products from Appwrite (not just the current page)
+    let targets: Product[] = [];
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      let cursor: string | null = null;
+      const allProducts: Product[] = [];
+      do {
+        const q: any[] = [Query.limit(100), Query.orderDesc('$createdAt')];
+        if (cursor) q.push(Query.cursorAfter(cursor));
+        const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, q);
+        allProducts.push(...(resp.documents as unknown as Product[]));
+        cursor = resp.documents.length === 100 ? (resp.documents[resp.documents.length - 1] as any).$id : null;
+      } while (cursor);
+      targets = allProducts;
+    } catch (e: any) {
+      alert('Error al cargar productos: ' + e.message);
+      return;
+    }
+
     if (aiCategorizeMode === 'uncategorized') {
-      targets = products.filter(p => !p.CATEGORYID || p.CATEGORYID.trim() === '');
+      targets = targets.filter(p => !p.CATEGORYID || p.CATEGORYID.trim() === '');
     }
 
     if (targets.length === 0) {
@@ -334,6 +352,8 @@ export default function ProductsPage() {
 
       setApplyingProgress({ current: toApply.length, total: toApply.length });
       invalidateProductCache();
+      // Clear sessionStorage cache so fresh data is loaded from Appwrite
+      Object.keys(sessionStorage).forEach(k => { if (k.startsWith('admin_products_')) sessionStorage.removeItem(k); });
       alert(`¡Se categorizaron exitosamente ${toApply.length} producto(s)!`);
       setAiCategorizeModal(false);
       setAiCategorizeSuggestions([]);
@@ -588,12 +608,8 @@ export default function ProductsPage() {
       }
 
       const [cr, subRes] = await Promise.all([
-        cached('categories:all', TTL.categories, async () => {
-          return await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(20)]);
-        }),
-        cached('subcategories:all', TTL.categories, async () => {
-          return await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(20)]);
-        }),
+        databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
+        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(100)]),
       ]);
       
       if (isLoadMore) {
@@ -3090,7 +3106,7 @@ export default function ProductsPage() {
                         <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'uncategorized'} onChange={() => setAiCategorizeMode('uncategorized')} className="mt-1 text-gray-900 focus:ring-gray-800" />
                         <div>
                           <p className="font-semibold text-sm text-gray-900">Solo productos sin categoría</p>
-                          <p className="text-xs text-gray-500 mt-1">Recomendado. Procesará únicamente los productos que no tienen ninguna categoría asignada ({products.filter(p => !p.CATEGORYID || p.CATEGORYID.trim() === '').length} encontrados).</p>
+                          <p className="text-xs text-gray-500 mt-1">Recomendado. Procesará únicamente los productos que no tienen ninguna categoría asignada ({products.filter(p => !p.CATEGORYID || p.CATEGORYID.trim() === '').length} encontrados en esta página).</p>
                         </div>
                       </label>
 
@@ -3098,7 +3114,7 @@ export default function ProductsPage() {
                         <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'all'} onChange={() => setAiCategorizeMode('all')} className="mt-1 text-gray-900 focus:ring-gray-800" />
                         <div>
                           <p className="font-semibold text-sm text-gray-900">Todos los productos</p>
-                          <p className="text-xs text-gray-500 mt-1">Procesará la totalidad de tu catálogo de productos ({products.length} productos) para re-evaluarlos.</p>
+                          <p className="text-xs text-gray-500 mt-1">Procesará la totalidad de tu catálogo de productos ({globalStats?.total ?? products.length} productos) para re-evaluarlos.</p>
                         </div>
                       </label>
                     </div>

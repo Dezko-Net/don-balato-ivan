@@ -2242,7 +2242,9 @@ export default function HomePage23() {
       if (pcNavUl) {
         const homeLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;color:#e396bf">Inicio</span></a></li>`;
         const storeLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/productos" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Tienda</span></a></li>`;
-        const packLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/paquetes" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Paquetes</span></a></li>`;
+        // 📦 Paquetes OCULTO (jul 2026): todo pedido es mayorista vía precios por
+        // volumen — para restaurar, re-añadir packLink al innerHTML de abajo.
+        // const packLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/paquetes" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Paquetes</span></a></li>`;
         
         const catLinks = categories.map((cat: any) => `
           <li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/categoria/${cat.$id}" title="${cat.name}" aria-label="${cat.name}" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:500;">${cat.name}</span></a></li>
@@ -2250,7 +2252,7 @@ export default function HomePage23() {
 
         const ordersLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus ml-auto"><a href="/cuenta/pedidos" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;color:#333">Mis Pedidos</span></a></li>`;
         
-        pcNavUl.innerHTML = homeLink + storeLink + packLink + catLinks + ordersLink;
+        pcNavUl.innerHTML = homeLink + storeLink + catLinks + ordersLink;
       }
 
       // 2. Mobile Drawer Menu
@@ -2261,8 +2263,8 @@ export default function HomePage23() {
         `;
 
         const homeLi = makeDrawerLi('Inicio', '/', true, '#e396bf');
-        const storeLi = makeDrawerLi('Tienda (Unidad)', '/productos', true);
-        const packLi = makeDrawerLi('Catálogo Paquetes', '/paquetes', true);
+        const storeLi = makeDrawerLi('Tienda', '/productos', true);
+        // 📦 Paquetes oculto: sin entrada "Catálogo Paquetes" en el drawer
         
         const catHeader = categories.length > 0 ? `<li class="px-4 py-3 text-xs text-gray-400 font-bold uppercase tracking-wider bg-gray-50">Categorías</li>` : '';
         const catLis = categories.map((cat: any) => makeDrawerLi(cat.name, `/categoria/${cat.$id}`, false)).join('');
@@ -2270,7 +2272,7 @@ export default function HomePage23() {
         const ordersLi = makeDrawerLi('Mis Pedidos', '/cuenta/pedidos', true);
         const loginLi = makeDrawerLi('Mi Cuenta', '/cuenta', true);
         
-        drawerUl.innerHTML = homeLi + storeLi + packLi + catHeader + catLis + `<div class="h-2 bg-gray-50"></div>` + ordersLi + loginLi;
+        drawerUl.innerHTML = homeLi + storeLi + catHeader + catLis + `<div class="h-2 bg-gray-50"></div>` + ordersLi + loginLi;
       }
     }
     // ────────────────────────────────────────────────────────

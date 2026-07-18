@@ -105,7 +105,9 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
               </button>
             </div>
 
-            {p.PACKQTY && p.PACKQTY > 1 && (
+            {/* 📦 Selector "Por pack" OCULTO (jul 2026): los precios por volumen
+                ya aplican solos el nivel mayorista según la cantidad */}
+            {false && p.PACKQTY && p.PACKQTY! > 1 && (
               <select
                 value={incrementMode}
                 onChange={(e) => {

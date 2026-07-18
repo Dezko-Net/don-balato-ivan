@@ -18,6 +18,10 @@ export interface Product {
   NUMREVIEWS?: number;
   WHOLESALEPRICE?: number;
   WHOLESALEMINQUANTITY?: number;
+  /** Precio intermedio (6-11 un. con packQty 12): puente entre detalle y mayor */
+  INTERMEDIATEPRICE?: number;
+  /** Precio por caja (2+ paquetes): el más bajo de todos */
+  BOXPRICE?: number;
   PACKQTY?: number;
   PACK_MIN_PACKS?: number;
   PACK_DISCOUNT_PCT?: number;

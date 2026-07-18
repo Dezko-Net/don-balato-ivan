@@ -3,8 +3,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { CartItem, Product } from '@/types';
 import { useToast } from '@/components/Toast';
-import { resolveProductDisplayPrice, resolvePackUnitPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { hasVolumePricing, resolveVolumeUnitPrice } from '@/lib/volume-pricing';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { getServices, getAppwriteConfig } from '@/lib/appwrite';
@@ -80,37 +81,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return item.wholesalePrice * item.quantity;
     }
     
-    if (item.isPack) {
-      return resolvePackUnitPrice(item.product) * item.quantity;
+    // 📦 Precios por volumen (detalle/intermedio/mayor/caja según cantidad).
+    // Reemplaza al viejo wholesale + el descuento artificial de pack (20%),
+    // que fue ELIMINADO: ya no existe ningún descuento fabricado en el código.
+    // Va ANTES que isPack: con Paquetes oculto, el flag isPack de carritos
+    // guardados no debe pisar el nivel de volumen (p. ej. precio caja).
+    if (hasVolumePricing(item.product)) {
+      return resolveVolumeUnitPrice(item.product, item.quantity) * item.quantity;
     }
-    
+
+    if (item.isPack) {
+      const base = item.product.PRICE || 0;
+      const packPrice = item.product.WHOLESALEPRICE && item.product.WHOLESALEPRICE > 0 ? item.product.WHOLESALEPRICE : base;
+      return packPrice * item.quantity;
+    }
+
     const pFeatures = Array.isArray(item.product.FEATURES) ? item.product.FEATURES.join('\n') : item.product.FEATURES || '';
     const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
     const minQty = item.product.WHOLESALEMINQUANTITY || 0;
     const qtyMatches = isExact ? item.quantity === minQty : item.quantity >= minQty;
     const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
-    
+
     if (hasConfiguredWholesale && qtyMatches) {
       return item.product.WHOLESALEPRICE! * item.quantity;
     }
-    
-    const packQty = item.product.PACKQTY;
-    const originalPrice = item.product.PRICE || 0;
-    
-    if (packQty && packQty > 1 && item.quantity >= packQty && item.product.SKU !== 'PROMO1') {
-      const fullPacks = Math.floor(item.quantity / packQty);
-      const remainder = item.quantity % packQty;
-      
-      const packDiscPct = item.product.PACK_DISCOUNT_PCT && item.product.PACK_DISCOUNT_PCT > 0 
-        ? item.product.PACK_DISCOUNT_PCT 
-        : 20;
-      
-      const packPriceUnit = Math.round(originalPrice * (1 - packDiscPct / 100));
-      const remainderPriceUnit = originalPrice;
-      
-      return (fullPacks * packQty * packPriceUnit) + (remainder * remainderPriceUnit);
-    }
-    
+
     const basePriceDisplay = resolveProductDisplayPrice(item.product, apertura).displayPrice;
     return basePriceDisplay * item.quantity;
   };

@@ -32,12 +32,16 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // JS/CSS assets ya tienen hash en el nombre — cachearlos sí
+        // JS/CSS assets: en PRODUCCIÓN llevan hash en el nombre → immutable OK.
+        // En DEV los chunks NO llevan hash (app/carrito/page.js) — cachearlos
+        // 1 año hacía que el navegador ejecutara código viejo tras cada cambio.
         source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: process.env.NODE_ENV === 'production'
+              ? 'public, max-age=31536000, immutable'
+              : 'no-store, must-revalidate',
           },
         ],
       },

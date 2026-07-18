@@ -1,6 +1,6 @@
-'use client';
-import DynamicCollectionAll from '@/components/DynamicCollectionAll';
+import { redirect } from 'next/navigation';
 
 export default function PaquetesPage() {
-  return <DynamicCollectionAll catalogMode="paquetes" />;
+  redirect('/productos');
 }
+

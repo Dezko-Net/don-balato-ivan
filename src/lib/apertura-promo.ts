@@ -29,26 +29,6 @@ export function isDisableDiscounts(product: ProductPriceLike): boolean {
   return /DisableDiscounts:\s*true/i.test(featuresStr);
 }
 
-/** Porcentaje de descuento al comprar en paquete (cuando no hay PACK_DISCOUNT_PCT específico). */
-export const PACK_BONUS_DISCOUNT_PCT = 20;
-
-/**
- * Precio efectivo por unidad cuando se compra como paquete.
- * Usa WHOLESALEPRICE si está definido; si no, aplica PACK_DISCOUNT_PCT o el 20% base.
- */
-export function resolvePackUnitPrice(product: ProductPriceLike): number {
-  const base = product.PRICE || 0;
-  if (!base) return 0;
-  if (isDisableDiscounts(product)) return base;
-  if (product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0) {
-    return product.WHOLESALEPRICE;
-  }
-  const pct = product.PACK_DISCOUNT_PCT && product.PACK_DISCOUNT_PCT > 0
-    ? product.PACK_DISCOUNT_PCT
-    : PACK_BONUS_DISCOUNT_PCT;
-  return Math.round(base * (1 - pct / 100));
-}
-
 export type ResolvedProductPrice = {
   displayPrice: number;
   originalPrice: number | null;
@@ -58,83 +38,10 @@ export type ResolvedProductPrice = {
 };
 
 const DEFAULT_SETTINGS: AperturaSettings = {
-  isActive: true,
-  discountPercent: 10,
+  isActive: false,
+  discountPercent: 0,
   minPurchase: 0,
 };
-
-export function getAperturaDiscountedPrice(price: number, discountPercent: number): number {
-  if (!price || discountPercent <= 0) return price;
-  return Math.round(price * (1 - discountPercent / 100));
-}
-
-/** Threshold del Live Shopping: 5PM todos los días. */
-export function getLiveShoppingThreshold(): Date {
-  const now = new Date();
-  const today5Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
-  if (now.getTime() >= today5Pm.getTime()) {
-    return today5Pm;
-  } else {
-    const yesterday5Pm = new Date(today5Pm);
-    yesterday5Pm.setDate(yesterday5Pm.getDate() - 1);
-    return yesterday5Pm;
-  }
-}
-
-/** Próximo Live Shopping a las 5PM. */
-export function getNextLiveShoppingTime(): Date {
-  const now = new Date();
-  const today5Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
-  if (now.getTime() < today5Pm.getTime()) {
-    return today5Pm;
-  } else {
-    const tomorrow5Pm = new Date(today5Pm);
-    tomorrow5Pm.setDate(tomorrow5Pm.getDate() + 1);
-    return tomorrow5Pm;
-  }
-}
-
-/**
- * Determina si un producto de live shopping todavía tiene el 20% off.
- * Reglas:
- * - 20% off durante 1 semana desde que fue importado.
- * - Cada domingo a las 12AM, revierte a 10% off (solo unit, pack vuelve a precio normal).
- * - Si ya pasó un domingo desde la importación, el descuento baja a 10%.
- */
-export function getLiveShoppingDiscountPercent(importedAt: string): number {
-  const importedTime = new Date(importedAt).getTime();
-  const now = Date.now();
-  const oneWeek = 7 * 24 * 60 * 60 * 1000;
-
-  // Si pasó más de una semana, solo 10%
-  if (now - importedTime > oneWeek) return 10;
-
-  // Buscar el domingo más reciente a las 00:00 que sea posterior a importedAt
-  const importedDate = new Date(importedAt);
-  // Encontrar el próximo domingo 00:00 después de importado
-  const nextSundayMidnight = new Date(importedDate);
-  const dayOfWeek = importedDate.getDay(); // 0=domingo, 6=sábado
-  const daysUntilSunday = (7 - dayOfWeek) % 7;
-  // Si es domingo y ya pasó medianoche, el próximo domingo es en 7 días
-  if (dayOfWeek === 0 && importedDate.getHours() >= 0) {
-    // Si fue importado un domingo, el siguiente domingo es +7 días
-    nextSundayMidnight.setDate(nextSundayMidnight.getDate() + 7);
-  } else {
-    nextSundayMidnight.setDate(nextSundayMidnight.getDate() + daysUntilSunday);
-  }
-  nextSundayMidnight.setHours(0, 0, 0, 0);
-
-  // Si ya pasó un domingo 00:00 desde la importación, bajar a 10%
-  if (now >= nextSundayMidnight.getTime()) return 10;
-
-  // Todavía no ha pasado un domingo desde la importación → 20%
-  return 20;
-}
-
-/** Verifica si un producto es de live shopping (tiene $createdAt válido). */
-export function isLiveShoppingProduct(_product: ProductPriceLike): boolean {
-  return false;
-}
 
 /** Precio mostrado: oferta del producto (CURRENTPRICE) tiene prioridad sobre promoción apertura. */
 export function resolveProductDisplayPrice(
@@ -167,20 +74,6 @@ export function resolveProductDisplayPrice(
       originalPrice: null,
       hasDiscount: false,
       discountPercent: 0,
-      fromApertura: false,
-    };
-  }
-
-  // 0. Live Shopping promotion: 20% off for 1 week, then 10% after Sunday 12AM
-  const isLiveShopping = isLiveShoppingProduct(product);
-  if (isLiveShopping) {
-    const discountPercent = getLiveShoppingDiscountPercent(product.$createdAt!);
-    const displayPrice = Math.round(effectiveBase * (1 - discountPercent / 100));
-    return {
-      displayPrice,
-      originalPrice: effectiveBase,
-      hasDiscount: true,
-      discountPercent,
       fromApertura: false,
     };
   }
@@ -219,22 +112,6 @@ export function resolveProductDisplayPrice(
     }
   }
 
-  // Suppress apertura discount if live logic has disableApertura flag or product is PROMO1
-  const suppressApertura = liveLogic?.disableApertura === true || isDisableDiscounts(product);
-
-  if (!suppressApertura && apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
-    const displayPrice = getAperturaDiscountedPrice(effectiveBase, apertura.discountPercent);
-    if (displayPrice < effectiveBase) {
-      return {
-        displayPrice,
-        originalPrice: effectiveBase,
-        hasDiscount: true,
-        discountPercent: apertura.discountPercent,
-        fromApertura: true,
-      };
-    }
-  }
-
   return {
     displayPrice: effectiveBase,
     originalPrice: null,
@@ -262,17 +139,3 @@ export async function fetchAperturaSettings(): Promise<AperturaSettings> {
   }
 }
 
-/**
- * Determina si la promoción global de mayorista (20% OFF por 12+ unidades) está activa.
- * Inicia: 2026-07-01T21:00:00-04:00
- * Termina: 2026-07-06T12:00:00-04:00 (Lunes a las 12 PM)
- */
-export function isWholesalePromoActive(): boolean {
-  const now = Date.now();
-  // July 1, 2026 21:00:00 EDT/AST is 2026-07-01T21:00:00-04:00 -> 1782954000000 ms
-  // Let's use Date objects to be safe with timezone
-  const start = new Date('2026-07-01T21:00:00-04:00').getTime();
-  const end = new Date('2026-07-06T12:00:00-04:00').getTime();
-  
-  return now >= start && now < end;
-}

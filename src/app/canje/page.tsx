@@ -85,7 +85,7 @@ export default function CanjePage() {
   const isOverLimit = cartTotal > creditWithMargin;
 
   const addToCart = (product: CanjeProduct) => {
-    const price = Math.round((product.PRICE || 0) * 0.8);
+    const price = product.PRICE || 0;
     const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES || '';
     const pTags = Array.isArray(product.TAGS) ? product.TAGS.join(',') : product.TAGS || '';
     const sku = getSkuFromFeatures(pFeatures, pTags, (product as any).jumpseller_id, (product as any).sku);
@@ -268,15 +268,12 @@ export default function CanjePage() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">📦</div>
                       )}
-                      <span className="absolute top-2 right-2 bg-white/90 backdrop-blur text-pink-600 font-black text-[10px] px-2 py-0.5 rounded-full shadow-sm">
-                        -20%
-                      </span>
                     </div>
                     <div className="p-3 flex-1 flex flex-col">
                       <h3 className="font-bold text-gray-900 text-xs leading-snug line-clamp-2 mb-2 min-h-[32px]">{p.NAME}</h3>
                       <div className="flex items-baseline gap-2 mb-3">
-                        <span className="font-black text-gray-950 text-base">{fmt(Math.round((p.PRICE || 0) * 0.8))}</span>
-                        <span className="text-[11px] text-gray-400 line-through font-medium">{fmt(p.PRICE)}</span>
+                        <span className="font-black text-gray-950 text-base">{fmt(p.PRICE || 0)}</span>
+                        <span className="text-[11px] text-gray-400 line-through font-medium hidden">{fmt(p.PRICE)}</span>
                       </div>
                       <button
                         onClick={() => addToCart(p)}

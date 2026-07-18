@@ -132,7 +132,7 @@ async function main() {
     const p = products[i];
     try {
       const originalPrice = Math.round(Number(p.price)) || 0;
-      const wholesalePrice = Math.round(originalPrice * 0.90);
+      const wholesalePrice = originalPrice;
       const packQty = Math.round(Number(p.packQty)) || 0;
       const categoryId = categoryMap.get(p.productType) || '';
       let features = setSkuInFeatures('', p.sku);

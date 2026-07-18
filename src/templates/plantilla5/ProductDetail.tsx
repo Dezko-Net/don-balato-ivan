@@ -21,7 +21,7 @@ import { Query } from 'appwrite';
 import { Product, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice, PACK_BONUS_DISCOUNT_PCT, isDisableDiscounts } from '@/lib/apertura-promo';
+import { getVolumeTiers, resolveVolumeTier, nextCheckpoint, prevCheckpoint, type VolumeTier } from '@/lib/volume-pricing';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import ReviewSection from '@/components/ReviewSection';
 import ProductQuestions from '@/components/ProductQuestions';
@@ -123,7 +123,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const id = previewProductId || params.productId || params.id;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isPaquetesMode = searchParams.get('mode') === 'paquetes';
+  // 📦 Paquetes OCULTO (jul 2026): mode=paquetes ya no fuerza comportamiento
+  // de pack — el precio por volumen aplica solo. Restaurar: volver a leer el param.
+  const isPaquetesMode = false; // searchParams.get('mode') === 'paquetes'
   const { addItem } = useCart();
   const { unlimitedStock } = useStoreSettings();
   const [product, setProduct] = useState<Product | null>(null);
@@ -145,6 +147,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const activeVariantProduct = linkedProducts.find(lp => lp.$id === activeVariantId) || product;
 
   const [refElement, setRefElement] = useState<HTMLDivElement | null>(null);
+  // Ref al producto cuyo precio se muestra (variante activa): los listeners DOM
+  // del stepper se bindean una sola vez y necesitan leer el producto vigente.
+  const pricingProductRef = useRef<Product | null>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reviewsTarget, setReviewsTarget] = useState<HTMLElement | null>(null);
@@ -271,7 +276,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const switchVariant = (targetProduct: Product) => {
     if (!refElement) return;
     const root = refElement;
-    const vImages = [targetProduct.IMAGEURL, (targetProduct as any).IMAGEURL2, (targetProduct as any).IMAGEURL3].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
+    const vImages = [targetProduct.IMAGEURL, (targetProduct as any).IMAGEURL2, (targetProduct as any).IMAGEURL3, (targetProduct as any).IMAGEURL4, (targetProduct as any).IMAGEURL5].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
 
     // Update main gallery images (excluding thumbnails to prevent overwriting thumbnail row)
     root.querySelectorAll('.product__media img, .global-media-settings img, img[src*="LogoPoloRed"], .product__media-list img, .media img').forEach((img: any, idx: number) => {
@@ -304,12 +309,14 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     });
 
     // Update thumbnail list images to show the different views
-    root.querySelectorAll('.media-gallery__carousel-thumbnails img, .media-gallery__grid-thumbnails img, .thumbnail-list__item img').forEach((img: any, idx: number) => {
+    root.querySelectorAll('.media-gallery__carousel-thumbnails .carousel__thumbnail, .media-gallery__grid-thumbnails .media-gallery__item, .media-gallery__grid-thumbnails .thumbnail-list__item, .media-gallery__grid-thumbnails li').forEach((thumb: any, idx: number) => {
       const targetImg = vImages[idx % vImages.length] || vImages[0];
-      img.src = targetImg;
-      if (img.srcset) img.srcset = targetImg;
-      img.setAttribute('src', targetImg);
-      img.setAttribute('srcset', targetImg);
+      thumb.querySelectorAll('img, source').forEach((img: any) => {
+        img.src = targetImg;
+        img.srcset = targetImg;
+        img.setAttribute('src', targetImg);
+        img.setAttribute('srcset', targetImg);
+      });
     });
 
     // Update title
@@ -337,15 +344,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         e.preventDefault();
         e.stopPropagation();
         const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-        const hasWholesaleTarget = !!(targetProduct.WHOLESALEPRICE && targetProduct.WHOLESALEMINQUANTITY && targetProduct.WHOLESALEPRICE > 0);
-        const pFeaturesTarget = Array.isArray(targetProduct.FEATURES) ? targetProduct.FEATURES.join('\n') : targetProduct.FEATURES || '';
-        const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
-        const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
-
-        const targetPackQty = targetProduct.PACKQTY || 0;
-        const targetIsPackQty = isPaquetesMode && targetPackQty > 1 && qty >= targetPackQty;
-        const targetPackOverride = targetIsPackQty && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : targetPackOverride, isPaquetesMode);
+        // 📦 El carrito resuelve solo el nivel de volumen según la cantidad
+        addItem(targetProduct, qty, undefined, undefined, undefined, isPaquetesMode);
         const textContent = newBtn.querySelector('.add-to-cart-text__content');
         if (textContent) {
           const originalText = textContent.textContent;
@@ -364,15 +364,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         e.preventDefault();
         e.stopPropagation();
         const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-        const hasWholesaleTarget = !!(targetProduct.WHOLESALEPRICE && targetProduct.WHOLESALEMINQUANTITY && targetProduct.WHOLESALEPRICE > 0);
-        const pFeaturesTarget = Array.isArray(targetProduct.FEATURES) ? targetProduct.FEATURES.join('\n') : targetProduct.FEATURES || '';
-        const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
-        const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
-
-        const targetPackQtyBuy = targetProduct.PACKQTY || 0;
-        const targetIsPackQtyBuy = isPaquetesMode && targetPackQtyBuy > 1 && qty >= targetPackQtyBuy;
-        const targetPackOverrideBuy = targetIsPackQtyBuy && !isDisableDiscounts(targetProduct) ? Math.round((targetProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : targetPackOverrideBuy, isPaquetesMode);
+        // 📦 El carrito resuelve solo el nivel de volumen según la cantidad
+        addItem(targetProduct, qty, undefined, undefined, undefined, isPaquetesMode);
         router.push('/carrito');
       });
     }
@@ -453,35 +446,14 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
       : product;
 
-    // Resolve prices and wholesale rules
-    const hasWholesale = !!(displayProduct.WHOLESALEPRICE && displayProduct.WHOLESALEMINQUANTITY && displayProduct.WHOLESALEPRICE > 0);
-    const pFeatures = Array.isArray(displayProduct.FEATURES) ? displayProduct.FEATURES.join('\n') : displayProduct.FEATURES || '';
-    const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
-    const isWholesaleQty = hasWholesale && (isExact ? qty === (displayProduct.WHOLESALEMINQUANTITY || 0) : qty >= (displayProduct.WHOLESALEMINQUANTITY || 0));
-
-    const basePriceResolved = activeOffer ? {
-      displayPrice: activeOffer.discountPrice,
-      originalPrice: activeOffer.originalPrice,
-      hasDiscount: true,
-      discountPercent: activeOffer.discountPercentage,
-      fromApertura: false
-    } : resolveProductDisplayPrice(displayProduct, apertura);
-
-    // En modo paquetes, 20% solo cuando qty >= PACKQTY; si no, precio normal
-    const packQty = displayProduct.PACKQTY || 0;
-    const isPackQtyReached = isPaquetesMode && packQty > 1 && qty >= packQty;
-    const priceResolved = isPackQtyReached && !activeOffer ? (() => {
-      const base = displayProduct.PRICE || 0;
-      if (isDisableDiscounts(displayProduct) || base <= 0) {
-        return { displayPrice: base, originalPrice: null as number | null, hasDiscount: false, discountPercent: 0, fromApertura: false };
-      }
-      const packUnitPrice = Math.round(base * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
-      return { displayPrice: packUnitPrice, originalPrice: base, hasDiscount: true, discountPercent: PACK_BONUS_DISCOUNT_PCT, fromApertura: false };
-    })() : basePriceResolved;
-
-    const displayPrice = priceResolved.displayPrice;
-    const packOverridePrice = isPackQtyReached && !isDisableDiscounts(displayProduct) ? Math.round((displayProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-    const effectivePrice = (isPackQtyReached ? displayPrice : (isWholesaleQty ? displayProduct.WHOLESALEPRICE! : displayPrice)) * qty;
+    // 📦 Precios por Volumen (4 niveles: detalle/intermedio/mayor/caja).
+    // SIN descuentos artificiales: el precio unitario depende SOLO de la
+    // cantidad seleccionada. Nada de apertura, ofertas ni overrides.
+    pricingProductRef.current = displayProduct;
+    const volumeTiers = getVolumeTiers(displayProduct);
+    const activeTier = resolveVolumeTier(displayProduct, qty);
+    const unitPrice = activeTier.unitPrice;
+    const effectivePrice = unitPrice * qty;
     const formattedPrice = formatPrice(effectivePrice);
 
     // 1. Inject variant thumbnails — clicking switches inline, no navigation
@@ -512,7 +484,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               style="display: block; width: 80px; height: 80px; border-radius: 16px; overflow: hidden; ${borderStyle} cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: #ffffff; padding: 3px; outline: none; position: relative;"
               title="${label || lp.NAME}"
             >
-              <img src="${imgUrl}" alt="${label || lp.NAME}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" />
+              <img src="${imgUrl}" alt="${label || lp.NAME}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px; background: #ffffff;" />
             </button>
           `;
         });
@@ -625,9 +597,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             img.style.cssText = `
               width: 100% !important;
               height: 100% !important;
-              object-fit: cover !important;
+              object-fit: contain !important;
               display: block !important;
               border-radius: 50% !important;
+              background: #ffffff !important;
               pointer-events: none !important;
             `;
             slide.appendChild(img);
@@ -764,29 +737,24 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const priceContainers = Array.from(root.querySelectorAll('.yaxsell-product-price-container, product-price, .product-price'));
     const mainPriceContainer = priceContainers.find(el => !el.closest('.product-card') && !el.closest('.quick-add') && !el.closest('#quick-add-drawer')) || priceContainers[0];
 
-    // Solo mostrar tachado/badge cuando el producto tiene un descuento REAL.
-    // Antes se fabricaba un precio original (PRICE/0.8) y un "-20%" para todo
-    // producto sin descuento — incluidos los bloqueados (DisableDiscounts/PROMO1).
-    const hasRealDiscount = priceResolved.hasDiscount && priceResolved.originalPrice != null && priceResolved.originalPrice > priceResolved.displayPrice;
-    const originalVal = (priceResolved.originalPrice || 0) * qty;
-    const originalFormatted = formatPrice(originalVal);
-    const effectiveDiscountPercent = hasRealDiscount && originalVal > 0
-      ? Math.round((1 - effectivePrice / originalVal) * 100)
-      : 0;
-
+    // 💰 Precio limpio: total grande + chip del nivel activo + desglose.
+    // CERO descuentos: sin tachados, sin badges de -X%, sin porcentajes.
     if (mainPriceContainer) {
-      const discountHtml = hasRealDiscount ? `
-          <span class="yaxsell-price-regular-custom" style="font-size: 14px !important; color: #000000 !important; text-decoration: line-through !important; margin: 0 !important; display: inline-block !important; visibility: visible !important; opacity: 1 !important;">
-            ${originalFormatted}
-          </span>
-          <span class="yaxsell-apertura-disc-badge-custom" style="display: inline-flex !important; align-items: center !important; gap: 4px !important; padding: 4px 10px !important; border-radius: 999px !important; font-size: 12px !important; font-weight: 900 !important; letter-spacing: 0.04em !important; color: #fff !important; background: linear-gradient(135deg, #f472b6 0%, #db2777 100%) !important; box-shadow: 0 2px 8px rgba(219,39,119,0.2), 0 0 0 1px rgba(255,255,255,0.35) inset !important; text-transform: uppercase !important; line-height: 1 !important; visibility: visible !important; opacity: 1 !important;">
-            <span class="apertura-disc-spark">✦</span>-${effectiveDiscountPercent}%
+      const tierChip = volumeTiers.length > 1 ? `
+          <span class="yaxsell-tier-chip" style="display: inline-flex !important; align-items: center !important; gap: 5px !important; padding: 5px 12px !important; border-radius: 999px !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; color: #db2777 !important; background: #fdf2f8 !important; border: 1.5px solid #fbcfe8 !important; line-height: 1 !important;">
+            Precio ${activeTier.label}
           </span>` : '';
+      const totalLine = qty > 1 ? `
+          <div style="font-size: 13px !important; font-weight: 600 !important; color: #6b7280 !important; font-family: 'Bricolage Grotesque', sans-serif !important;">
+            ${qty} unidades × ${formatPrice(unitPrice)} c/u
+          </div>` : '';
       const priceHtml = `
-        <div class="yaxsell-price-container-custom" style="display: flex !important; align-items: center !important; gap: 10px !important; flex-wrap: wrap !important; font-family: 'Bricolage Grotesque', sans-serif !important;">
-          <span class="yaxsell-price-sale-custom" style="font-size: 36px !important; font-weight: 800 !important; color: #db2777 !important; display: inline-block !important;">
-            ${formattedPrice}
-          </span>${discountHtml}
+        <div class="yaxsell-price-container-custom" style="display: flex !important; flex-direction: column !important; gap: 4px !important; font-family: 'Bricolage Grotesque', sans-serif !important;">
+          <div style="display: flex !important; align-items: center !important; gap: 10px !important; flex-wrap: wrap !important;">
+            <span class="yaxsell-price-sale-custom" style="font-size: 36px !important; font-weight: 800 !important; color: #111827 !important; display: inline-block !important;">
+              ${formattedPrice}
+            </span>${tierChip}
+          </div>${totalLine}
         </div>
       `;
       mainPriceContainer.innerHTML = priceHtml;
@@ -799,103 +767,95 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       }
     });
 
-    // 4b. Inject/Update Wholesale Box & Badge
-    // Use mainPriceContainer directly as anchor — no .price child since we replaced innerHTML with yaxsell classes
+    // 4b. 📦 Tabla de Precios por Volumen — 4 niveles con umbrales dinámicos
+    // según el PACKQTY de cada producto. Click en un nivel = saltar a su cantidad.
+    // Sin porcentajes ni "descuentos": solo los precios reales de cada nivel.
     const priceAnchor = mainPriceContainer as HTMLElement | null;
     if (priceAnchor) {
-      // Notice Box - wholesale progress
-      let wholesaleBox = root.querySelector('#yaxsell-wholesale-box') as HTMLElement | null;
-      if (hasWholesale) {
-        if (!wholesaleBox) {
-          wholesaleBox = document.createElement('div');
-          wholesaleBox.id = 'yaxsell-wholesale-box';
-          // Place it right after the price container
-          priceAnchor.parentNode?.insertBefore(wholesaleBox, priceAnchor.nextSibling);
+      // Limpieza de la caja mayorista antigua si quedó en el DOM
+      root.querySelector('#yaxsell-wholesale-box')?.remove();
+      let volumeBox = root.querySelector('#yaxsell-volume-box') as HTMLElement | null;
+      if (volumeTiers.length > 1) {
+        if (!volumeBox) {
+          volumeBox = document.createElement('div');
+          volumeBox.id = 'yaxsell-volume-box';
+          priceAnchor.parentNode?.insertBefore(volumeBox, priceAnchor.nextSibling);
+        }
+        volumeBox.style.cssText = 'width: 100%; margin-top: 18px;';
+
+        const rangeLabel = (t: VolumeTier) => t.maxQty != null ? `${t.minQty}–${t.maxQty} un.` : `${t.minQty}+ un.`;
+
+        const cardsHtml = volumeTiers.map(t => {
+          const isActive = t.key === activeTier.key;
+          return `
+            <button type="button" data-tier-qty="${t.minQty}" style="
+              display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+              padding: 14px 6px 10px; border-radius: 14px; cursor: pointer; position: relative;
+              font-family: 'Bricolage Grotesque', sans-serif; text-align: center; width: 100%;
+              transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+              background: ${isActive ? 'linear-gradient(160deg, #fdf2f8, #ffffff)' : '#ffffff'};
+              border: ${isActive ? '2px solid #db2777' : '1.5px solid #e5e7eb'};
+              box-shadow: ${isActive ? '0 8px 18px rgba(219,39,119,0.14)' : '0 1px 3px rgba(0,0,0,0.04)'};
+              transform: ${isActive ? 'translateY(-3px)' : 'none'};
+            ">
+              ${isActive ? `<span style="position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: #db2777; color: #fff; font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; padding: 2.5px 8px; border-radius: 999px; text-transform: uppercase; white-space: nowrap;">Tu precio</span>` : ''}
+              <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: ${isActive ? '#db2777' : '#9ca3af'};">${t.label}</span>
+              <span style="font-size: ${isActive ? '17px' : '15px'}; font-weight: 800; color: ${isActive ? '#111827' : '#374151'}; line-height: 1.1;">${formatPrice(t.unitPrice)}</span>
+              <span style="font-size: 10px; font-weight: 600; color: #9ca3af;">c/u · ${rangeLabel(t)}</span>
+            </button>`;
+        }).join('');
+
+        // Empujoncito hacia el siguiente nivel (solo el precio real, sin %)
+        const nextTier = volumeTiers.find(t => t.minQty > qty);
+        let nudgeHtml = '';
+        if (nextTier) {
+          const needed = nextTier.minQty - qty;
+          const progress = Math.min(100, Math.round((qty / nextTier.minQty) * 100));
+          nudgeHtml = `
+            <div style="margin-top: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span style="font-size: 12px; font-weight: 700; color: #374151; font-family: 'Bricolage Grotesque', sans-serif;">
+                  🎯 Lleva ${needed} más y paga <span style="color: #db2777; font-weight: 900;">${formatPrice(nextTier.unitPrice)} c/u</span>
+                </span>
+                <span style="font-size: 11px; font-weight: 800; color: #9ca3af; white-space: nowrap;">${qty} / ${nextTier.minQty} un.</span>
+              </div>
+              <div style="width: 100%; height: 5px; background: #f3f4f6; border-radius: 99px; overflow: hidden;">
+                <div style="width: ${progress}%; height: 100%; background: linear-gradient(90deg, #f472b6, #db2777); border-radius: 99px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+            </div>`;
+        } else {
+          nudgeHtml = `
+            <div style="margin-top: 14px; display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 12px; font-weight: 800; color: #047857; font-family: 'Bricolage Grotesque', sans-serif;">🏆 Estás pagando el mejor precio por unidad</span>
+            </div>`;
         }
 
-        const progressPercent = Math.min(100, (qty / displayProduct.WHOLESALEMINQUANTITY!) * 100);
-        
-        wholesaleBox.style.cssText = `
-          width: 100%;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        volumeBox.innerHTML = `
+          <div style="border: 1.5px solid #f3f4f6; border-radius: 18px; padding: 16px 14px; background: #fafafa;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px;">
+              <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #111827; font-family: 'Bricolage Grotesque', sans-serif;">📦 Precio por cantidad</span>
+              <span style="font-size: 10.5px; font-weight: 600; color: #9ca3af; font-family: 'Bricolage Grotesque', sans-serif;">Más llevas, menos pagas</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; padding-top: 6px;">${cardsHtml}</div>
+            ${nudgeHtml}
+          </div>
         `;
-        
-        const wsCheaper = (displayProduct.WHOLESALEPRICE || 0) < displayPrice;
-        if (isWholesaleQty) {
-          const savingsHtml = wsCheaper ? `<span style="font-size: 13px; font-weight: 700; color: #047857;">¡Ahorras ${formatPrice(displayPrice - displayProduct.WHOLESALEPRICE!)} por unidad!</span>` : `<span style="font-size: 13px; font-weight: 700; color: #6b7280;">Precio mayorista activado</span>`;
-          wholesaleBox.innerHTML = `
-            <div style="margin-top: 20px; padding: 4px 0; width: 100%;">
-              <!-- Minimal Success Indicator inline -->
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span style="display: inline-flex; align-items: center; justify-content: center; background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
-                  🎉 Mayorista Activado
-                </span>
-                ${savingsHtml}
-              </div>
-              
-              <!-- Glow Progress Bar (100% full) -->
-              <div style="position: relative; width: 100%; height: 6px; background: #e5e7eb; border-radius: 99px; overflow: visible; margin-bottom: 8px; margin-top: 10px; pointer-events: none !important; user-select: none !important;">
-                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 99px; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); pointer-events: none !important;"></div>
-                <!-- Floating Pin -->
-                <div style="position: absolute; left: 100%; top: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; background: #059669; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.15); pointer-events: none !important;"></div>
-              </div>
-              
-              <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1f2937; font-family: 'Bricolage Grotesque', sans-serif;">
-                Llevas ${qty} un. — Cada una a <span style="color: #059669; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)}</span>
-              </p>
-            </div>
-          `;
-        } else {
-          const needed = displayProduct.WHOLESALEMINQUANTITY! - qty;
-          const wsPriceLabel = wsCheaper ? `Paga solo <span style="color: #db2777; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)} c/u</span> comprando ${displayProduct.WHOLESALEMINQUANTITY}+` : `Precio mayorista <span style="color: #db2777; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)} c/u</span> comprando ${displayProduct.WHOLESALEMINQUANTITY}+`;
-          const footerMsg = isExact
-            ? `Lleva ${displayProduct.WHOLESALEMINQUANTITY} unidades para activar`
-            : (wsCheaper ? `Lleva ${needed} más y paga solo` : `Lleva ${needed} más para precio mayorista`);
-          
-          wholesaleBox.innerHTML = `
-            <div style="margin-top: 20px; padding: 4px 0; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-              <!-- Header info, no surrounding box -->
-              <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <span style="display: inline-flex; align-items: center; justify-content: center; width: max-content; background: #db2777; color: #ffffff; padding: 3px 8px; border-radius: 99px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
-                    🏷️ Oferta Mayorista
-                  </span>
-                  <span style="font-size: 13px; font-weight: 700; color: #374151;">
-                    ${wsPriceLabel}
-                  </span>
-                </div>
-                <span style="font-size: 12px; font-weight: 800; color: #9ca3af;">
-                  <span style="color: #db2777; font-size: 13px;">${qty}</span> / ${displayProduct.WHOLESALEMINQUANTITY} un.
-                </span>
-              </div>
-              
-              <!-- Floating Slider Progress Bar -->
-              <div style="position: relative; width: 100%; height: 6px; background: #e5e7eb; border-radius: 99px; overflow: visible; margin-bottom: 12px; margin-top: 24px; pointer-events: none !important; user-select: none !important;">
-                <!-- Filled track -->
-                <div style="width: ${progressPercent}%; height: 100%; background: linear-gradient(90deg, #f472b6, #db2777); border-radius: 999px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 6px rgba(219, 39, 119, 0.35); pointer-events: none !important;"></div>
-                
-                <!-- Floating sliding tooltip/badge -->
-                <div style="position: absolute; left: ${progressPercent}%; top: -22px; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center; pointer-events: none !important; z-index: 10;">
-                  <span style="background: #db2777; color: white; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase;">
-                    TE FALTAN ${needed}
-                  </span>
-                  <div style="width: 0; height: 0; border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 3px solid #db2777; margin-top: -1px;"></div>
-                </div>
-                
-                <!-- Floating Pin on track edge -->
-                <div style="position: absolute; left: ${progressPercent}%; top: 50%; transform: translate(-50%, -50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 12px; height: 12px; background: #db2777; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); pointer-events: none !important;"></div>
-              </div>
-              
-              <!-- Footer checkpoint note -->
-              <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 6px;">
-                <span>🎯</span>
-                <span>${footerMsg} <strong>${formatPrice(displayProduct.WHOLESALEPRICE!)}</strong></span>
-              </div>
-            </div>
-          `;
-        }
-      } else if (wholesaleBox) {
-        wholesaleBox.remove();
+
+        // Click en un nivel → saltar a su cantidad mínima
+        volumeBox.querySelectorAll('[data-tier-qty]').forEach((btn: any) => {
+          btn.addEventListener('click', (e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const target = parseInt(btn.dataset.tierQty || '1') || 1;
+            const qtyInputEl = root.querySelector('input[name="quantity"]') as HTMLInputElement | null;
+            const maxLimit = parseInt(qtyInputEl?.dataset.maxStock || '99999') || 99999;
+            const val = Math.min(target, maxLimit);
+            if (qtyInputEl) qtyInputEl.value = String(val);
+            setQty(val);
+          });
+        });
+      } else if (volumeBox) {
+        volumeBox.remove();
       }
     }
 
@@ -1224,7 +1184,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           e.stopPropagation();
           if (isSoldOut) return;
           const currentVal = parseInt(qtyInput.value) || 1;
-          const next = Math.max(1, currentVal - 1);
+          // 📦 Baja por puntos de control: paquetes arriba, unidades sueltas abajo
+          const pRef = pricingProductRef.current || product;
+          const next = Math.max(1, prevCheckpoint(pRef, currentVal));
           qtyInput.value = String(next);
           setQty(next);
         });
@@ -1235,7 +1197,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           if (isSoldOut) return;
           const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
           const currentVal = parseInt(qtyInput.value) || 1;
-          const next = Math.min(maxLimit, currentVal + 1);
+          // 📦 Sube por puntos de control: 1..5 de a 1, luego 6, 12, 24, 36…
+          // (los umbrales exactos dependen del PACKQTY del producto)
+          const pRef = pricingProductRef.current || product;
+          const next = Math.min(maxLimit, nextCheckpoint(pRef, currentVal, maxLimit));
           qtyInput.value = String(next);
           setQty(next);
         });
@@ -1297,15 +1262,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           if (isCurrentSoldOut) return;
 
           const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-          const hasWholesaleCurrent = !!(currentProduct.WHOLESALEPRICE && currentProduct.WHOLESALEMINQUANTITY && currentProduct.WHOLESALEPRICE > 0);
-          const pFeaturesCurrent = Array.isArray(currentProduct.FEATURES) ? currentProduct.FEATURES.join('\n') : currentProduct.FEATURES || '';
-          const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
-          const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
-
-          const currentPackQty = currentProduct.PACKQTY || 0;
-          const currentIsPackQty = isPaquetesMode && currentPackQty > 1 && qty >= currentPackQty;
-          const currentPackOverride = currentIsPackQty && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : currentPackOverride, isPaquetesMode);
+          // 📦 Sin overrides ni ofertas: el carrito resuelve el nivel de
+          // volumen (detalle/intermedio/mayor/caja) según la cantidad.
+          addItem(currentProduct, qty, undefined, undefined, undefined, isPaquetesMode);
           
           const textContent = newBtn.querySelector('.add-to-cart-text__content');
           if (textContent) {
@@ -1380,16 +1339,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
               : product;
             
-            const hasWholesaleCurrent = !!(currentProduct.WHOLESALEPRICE && currentProduct.WHOLESALEMINQUANTITY && currentProduct.WHOLESALEPRICE > 0);
-            const pFeaturesCurrent = Array.isArray(currentProduct.FEATURES) ? currentProduct.FEATURES.join('\n') : currentProduct.FEATURES || '';
-            const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
-            const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
+            // 📦 Sin overrides ni ofertas: el carrito resuelve el nivel de volumen
+            addItem(currentProduct, qty, undefined, undefined, undefined, isPaquetesMode);
 
-            const currentPackQtyBuy = currentProduct.PACKQTY || 0;
-            const currentIsPackQtyBuy = isPaquetesMode && currentPackQtyBuy > 1 && qty >= currentPackQtyBuy;
-            const currentPackOverrideBuy = currentIsPackQtyBuy && !isDisableDiscounts(currentProduct) ? Math.round((currentProduct.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
-            addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : currentPackOverrideBuy, isPaquetesMode);
-            
             router.push('/carrito');
           });
         }
@@ -1406,43 +1358,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         }
     }
 
-    // Inject global pack countdown timer if product has active offer
-    if (activeOffer && activeOffer.endDateTime) {
-      const priceContainer = root.querySelector('.price') || root.querySelector('.product__info-container .price');
-      if (priceContainer && !root.querySelector('#yaxsell-product-countdown')) {
-        const timerWrapper = document.createElement('div');
-        timerWrapper.id = 'yaxsell-product-countdown';
-        timerWrapper.style.cssText = 'background: #fdf2f8; border: 1.5px solid #fce7f3; border-radius: 16px; padding: 12px 16px; margin: 16px 0; display: flex; flex-direction: column; gap: 8px; max-width: 320px;';
-        
-        timerWrapper.innerHTML = `
-          <div style="font-size: 11px; font-weight: 800; color: #db2777; letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
-            <span style="animation: pulse 1.5s infinite;">⏳</span> Oferta por tiempo limitado
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
-              <span id="p-days" style="font-size: 18px; font-weight: 800; color: #111827;">00</span>
-              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">días</span>
-            </div>
-            <span style="font-weight: 800; color: #db2777;">:</span>
-            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
-              <span id="p-hours" style="font-size: 18px; font-weight: 800; color: #111827;">00</span>
-              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">horas</span>
-            </div>
-            <span style="font-weight: 800; color: #db2777;">:</span>
-            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
-              <span id="p-minutes" style="font-size: 18px; font-weight: 800; color: #111827;">00</span>
-              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">min</span>
-            </div>
-            <span style="font-weight: 800; color: #db2777;">:</span>
-            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
-              <span id="p-seconds" style="font-size: 18px; font-weight: 800; color: #db2777;">00</span>
-              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">seg</span>
-            </div>
-          </div>
-        `;
-        priceContainer.parentNode?.insertBefore(timerWrapper, priceContainer.nextSibling);
-      }
-    }
+    // ❌ Countdown de "oferta por tiempo limitado" eliminado: el sistema de
+    // precios por volumen no usa ofertas ni descuentos artificiales.
+    root.querySelector('#yaxsell-product-countdown')?.remove();
 
     // 12. Eliminar secciones genéricas del tema que no corresponden al producto
     const slideshowSection = root.querySelector('#shopify-section-template--20816638607498__slideshow_Etij97') ||
@@ -1874,29 +1792,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     
     const root = refElement;
     
-    // Resolve prices
-    const basePriceResolved = activeOffer ? {
-      displayPrice: activeOffer.discountPrice,
-      originalPrice: activeOffer.originalPrice,
-      hasDiscount: true,
-      discountPercent: activeOffer.discountPercentage,
-      fromApertura: false
-    } : resolveProductDisplayPrice(product, apertura);
-
-    // En modo paquetes, 20% solo cuando qty >= PACKQTY; si no, precio normal
-    const initPackQty = product.PACKQTY || 0;
-    const initIsPackQty = isPaquetesMode && initPackQty > 1 && qty >= initPackQty;
-    const priceResolved = initIsPackQty && !activeOffer ? (() => {
-      const base = product.PRICE || 0;
-      if (isDisableDiscounts(product) || base <= 0) {
-        return { displayPrice: base, originalPrice: null as number | null, hasDiscount: false, discountPercent: 0, fromApertura: false };
-      }
-      const packUnitPrice = Math.round(base * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
-      return { displayPrice: packUnitPrice, originalPrice: base, hasDiscount: true, discountPercent: PACK_BONUS_DISCOUNT_PCT, fromApertura: false };
-    })() : basePriceResolved;
-
-    const displayPrice = priceResolved.displayPrice;
-    const formattedPrice = formatPrice(displayPrice);
+    // 📦 Precio inicial: nivel Detalle (precio por defecto al entrar al producto).
+    // Sin ofertas ni descuentos — applyYaxsellData pinta luego el nivel según cantidad.
+    const formattedPrice = formatPrice(resolveVolumeTier(product, qty).unitPrice * qty);
 
     if (!root.dataset.htmlSet) {
       // Reemplazar imágenes principales y texto del producto en el string HTML crudo antes de la inyección
@@ -2015,15 +1913,16 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         });
 
         // Also update grid thumbnails (desktop side panel)
-        root.querySelectorAll('.media-gallery__grid-thumbnails img, .media-gallery__grid-thumbnails source').forEach((el: any, idx: number) => {
-          const thumbIdx = Math.floor(idx / 2);
-          const imgUrl = pImages[thumbIdx % pImages.length] || pImages[0];
-          el.src = imgUrl;
-          el.srcset = imgUrl;
-          el.setAttribute('src', imgUrl);
-          el.setAttribute('srcset', imgUrl);
-          el.removeAttribute('is');
-          el.removeAttribute('data-mode');
+        root.querySelectorAll('.media-gallery__grid-thumbnails .media-gallery__item, .media-gallery__grid-thumbnails .thumbnail-list__item, .media-gallery__grid-thumbnails li').forEach((thumb: any, idx: number) => {
+          const imgUrl = pImages[idx % pImages.length] || pImages[0];
+          thumb.querySelectorAll('img, source').forEach((el: any) => {
+            el.src = imgUrl;
+            el.srcset = imgUrl;
+            el.setAttribute('src', imgUrl);
+            el.setAttribute('srcset', imgUrl);
+            el.removeAttribute('is');
+            el.removeAttribute('data-mode');
+          });
         });
 
         // Fix main gallery slider images and their container elements
@@ -2208,42 +2107,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     };
   }, [product, refElement]);
 
-  // Product Page countdown timer loop
-  useEffect(() => {
-    if (!activeOffer || !activeOffer.endDateTime) return;
-    const targetTime = new Date(activeOffer.endDateTime).getTime();
-
-    const updateTimer = () => {
-      if (!refElement) return;
-      const dEl = refElement.querySelector('#p-days');
-      const hEl = refElement.querySelector('#p-hours');
-      const mEl = refElement.querySelector('#p-minutes');
-      const sEl = refElement.querySelector('#p-seconds');
-
-      const diff = targetTime - Date.now();
-      if (diff <= 0) {
-        if (dEl) dEl.textContent = '00';
-        if (hEl) hEl.textContent = '00';
-        if (mEl) mEl.textContent = '00';
-        if (sEl) sEl.textContent = '00';
-        return;
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      if (dEl) dEl.textContent = days.toString().padStart(2, '0');
-      if (hEl) hEl.textContent = hours.toString().padStart(2, '0');
-      if (mEl) mEl.textContent = minutes.toString().padStart(2, '0');
-      if (sEl) sEl.textContent = seconds.toString().padStart(2, '0');
-    };
-
-    updateTimer();
-    const intervalId = setInterval(updateTimer, 1000);
-    return () => clearInterval(intervalId);
-  }, [activeOffer, refElement]);
+  // ❌ Countdown de ofertas eliminado: sin descuentos artificiales,
+  // el precio se rige solo por el sistema de volumen (4 niveles).
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {
@@ -2643,9 +2508,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             position: relative !important;
             width: 100% !important;
             height: 100% !important;
-            object-fit: cover !important;
+            object-fit: contain !important;
             aspect-ratio: 1440 / 1438 !important;
             display: block !important;
+            background: #ffffff !important;
           }
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails--inside,
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails {
@@ -2709,9 +2575,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide img {
             width: 100% !important;
             height: 100% !important;
-            object-fit: cover !important;
+            object-fit: contain !important;
             border-radius: 50% !important;
             display: block !important;
+            background: #ffffff !important;
             visibility: visible !important;
           }
           /* Highlight active slide with pink color matching template aesthetic */
@@ -2869,6 +2736,64 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           display: block !important;
           border: none !important;
           background: transparent !important;
+        }
+
+        /* Selector de cantidad limpio: solo campo numerico, sin píldora ni botones visibles */
+        .tpl5-page-wrapper quantity-selector-component,
+        .tpl5-page-wrapper .quantity-selector {
+          display: inline-flex !important;
+          align-items: center !important;
+          width: 92px !important;
+          min-width: 92px !important;
+          height: 48px !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 4px !important;
+          background: #ffffff !important;
+          overflow: hidden !important;
+          box-shadow: none !important;
+        }
+
+        .tpl5-page-wrapper quantity-selector-component:focus-within,
+        .tpl5-page-wrapper .quantity-selector:focus-within {
+          border-color: #111827 !important;
+          box-shadow: 0 0 0 1px #111827 !important;
+        }
+
+        .tpl5-page-wrapper quantity-selector-component .quantity-input,
+        .tpl5-page-wrapper .quantity-selector .quantity-input,
+        .tpl5-page-wrapper input.quantity-input {
+          display: block !important;
+          width: 100% !important;
+          min-width: 0 !important;
+          height: 100% !important;
+          padding: 0 8px !important;
+          margin: 0 !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          outline: none !important;
+          background: #ffffff !important;
+          color: #111827 !important;
+          text-align: center !important;
+          font-size: 16px !important;
+          font-weight: 600 !important;
+          font-family: inherit !important;
+          -moz-appearance: textfield !important;
+        }
+
+        .tpl5-page-wrapper quantity-selector-component .quantity-input::-webkit-inner-spin-button,
+        .tpl5-page-wrapper quantity-selector-component .quantity-input::-webkit-outer-spin-button,
+        .tpl5-page-wrapper .quantity-selector .quantity-input::-webkit-inner-spin-button,
+        .tpl5-page-wrapper .quantity-selector .quantity-input::-webkit-outer-spin-button {
+          -webkit-appearance: auto !important;
+          margin: 0 !important;
+        }
+
+        /* Se mantienen en el DOM para no romper la plantilla, pero no se muestran. */
+        .tpl5-page-wrapper quantity-selector-component > button,
+        .tpl5-page-wrapper .quantity-selector > button,
+        .tpl5-page-wrapper quantity-selector-component .quantity-button,
+        .tpl5-page-wrapper .quantity-selector .quantity-button {
+          display: none !important;
         }
 
         /* Botón de Comprar Ahora (Píldora negra, texto blanco, hover: fondo blanco y texto negro) */

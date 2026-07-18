@@ -65,7 +65,7 @@ function LiveLogicModal({
   onSave: (productId: string, features: string) => Promise<void>;
 }) {
   const basePrice = product.PRICE || 0;
-  const apertura20Price = Math.round(basePrice * 0.8);
+  const apertura20Price = basePrice;
 
   const currentLogic = getLiveLogicFromFeatures(product.FEATURES) ?? {};
 

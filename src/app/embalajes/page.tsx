@@ -1,6 +1,5 @@
-'use client';
-import DynamicCollectionAll from '@/components/DynamicCollectionAll';
+import { redirect } from 'next/navigation';
 
 export default function EmbalajesPage() {
-  return <DynamicCollectionAll catalogMode="embalajes" />;
+  redirect('/productos');
 }

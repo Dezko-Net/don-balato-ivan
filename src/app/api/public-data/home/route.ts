@@ -14,7 +14,11 @@ let memoryCacheHomeTime = 0;
 const getCachedHomeData = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheHome && (now - memoryCacheHomeTime < 300000)) {
+    // ⚠️ Guard anti-estampida de 2s SOLAMENTE. Antes era 5 MINUTOS y envenenaba
+    // la purga: al revalidar el tag, esta función se re-ejecuta pero devolvía el
+    // caché en memoria viejo → unstable_cache re-guardaba datos stale por 24h
+    // más (por eso el home seguía mostrando productos/fotos antiguos tras purgar).
+    if (memoryCacheHome && (now - memoryCacheHomeTime < 2000)) {
       return memoryCacheHome;
     }
 

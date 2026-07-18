@@ -133,7 +133,7 @@ export default function OrderDetailPage() {
       })()
     : 0;
   const replacementCurrentSum = replacementSelection.reduce((s, r) => {
-    const price = Math.round((r.product.CURRENTPRICE ?? r.product.PRICE ?? 0) * 0.8);
+    const price = r.product.CURRENTPRICE ?? r.product.PRICE ?? 0;
     return s + price * r.qty;
   }, 0);
 
@@ -192,7 +192,7 @@ export default function OrderDetailPage() {
       // Build replacement items
       const newItems: any[] = replacementSelection.map((r, idx) => {
         const p = r.product;
-        const newPrice = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
+        const newPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
         const newSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
         return {
           id: p.$id,
@@ -523,7 +523,7 @@ export default function OrderDetailPage() {
       let parsedItems: any[] = [];
       try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
 
-      const price = Math.round((product.CURRENTPRICE ?? product.PRICE ?? 0) * 0.8);
+      const price = product.CURRENTPRICE ?? product.PRICE ?? 0;
       const pSku = product.sku || getSkuFromFeatures(product.FEATURES, product.TAGS, product.jumpseller_id, product.sku);
 
       const newItem: any = {
@@ -636,8 +636,8 @@ export default function OrderDetailPage() {
     // Para combinaciones (ej. 2 de 500), buscamos productos cuyo precio unitario pueda multiplicar para llegar al total
     // Buscamos productos desde un precio mucho menor (ej. total / 4) hasta el maxDiscounted
     const minUnitDiscounted = Math.max(0, (totalMissingPrice / 4) - variance);
-    const minPriceLimit = Math.round(minUnitDiscounted / 0.8);
-    const maxPriceLimit = Math.round(maxDiscounted / 0.8);
+    const minPriceLimit = Math.round(minUnitDiscounted);
+    const maxPriceLimit = Math.round(maxDiscounted);
 
     try {
       const { databases } = getServices();
@@ -662,7 +662,7 @@ export default function OrderDetailPage() {
       const validCombinations: any[] = [];
       for (const p of prods) {
         if (p.$id === oldItem.id) continue;
-        const pPrice = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
+        const pPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
         if (pPrice <= 0) continue;
 
         // ¿Cuántas unidades de p nos acercan más al totalMissingPrice?
@@ -841,7 +841,7 @@ export default function OrderDetailPage() {
         ctx.textAlign = 'center';
 
         const originalPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
-        const price = Math.round(originalPrice * 0.8);
+        const price = originalPrice;
         const isCombo = p._bestQty && p._bestQty > 1;
         const productTotal = isCombo ? (p._comboTotal || price * p._bestQty) : price;
         const diff = productTotal - replacementTargetTotal;
@@ -953,7 +953,7 @@ export default function OrderDetailPage() {
         } catch {}
       }
 
-      const newPrice = Math.round((newProduct.CURRENTPRICE ?? newProduct.PRICE ?? 0) * 0.8);
+      const newPrice = newProduct.CURRENTPRICE ?? newProduct.PRICE ?? 0;
       const newSku = newProduct.sku || getSkuFromFeatures(newProduct.FEATURES, newProduct.TAGS, newProduct.jumpseller_id, newProduct.sku);
 
       const totalMissingPrice = missingQty * (oldItem.price || 0);
@@ -1716,7 +1716,7 @@ export default function OrderDetailPage() {
                   </p>
                 ) : (
                   addProductResults.map(p => {
-                    const price = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
+                    const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
                     const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
                     return (
                       <div key={p.$id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/70 transition-colors">
@@ -1849,7 +1849,7 @@ export default function OrderDetailPage() {
                 ) : (
                   searchResults.map(p => {
                     const originalPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
-                    const price = Math.round(originalPrice * 0.8);
+                    const price = originalPrice;
                     const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
                     const isCombo = p._bestQty && p._bestQty > 1;
                     const inSelection = replacementSelection.some(r => r.product.$id === p.$id);
@@ -1913,7 +1913,7 @@ export default function OrderDetailPage() {
                     >Limpiar todo</button>
                   </div>
                   {replacementSelection.map(r => {
-                    const price = Math.round((r.product.CURRENTPRICE ?? r.product.PRICE ?? 0) * 0.8);
+                    const price = r.product.CURRENTPRICE ?? r.product.PRICE ?? 0;
                     return (
                       <div key={r.product.$id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
                         <div className="w-8 h-8 rounded-md bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0">

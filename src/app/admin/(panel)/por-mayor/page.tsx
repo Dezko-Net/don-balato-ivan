@@ -913,7 +913,7 @@ export default function PorMayorPage() {
                     const cQ=nQ!==undefined?parseInt(nQ,10):(p.PACKQTY||0);
                     const cW=nW!==undefined?parseInt(nW,10):(p.WHOLESALEPRICE||0);
                     const packPx=cQ*cW;
-                    const sugg=Math.round(p.PRICE*0.80);
+                    const sugg=p.PRICE;
                     const oa=!!(p.PACK_OFFER_PRICE&&p.PACK_OFFER_EXPIRES_AT&&p.PACK_OFFER_EXPIRES_AT>Date.now());
                     const oe=!!(p.PACK_OFFER_PRICE&&p.PACK_OFFER_EXPIRES_AT&&p.PACK_OFFER_EXPIRES_AT<=Date.now());
                     const psk=p.PACK_STOCK??Math.floor((p.STOCK||0)/(p.PACKQTY||1));
@@ -999,7 +999,7 @@ export default function PorMayorPage() {
               const cQ=nQ!==undefined?parseInt(nQ,10):(p.PACKQTY||0);
               const cW=nW!==undefined?parseInt(nW,10):(p.WHOLESALEPRICE||0);
               const packPx=cQ*cW;
-              const sugg=Math.round(p.PRICE*0.80);
+              const sugg=p.PRICE;
               const oa=!!(p.PACK_OFFER_PRICE&&p.PACK_OFFER_EXPIRES_AT&&p.PACK_OFFER_EXPIRES_AT>Date.now());
               const oe=!!(p.PACK_OFFER_PRICE&&p.PACK_OFFER_EXPIRES_AT&&p.PACK_OFFER_EXPIRES_AT<=Date.now());
               const psk=p.PACK_STOCK??Math.floor((p.STOCK||0)/(p.PACKQTY||1));
@@ -1089,7 +1089,7 @@ export default function PorMayorPage() {
                       const hQ=nQ!==undefined&&parseInt(nQ,10)!==(p.PACKQTY||0);
                       const hW=nW!==undefined&&parseInt(nW,10)!==(p.WHOLESALEPRICE||0);
                       const dirty=hQ||hW;
-                      const sugg=Math.round(p.PRICE*0.80);
+                      const sugg=p.PRICE;
                       return (
                         <tr key={p.$id} className={`hover:bg-gray-50/60 transition text-sm ${dirty?'bg-amber-50/30':''}`}>
                           <td className="px-5 py-3">
@@ -1127,7 +1127,7 @@ export default function PorMayorPage() {
                 const hQ=nQ!==undefined&&parseInt(nQ,10)!==(p.PACKQTY||0);
                 const hW=nW!==undefined&&parseInt(nW,10)!==(p.WHOLESALEPRICE||0);
                 const dirty=hQ||hW;
-                const sugg=Math.round(p.PRICE*0.80);
+                const sugg=p.PRICE;
                 return (
                   <div key={p.$id} className={`bg-white rounded-2xl border shadow-sm p-3 ${dirty?'border-amber-300':'border-gray-200'}`}>
                     <div className="flex items-center gap-3 mb-3">

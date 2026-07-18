@@ -16,6 +16,7 @@ import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
+import ProductImageGallery from '@/components/ProductImageGallery';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
@@ -752,13 +753,9 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
-                      <div className="pk-card-media-link" onClick={() => handleCardImageClick(p)} style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fdf2f8,#fff)', overflow: 'hidden' }}>
-                          {getProductImageUrl(p) ? (
-                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', pointerEvents: 'none' }} sizes="(max-width: 768px) 50vw, 25vw" unoptimized />
-                          ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#fbcfe8' }}>📦</div>
-                          )}
+                      <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: 'linear-gradient(135deg,#fdf2f8,#fff)', overflow: 'hidden' }}>
+                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} />
                           {p.STOCK === 0 && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
                               <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
@@ -798,7 +795,6 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                             {p.NAME}
                           </p>
                         </Link>
-                        {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginTop: -4, marginBottom: 8 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto', flexWrap: 'wrap' }}>
                           {price > 0 ? (
                             <>
@@ -842,8 +838,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           <AperturaDiscountBadge percent={disc} size="sm" />
                         </div>
                       )}
-                      <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fdf2f8', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
+                      <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 14, overflow: 'hidden', background: '#fdf2f8', flexShrink: 0 }}>
+                        <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} sizes="110px" compact />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -857,7 +853,6 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                         <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
-                        {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginBottom: 4 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
                         <p className="pk-card-list-desc" style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           {price > 0 ? (

@@ -2,8 +2,9 @@
 
 import { useMemo } from 'react';
 import type { CartItem } from '@/types';
-import { resolveProductDisplayPrice, isWholesalePromoActive, isDisableDiscounts, type ResolvedProductPrice } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, isDisableDiscounts, type ResolvedProductPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { hasVolumePricing, resolveVolumeUnitPrice } from '@/lib/volume-pricing';
 
 export function useCartItemPrice(item: CartItem): {
   unitPrice: number;
@@ -78,24 +79,19 @@ export function useCartItemPrice(item: CartItem): {
       };
     }
 
-    // 3. Paquetes: if item.isPack is true, or if qty reaches PACKQTY
-    const packQty = item.product.PACKQTY;
-    if (!result && (item.isPack || (packQty && packQty > 1 && item.quantity >= packQty))) {
-      const base = item.product.PRICE || 0;
-      let packPrice = base;
-      if (item.product.WHOLESALEPRICE && item.product.WHOLESALEPRICE > 0) {
-        packPrice = item.product.WHOLESALEPRICE;
-      } else {
-        const pct = item.product.PACK_DISCOUNT_PCT && item.product.PACK_DISCOUNT_PCT > 0 ? item.product.PACK_DISCOUNT_PCT : 20; // 20 is PACK_BONUS_DISCOUNT_PCT
-        packPrice = Math.round(base * (1 - pct / 100));
-      }
+    // 3. 📦 Precios por volumen (4 niveles: detalle/intermedio/mayor/caja).
+    // El precio unitario baja según la cantidad — sin descuentos artificiales.
+    if (!result && hasVolumePricing(item.product)) {
+      const unit = resolveVolumeUnitPrice(item.product, item.quantity);
       result = {
-        unitPrice: packPrice,
+        unitPrice: unit,
         pricing: {
-          displayPrice: packPrice,
-          originalPrice: base,
-          hasDiscount: packPrice < base,
-          discountPercent: base > 0 ? Math.round(((base - packPrice) / base) * 100) : 0,
+          // Sin originalPrice/hasDiscount: el precio por volumen ES el precio,
+          // no un "descuento" — nada de tachados ni badges de -X%.
+          displayPrice: unit,
+          originalPrice: null,
+          hasDiscount: false,
+          discountPercent: 0,
           fromApertura: false,
         }
       };
@@ -133,23 +129,6 @@ export function useCartItemPrice(item: CartItem): {
       result = { unitPrice: pricing.displayPrice, pricing };
     }
 
-    // 6. Global Wholesale Promo (20% OFF for 12+ units)
-    // No aplica a productos con descuentos bloqueados (DisableDiscounts/PROMO1)
-    if (item.quantity >= 12 && isWholesalePromoActive() && !isDisableDiscounts(item.product)) {
-      const basePrice = item.product.PRICE || 0;
-      const globalWholesalePrice = Math.round(basePrice * 0.8); // 20% OFF
-      if (globalWholesalePrice > 0 && result.unitPrice > globalWholesalePrice) {
-        result.unitPrice = globalWholesalePrice;
-        result.pricing = {
-          displayPrice: globalWholesalePrice,
-          originalPrice: basePrice,
-          hasDiscount: true,
-          discountPercent: 20,
-          fromApertura: false,
-        };
-      }
-    }
-
     return result;
   }, [item, apertura]);
 }
@@ -174,6 +153,9 @@ export function useCartPricing(items: CartItem[]) {
       const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
       if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
         unit = item.timedOfferPrice;
+      } else if (hasVolumePricing(item.product)) {
+        // 📦 Precios por volumen: el nivel (detalle/intermedio/mayor/caja) según cantidad
+        unit = resolveVolumeUnitPrice(item.product, item.quantity);
       } else if (hasConfiguredWholesale && qtyMatches) {
         unit = item.product.WHOLESALEPRICE!;
       } else if (!hasConfiguredWholesale && item.wholesalePrice && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
@@ -182,13 +164,6 @@ export function useCartPricing(items: CartItem[]) {
         unit = resolveProductDisplayPrice(item.product, apertura).displayPrice;
       }
 
-      // Apply Global Wholesale Promo override (no aplica a DisableDiscounts/PROMO1)
-      if (item.quantity >= 12 && isWholesalePromoActive() && !isDisableDiscounts(item.product)) {
-        const globalWholesalePrice = Math.round((item.product.PRICE || 0) * 0.8);
-        if (globalWholesalePrice > 0 && unit > globalWholesalePrice) {
-          unit = globalWholesalePrice;
-        }
-      }
       subtotal += unit * item.quantity;
       catalogSubtotal += item.product.PRICE * item.quantity;
     }

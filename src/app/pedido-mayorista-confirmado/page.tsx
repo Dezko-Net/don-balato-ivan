@@ -70,8 +70,8 @@ function ConfirmacionMayoristaInner() {
           <Link href="/cuenta/pedidos-mayoristas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 24px', background: 'linear-gradient(135deg,#c68b59,#e09b6f)', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 800, textDecoration: 'none', boxShadow: '0 6px 20px rgba(198,139,89,0.25)' }}>
             <Package size={16} /> Ver mis pedidos mayoristas <ArrowRight size={14} />
           </Link>
-          <Link href="/paquetes" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 24px', background: '#fef9f4', color: '#c68b59', borderRadius: 14, fontSize: 13, fontWeight: 700, textDecoration: 'none', border: '1.5px solid #eed9c4' }}>
-            Seguir comprando paquetes
+          <Link href="/productos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 24px', background: '#fef9f4', color: '#c68b59', borderRadius: 14, fontSize: 13, fontWeight: 700, textDecoration: 'none', border: '1.5px solid #eed9c4' }}>
+            Seguir comprando
           </Link>
         </div>
       </div>

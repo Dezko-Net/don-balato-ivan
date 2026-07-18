@@ -19,14 +19,16 @@ import { useFavorites } from '@/context/FavoritesContext';
 
 import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
+import ProductImageGallery from '@/components/ProductImageGallery';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice, resolvePackUnitPrice, PACK_BONUS_DISCOUNT_PCT, getLiveShoppingThreshold, getNextLiveShoppingTime, isLiveShoppingProduct, getLiveShoppingDiscountPercent, isDisableDiscounts } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, isDisableDiscounts } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { useProductsCache } from '@/hooks/useProductsCache';
 import { extractBrand, HOUSE_BRAND } from '@/lib/brands';
+import { getVolumeTiers } from '@/lib/volume-pricing';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -67,14 +69,16 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const isPaquetes = catalogMode === 'paquetes';
   const isEmbalajes = catalogMode === 'embalajes';
   const modeQueryParam = isPaquetes ? '?mode=paquetes' : '';
+  // 🎨 Rediseño jul 2026: fondo blanco limpio, rosa SOLO como acento puntual.
+  // CTAs en negro elegante, sombras neutras (nada de glow rosa neón).
   const primaryColor = isPaquetes ? '#b8895a' : (isEmbalajes ? '#0ea5e9' : '#e396bf');
   const gradientColor = isPaquetes ? 'linear-gradient(135deg,#f5ede0,#e8dcc8)' : (isEmbalajes ? 'linear-gradient(135deg,#e0f2fe,#bae6fd)' : 'linear-gradient(135deg,#e396bf,#c0547a)');
   const buttonTextColor = isPaquetes ? '#5c3d24' : (isEmbalajes ? '#0369a1' : '#fff');
-  const lightBgColor = isPaquetes ? '#faf7f2' : (isEmbalajes ? '#f0f9ff' : '#fdf2f8');
-  const lightBorderColor = isPaquetes ? '#e8dcc8' : (isEmbalajes ? '#bae6fd' : '#fce7f3');
-  const shadowColor = isPaquetes ? 'rgba(198,139,89,0.25)' : (isEmbalajes ? 'rgba(14,165,233,0.2)' : 'rgba(227,150,191,0.25)');
-  const shadowColorLight = isPaquetes ? 'rgba(198,139,89,0.1)' : (isEmbalajes ? 'rgba(14,165,233,0.08)' : 'rgba(227,150,191,0.1)');
-  const radialBgColor = isPaquetes ? 'rgba(198,139,89,0.08)' : (isEmbalajes ? 'rgba(14,165,233,0.12)' : 'rgba(227,150,191,0.16)');
+  const lightBgColor = isPaquetes ? '#faf7f2' : (isEmbalajes ? '#f0f9ff' : '#faf9fa');
+  const lightBorderColor = isPaquetes ? '#e8dcc8' : (isEmbalajes ? '#bae6fd' : '#eceaec');
+  const shadowColor = isPaquetes ? 'rgba(198,139,89,0.25)' : (isEmbalajes ? 'rgba(14,165,233,0.2)' : 'rgba(17,24,39,0.07)');
+  const shadowColorLight = isPaquetes ? 'rgba(198,139,89,0.1)' : (isEmbalajes ? 'rgba(14,165,233,0.08)' : 'rgba(17,24,39,0.045)');
+  const radialBgColor = isPaquetes ? 'rgba(198,139,89,0.08)' : (isEmbalajes ? 'rgba(14,165,233,0.12)' : 'rgba(227,150,191,0.05)');
   const packQtyColor = isPaquetes ? '#0ea5e9' : (isEmbalajes ? '#0284c7' : '#db2777');
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -85,6 +89,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const [selectedSubcat, setSelectedSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  // Feedback visual "✓ Añadido" en el botón de la tarjeta tras agregar al carrito
+  const [justAdded, setJustAdded] = useState<Record<string, boolean>>({});
+  const flashAdded = (id: string) => {
+    setJustAdded(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => setJustAdded(prev => ({ ...prev, [id]: false })), 1600);
+  };
   const [showLiveHistory, setShowLiveHistory] = useState(false);
   const [liveHistoryDates, setLiveHistoryDates] = useState<string[]>([]);
   const [liveHistoryProducts, setLiveHistoryProducts] = useState<Product[]>([]);
@@ -207,9 +217,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     return packStock > 0;
   }) : isLiveShoppingFilter ? products.filter(p => {
     if ((p.STOCK || 0) <= 0) return false;
-    if (!isLiveShoppingProduct(p)) return false;
-    const importedTime = new Date(p.$createdAt!).getTime();
-    return importedTime >= oneWeekAgo;
+    return false;
   }) : products.filter(p => (p.STOCK || 0) > 0);
   const hasMore = !isReachingEnd;
 
@@ -372,6 +380,13 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search
     || (activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
   );
+  // Contador para el badge del botón "Filtros" de la toolbar
+  const activeFiltersCount =
+    ((selectedCat && selectedCat !== lockCategoryId) ? 1 : 0) +
+    (selectedSubcat ? 1 : 0) +
+    (selectedTag ? 1 : 0) +
+    (search ? 1 : 0) +
+    ((activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1])) ? 1 : 0);
   const clearAllFilters = () => {
     setSelectedCat(lockCategoryId || ''); setSelectedSubcat(''); setSelectedTag(''); setSearch('');
     setActivePriceRange(priceRange as [number, number]);
@@ -494,85 +509,83 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     }}>
       <div className="pk-bg-fixed" style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
         {bgImageToUse && <img className="pk-bg-image" src={bgImageToUse} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite, pkCoverFadeIn 0.6s ease forwards' }} />}
-        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 15% 10%,${radialBgColor},transparent 32%), linear-gradient(180deg,rgba(248,249,250,0.72) 0%,rgba(255,255,255,0.92) 100%)` }} />
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 15% 10%,${radialBgColor},transparent 32%), linear-gradient(180deg,rgba(255,255,255,0.94) 0%,rgba(255,255,255,0.985) 100%)` }} />
       </div>
       <div className="pk-products-container" style={{ position: 'relative', zIndex: 1, maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
-        {/* Hero header */}
-        <div className="pk-hero-header" style={{ position: 'relative', marginBottom: 24, borderRadius: 28, border: '1px solid rgba(229,231,235,0.9)', boxShadow: `0 18px 50px ${shadowColor}`, overflow: 'hidden', background: '#fff' }}>
-          <div className="pk-hero-banner" style={{ position: 'relative' }}>
-            {(!heroImgLoaded || (!lockedCategory?.iconUrl && !lockCategoryId)) && <div className="pk-hero-banner-skeleton" style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: heroImgLoaded ? 0 : 1, transition: 'opacity 0.4s ease' }} />}
-            {lockedCategory?.iconUrl ? (
-              <img className="pk-hero-banner-img" src={lockedCategory.iconUrl} alt={lockedCategory.name || 'Categoría'} onLoad={() => setHeroImgLoaded(true)} style={{ objectFit: 'contain', padding: 24, background: 'linear-gradient(135deg,#f8f9fa,#fff)', position: 'relative', zIndex: 2, opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
-            ) : lockCategoryId ? (
-              <div className="pk-hero-banner-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: gradientColor, color: '#fff', fontSize: 56, fontWeight: 900, position: 'relative', zIndex: 2 }}>
-                {(lockedCategory?.name || 'C').charAt(0).toUpperCase()}
-              </div>
+        {/* ✨ Header editorial compacto (rediseño): breadcrumb + título + contador
+            + portada slim opcional. Sustituye al hero gigante con stats. */}
+        <div className="pk-header2" style={{ margin: '0 0 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: '#9ca3af', marginBottom: 8 }}>
+            <Link href="/" style={{ color: '#9ca3af', textDecoration: 'none' }}>Inicio</Link>
+            <span style={{ color: '#d1d5db' }}>/</span>
+            {lockCategoryId ? (
+              <>
+                <Link href="/productos" style={{ color: '#9ca3af', textDecoration: 'none' }}>Tienda</Link>
+                <span style={{ color: '#d1d5db' }}>/</span>
+                <span style={{ color: '#c0547a', fontWeight: 700 }}>{lockedCategory?.name || 'Categoría'}</span>
+              </>
             ) : (
-              heroImageToUse ? <img className="pk-hero-banner-img" src={heroImageToUse} alt="Portada catálogo" onLoad={() => setHeroImgLoaded(true)} style={{ position: 'relative', zIndex: 2, opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} /> : <div className="pk-hero-banner-img pk-hero-fallback-bg" style={{ position: 'relative', zIndex: 2 }} />
+              <span style={{ color: '#c0547a', fontWeight: 700 }}>{isPaquetes ? 'Paquetes' : (isEmbalajes ? 'Embalajes' : 'Tienda')}</span>
             )}
           </div>
-          {/* View toggle in the banner top right corner */}
-          <div className="pk-view-toggle" style={{ position: 'absolute', top: 16, right: 16, zIndex: 10000, display: 'flex', background: 'rgba(255, 255, 255, 0.9) !important', backdropFilter: 'blur(12px)', borderRadius: 14, border: '1px solid rgba(229, 231, 235, 0.6)', padding: 3, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)', pointerEvents: 'auto' }}>
-            <button onClick={() => setView('grid')} style={{ padding: '8px 10px', background: view === 'grid' ? '#fff' : 'transparent', color: view === 'grid' ? primaryColor : '#6b7280', border: 'none', borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, transition: 'all 0.2s', outline: 'none' }} aria-label="Cuadrícula">
-              <Grid3x3 size={14} /> <span className="pk-desktop-only">Cuadrícula</span>
-            </button>
-            <button onClick={() => setView('list')} style={{ padding: '8px 10px', background: view === 'list' ? '#fff' : 'transparent', color: view === 'list' ? primaryColor : '#6b7280', border: 'none', borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, transition: 'all 0.2s', outline: 'none' }} aria-label="Lista">
-              <List size={14} /> <span className="pk-desktop-only">Lista</span>
-            </button>
-          </div>
-          <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>
-            <div className="pk-hero-logo-wrap">
-              {lockedCategory?.iconUrl && (
-                <img src={lockedCategory.iconUrl} alt={lockedCategory.name} className="pk-hero-logo-img" />
-              )}
-            </div>
-            <div className="pk-hero-text">
-              <div className="pk-hero-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.92)', color: primaryColor, padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 10, border: '1px solid #e5e7eb' }}>
-                <Sparkles size={13} /> {heroBadgeText}
-              </div>
-              <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 className="pk-title2" style={{ fontSize: 34, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.08, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 {heroTitleText}
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: '#c0547a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '5px 13px', letterSpacing: 0, whiteSpace: 'nowrap' }}>
+                  {total} {isPaquetes ? 'paquetes' : 'productos'}
+                </span>
               </h1>
-              <p className="pk-hero-subtitle" style={{ fontSize: 15, color: '#6b7280', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
-                {heroSubtitleText}
-              </p>
-              <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                <div className="pk-hero-stat-card" style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #e5e7eb', boxShadow: `0 4px 14px ${shadowColor}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="pk-hero-stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: `rgba(${isPaquetes ? '123,179,232' : (isEmbalajes ? '14,165,233' : '227,150,191')},0.1)`, color: primaryColor, flexShrink: 0 }}>
-                    <ShoppingCart size={15} />
-                  </div>
-                  <div className="pk-hero-stat-info">
-                    <span className="pk-hero-stat-num" style={{ display: 'block', fontSize: 18, fontWeight: 900, color: primaryColor, lineHeight: 1.1 }}>{total}</span>
-                    <span className="pk-hero-stat-label" style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'block' }}>{isPaquetes ? 'Paquetes' : (isEmbalajes ? 'Embalajes' : 'Productos')}</span>
-                  </div>
-                </div>
-                {!lockCategoryId && (
-                <div className="pk-hero-stat-card" style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #e5e7eb', boxShadow: `0 4px 14px ${shadowColor}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="pk-hero-stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: `rgba(${isPaquetes ? '123,179,232' : (isEmbalajes ? '14,165,233' : '227,150,191')},0.1)`, color: primaryColor, flexShrink: 0 }}>
-                    <Grid3x3 size={14} />
-                  </div>
-                  <div className="pk-hero-stat-info">
-                    <span className="pk-hero-stat-num" style={{ display: 'block', fontSize: 18, fontWeight: 900, color: primaryColor, lineHeight: 1.1 }}>{categories.length}</span>
-                    <span className="pk-hero-stat-label" style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'block' }}>Categorías</span>
-                  </div>
-                </div>
-                )}
-                {lockCategoryId && (
-                  <Link href="/productos" className="pk-hero-stat-link" style={{ padding: '9px 14px', borderRadius: 16, background: '#f8f9fa', border: '1px solid #e5e7eb', fontSize: 12, fontWeight: 700, color: primaryColor, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                    Ver catálogo completo
-                  </Link>
-                )}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 16 }}>
-                <Link href="/" className="pk-hero-home-btn">
-                  <ArrowLeft size={14} /> Volver a la página principal
-                </Link>
-              </div>
+              <p className="pk-subtitle2" style={{ fontSize: 13.5, color: '#6b7280', margin: '6px 0 0', maxWidth: 560, lineHeight: 1.5 }}>{heroSubtitleText}</p>
+            </div>
+            <div className="pk-view-toggle" style={{ display: 'flex', background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 3, flexShrink: 0 }}>
+              <button onClick={() => setView('grid')} style={{ padding: '8px 12px', background: view === 'grid' ? '#fdf2f8' : 'transparent', color: view === 'grid' ? '#c0547a' : '#6b7280', border: 'none', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800, transition: 'all 0.2s', outline: 'none', fontFamily: 'inherit' }} aria-label="Cuadrícula">
+                <Grid3x3 size={14} /> <span className="pk-desktop-only">Cuadrícula</span>
+              </button>
+              <button onClick={() => setView('list')} style={{ padding: '8px 12px', background: view === 'list' ? '#fdf2f8' : 'transparent', color: view === 'list' ? '#c0547a' : '#6b7280', border: 'none', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800, transition: 'all 0.2s', outline: 'none', fontFamily: 'inherit' }} aria-label="Lista">
+                <List size={14} /> <span className="pk-desktop-only">Lista</span>
+              </button>
             </div>
           </div>
+          {heroImageToUse && !lockCategoryId && (
+            <div className="pk-cover-strip" style={{ position: 'relative', marginTop: 14, borderRadius: 20, overflow: 'hidden', height: 170, background: 'linear-gradient(135deg,#fff5f9,#fce7f3)' }}>
+              <img src={heroImageToUse} alt="Portada catálogo" onLoad={() => setHeroImgLoaded(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(17,24,39,0.32) 0%, rgba(17,24,39,0) 55%)' }} />
+              <div style={{ position: 'absolute', left: 18, bottom: 14, display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fff', fontWeight: 900, fontSize: 15, textShadow: '0 2px 8px rgba(0,0,0,0.35)' }}>
+                <Sparkles size={15} /> {heroBadgeText}
+              </div>
+            </div>
+          )}
         </div>
 
-
+        {/* 🏷️ Banda de categorías con contadores — burbujas estilo stories,
+            visible en desktop Y móvil (antes: chips solo móvil + select desktop) */}
+        {!lockCategoryId && categories.length > 0 && (
+          <div className="pk-catband pk-h-scroll" style={{ display: 'flex', gap: 14, overflowX: 'auto', padding: '6px 2px 14px', marginBottom: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+            <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70, fontFamily: 'inherit', padding: 0 }}>
+              <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 900, color: !selectedCat ? '#fff' : '#c0547a', background: !selectedCat ? 'linear-gradient(135deg,#e396bf,#c0547a)' : '#fdf2f8', border: !selectedCat ? '2.5px solid #e396bf' : '2.5px solid #fbcfe8', boxShadow: !selectedCat ? '0 6px 16px rgba(227,150,191,0.35)' : 'none', transition: 'all 0.2s' }}>✦</span>
+              <span style={{ fontSize: 11, fontWeight: !selectedCat ? 800 : 600, color: !selectedCat ? '#c0547a' : '#6b7280', whiteSpace: 'nowrap' }}>Todos</span>
+            </button>
+            {categories.map(c => {
+              const count = catCountMap[c.$id] || 0;
+              if (count === 0) return null;
+              const active = selectedCat === c.$id;
+              return (
+                <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id); }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70, fontFamily: 'inherit', padding: 0 }}>
+                  <span style={{ position: 'relative', width: 58, height: 58, display: 'block' }}>
+                    {c.iconUrl ? (
+                      <img src={c.iconUrl} alt={c.name} style={{ width: 58, height: 58, borderRadius: '50%', objectFit: 'cover', border: active ? '2.5px solid #e396bf' : '2.5px solid #f3f4f6', boxShadow: active ? '0 6px 16px rgba(227,150,191,0.35)' : '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.2s', display: 'block' }} />
+                    ) : (
+                      <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 900, color: active ? '#fff' : '#c0547a', background: active ? 'linear-gradient(135deg,#e396bf,#c0547a)' : '#fdf2f8', border: active ? '2.5px solid #e396bf' : '2.5px solid #fbcfe8', transition: 'all 0.2s' }}>{(c.name || 'C').charAt(0).toUpperCase()}</span>
+                    )}
+                    <span style={{ position: 'absolute', top: -3, right: -5, background: active ? '#c0547a' : '#111827', color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: '2px 6px', border: '2px solid #fff', lineHeight: 1.2 }}>{count}</span>
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: active ? 800 : 600, color: active ? '#c0547a' : '#6b7280', whiteSpace: 'nowrap', maxWidth: 78, overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Carousel hero para paquetes */}
         {isPaquetes && carouselPaquetes.length > 0 && (
@@ -596,10 +609,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             </div>
             <div ref={carouselRef} className="pk-carousel-no-scroll" style={{ display: 'flex', gap: 16, padding: '0 24px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
               {carouselPaquetes.map(p => {
-                const packUnitPrice = isDisableDiscounts(p) ? (p.PRICE || 0) : Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
+                const packUnitPrice = isDisableDiscounts(p) ? (p.PRICE || 0) : (p.WHOLESALEPRICE || p.PRICE || 0);
                 const packPrice = packUnitPrice * (p.PACKQTY || 1);
                 const origPackPrice = p.PRICE * (p.PACKQTY || 1);
-                const discPct = !isDisableDiscounts(p) && origPackPrice > 0 ? PACK_BONUS_DISCOUNT_PCT : 0;
+                const discPct = !isDisableDiscounts(p) && origPackPrice > 0 && packPrice < origPackPrice ? Math.round((1 - packPrice/origPackPrice) * 100) : 0;
                 const cFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
                 const cTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                 const cSku = getSkuFromFeatures(cFeatures, cTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
@@ -725,170 +738,52 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           </div>
         )}
 
-        {/* Top toolbar */}
-        <div className={`pk-toolbar ${isScrolled ? 'pk-toolbar-scrolled' : ''}`} style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20, padding: 12, borderRadius: 22, background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(229, 231, 235, 0.9)', backdropFilter: 'blur(16px)', boxShadow: '0 10px 34px rgba(227,150,191,0.1)' }}>
-          
-          {/* Row 1: Search + Filters (Mobile next to Search, Desktop full flex) */}
-          <div style={{ display: 'flex', width: '100%', gap: 10, alignItems: 'center' }}>
-            <div className="pk-toolbar-search" style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: primaryColor }} />
-              <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder={isPaquetes ? "Buscar paquetes..." : (isEmbalajes ? "Buscar embalajes..." : "Buscar productos...")}
-                style={{ width: '100%', padding: '13px 38px 13px 42px', borderRadius: 16, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 14, color: '#111', outline: 'none', boxShadow: `0 2px 8px ${shadowColorLight}`, fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
-                onFocus={e => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.boxShadow = `0 0 0 4px ${shadowColorLight}`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = `0 2px 8px ${shadowColorLight}`; }} />
-              {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: primaryColor }}><X size={14} /></button>}
-            </div>
-
-            <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-mobile-only animate-fade-in"
-              style={{ display: 'none', alignItems: 'center', gap: 6, padding: '12px 14px', borderRadius: 16, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 700, color: primaryColor, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              <SlidersHorizontal size={15} /> Filtros{hasActiveFilters ? ' •' : ''}
-            </button>
+        {/* 🧰 Toolbar rediseñado: UNA fila limpia — búsqueda + orden + cortina de
+            filtros (con contador). Los selects de categoría se fueron: ahora la
+            banda de burbujas y la cortina cubren eso. */}
+        <div className={`pk-toolbar ${isScrolled ? 'pk-toolbar-scrolled' : ''}`} style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 18, padding: 10, borderRadius: 999, background: 'rgba(255,255,255,0.92)', border: '1px solid #eee', backdropFilter: 'blur(16px)', boxShadow: '0 8px 28px rgba(17,24,39,0.06)' }}>
+          <div className="pk-toolbar-search" style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
+            <Search size={17} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: primaryColor }} />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={isPaquetes ? "Buscar paquetes..." : (isEmbalajes ? "Buscar embalajes..." : "Buscar productos...")}
+              style={{ width: '100%', padding: '12px 38px 12px 44px', borderRadius: 999, border: '1.5px solid #eee', background: '#faf9fa', fontSize: 14, color: '#111', outline: 'none', fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
+              onFocus={e => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.background = '#fff'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.background = '#faf9fa'; }} />
+            {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#fdf2f8', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#c0547a' }}><X size={14} /></button>}
           </div>
 
-          {/* Row 2: Categories Horizontal Scroll on Mobile only */}
-          {!lockCategoryId && (
-            <div className="pk-mobile-only pk-categories-scroll-wrap" style={{ display: 'none', width: '100%', overflowX: 'auto', gap: 8, padding: '4px 0 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', borderTop: '1px solid rgba(229,231,235,0.4)', paddingTop: 10, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-              <button
-                onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
-                style={{
-                  whiteSpace: 'nowrap',
-                  padding: '8px 16px',
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  background: !selectedCat ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fff',
-                  color: !selectedCat ? '#fff' : '#6b7280',
-                  border: '1px solid ' + (!selectedCat ? 'transparent' : '#e5e7eb'),
-                  cursor: 'pointer',
-                  boxShadow: !selectedCat ? '0 4px 10px rgba(227,150,191,0.2)' : 'none',
-                  fontFamily: 'inherit'
-                }}
-              >
-                Todos
-              </button>
-              {categories.map(c => {
-                const count = catCountMap[c.$id] || 0;
-                if (count === 0) return null;
-                return (
-                  <button
-                    key={c.$id}
-                    onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id); }}
-                    style={{
-                      whiteSpace: 'nowrap',
-                      padding: '8px 16px',
-                      borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      background: selectedCat === c.$id ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fff',
-                      color: selectedCat === c.$id ? '#fff' : '#6b7280',
-                      border: '1px solid ' + (selectedCat === c.$id ? 'transparent' : '#e5e7eb'),
-                      cursor: 'pointer',
-                      boxShadow: selectedCat === c.$id ? '0 4px 10px rgba(227,150,191,0.2)' : 'none',
-                      fontFamily: 'inherit'
-                    }}
-                  >
-                    {c.name} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Row 3 (Desktop only or collapsed on scroll on mobile) */}
-          <div className="pk-toolbar-actions" style={{ width: '100%' }}>
-            {/* Selector de Categorías en Toolbar */}
-          {!lockCategoryId && (
-            <div className="pk-toolbar-select-wrap pk-desktop-only" style={{ position: 'relative' }}>
-              <select
-                value={selectedCat}
-                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); updateCategoryUrl(e.target.value); }}
-                style={{
-                  padding: '12px 34px 12px 16px',
-                  borderRadius: 14,
-                  border: '1.5px solid #e5e7eb',
-                  background: '#fff',
-                  fontSize: 13,
-                  color: '#111',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                  minWidth: 160,
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                }}
-              >
-                <option value="">Todas las categorías</option>
-                {categories.map(c => (
-                  <option key={c.$id} value={c.$id}>{c.name}</option>
-                ))}
-              </select>
-              <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: primaryColor, pointerEvents: 'none' }} />
-            </div>
-          )}
-
-          {/* Selector de Subcategorías en Toolbar */}
-          {selectedCat && subcategories.length > 0 && (
-            <div className="pk-toolbar-select-wrap pk-desktop-only" style={{ position: 'relative' }}>
-              <select
-                value={selectedSubcat}
-                onChange={e => setSelectedSubcat(e.target.value)}
-                style={{
-                  padding: '12px 34px 12px 16px',
-                  borderRadius: 14,
-                  border: '1.5px solid #e5e7eb',
-                  background: '#fff',
-                  fontSize: 13,
-                  color: '#111',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                  minWidth: 160,
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                }}
-              >
-                <option value="">Todas las subcategorías</option>
-                {subcategories.map(sc => (
-                  <option key={sc.$id} value={sc.$id}>{sc.name}</option>
-                ))}
-              </select>
-              <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: primaryColor, pointerEvents: 'none' }} />
-            </div>
-          )}
-
-          <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-desktop-only"
-            style={{ alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 700, color: primaryColor, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <SlidersHorizontal size={15} /> Filtros{hasActiveFilters ? ' •' : ''}
-          </button>
-
-          <div className="pk-sort-wrap" style={{ position: 'relative', zIndex: sortDropdownOpen ? 1050 : 1 }}>
+          <div className="pk-sort-wrap" style={{ position: 'relative', zIndex: sortDropdownOpen ? 1050 : 1, flexShrink: 0 }}>
             <button onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
-              className="pk-sort-btn" style={{ padding: '12px 38px 12px 16px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, color: '#111', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              {sortBy === 'newest' ? 'Más recientes' : sortBy === 'price_asc' ? '↑ Precio: menor a mayor' : '↓ Precio: mayor a menor'}
-              <ChevronDown size={15} style={{ color: primaryColor, transition: 'transform 0.2s', transform: sortDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+              className="pk-sort-btn" style={{ padding: '12px 14px', borderRadius: 999, border: '1.5px solid #eee', background: '#fff', fontSize: 12.5, color: '#374151', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+              <span className="pk-sort-label">{sortBy === 'newest' ? 'Más recientes' : sortBy === 'price_asc' ? '↑ Precio' : '↓ Precio'}</span>
+              <ChevronDown size={14} style={{ color: primaryColor, transition: 'transform 0.2s', transform: sortDropdownOpen ? 'rotate(180deg)' : 'none' }} />
             </button>
             {sortDropdownOpen && (
               <>
                 <div onClick={() => setSortDropdownOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, background: '#fff', borderRadius: 14, border: '1.5px solid #e5e7eb', boxShadow: `0 10px 30px ${shadowColorLight}`, zIndex: 100, overflow: 'hidden' }}>
-                  <button onClick={() => { setSortBy('newest'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '10px 14px', background: sortBy === 'newest' ? '#f8f9fa' : 'transparent', color: sortBy === 'newest' ? primaryColor : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'newest' ? 700 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 200, background: '#fff', borderRadius: 16, border: '1.5px solid #eee', boxShadow: '0 12px 34px rgba(17,24,39,0.1)', zIndex: 100, overflow: 'hidden' }}>
+                  <button onClick={() => { setSortBy('newest'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'newest' ? '#fdf2f8' : 'transparent', color: sortBy === 'newest' ? '#c0547a' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'newest' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
                     Más recientes
                   </button>
-                  <button onClick={() => { setSortBy('price_asc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '10px 14px', background: sortBy === 'price_asc' ? '#f8f9fa' : 'transparent', color: sortBy === 'price_asc' ? primaryColor : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_asc' ? 700 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                  <button onClick={() => { setSortBy('price_asc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'price_asc' ? '#fdf2f8' : 'transparent', color: sortBy === 'price_asc' ? '#c0547a' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_asc' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
                     ↑ Precio: menor a mayor
                   </button>
-                  <button onClick={() => { setSortBy('price_desc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '10px 14px', background: sortBy === 'price_desc' ? '#f8f9fa' : 'transparent', color: sortBy === 'price_desc' ? primaryColor : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_desc' ? 700 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                  <button onClick={() => { setSortBy('price_desc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'price_desc' ? '#fdf2f8' : 'transparent', color: sortBy === 'price_desc' ? '#c0547a' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_desc' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
                     ↓ Precio: mayor a menor
                   </button>
                 </div>
               </>
             )}
           </div>
+
+          <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 999, border: 'none', background: 'linear-gradient(135deg,#e396bf,#c0547a)', fontSize: 12.5, fontWeight: 800, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 4px 14px rgba(227,150,191,0.3)' }}>
+            <SlidersHorizontal size={15} /> Filtros
+            {activeFiltersCount > 0 && (
+              <span style={{ background: '#fff', color: '#c0547a', borderRadius: 999, fontSize: 10.5, fontWeight: 900, minWidth: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{activeFiltersCount}</span>
+            )}
+          </button>
         </div>
-      </div>
 
         {/* Active filter chips */}
         {hasActiveFilters && (
@@ -915,12 +810,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         )}
 
         <div className="pk-products-layout" style={{ display: 'flex', gap: 28 }}>
-          {/* Desktop sidebar */}
-          <aside className="pk-sidebar-desktop pk-desktop-only" style={{ width: 220, flexShrink: 0 }}>
-            <div style={{ position: 'sticky', top: 20 }}>
-              <FiltersSidebar />
-            </div>
-          </aside>
+          {/* 🚪 Sidebar desktop eliminado: los filtros viven en la cortina lateral
+              (setMobileFiltersOpen) — grid a ancho completo estilo Shein/Zara */}
 
           {/* Products */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -936,7 +827,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             </div>
 
             {isLoading ? (
-              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
+              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(225px, 1fr))', gap: 16 }}>
                 {[...Array(8)].map((_, i) => (
                   <div key={i} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
                     <div style={{ aspectRatio: '1/1', background: 'linear-gradient(90deg,#f8f9fa,#e5e7eb,#f8f9fa)', backgroundSize: '200% 100%', animation: 'pkShimmer 1.4s ease infinite' }} />
@@ -961,48 +852,17 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                 )}
               </div>
             ) : view === 'grid' ? (
-              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
-                {visibleProducts.map(p => {
-                  const activeOffer = timedOffersMap[p.$id];
-                  const rawPricing = activeOffer ? {
-                    displayPrice: activeOffer.discountPrice,
-                    originalPrice: activeOffer.originalPrice,
-                    hasDiscount: true,
-                    discountPercent: activeOffer.discountPercentage,
-                    fromApertura: false
-                  } : resolveProductDisplayPrice(p, apertura);
-                  
-                  let price = rawPricing.displayPrice;
-                  let origPrice = rawPricing.originalPrice;
-
-                  if (catalogMode === 'embalajes') {
-                    price = p.WHOLESALEPRICE || p.PRICE;
-                    origPrice = p.PRICE;
-                  } else if (catalogMode === 'paquetes') {
-                    // Forzar 20% de descuento en todos los paquetes
-                    const basePrice = p.PRICE || 0;
-                    if (isDisableDiscounts(p)) {
-                      price = basePrice;
-                      origPrice = null;
-                    } else {
-                      price = Math.round(basePrice * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
-                      origPrice = p.PRICE;
-                    }
-                  } else if (!activeOffer && p.PACKQTY && p.PACKQTY > 1) {
-                    // En /productos, si tiene PACKQTY mostrar también el precio de paquete como referencia
-                    // (el precio normal sigue siendo el individual con apertura)
-                    price = rawPricing.displayPrice;
-                    origPrice = rawPricing.originalPrice;
+              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(225px, 1fr))', gap: 16 }}>
+                                {visibleProducts.map(p => {
+                  // 📦 Precios por volumen: precio Detalle grande + niveles como
+                  // chips informativos. CERO descuentos fabricados (ni %, ni tachados).
+                  const tiers = getVolumeTiers(p);
+                  const isPackModeCard = catalogMode === 'paquetes' || catalogMode === 'embalajes';
+                  let price = tiers[0].unitPrice;
+                  if (isPackModeCard) {
+                    price = (p.WHOLESALEPRICE || p.PRICE || 0) * (p.PACKQTY || 1);
                   }
-
-                  if ((catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY) {
-                    price *= p.PACKQTY;
-                    if (origPrice != null) origPrice *= p.PACKQTY;
-                  }
-
-                  const hasDisc = origPrice != null && origPrice > price;
-                  const disc = hasDisc && origPrice ? Math.round((1 - price/origPrice)*100) : rawPricing.discountPercent;
-                  const pricing = { ...rawPricing, originalPrice: origPrice };
+                  const volTiers = !isPackModeCard ? tiers.slice(1, 3) : [];
                   const fav = isFavorite(p.$id);
                   const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
                   const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
@@ -1011,17 +871,18 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const isSadoer = pBrand.toLowerCase() === 'sadoer';
                   const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
                   const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
-                  const effectiveStock = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? packStockAvailable(p) : (p.STOCK || 0);
+                  const effectiveStock = isPackModeCard ? packStockAvailable(p) : (p.STOCK || 0);
                   const outOfStock = effectiveStock <= 0;
+                  const limitedStock = !outOfStock && effectiveStock < 99999;
+                  const lowStock = limitedStock && effectiveStock <= 10;
+                  const added = !!justAdded[p.$id];
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
-                      <div className="pk-card-media-link" onClick={() => handleCardImageClick(p)} style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#f8f9fa,#fff)', overflow: 'hidden' }}>
-                          {getProductImageUrl(p) ? (
-                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', pointerEvents: 'none' }} sizes="(max-width: 768px) 50vw, 25vw" unoptimized />
-                          ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#c7d2fe' }}>📦</div>
-                          )}
+                    <div key={p.$id} className="pk-card" style={{ background: '#ffffff', borderRadius: 18, overflow: 'hidden', border: '1px solid #ececec', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(17,24,39,0.04)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
+                      <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: '#f7f7f8', overflow: 'hidden' }}>
+                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} />
+                          {/* ❌ Badge "Pack de N" eliminado: PACKQTY está sucio en la BD
+                              (herencia del viejo sistema de 20%) y salía en productos sin pack */}
                           {outOfStock && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
                               <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
@@ -1029,12 +890,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           )}
                         </div>
                       </div>
-                      <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                          <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            {cardSku && <span className="pk-card-sku">SKU: {cardSku}</span>}
+                      <div className="pk-card-body" style={{ padding: '12px 12px 14px', display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ fontSize: 10.5, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+                            {cardSku && <span className="pk-card-sku" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>SKU {cardSku}</span>}
                             {pBrand && (
-                              <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999 }}>
+                              <span style={{ fontSize: 9.5, fontWeight: 800, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>
                                 {pBrand}
                               </span>
                             )}
@@ -1046,70 +907,54 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                             onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
                             style={{
-                              width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                              width: 32, height: 32, borderRadius: '50%', border: '1px solid #f0f0f0', cursor: 'pointer',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: '#f8f9fa',
+                              background: '#fff',
                               color: primaryColor,
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                              flexShrink: 0,
                             }}
                           >
-                            <AnimHeart filled={fav} size={20} />
+                            <AnimHeart filled={fav} size={19} />
                           </button>
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
                         </Link>
-                        {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: packQtyColor, fontWeight: 800, marginTop: -4, marginBottom: 8 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 'auto' }}>
                           {price > 0 ? (
                             <>
-                              <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: isPaquetes ? primaryColor : (hasDisc ? '#d97bb0' : '#111'), letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
-                              {hasDisc && (isPaquetes ? (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 999, fontSize: 11, fontWeight: 900, letterSpacing: '0.04em', background: '#b8a07a', color: '#fff', lineHeight: 1, position: 'relative', zIndex: 2 }}>✦ -{disc}%</span>
-                              ) : (
-                                <AperturaDiscountBadge percent={disc} size="sm" />
-                              ))}
+                              <span className="pk-price" style={{ fontSize: 20, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
+                              <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{isPackModeCard ? 'por paquete' : 'c/u'}</span>
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
                           )}
                         </div>
-                        {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes' && p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 1 && p.WHOLESALEPRICE > 0) ? (
-                          <div style={{ fontSize: 10.5, color: '#ec4899', fontWeight: 700, marginTop: 6, marginBottom: 2, lineHeight: 1.2 }}>
-                            Llevando {p.WHOLESALEMINQUANTITY}+ uds a {formatPrice(p.WHOLESALEPRICE)} c/u
-                          </div>
-                        ) : null}
-                        <button onClick={() => {
-                          const qtyToAdd = (catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY ? p.PACKQTY : 1;
-                          const overridePrice = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? (catalogMode === 'paquetes' && !isDisableDiscounts(p) ? Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : (p.WHOLESALEPRICE || p.PRICE)) : undefined;
-                          !outOfStock && addItem(p, qtyToAdd, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, overridePrice, (catalogMode === 'paquetes' || catalogMode === 'embalajes'));
-                        }} disabled={outOfStock} className="pk-add-btn"
-                          style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: outOfStock ? '#f3f4f6' : gradientColor, color: outOfStock ? '#9ca3af' : buttonTextColor, fontSize: 12, fontWeight: 700, cursor: outOfStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: outOfStock ? 'none' : `0 4px 14px ${shadowColor}`, fontFamily: 'inherit' }}>
-                          <ShoppingCart size={13} /> {outOfStock ? 'Sin stock' : ((catalogMode === 'paquetes' || catalogMode === 'embalajes') ? 'Comprar paquete' : 'Agregar')}
-                        </button>
-                        {activeOffer && (
-                          <div style={{
-                            marginTop: 8,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 4,
-                            background: '#fff5f5',
-                            border: '1px solid #fee2e2',
-                            borderRadius: 8,
-                            padding: '4px 8px',
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: '#ef4444'
-                          }}>
-                            <Clock size={11} className="animate-pulse" />
-                            <span style={{ fontSize: 9.5 }}>Oferta termina: </span>
-                            <CountdownTimer expiresAt={getExpiresAtEpochSeconds(activeOffer) || 0} compact />
+                        {volTiers.length > 0 && (
+                          <div className="pk-vol-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {volTiers.map(t => (
+                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#9d5878', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
+                                {t.minQty}+ un&nbsp;<span style={{ color: '#c9628f', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
+                              </span>
+                            ))}
                           </div>
                         )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, color: outOfStock ? '#9ca3af' : lowStock ? '#d97706' : '#059669' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                          {outOfStock ? 'Sin stock' : lowStock ? `Quedan ${effectiveStock} unidades` : 'Stock disponible'}
+                        </div>
+                        <button onClick={() => {
+                          if (outOfStock) return;
+                          const qtyToAdd = isPackModeCard && p.PACKQTY ? p.PACKQTY : 1;
+                          const overridePrice = isPackModeCard ? (p.WHOLESALEPRICE || p.PRICE) : undefined;
+                          addItem(p, qtyToAdd, undefined, undefined, overridePrice, isPackModeCard);
+                          flashAdded(p.$id);
+                        }} disabled={outOfStock} className="pk-add-btn"
+                          style={{ marginTop: 4, padding: '11px 12px', minHeight: 42, borderRadius: 12, border: 'none', background: outOfStock ? '#f3f4f6' : (added ? '#059669' : gradientColor), color: outOfStock ? '#9ca3af' : buttonTextColor, fontSize: 12.5, fontWeight: 800, cursor: outOfStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: outOfStock ? 'none' : '0 4px 14px rgba(227,150,191,0.3)', transition: 'filter 0.2s ease, transform 0.1s ease', fontFamily: 'inherit' }}>
+                          <ShoppingCart size={14} /> {outOfStock ? 'Sin stock' : added ? '✓ Añadido' : (isPackModeCard ? 'Comprar paquete' : 'Agregar')}
+                        </button>
                       </div>
                     </div>
                   );
@@ -1139,8 +984,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       price = basePrice;
                       origPrice = null;
                     } else {
-                      price = Math.round(basePrice * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
-                      origPrice = p.PRICE;
+                      price = p.WHOLESALEPRICE || basePrice;
+                      origPrice = p.WHOLESALEPRICE && p.WHOLESALEPRICE < basePrice ? p.PRICE : null;
                     }
                   }
 
@@ -1150,7 +995,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   }
 
                   const hasDisc = origPrice != null && origPrice > price;
-                  const effDiscPct = catalogMode === 'paquetes' ? (p.PACK_DISCOUNT_PCT || PACK_BONUS_DISCOUNT_PCT) : rawPricing.discountPercent;
+                  const effDiscPct = rawPricing.discountPercent;
                   const disc = hasDisc && origPrice ? Math.round((1 - price/origPrice)*100) : effDiscPct;
                   const pricing = { ...rawPricing, originalPrice: origPrice };
                   const fav = isFavorite(p.$id);
@@ -1165,17 +1010,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const outOfStockL = effectiveStockL <= 0;
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
-                      {hasDisc && (
-                        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3 }}>
-                          {isPaquetes ? (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 999, fontSize: 11, fontWeight: 900, letterSpacing: '0.04em', background: '#b8a07a', color: '#fff', lineHeight: 1 }}>✦ -{disc}%</span>
-                          ) : (
-                            <AperturaDiscountBadge percent={disc} size="sm" />
-                          )}
-                        </div>
-                      )}
-                      <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#f8f9fa', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
+                      <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 14, overflow: 'hidden', background: '#f7f7f8', flexShrink: 0 }}>
+                        <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} sizes="110px" compact />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -1189,42 +1025,26 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
-                        {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: packQtyColor, fontWeight: 800, marginBottom: 6 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
                         <p className="pk-card-list-desc" style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           {price > 0 ? (
                             <>
-                              <span className="pk-price" style={{ fontSize: 18, fontWeight: 800, color: isPaquetes ? primaryColor : (hasDisc ? '#d97bb0' : '#111') }}>{formatPrice(price)}</span>
-                              {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
+                              <span className="pk-price" style={{ fontSize: 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
+                              <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{(catalogMode === 'paquetes' || catalogMode === 'embalajes') ? 'por paquete' : 'c/u'}</span>
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
                           )}
                         </div>
-                        {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes' && p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 1 && p.WHOLESALEPRICE > 0) ? (
-                          <div style={{ fontSize: 10.5, color: '#ec4899', fontWeight: 700, marginTop: 6, lineHeight: 1.2 }}>
-                            Llevando {p.WHOLESALEMINQUANTITY}+ uds a {formatPrice(p.WHOLESALEPRICE)} c/u
+                        {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes') && getVolumeTiers(p).length > 1 ? (
+                          <div className="pk-vol-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                            {getVolumeTiers(p).slice(1, 3).map(t => (
+                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#9d5878', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
+                                {t.minQty}+ un&nbsp;<span style={{ color: '#c9628f', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
+                              </span>
+                            ))}
                           </div>
                         ) : null}
-                        {activeOffer && (
-                          <div style={{
-                            marginTop: 8,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            background: '#fff5f5',
-                            border: '1px solid #fee2e2',
-                            borderRadius: 8,
-                            padding: '4px 8px',
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: '#ef4444'
-                          }}>
-                            <Clock size={11} className="animate-pulse" />
-                            <span style={{ fontSize: 9.5 }}>Oferta termina: </span>
-                            <CountdownTimer expiresAt={getExpiresAtEpochSeconds(activeOffer) || 0} compact />
-                          </div>
-                        )}
                       </div>
                       <div className="pk-card-list-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         <button onClick={() => setPreviewProduct(p)} title="Vista rápida"
@@ -1236,11 +1056,13 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           <AnimHeart filled={fav} size={24} />
                         </button>
                         <button className="pk-list-cart-btn" onClick={() => {
+                          if (outOfStockL) return;
                           const qtyToAddL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') && p.PACKQTY ? p.PACKQTY : 1;
-                          const overridePriceL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? (catalogMode === 'paquetes' && !isDisableDiscounts(p) ? Math.round((p.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : (p.WHOLESALEPRICE || p.PRICE)) : undefined;
-                          !outOfStockL && addItem(p, qtyToAddL, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, overridePriceL, (catalogMode === 'paquetes' || catalogMode === 'embalajes'));
+                          const overridePriceL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? (p.WHOLESALEPRICE || p.PRICE) : undefined;
+                          addItem(p, qtyToAddL, undefined, undefined, overridePriceL, (catalogMode === 'paquetes' || catalogMode === 'embalajes'));
+                          flashAdded(p.$id);
                         }} disabled={outOfStockL} title={outOfStockL ? "Sin stock" : ((catalogMode === 'paquetes' || catalogMode === 'embalajes') ? "Comprar paquete" : "Agregar al carrito")}
-                          style={{ width: 40, height: 40, borderRadius: '50%', background: outOfStockL ? '#e5e7eb' : lightBgColor, border: outOfStockL ? 'none' : `1.5px solid ${lightBorderColor}`, color: outOfStockL ? '#9ca3af' : primaryColor, cursor: outOfStockL ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: outOfStockL ? 'none' : `0 2px 8px ${shadowColorLight}` }}>
+                          style={{ width: 42, height: 42, borderRadius: '50%', background: outOfStockL ? '#e5e7eb' : (justAdded[p.$id] ? '#059669' : gradientColor), border: 'none', color: outOfStockL ? '#9ca3af' : '#fff', cursor: outOfStockL ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: outOfStockL ? 'none' : '0 3px 10px rgba(227,150,191,0.3)', transition: 'filter 0.2s ease' }}>
                           <ShoppingCart size={16} />
                         </button>
                       </div>
@@ -1290,8 +1112,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       {/* Mobile filters drawer */}
       {mounted && mobileFiltersOpen && createPortal(
         <>
-          <div className="pk-filters-backdrop pk-mobile-only" onClick={() => setMobileFiltersOpen(false)} onTouchMove={(e) => e.preventDefault()} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 10000, touchAction: 'none' }} />
-          <div className="pk-filters-drawer pk-mobile-only" style={{ overscrollBehavior: 'contain' }}>
+          {/* 🚪 Cortina de filtros: bottom-sheet en móvil, panel lateral en desktop */}
+          <div className="pk-filters-backdrop" onClick={() => setMobileFiltersOpen(false)} onTouchMove={(e) => e.preventDefault()} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 10000, touchAction: 'none', display: 'block' }} />
+          <div className="pk-filters-drawer" style={{ overscrollBehavior: 'contain' }}>
             <div className="pk-filters-drawer-handle" />
             <div className="pk-filters-drawer-header" onTouchMove={(e) => e.preventDefault()}>
               <h2>Filtros</h2>
@@ -1601,28 +1424,32 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           box-shadow: 0 0 0 4px var(--pk-shadow-light) !important;
         }
 
+        /* 🚪 Botón "Filtros": píldora rosa protagonista (abre la cortina) */
         .pk-filters-btn {
-          border: 1.5px solid var(--pk-shadow-light) !important;
-          border-radius: 14px !important;
-          background: rgba(255, 255, 255, 0.85) !important;
-          color: var(--pk-primary-dark) !important;
-          font-weight: 700 !important;
+          border: none !important;
+          border-radius: 999px !important;
+          background: linear-gradient(135deg, #e396bf, #c0547a) !important;
+          color: #ffffff !important;
+          font-weight: 800 !important;
           display: inline-flex !important;
           align-items: center !important;
           gap: 7px !important;
           cursor: pointer !important;
+          box-shadow: 0 4px 14px rgba(227, 150, 191, 0.3) !important;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
         .pk-filters-btn:active {
           transform: scale(0.96) !important;
-          background: var(--pk-shadow-light) !important;
+        }
+        .pk-filters-btn:hover {
+          filter: brightness(0.94);
         }
 
         .pk-sort-btn {
-          border: 1.5px solid rgba(229, 231, 235, 0.8) !important;
-          border-radius: 14px !important;
-          background: rgba(255, 255, 255, 0.85) !important;
-          font-weight: 600 !important;
+          border: 1.5px solid #eeeeee !important;
+          border-radius: 999px !important;
+          background: #ffffff !important;
+          font-weight: 700 !important;
           color: #374151 !important;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
@@ -1653,7 +1480,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         }
         .pk-desktop-only { display: block; }
         .pk-mobile-only { display: none; }
-        .pk-filters-btn { display: none; }
+        /* (el botón Filtros ahora vive en la toolbar en TODOS los breakpoints) */
 
         .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x; -webkit-overflow-scrolling: touch; }
         .pk-h-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
@@ -1665,6 +1492,27 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           box-shadow: 0 -12px 40px rgba(0,0,0,0.18);
           display: flex; flex-direction: column; gap: 10px;
           animation: pkDrawerUp 0.32s cubic-bezier(0.16,1,0.3,1);
+        }
+        /* 🚪 Desktop: la cortina entra desde la DERECHA como panel lateral */
+        @keyframes pkDrawerRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @media (min-width: 1025px) {
+          .pk-filters-drawer {
+            left: auto; right: 0; top: 0; bottom: 0;
+            width: 400px; max-height: none; height: 100vh;
+            border-radius: 24px 0 0 24px;
+            padding: 18px 20px 20px;
+            box-shadow: -16px 0 50px rgba(0,0,0,0.16);
+            animation: pkDrawerRight 0.32s cubic-bezier(0.16,1,0.3,1);
+          }
+          .pk-filters-drawer-handle { display: none; }
+        }
+        /* 🏷️ Banda de categorías: hover con lift sutil */
+        .pk-catband { scrollbar-width: none; }
+        .pk-catband::-webkit-scrollbar { display: none; }
+        @media (hover: hover) and (pointer: fine) {
+          .pk-catband-item:hover > span:first-of-type,
+          .pk-catband-item:hover img { transform: translateY(-3px); }
+          .pk-catband-item > span:first-of-type, .pk-catband-item img { transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
         }
         .pk-filters-drawer-handle { width: 40px; height: 4px; border-radius: 999px; background: #e5e7eb; margin: 4px auto 0; flex-shrink: 0; }
         .pk-filters-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 8px; flex-shrink: 0; }
@@ -1708,7 +1556,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         }
 
         .pk-hero-fallback-bg {
-          background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : (isEmbalajes ? 'linear-gradient(135deg, #fff5f5 0%, #ffc9c9 50%, #fff8f8 100%)' : 'linear-gradient(135deg, #fdf2f8 0%, #f5d0fe 50%, #fae8ff 100%)')} !important;
+          background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : (isEmbalajes ? 'linear-gradient(135deg, #fff5f5 0%, #ffc9c9 50%, #fff8f8 100%)' : 'linear-gradient(135deg, #fff5f9 0%, #fce7f3 50%, #ffffff 100%)')} !important;
           position: relative;
           overflow: hidden;
         }
@@ -1719,7 +1567,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           left: -10%;
           width: 60%;
           height: 140%;
-          background: radial-gradient(circle, ${isPaquetes ? 'rgba(198, 139, 89, 0.4)' : (isEmbalajes ? 'rgba(220, 38, 38, 0.4)' : 'rgba(227, 150, 191, 0.4)')} 0%, transparent 70%);
+          background: radial-gradient(circle, ${isPaquetes ? 'rgba(198, 139, 89, 0.4)' : (isEmbalajes ? 'rgba(220, 38, 38, 0.4)' : 'rgba(227, 150, 191, 0.28)')} 0%, transparent 70%);
           filter: blur(40px);
           animation: pulseGlow 8s ease-in-out infinite alternate;
         }
@@ -1730,7 +1578,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           right: -10%;
           width: 50%;
           height: 130%;
-          background: radial-gradient(circle, ${isPaquetes ? 'rgba(92, 61, 36, 0.3)' : (isEmbalajes ? 'rgba(127, 29, 29, 0.3)' : 'rgba(192, 84, 122, 0.3)')} 0%, transparent 70%);
+          background: radial-gradient(circle, ${isPaquetes ? 'rgba(92, 61, 36, 0.3)' : (isEmbalajes ? 'rgba(127, 29, 29, 0.3)' : 'rgba(192, 84, 122, 0.15)')} 0%, transparent 70%);
           filter: blur(40px);
           animation: pulseGlow 12s ease-in-out infinite alternate-reverse;
         }
@@ -1743,6 +1591,15 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
         @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
+          /* 🎨 Hover elegante: lift sutil + sombra neutra (sin glow rosa) */
+          .pk-card:hover {
+            box-shadow: 0 12px 32px rgba(17,24,39,0.09) !important;
+            transform: translateY(-3px);
+            border-color: #e2e2e2 !important;
+          }
+          .pk-card:hover .pk-price { color: #c9628f !important; }
+          .pk-add-btn:hover:not(:disabled) { filter: brightness(0.94); }
+          .pk-add-btn:active:not(:disabled) { transform: scale(0.97); }
         }
 
         @media (max-width: 1024px) {
@@ -1798,7 +1655,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           }
 
           .pk-hero-fallback-bg {
-            background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : 'linear-gradient(135deg, #fff2f6 0%, #fce7f3 50%, #fff6f9 100%)'} !important;
+            background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : 'linear-gradient(135deg, #fff5f9 0%, #fce7f3 50%, #ffffff 100%)'} !important;
             opacity: 1 !important;
           }
           
@@ -1997,9 +1854,16 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             position: sticky !important;
             top: 54px !important;
             z-index: 999 !important;
+            border-radius: 22px !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
           }
+          /* 📱 Header editorial + banda de categorías en móvil */
+          .pk-title2 { font-size: 25px !important; gap: 8px !important; }
+          .pk-title2 > span { font-size: 11px !important; padding: 4px 10px !important; }
+          .pk-subtitle2 { font-size: 12.5px !important; }
+          .pk-cover-strip { height: 120px !important; border-radius: 16px !important; }
+          .pk-catband { gap: 11px !important; padding-bottom: 10px !important; }
           .pk-toolbar.pk-toolbar-scrolled {
             position: -webkit-sticky !important;
             position: sticky !important;
@@ -2032,16 +1896,23 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
           .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
-          .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+          .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
           .pk-card {
-            border-radius: 0 0 18px 18px !important;
+            border-radius: 14px !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             background: #ffffff !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
-            border: 1px solid rgba(229, 231, 235, 0.6) !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+            border: 1px solid #efefef !important;
             transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
           }
+          /* 📱 Comodidad táctil: buscador sin zoom iOS, botones de 42px+, chips legibles */
+          .pk-toolbar-search input { font-size: 16px !important; }
+          .pk-card-body { padding: 10px 10px 12px !important; gap: 5px !important; }
+          .pk-card-body .pk-price { font-size: 17px !important; }
+          .pk-add-btn { min-height: 42px !important; font-size: 12px !important; border-radius: 11px !important; }
+          .pk-vol-chips span { font-size: 9.5px !important; padding: 3px 7px !important; }
+          .pk-card-list-desc { display: none !important; }
           .pk-card-fav {
             display: flex !important;
             width: 28px !important;
@@ -2072,10 +1943,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           }
           .pk-card-actions--desktop { display: none !important; }
           
-          .pk-card .pk-card-body { padding: 8px 8px 10px !important; }
-          .pk-card .pk-card-body p { font-size: 11px !important; min-height: 28px !important; line-height: 1.3 !important; margin-bottom: 4px !important; }
-          .pk-card .pk-price { font-size: 14px !important; }
-          .pk-card .pk-add-btn { padding: 6px 8px !important; font-size: 10px !important; border-radius: 8px !important; margin-top: 6px !important; }
+          /* 📱 Tarjetas cómodas: nombre legible, precio protagonista, botón táctil 42px+ */
+          .pk-card .pk-card-body { padding: 10px 10px 12px !important; }
+          .pk-card .pk-card-body p { font-size: 12px !important; min-height: 32px !important; line-height: 1.35 !important; margin-bottom: 4px !important; }
+          .pk-card .pk-price { font-size: 17px !important; }
+          .pk-card .pk-add-btn { padding: 10px !important; font-size: 11.5px !important; border-radius: 10px !important; margin-top: 6px !important; min-height: 42px !important; }
 
           /* Redesigned horizontal list card on mobile */
           .pk-card-list {

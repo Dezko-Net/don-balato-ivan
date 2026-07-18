@@ -9,7 +9,7 @@ import { formatPrice } from '@/lib/appwrite';
 import { getProductImageUrl } from '@/lib/product-images';
 import { useCart } from '@/context/CartContext';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
-import { resolveProductDisplayPrice, PACK_BONUS_DISCOUNT_PCT, isDisableDiscounts } from '@/lib/apertura-promo';
+import { resolveProductDisplayPrice, isDisableDiscounts } from '@/lib/apertura-promo';
 import { getSkuFromFeatures } from '@/lib/product-features';
 
 interface Props {
@@ -38,12 +38,7 @@ export default function ProductCardPreview({ product, onClose, isPackMode }: Pro
   const basePricing = resolveProductDisplayPrice(product, apertura);
   const packQty = product.PACKQTY || 0;
   const isPackQtyReached = isPackMode && packQty > 1;
-  const pricing = isPackQtyReached && !isDisableDiscounts(product) ? (() => {
-    const base = product.PRICE || 0;
-    if (base <= 0) return basePricing;
-    const packUnitPrice = Math.round(base * (1 - PACK_BONUS_DISCOUNT_PCT / 100));
-    return { displayPrice: packUnitPrice, originalPrice: base, hasDiscount: true, discountPercent: PACK_BONUS_DISCOUNT_PCT, fromApertura: false };
-  })() : basePricing;
+  const pricing = basePricing;
   const price = pricing.displayPrice;
   const outOfStock = product.STOCK === 0;
   const isOpen = phase === 'open';
@@ -58,7 +53,7 @@ export default function ProductCardPreview({ product, onClose, isPackMode }: Pro
   function handleBuy() {
     if (outOfStock) return;
     const buyQty = isPackMode && product.PACKQTY ? product.PACKQTY : 1;
-    const packOverride = isPackQtyReached && !isDisableDiscounts(product) ? Math.round((product.PRICE || 0) * (1 - PACK_BONUS_DISCOUNT_PCT / 100)) : undefined;
+    const packOverride = isPackQtyReached && !isDisableDiscounts(product) ? (product.WHOLESALEPRICE ?? undefined) : undefined;
     addItem(product, buyQty, undefined, undefined, packOverride, isPackMode);
     close();
   }
@@ -147,7 +142,6 @@ export default function ProductCardPreview({ product, onClose, isPackMode }: Pro
             return pSku ? <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4, fontWeight: 700 }}>SKU: {pSku}</div> : null;
           })()}
           <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#111827', lineHeight: 1.35 }}>{product.NAME}</p>
-          {product.PACKQTY && product.PACKQTY > 1 ? <div style={{ fontSize: 12, color: '#db2777', fontWeight: 800, marginBottom: 8 }}>{product.PACKQTY} UNIDADES POR PAQUETE</div> : null}
           <div style={{ margin: '0 0 14px', display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
             <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#e396bf' }}>{formatPrice(price)}</p>
             {pricing.hasDiscount && pricing.originalPrice != null && (

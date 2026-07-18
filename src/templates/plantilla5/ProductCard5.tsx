@@ -6,17 +6,14 @@ import { Product } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
 import { useCart } from '@/context/CartContext';
 import QuickAddDrawer5 from './QuickAddDrawer5';
+import ProductImageGallery from '@/components/ProductImageGallery';
 
 export default function ProductCard5({ product }: { product: Product }) {
   const { addItem } = useCart();
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const productName = product.NAME || (product as any).name || 'Producto';
   
-  const rawImage1 = (product as any).IMAGEURL || (product as any).images?.[0];
   const rawImage2 = (product as any).IMAGEURL2 || (product as any).images?.[1];
-  
-  const image1 = rawImage1 || 'https://placehold.co/600x800/png?text=No+Image';
-  const image2 = rawImage2 || image1;
   const url = `/productos/${product.$id}`;
 
   return (
@@ -31,16 +28,7 @@ export default function ProductCard5({ product }: { product: Product }) {
             className={`product-card__media media-hover--scale ${rawImage2 ? 'product-card__media--has-second-image' : ''} relative media-mask-clip`}
             style={{ '--ratio': '0.75' } as any}
           >
-            <Link href={url} tabIndex={-1}>
-              <div className="media image-zoom-reveal product-card__image product-card__image--first" style={{ '--ratio': '0.75' } as any}>
-                <img src={image1} alt={productName} loading="lazy" className="w-full h-full product-card-main-image media__image media-hover__element object-cover absolute inset-0" />
-              </div>
-              {rawImage2 && (
-                <div className="media image-zoom-reveal product-card__image product-card__image--second" style={{ '--ratio': '0.75' } as any}>
-                  <img src={rawImage2} alt={productName} loading="lazy" className="w-full h-full media__image media-hover__element object-cover absolute inset-0" />
-                </div>
-              )}
-            </Link>
+            <ProductImageGallery product={product} alt={productName} compact />
             
             <div className="product-card__badges" data-product-id={product.$id}>
               <div className="product-badges product-badges--vertical">

@@ -317,17 +317,12 @@ function CarritoPageContent() {
               <div className="cart-summary-card" style={{ background: '#fff', borderRadius: 18, padding: '20px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.01em' }}>Resumen de compra</h2>
 
+                {/* 📦 Sin líneas de promo/descuento: el subtotal ya refleja
+                    el precio real por volumen (detalle/intermedio/mayor/caja). */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
                   <span style={{ color: '#6b7280' }}>Productos ({items.length}) · {totalItems} uds</span>
-                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal + aperturaSavings)}</span>
+                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal)}</span>
                 </div>
-
-                {aperturaSavings > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
-                    <span style={{ color: '#be185d', display: 'flex', alignItems: 'center', gap: 4 }}><Sparkles size={12} /> Promoción apertura</span>
-                    <span style={{ color: '#be185d', fontWeight: 700 }}>-{formatPrice(aperturaSavings)}</span>
-                  </div>
-                )}
 
                 <div style={{ borderTop: '2px solid #f3f4f6', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>Total</span>

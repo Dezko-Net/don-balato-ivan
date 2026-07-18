@@ -1,79 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, TIMED_OFFERS_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 import { resolveProductDisplayPrice, fetchAperturaSettings } from '@/lib/apertura-promo';
 import { getSkuFromFeatures } from '@/lib/product-features';
-import { normalizeProductImages } from '@/lib/product-images';
 import { productMatchesBrand } from '@/lib/brands';
+// Catálogo completo cacheado 24h — módulo COMPARTIDO (misma entrada de caché
+// la usan también el sitemap y el generateMetadata de producto, sin reads extra)
+import { getCachedAllProducts } from '@/lib/catalog-cache';
 
 // Module-level in-memory cache fallbacks (safe-guard in case unstable_cache is bypassed or server restarts)
-let memoryCacheAllProducts: any[] | null = null;
-let memoryCacheAllProductsTime = 0;
-
 let memoryCacheActiveOffers: any[] | null = null;
 let memoryCacheActiveOffersTime = 0;
 
 let memoryCacheAperturaSettings: any = null;
 let memoryCacheAperturaSettingsTime = 0;
 
-
-// Cache all active products for 24h. This is the only heavy query (cursor loop
-// over ALL ~800 products = ~800 Appwrite reads per refresh). At 1h that was
-// ~19,200 reads/day; at 24h it's ~800/day. Safe because every product edit
-// invalidates the 'products' tag on-demand (/api/revalidate?tag=products),
-// so the catalog never goes stale beyond an actual change.
-const getCachedAllProducts = unstable_cache(
-  async () => {
-    const now = Date.now();
-    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 2000)) {
-      return memoryCacheAllProducts;
-    }
-
-    const { databases } = getServices();
-    const { databaseId } = getAppwriteConfig();
-    
-    let allProducts = [];
-    let lastId = null;
-    const limit = 100;
-    
-    while (true) {
-      const queries = [
-        Query.limit(limit),
-        Query.greaterThanEqual('STOCK', 0)
-      ];
-      if (lastId) {
-        queries.push(Query.cursorAfter(lastId));
-      }
-      
-      const response = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-      if (response.documents.length === 0) {
-        break;
-      }
-      
-      allProducts.push(...response.documents);
-      lastId = response.documents[response.documents.length - 1].$id;
-      
-      if (response.documents.length < limit) {
-        break;
-      }
-    }
-    
-    // Normalize images on fetch
-    const normalized = allProducts.map(p => normalizeProductImages(p as any));
-    memoryCacheAllProducts = normalized;
-    memoryCacheAllProductsTime = Date.now();
-    return normalized;
-  },
-  ['all-public-products-cache-v3'],
-  { revalidate: 86400, tags: ['products'] }
-);
-
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 3600000)) {
+    // Guard anti-estampida corto: 1h envenenaba la purga del tag (la función
+    // re-ejecutada devolvía memoria stale y se re-cacheaba por horas).
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 2000)) {
       return memoryCacheActiveOffers;
     }
 
@@ -97,7 +46,8 @@ const getCachedActiveOffers = unstable_cache(
 const getCachedAperturaSettings = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAperturaSettings && (now - memoryCacheAperturaSettingsTime < 3600000)) {
+    // Guard anti-estampida corto (ver nota en getCachedActiveOffers)
+    if (memoryCacheAperturaSettings && (now - memoryCacheAperturaSettingsTime < 2000)) {
       return memoryCacheAperturaSettings;
     }
 
@@ -168,12 +118,7 @@ export async function GET(request: NextRequest) {
     const isPackMode = mode === 'paquetes' || mode === 'embalajes';
     const priceOf = (p: any): number => {
       if (isPackMode) {
-        let base = p.PRICE || 0;
-        if (mode === 'paquetes' && !p.DISABLE_DISCOUNTS && p.SKU !== 'PROMO1') {
-          base = Math.round(base * (1 - 20 / 100));
-        } else if (mode === 'embalajes') {
-          base = p.WHOLESALEPRICE || p.PRICE || 0;
-        }
+        let base = p.WHOLESALEPRICE || p.PRICE || 0;
         if (p.PACKQTY) base *= p.PACKQTY;
         return base;
       }

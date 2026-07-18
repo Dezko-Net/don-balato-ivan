@@ -110,9 +110,9 @@ export default function PedidosMayoristasPage() {
               <Package size={28} color={AMBER} />
             </div>
             <p style={{ fontSize: 17, fontWeight: 800, color: '#374151', margin: '0 0 8px' }}>No tenés pedidos mayoristas</p>
-            <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 20px' }}>Visitá nuestra sección de paquetes y comprá en cantidad.</p>
-            <Link href="/paquetes" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', background: AMBER, color: '#fff', borderRadius: 12, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
-              <Package size={14} /> Ver paquetes
+            <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 20px' }}>Visitá nuestro catálogo y comprá en cantidad.</p>
+            <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', background: AMBER, color: '#fff', borderRadius: 12, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+              <Package size={14} /> Ver productos
             </Link>
           </div>
         ) : (

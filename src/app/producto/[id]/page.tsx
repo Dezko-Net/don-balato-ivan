@@ -1,17 +1,11 @@
-'use client';
-import { useParams } from 'next/navigation';
-import { useEffect } from 'react';
-import DynamicProductDetail from '@/components/DynamicProductDetail';
+import { redirect } from 'next/navigation';
 
-export default function ProductoPage() {
-  const { id } = useParams<{ id: string }>();
-
-  // Redirect /producto/[id] → /productos/[id] for consistent URLs
-  useEffect(() => {
-    if (id) {
-      window.history.replaceState(null, '', `/productos/${id}`);
-    }
-  }, [id]);
-
-  return <DynamicProductDetail />;
+// 🔍 SEO: /producto/[id] era la MISMA página que /productos/[id] con otra URL
+// (contenido duplicado para Google, que además solo veía un replaceState en
+// cliente). Redirect real de servidor → consolida señales en la URL canónica.
+export default async function ProductoPage(
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  redirect(`/productos/${id}`);
 }

@@ -16,8 +16,31 @@ import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import ClientFetchCache from '@/components/ClientFetchCache';
 
 export const metadata: Metadata = {
-  title: 'Kevin & Coco | Tienda',
-  description: 'Compra online fácil y rápido',
+  metadataBase: new URL('https://kevincocochile.cl'),
+  title: {
+    default: 'Kevin & Coco | Cosmética y Belleza en Chile',
+    template: '%s | Kevin & Coco',
+  },
+  description:
+    'Tienda de cosmética, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen: mientras más llevas, menos pagas. Envíos a todo Chile.',
+  keywords: [
+    'cosmética Chile', 'maquillaje por mayor', 'skincare Chile',
+    'cosmética por mayor', 'Kevin & Coco', 'belleza Chile',
+  ],
+  openGraph: {
+    type: 'website',
+    locale: 'es_CL',
+    siteName: 'Kevin & Coco',
+    title: 'Kevin & Coco | Cosmética y Belleza en Chile',
+    description:
+      'Cosmética, maquillaje y skincare al detalle y por mayor. Precios por volumen y envíos a todo Chile.',
+    url: 'https://kevincocochile.cl',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+  },
 };
 
 export const viewport: Viewport = {

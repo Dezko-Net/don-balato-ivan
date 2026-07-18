@@ -27,12 +27,29 @@ const ALLOWED_KEYWORDS = [
   'telegram',
   'facebookexternalhit',
   'twitterbot',
-  'discordbot'
+  'discordbot',
+  // 🔍 SEO: buscadores legítimos. OJO: 'bot' está en BOT_KEYWORDS, así que
+  // "Googlebot" quedaba bloqueado con 403 → Google no podía indexar la tienda.
+  // Los scrapers agresivos (semrush/ahrefs/mj12/curl/python) siguen bloqueados.
+  'googlebot',
+  'google-inspectiontool', // probador de URL de Search Console
+  'adsbot-google',
+  'googleother',
+  'bingbot',
+  'applebot',
+  'duckduckbot',
 ];
 
 export function middleware(request: NextRequest) {
   const ua = (request.headers.get('user-agent') || '').toLowerCase();
-  
+
+  // robots.txt y sitemap.xml SIEMPRE accesibles: cualquier bot debe poder
+  // leerlos (son baratos: estático + cacheado 24h, cero lecturas a Appwrite).
+  const pathname = request.nextUrl.pathname;
+  if (pathname === '/robots.txt' || pathname === '/sitemap.xml') {
+    return NextResponse.next();
+  }
+
   const isBot = BOT_KEYWORDS.some(keyword => ua.includes(keyword)) &&
                 !ALLOWED_KEYWORDS.some(allowed => ua.includes(allowed));
 

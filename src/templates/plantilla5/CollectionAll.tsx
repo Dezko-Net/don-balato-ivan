@@ -403,6 +403,16 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
   return (
     <>
       <style>{`
+        /* Product cards: show the complete image inside the frame */
+        .tpl5-shopify-root .product-card__media img,
+        .tpl5-shopify-root .product-card__image img,
+        .tpl5-shopify-root .product-card img.media__image,
+        .tpl5-shopify-root .product-grid img {
+          object-fit: contain !important;
+          object-position: center !important;
+          background: #ffffff !important;
+        }
+
         /* Desktop layout: Force the grid and put filter on left */
         @media (min-width: 1024px) {
           .tpl5-shopify-root results-list .collection__wrapper {
