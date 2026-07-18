@@ -132,6 +132,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -416,7 +417,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           </div>
           <input type="range" min={priceRange[0]} max={priceRange[1]} value={activePriceRange[1]}
             onChange={e => setActivePriceRange([activePriceRange[0], Number(e.target.value) || 0])}
-            style={{ width: '100%', accentColor: primaryColor, cursor: 'pointer' }} />
+            style={{ width: '100%', accentColor: primaryColor, cursor: 'pointer', background: `linear-gradient(to right, ${primaryColor} 0%, ${primaryColor} ${((activePriceRange[1] - priceRange[0]) / (priceRange[1] - priceRange[0])) * 100}%, #e5e7eb ${((activePriceRange[1] - priceRange[0]) / (priceRange[1] - priceRange[0])) * 100}%, #e5e7eb 100%)` }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <input type="number" value={activePriceRange[0]} onChange={e => setActivePriceRange([Number(e.target.value) || 0, activePriceRange[1]])}
               style={{ flex: 1, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 12, color: '#111', outline: 'none', fontFamily: 'inherit' }} placeholder="Min" />
@@ -578,7 +579,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     ) : (
                       <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 900, color: active ? '#fff' : '#c0547a', background: active ? 'linear-gradient(135deg,#e396bf,#c0547a)' : '#fdf2f8', border: active ? '2.5px solid #e396bf' : '2.5px solid #fbcfe8', transition: 'all 0.2s' }}>{(c.name || 'C').charAt(0).toUpperCase()}</span>
                     )}
-                    <span style={{ position: 'absolute', top: -3, right: -5, background: active ? '#c0547a' : '#111827', color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: '2px 6px', border: '2px solid #fff', lineHeight: 1.2 }}>{count}</span>
+                    <span style={{ position: 'absolute', top: -3, right: -5, background: active ? '#c0547a' : '#c0547a', color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: '2px 6px', border: '2px solid #fff', lineHeight: 1.2 }}>{count}</span>
                   </span>
                   <span style={{ fontSize: 11, fontWeight: active ? 800 : 600, color: active ? '#c0547a' : '#6b7280', whiteSpace: 'nowrap', maxWidth: 78, overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
                 </button>
@@ -742,17 +743,17 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             filtros (con contador). Los selects de categoría se fueron: ahora la
             banda de burbujas y la cortina cubren eso. */}
         <div className={`pk-toolbar ${isScrolled ? 'pk-toolbar-scrolled' : ''}`} style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 18, padding: 10, borderRadius: 999, background: 'rgba(255,255,255,0.92)', border: '1px solid #eee', backdropFilter: 'blur(16px)', boxShadow: '0 8px 28px rgba(17,24,39,0.06)' }}>
-          <div className="pk-toolbar-search" style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
+          <div className="pk-toolbar-search" style={{ position: 'relative', flex: searchFocused ? '1 1 100%' : '1 1 200px', minWidth: 0, transition: 'flex 0.25s ease' }}>
             <Search size={17} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: primaryColor }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder={isPaquetes ? "Buscar paquetes..." : (isEmbalajes ? "Buscar embalajes..." : "Buscar productos...")}
               style={{ width: '100%', padding: '12px 38px 12px 44px', borderRadius: 999, border: '1.5px solid #eee', background: '#faf9fa', fontSize: 14, color: '#111', outline: 'none', fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
-              onFocus={e => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.background = '#fff'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.background = '#faf9fa'; }} />
+              onFocus={e => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.background = '#fff'; setSearchFocused(true); }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.background = '#faf9fa'; setSearchFocused(false); }} />
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#fdf2f8', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#c0547a' }}><X size={14} /></button>}
           </div>
 
-          <div className="pk-sort-wrap" style={{ position: 'relative', zIndex: sortDropdownOpen ? 1050 : 1, flexShrink: 0 }}>
+          <div className="pk-sort-wrap" style={{ position: 'relative', zIndex: sortDropdownOpen ? 1050 : 1, flexShrink: 0, overflow: 'hidden', transition: 'opacity 0.25s ease, max-width 0.25s ease, margin 0.25s ease', ...(searchFocused ? { opacity: 0, maxWidth: 0, marginLeft: 0, marginRight: 0, pointerEvents: 'none' } : { opacity: 1, maxWidth: 200 }) }}>
             <button onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
               className="pk-sort-btn" style={{ padding: '12px 14px', borderRadius: 999, border: '1.5px solid #eee', background: '#fff', fontSize: 12.5, color: '#374151', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
               <span className="pk-sort-label">{sortBy === 'newest' ? 'Más recientes' : sortBy === 'price_asc' ? '↑ Precio' : '↓ Precio'}</span>
@@ -776,6 +777,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             )}
           </div>
 
+          <div style={{ overflow: 'hidden', transition: 'opacity 0.25s ease, max-width 0.25s ease, margin 0.25s ease', ...(searchFocused ? { opacity: 0, maxWidth: 0, marginLeft: 0, marginRight: 0, pointerEvents: 'none' } : { opacity: 1, maxWidth: 200 }) }}>
           <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn"
             style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 999, border: 'none', background: 'linear-gradient(135deg,#e396bf,#c0547a)', fontSize: 12.5, fontWeight: 800, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 4px 14px rgba(227,150,191,0.3)' }}>
             <SlidersHorizontal size={15} /> Filtros
@@ -783,6 +785,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
               <span style={{ background: '#fff', color: '#c0547a', borderRadius: 999, fontSize: 10.5, fontWeight: 900, minWidth: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{activeFiltersCount}</span>
             )}
           </button>
+          </div>
         </div>
 
         {/* Active filter chips */}
@@ -879,7 +882,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: '#ffffff', borderRadius: 18, overflow: 'hidden', border: '1px solid #ececec', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(17,24,39,0.04)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: '#f7f7f8', overflow: 'hidden' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} />
                           {/* ❌ Badge "Pack de N" eliminado: PACKQTY está sucio en la BD
                               (herencia del viejo sistema de 20%) y salía en productos sin pack */}
@@ -899,6 +902,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                                 {pBrand}
                               </span>
                             )}
+                            {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 9.5, fontWeight: 800, color: '#fff', background: '#e396bf', padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
                             <ProductBadges product={p} />
                           </div>
                           <button
@@ -1021,6 +1025,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                               {pBrand}
                             </span>
                           )}
+                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: '#e396bf', padding: '1px 6px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
@@ -1519,6 +1524,37 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         .pk-filters-drawer-header h2 { margin: 0; font-size: 17px; font-weight: 800; color: #111827; }
         .pk-filters-drawer-header button { width: 36px; height: 36px; border-radius: 50%; border: none; background: #f8f9fa; color: var(--pk-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .pk-filters-drawer .pk-filters-panel { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; border-radius: 16px !important; box-shadow: none !important; margin: 0 !important; }
+        .pk-filters-panel input[type="range"] {
+          -webkit-appearance: none !important;
+          appearance: none !important;
+          height: 6px !important;
+          border-radius: 999px !important;
+          outline: none !important;
+        }
+        .pk-filters-panel input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none !important;
+          appearance: none !important;
+          width: 18px !important;
+          height: 18px !important;
+          border-radius: 50% !important;
+          background: var(--pk-primary) !important;
+          cursor: pointer !important;
+          border: 2px solid #fff !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+        }
+        .pk-filters-panel input[type="range"]::-moz-range-thumb {
+          width: 18px !important;
+          height: 18px !important;
+          border-radius: 50% !important;
+          background: var(--pk-primary) !important;
+          cursor: pointer !important;
+          border: 2px solid #fff !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+        }
+        .pk-filters-panel input[type="range"]::-moz-range-track {
+          height: 6px !important;
+          border-radius: 999px !important;
+        }
         .pk-filters-apply {
           flex-shrink: 0; width: 100%; padding: 14px; border: none; border-radius: 14px;
           background: var(--pk-gradient) !important; color: #fff;

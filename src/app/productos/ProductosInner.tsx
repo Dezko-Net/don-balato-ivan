@@ -76,6 +76,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -506,24 +507,27 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           
           {/* Row 1: Search + Filters (Mobile next to Search, Desktop full flex) */}
           <div style={{ display: 'flex', width: '100%', gap: 10, alignItems: 'center' }}>
-            <div className="pk-toolbar-search" style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+            <div className={`pk-toolbar-search ${searchFocused ? 'pk-search-expanded' : ''}`} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
               <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#e396bf' }} />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar productos..."
                 style={{ width: '100%', padding: '13px 38px 13px 42px', borderRadius: 16, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 14, color: '#111', outline: 'none', boxShadow: '0 2px 8px rgba(227,150,191,0.05)', fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#e396bf'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(227,150,191,0.1)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(227,150,191,0.05)'; }} />
+                onFocus={e => { e.currentTarget.style.borderColor = '#e396bf'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(227,150,191,0.1)'; setSearchFocused(true); }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(227,150,191,0.05)'; setSearchFocused(false); }} />
               {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e396bf' }}><X size={14} /></button>}
             </div>
 
+            <div style={{ ...(searchFocused ? { display: 'none' } : {}) }}>
             <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-mobile-only animate-fade-in"
               style={{ display: 'none', alignItems: 'center', gap: 6, padding: '12px 14px', borderRadius: 16, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 700, color: '#e396bf', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
               <SlidersHorizontal size={15} /> Filtros{hasActiveFilters ? ' •' : ''}
             </button>
+            </div>
           </div>
 
           {/* Row 2: Categories Horizontal Scroll on Mobile only */}
           {!lockCategoryId && (
+            <div style={{ ...(searchFocused ? { display: 'none' } : {}) }}>
             <div className="pk-mobile-only pk-categories-scroll-wrap" style={{ display: 'none', width: '100%', overflowX: 'auto', gap: 8, padding: '4px 0 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', borderTop: '1px solid rgba(229,231,235,0.4)', paddingTop: 10, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
               <button
                 onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
@@ -569,10 +573,11 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                 );
               })}
             </div>
+            </div>
           )}
 
           {/* Row 3 (Desktop only or collapsed on scroll on mobile) */}
-          <div className="pk-toolbar-actions" style={{ width: '100%' }}>
+          <div className="pk-toolbar-actions" style={{ width: '100%', ...(searchFocused ? { display: 'none' } : {}) }}>
             {/* Selector de Categorías en Toolbar */}
           {!lockCategoryId && (
             <div className="pk-toolbar-select-wrap pk-desktop-only" style={{ position: 'relative' }}>
@@ -640,7 +645,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
             <SlidersHorizontal size={15} /> Filtros{hasActiveFilters ? ' •' : ''}
           </button>
 
-          <div className="pk-sort-wrap" style={{ position: 'relative' }}>
+          <div className="pk-sort-wrap" style={{ position: 'relative', ...(searchFocused ? { display: 'none' } : {}) }}>
             <button onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
               className="pk-sort-btn" style={{ padding: '12px 38px 12px 16px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, color: '#111', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {sortBy === 'newest' ? 'Más recientes' : sortBy === 'price_asc' ? '↑ Precio: menor a mayor' : '↓ Precio: mayor a menor'}
@@ -752,9 +757,9 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
                   const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: '#fff', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: 'linear-gradient(135deg,#fdf2f8,#fff)', overflow: 'hidden' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} />
                           {p.STOCK === 0 && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
@@ -1106,6 +1111,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           .pk-sidebar-desktop { display: none !important; }
           .pk-desktop-only { display: none !important; }
           .pk-mobile-only, .pk-filters-btn { display: flex !important; }
+          .pk-search-hide { display: none !important; }
+          .pk-toolbar-search.pk-search-expanded { flex: 1 1 100% !important; width: 100% !important; }
         }
 
         @media (max-width: 768px) {
@@ -1164,6 +1171,14 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
             margin-top: 0 !important;
             overflow: hidden !important;
             pointer-events: none !important;
+          }
+
+          .pk-search-hide {
+            display: none !important;
+          }
+          .pk-toolbar-search.pk-search-expanded {
+            flex: 1 1 100% !important;
+            width: 100% !important;
           }
 
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }

@@ -2806,7 +2806,7 @@ export default function HomePage23() {
       // Temporizador removido a petición del usuario.
     } catch (e) { console.error('[TPL23] Hero carousel error', e); }
 
-    // 🧭 Header/drawer móvil: (1) eliminar "COMPRA DESDE: UNIDAD/PAQUETE" del header,
+    // 🧭 Header/drawer móvil: (1) "COMPRA DESDE" ya fue eliminado del HTML,
     // (2) subir lupa + carrito a la fila de la hamburguesa, y (3) en el drawer izquierdo
     // reemplazar "TIENDA" por UNIDAD (/productos) y PAQUETE (/paquetes).
     // El header y el menú del drawer se terminan de poblar (categorías con contador)

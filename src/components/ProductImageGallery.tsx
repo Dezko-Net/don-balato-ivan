@@ -29,7 +29,7 @@ export default function ProductImageGallery({ product, alt, onImageClick, sizes 
     <div style={{ width: '100%', position: 'relative', zIndex: 2 }}>
       <div
         onClick={onImageClick}
-        style={{ position: 'relative', aspectRatio: compact ? '1 / 1' : '0.75', width: '100%', cursor: onImageClick ? 'pointer' : 'default', background: '#fff', overflow: 'hidden' }}
+        style={{ position: 'relative', aspectRatio: '1 / 1', width: '100%', cursor: onImageClick ? 'pointer' : 'default', background: '#fff', overflow: 'hidden' }}
       >
         {activeImage ? (
           <Image src={activeImage} alt={productAlt} fill sizes={sizes} unoptimized style={{ objectFit: 'contain', backgroundColor: '#fff' }} />
