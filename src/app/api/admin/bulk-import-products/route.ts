@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, ID, Query } from '@/lib/appwrite';
 import { setBarcodeInFeatures, setSkuInFeatures } from '@/lib/product-features';
 
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       const p = products[i];
       try {
         const originalPrice = Math.round(Number(p.price)) || 0;
-        const wholesalePrice = Math.round(originalPrice * 0.90);
+        const wholesalePrice = originalPrice;
         const packQty = Math.round(Number(p.packQty)) || 0;
         const categoryId = categoryMap.get(p.productType) || '';
 
@@ -127,6 +128,19 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[bulk-import] DONE: ${importedCount} imported, ${errorCount} errors`);
+
+    // 🔄 Invalidar el caché del catálogo (24h) para que los productos recién
+    // importados aparezcan de inmediato en la tienda. Sin esto el servidor
+    // seguiría sirviendo la foto vieja hasta que expire el revalidate de 24h.
+    try {
+      revalidateTag('products');
+      revalidateTag('home');
+      revalidateTag('catalog');
+      revalidateTag('offers');
+      console.log('[bulk-import] Cache tags revalidated (products, home, catalog, offers)');
+    } catch (e: any) {
+      console.error('[bulk-import] Error revalidating cache tags:', e?.message);
+    }
 
     return NextResponse.json({
       success: true,
