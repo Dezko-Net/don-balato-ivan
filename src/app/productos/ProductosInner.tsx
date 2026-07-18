@@ -131,10 +131,10 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
   }, [searchParams]);
 
 
-  const handleCardImageClick = (p: Product) => {
-    const imgSrc = getProductImageUrl(p);
-    if (imgSrc) {
-      setZoomImage({ src: imgSrc, alt: p.NAME });
+  const handleCardImageClick = (p: Product, imgSrc?: string) => {
+    const src = imgSrc || getProductImageUrl(p);
+    if (src) {
+      setZoomImage({ src, alt: p.NAME });
     }
   };
 
@@ -763,7 +763,10 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                     <div key={p.$id} className="pk-card" style={{ background: '#fff', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
-                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} />
+                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
+                          {p.PACKQTY && p.PACKQTY > 1 && (
+                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paquete</span>
+                          )}
                           {p.STOCK === 0 && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
                               <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
@@ -803,9 +806,6 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                             {p.NAME}
                           </p>
                         </Link>
-                        {p.PACKQTY && p.PACKQTY > 1 && (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 8, display: 'block' }}>{p.PACKQTY} unidades por paquete</span>
-                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto', flexWrap: 'wrap' }}>
                           {price > 0 ? (
                             <>
@@ -851,7 +851,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                         </div>
                       )}
                       <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 14, overflow: 'hidden', background: '#fdf2f8', flexShrink: 0 }}>
-                        <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} sizes="110px" compact />
+                        <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} sizes="110px" compact />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -865,9 +865,6 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                         <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 2px' }}>{p.NAME}</p>
                         </Link>
-                        {p.PACKQTY && p.PACKQTY > 1 && (
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 4, display: 'block' }}>{p.PACKQTY} unidades por paquete</span>
-                        )}
                         <p className="pk-card-list-desc" style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           {price > 0 ? (

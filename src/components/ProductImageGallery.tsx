@@ -10,7 +10,7 @@ const IMAGE_KEYS = ['IMAGEURL', 'IMAGEURL2', 'IMAGEURL3', 'IMAGEURL4', 'IMAGEURL
 type Props = {
   product: Product;
   alt?: string;
-  onImageClick?: () => void;
+  onImageClick?: (imageSrc: string) => void;
   sizes?: string;
   compact?: boolean;
 };
@@ -28,7 +28,7 @@ export default function ProductImageGallery({ product, alt, onImageClick, sizes 
   return (
     <div style={{ width: '100%', position: 'relative', zIndex: 2 }}>
       <div
-        onClick={onImageClick}
+        onClick={() => onImageClick?.(activeImage)}
         style={{ position: 'relative', aspectRatio: '1 / 1', width: '100%', cursor: onImageClick ? 'pointer' : 'default', background: '#fff', overflow: 'hidden' }}
       >
         {activeImage ? (

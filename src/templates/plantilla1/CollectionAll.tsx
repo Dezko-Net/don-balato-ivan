@@ -312,10 +312,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const heroTitleText = isPaquetes ? 'Paquetes Mayoristas' : (isEmbalajes ? 'Sección Embalaje' : (catalogCover.title || lockedCategory?.name || 'Productos'));
   const heroSubtitleText = isPaquetes ? 'Comprá en cantidad y ahorrá con nuestros precios mayoristas exclusivos por paquete.' : (isEmbalajes ? 'Cajas y embalajes de alta calidad para tus envíos y productos.' : (catalogCover.subtitle || (lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Explorá nuestro catálogo de productos exclusivos')));
 
-  const handleCardImageClick = (p: Product) => {
-    const imgSrc = getProductImageUrl(p);
-    if (imgSrc) {
-      setZoomImage({ src: imgSrc, alt: p.NAME });
+  const handleCardImageClick = (p: Product, imgSrc?: string) => {
+    const src = imgSrc || getProductImageUrl(p);
+    if (src) {
+      setZoomImage({ src, alt: p.NAME });
     }
   };
 
@@ -883,9 +883,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     <div key={p.$id} className="pk-card" style={{ background: '#ffffff', borderRadius: 18, overflow: 'hidden', border: '1px solid #ececec', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(17,24,39,0.04)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
-                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} />
-                          {/* ❌ Badge "Pack de N" eliminado: PACKQTY está sucio en la BD
-                              (herencia del viejo sistema de 20%) y salía en productos sin pack */}
+                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
+                          {p.PACKQTY && p.PACKQTY > 1 && (
+                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paquete</span>
+                          )}
                           {outOfStock && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
                               <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
@@ -930,7 +931,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 20, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{isPackModeCard ? 'por paquete' : 'c/u'}</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>{isPackModeCard ? 'por paquete' : 'al detalle'}</span>
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
@@ -1015,7 +1016,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 14, overflow: 'hidden', background: '#f7f7f8', flexShrink: 0 }}>
-                        <ProductImageGallery product={p} alt={p.NAME} onImageClick={() => handleCardImageClick(p)} sizes="110px" compact />
+                        <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} sizes="110px" compact />
+                        {p.PACKQTY && p.PACKQTY > 1 && (
+                          <span style={{ position: 'absolute', top: 6, left: 6, zIndex: 4, fontSize: 9, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '2px 7px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paq</span>
+                        )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -1035,7 +1039,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{(catalogMode === 'paquetes' || catalogMode === 'embalajes') ? 'por paquete' : 'c/u'}</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>{(catalogMode === 'paquetes' || catalogMode === 'embalajes') ? 'por paquete' : 'al detalle'}</span>
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>

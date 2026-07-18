@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { getCachedAllProducts } from '@/lib/catalog-cache';
-import ProductosClient from './ProductosClient';
+
+const ProductosClient = dynamic(() => import('./ProductosClient'));
 
 const BASE = 'https://www.kevincocochile.cl';
 
