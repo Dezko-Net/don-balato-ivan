@@ -2236,6 +2236,9 @@ export default function HomePage23() {
     // Siempre se reconstruyen los menús base (aunque no haya categorías) para que
     // nunca quede visible el menú de la plantilla original.
     {
+      const categoryIdsWithProducts = new Set(products.map((product: any) => product.CATEGORYID).filter(Boolean));
+      const visibleCategories = categories.filter((cat: any) => categoryIdsWithProducts.has(cat.$id));
+
       // 1. PC Megamenu
       const pcNavUl = tempDiv.querySelector('.menu-wrapper ul[data-tier="1"]')
         || tempDiv.querySelector('ul.menu[data-tier="1"]:not(.menu--drawer)');
@@ -2246,7 +2249,7 @@ export default function HomePage23() {
         // volumen — para restaurar, re-añadir packLink al innerHTML de abajo.
         // const packLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/paquetes" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Paquetes</span></a></li>`;
         
-        const catLinks = categories.map((cat: any) => `
+        const catLinks = visibleCategories.map((cat: any) => `
           <li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/categoria/${cat.$id}" title="${cat.name}" aria-label="${cat.name}" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:500;">${cat.name}</span></a></li>
         `).join('');
 
@@ -2266,8 +2269,8 @@ export default function HomePage23() {
         const storeLi = makeDrawerLi('Tienda', '/productos', true);
         // 📦 Paquetes oculto: sin entrada "Catálogo Paquetes" en el drawer
         
-        const catHeader = categories.length > 0 ? `<li class="px-4 py-3 text-xs text-gray-400 font-bold uppercase tracking-wider bg-gray-50">Categorías</li>` : '';
-        const catLis = categories.map((cat: any) => makeDrawerLi(cat.name, `/categoria/${cat.$id}`, false)).join('');
+        const catHeader = visibleCategories.length > 0 ? `<li class="px-4 py-3 text-xs text-gray-400 font-bold uppercase tracking-wider bg-gray-50">Categorías</li>` : '';
+        const catLis = visibleCategories.map((cat: any) => makeDrawerLi(cat.name, `/categoria/${cat.$id}`, false)).join('');
         
         const ordersLi = makeDrawerLi('Mis Pedidos', '/cuenta/pedidos', true);
         const loginLi = makeDrawerLi('Mi Cuenta', '/cuenta', true);
@@ -3383,7 +3386,7 @@ export default function HomePage23() {
     setTimeout(injectMobileHeroButtons, 800);
     setTimeout(injectMobileHeroButtons, 2000);
 
-  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers, keniaEnabled, isThemeConfigLoaded, htmlInjected]);
+  }, [bodyHtml, categories, products, isAppwriteLoaded, timedOffers, keniaEnabled, isThemeConfigLoaded, htmlInjected]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
   useEffect(() => {
