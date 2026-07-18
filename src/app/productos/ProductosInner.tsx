@@ -810,7 +810,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>Desde unidad</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
                               {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
                             </>
@@ -873,7 +873,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 18, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>Desde unidad</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
                             </>
                           ) : (
