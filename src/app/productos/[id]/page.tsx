@@ -7,7 +7,7 @@ import ProductDetailClient from './ProductDetailClient';
 // descripción, el OG y el JSON-LD salen del catálogo cacheado 24h
 // (la misma entrada que usa /api/public-data/products).
 
-const BASE = 'https://kevincocochile.cl';
+const BASE = 'https://www.kevincocochile.cl';
 
 async function findProduct(id: string): Promise<any | null> {
   try {

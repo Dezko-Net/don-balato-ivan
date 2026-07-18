@@ -461,6 +461,9 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
             ) : (
               <img className="pk-hero-banner-img" src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="Portada catálogo" onLoad={() => setHeroImgLoaded(true)} style={{ position: 'relative', zIndex: 2, opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
             )}
+            {!lockedCategory?.iconUrl && !lockCategoryId && !lockBrand && (
+              <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none', background: 'linear-gradient(90deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.58) 24%, rgba(255,255,255,0) 60%)' }} />
+            )}
           </div>
           <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
           <div className="pk-hero-logo-wrap">
@@ -796,14 +799,18 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           </button>
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 2px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
                         </Link>
+                        {p.PACKQTY && p.PACKQTY > 1 && (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 8, display: 'block' }}>{p.PACKQTY} unidades por paquete</span>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto', flexWrap: 'wrap' }}>
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>Desde unidad</span>
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
                               {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
                             </>
@@ -856,13 +863,17 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           )}
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
-                          <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 2px' }}>{p.NAME}</p>
                         </Link>
+                        {p.PACKQTY && p.PACKQTY > 1 && (
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 4, display: 'block' }}>{p.PACKQTY} unidades por paquete</span>
+                        )}
                         <p className="pk-card-list-desc" style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 18, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111' }}>{formatPrice(price)}</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>Desde unidad</span>
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
                             </>
                           ) : (

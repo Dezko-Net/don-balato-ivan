@@ -7,7 +7,7 @@ import { getCachedAllProducts } from '@/lib/catalog-cache';
 // regenera como mucho una vez al día.
 export const revalidate = 86400;
 
-const BASE = 'https://kevincocochile.cl';
+const BASE = 'https://www.kevincocochile.cl';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let products: any[] = [];
