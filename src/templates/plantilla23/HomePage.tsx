@@ -2236,9 +2236,6 @@ export default function HomePage23() {
     // Siempre se reconstruyen los menús base (aunque no haya categorías) para que
     // nunca quede visible el menú de la plantilla original.
     {
-      const categoryIdsWithProducts = new Set(products.map((product: any) => product.CATEGORYID).filter(Boolean));
-      const visibleCategories = categories.filter((cat: any) => categoryIdsWithProducts.has(cat.$id));
-
       // 1. PC Megamenu
       const pcNavUl = tempDiv.querySelector('.menu-wrapper ul[data-tier="1"]')
         || tempDiv.querySelector('ul.menu[data-tier="1"]:not(.menu--drawer)');
@@ -2249,13 +2246,11 @@ export default function HomePage23() {
         // volumen — para restaurar, re-añadir packLink al innerHTML de abajo.
         // const packLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/paquetes" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Paquetes</span></a></li>`;
         
-        const catLinks = visibleCategories.map((cat: any) => `
-          <li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/categoria/${cat.$id}" title="${cat.name}" aria-label="${cat.name}" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:500;">${cat.name}</span></a></li>
-        `).join('');
-
         const ordersLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus ml-auto"><a href="/cuenta/pedidos" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;color:#333">Mis Pedidos</span></a></li>`;
         
-        pcNavUl.innerHTML = homeLink + storeLink + catLinks + ordersLink;
+        // La navegación de categorías se construye en el efecto del mega menú.
+        // Aquí solo dejamos los enlaces base para evitar una lista plana temporal.
+        pcNavUl.innerHTML = homeLink + storeLink + ordersLink;
       }
 
       // 2. Mobile Drawer Menu
@@ -2269,8 +2264,8 @@ export default function HomePage23() {
         const storeLi = makeDrawerLi('Tienda', '/productos', true);
         // 📦 Paquetes oculto: sin entrada "Catálogo Paquetes" en el drawer
         
-        const catHeader = visibleCategories.length > 0 ? `<li class="px-4 py-3 text-xs text-gray-400 font-bold uppercase tracking-wider bg-gray-50">Categorías</li>` : '';
-        const catLis = visibleCategories.map((cat: any) => makeDrawerLi(cat.name, `/categoria/${cat.$id}`, false)).join('');
+        const catHeader = '';
+        const catLis = '';
         
         const ordersLi = makeDrawerLi('Mis Pedidos', '/cuenta/pedidos', true);
         const loginLi = makeDrawerLi('Mi Cuenta', '/cuenta', true);
@@ -3593,15 +3588,14 @@ export default function HomePage23() {
       }
     });
 
-    // Sort categories by product count (most products first) and pick top 4
+    // Sort all non-empty categories by product count; do not truncate the hierarchy.
     const sortedCats = [...categories]
       .filter(cat => (catProductCount[cat.$id] || 0) > 0)
       .map(cat => ({
         ...cat,
         prodCount: catProductCount[cat.$id] || 0
       }))
-      .sort((a, b) => b.prodCount - a.prodCount)
-      .slice(0, 4);
+      .sort((a, b) => b.prodCount - a.prodCount);
 
     // ── Desktop menu ──
     // Solo reconstruir si hay categorías con productos; si no, se conservan los
