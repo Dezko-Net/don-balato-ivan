@@ -34,7 +34,7 @@ const getCachedCatalogData = unstable_cache(
     memoryCacheCatalogTime = now;
     return result;
   },
-  ['public-catalog-cache'],
+  ['public-catalog-cache-v2'],
   { revalidate: 86400, tags: ['catalog', 'categories', 'offers'] }
 );
 

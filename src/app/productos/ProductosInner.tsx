@@ -63,6 +63,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
   const [debouncedSearch, setDebouncedSearch] = useState(qParam);
   const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [allSubcategories, setAllSubcategories] = useState<Subcategory[]>([]);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [selectedSubcat, setSelectedSubcat] = useState('');
   const [selectedSubSubcat, setSelectedSubSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -147,7 +149,11 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
         if (catOffRes.ok) {
           const data = await catOffRes.json();
           const cats = data.categories as Category[];
+          const subs = (data.subcategories as Subcategory[]) || [];
           setCategories(cats);
+          if (subs.length > 0) {
+            setAllSubcategories(subs);
+          }
           
           if (catParam && !selectedCat) {
             const found = cats.find(c => c.$id === catParam || c.name?.toLowerCase() === catParam.toLowerCase());
@@ -354,10 +360,10 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
         </div>
       )}
 
-      {/* Categorías */}
+      {/* Categorías — jerárquico colapsable */}
       <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Categorías</p>
-        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
+        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); setSelectedSubSubcat(''); updateCategoryUrl(''); }}
           style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat ? 700 : 500, color: !selectedCat ? '#e396bf' : '#6b7280', background: !selectedCat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
           <span style={{ flex: 1 }}>Todas</span>
@@ -366,60 +372,48 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
         {categories.map(c => {
           const count = catCountMap[c.$id] || 0;
           if (count === 0) return null;
+          const catSubs = allSubcategories.filter(sc => sc.categoryId === c.$id && !sc.parentSubcategoryId);
+          const hasSubs = catSubs.length > 0;
+          const isExpanded = expandedCats.has(c.$id);
           return (
-            <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id); }}
-              style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? '#e396bf' : '#6b7280', background: selectedCat === c.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedCat === c.$id ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
-              <span style={{ flex: 1 }}>{c.name}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedCat === c.$id ? '#fce7f3' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{count}</span>
-            </button>
+            <div key={c.$id}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 4 }}>
+                <button onClick={() => {
+                  setSelectedCat(c.$id); setSelectedSubcat(''); setSelectedSubSubcat(''); updateCategoryUrl(c.$id);
+                  if (hasSubs) { setExpandedCats(prev => { const n = new Set(prev); n.has(c.$id) ? n.delete(c.$id) : n.add(c.$id); return n; }); }
+                }}
+                  style={{ flex: 1, textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? '#e396bf' : '#6b7280', background: selectedCat === c.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedCat === c.$id ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
+                  <span style={{ flex: 1 }}>{c.name}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedCat === c.$id ? '#fce7f3' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{count}</span>
+                </button>
+                {hasSubs && (
+                  <button onClick={() => setExpandedCats(prev => { const n = new Set(prev); n.has(c.$id) ? n.delete(c.$id) : n.add(c.$id); return n; })}
+                    style={{ width: 24, height: 24, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', flexShrink: 0 }}>
+                    <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                  </button>
+                )}
+              </div>
+              {hasSubs && isExpanded && (
+                <div style={{ paddingLeft: 20, marginBottom: 6 }}>
+                  {catSubs.map(sc => {
+                    const scCount = serverSubcategoryCounts[sc.$id] || 0;
+                    if (scCount === 0) return null;
+                    return (
+                      <button key={sc.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(sc.$id); setSelectedSubSubcat(''); }}
+                        style={{ width: '100%', textAlign: 'left', padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id ? 700 : 500, color: selectedSubcat === sc.$id ? '#e396bf' : '#9ca3af', background: selectedSubcat === sc.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: selectedSubcat === sc.$id ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>{sc.name}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '1px 6px', borderRadius: 999 }}>{scCount}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
-
-      {/* Subcategorías */}
-      {subcategories.length > 0 && selectedCat && (
-        <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Subcategorías</p>
-          <button onClick={() => { setSelectedSubcat(''); setSelectedSubSubcat(''); }}
-            style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: !selectedSubcat && !selectedSubSubcat ? 700 : 500, color: !selectedSubcat && !selectedSubSubcat ? '#e396bf' : '#9ca3af', background: !selectedSubcat && !selectedSubSubcat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: !selectedSubcat && !selectedSubSubcat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
-            Todas
-          </button>
-          {subcategories.filter(sc => !sc.parentSubcategoryId).map(sc => {
-            const scCount = serverSubcategoryCounts[sc.$id] || 0;
-            if (scCount === 0) return null;
-            const subSubcategories = subcategories.filter(s => s.parentSubcategoryId === sc.$id);
-            return (
-              <div key={sc.$id}>
-                <button onClick={() => { setSelectedSubcat(sc.$id); setSelectedSubSubcat(''); }}
-                  style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id && !selectedSubSubcat ? 700 : 500, color: selectedSubcat === sc.$id && !selectedSubSubcat ? '#e396bf' : '#9ca3af', background: selectedSubcat === sc.$id && !selectedSubSubcat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: selectedSubcat === sc.$id && !selectedSubSubcat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
-                  <span style={{ flex: 1 }}>{sc.name}</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 6px', borderRadius: 999 }}>{scCount}</span>
-                </button>
-                {/* Level 3 */}
-                {selectedSubcat === sc.$id && subSubcategories.length > 0 && (
-                  <div style={{ paddingLeft: 14, marginBottom: 6, borderLeft: '1px dashed #fce7f3', marginLeft: 13 }}>
-                    {subSubcategories.map(ssc => {
-                      const sscCount = serverSubSubcategoryCounts[ssc.$id] || 0;
-                      if (sscCount === 0) return null;
-                      return (
-                        <button key={ssc.$id} onClick={() => setSelectedSubSubcat(ssc.$id)}
-                          style={{ width: '100%', textAlign: 'left', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: selectedSubSubcat === ssc.$id ? 700 : 500, color: selectedSubSubcat === ssc.$id ? '#c0547a' : '#9ca3af', background: selectedSubSubcat === ssc.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: selectedSubSubcat === ssc.$id ? '#c0547a' : '#d1d5db', flexShrink: 0 }} />
-                          <span style={{ flex: 1 }}>{ssc.name}</span>
-                          <span style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af' }}>{sscCount}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Tags */}
       {allTags.length > 0 && (
