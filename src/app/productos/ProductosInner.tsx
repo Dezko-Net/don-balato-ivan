@@ -36,7 +36,8 @@ const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif
 export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?: string; lockBrand?: string } = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const catParam = lockCategoryId || searchParams.get('categoria') || '';
+  const catParam = lockCategoryId || searchParams.get('categoria') || searchParams.get('cat') || '';
+  const subcatParam = searchParams.get('subcat') || '';
   const qParam = searchParams.get('q') || '';
   const [mounted, setMounted] = useState(false);
 
@@ -151,6 +152,10 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           if (catParam && !selectedCat) {
             const found = cats.find(c => c.$id === catParam || c.name?.toLowerCase() === catParam.toLowerCase());
             if (found) setSelectedCat(found.$id);
+          }
+
+          if (subcatParam) {
+            setSelectedSubcat(subcatParam);
           }
 
           const offerIds = (data.offers as any[] || []).map((d: any) => d.targetId).filter(Boolean);

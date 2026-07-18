@@ -319,11 +319,15 @@ export default function SadoerLanding() {
                 const imgUrl = getProductImageUrl(prod) || 'https://via.placeholder.com/300';
                 return (
                   <div key={prod.$id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between">
-                    <div className="aspect-square overflow-hidden bg-pink-50">
-                      <img src={imgUrl} alt={prod.NAME} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                    </div>
+                    <Link href={`/productos/${prod.$id}`} className="block">
+                      <div className="aspect-square overflow-hidden bg-pink-50">
+                        <img src={imgUrl} alt={prod.NAME} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                      </div>
+                    </Link>
                     <div className="p-4 flex flex-col flex-1 justify-between">
-                      <p className="text-sm sm:text-base font-bold text-gray-800 leading-snug mb-2 line-clamp-2 min-h-[48px]">{prod.NAME}</p>
+                      <Link href={`/productos/${prod.$id}`} className="block">
+                        <p className="text-sm sm:text-base font-bold text-gray-800 leading-snug mb-2 line-clamp-2 min-h-[48px] hover:text-[#ca7d90] transition">{prod.NAME}</p>
+                      </Link>
                       <div className="flex items-center justify-between gap-2 mt-2">
                         <Link href={`/productos/${prod.$id}`} className="text-xs font-bold text-[#ca7d90] hover:text-[#b36b7c] inline-flex items-center gap-1">
                           Ver producto <ChevronRight size={12} />
@@ -358,11 +362,15 @@ export default function SadoerLanding() {
               const imgUrl = getProductImageUrl(prod) || 'https://via.placeholder.com/300';
               return (
                 <div key={prod.$id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group border border-pink-100 flex flex-col justify-between">
-                  <div className="aspect-square overflow-hidden bg-pink-50">
-                    <img src={imgUrl} alt={prod.NAME} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                  </div>
+                  <Link href={`/productos/${prod.$id}`} className="block">
+                    <div className="aspect-square overflow-hidden bg-pink-50">
+                      <img src={imgUrl} alt={prod.NAME} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                    </div>
+                  </Link>
                   <div className="p-4 flex flex-col flex-1 justify-between">
-                    <p className="text-sm sm:text-base font-bold text-gray-800 leading-snug mb-2 line-clamp-2 min-h-[48px]">{prod.NAME}</p>
+                    <Link href={`/productos/${prod.$id}`} className="block">
+                      <p className="text-sm sm:text-base font-bold text-gray-800 leading-snug mb-2 line-clamp-2 min-h-[48px] hover:text-[#ca7d90] transition">{prod.NAME}</p>
+                    </Link>
                     <div className="flex items-center justify-between gap-2 mt-2">
                       <Link href={`/productos/${prod.$id}`} className="text-xs font-bold text-[#ca7d90] hover:text-[#b36b7c] inline-flex items-center gap-1">
                         Ver producto <ChevronRight size={12} />

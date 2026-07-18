@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 
@@ -18,13 +18,15 @@ const getCachedCatalogData = unstable_cache(
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
 
-    const [catDocs, offDocs] = await Promise.all([
-      databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]),
+    const [catDocs, subDocs, offDocs] = await Promise.all([
+      databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(50)]),
+      databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(200)]),
       databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(100)])
     ]);
 
     const result = {
       categories: catDocs.documents,
+      subcategories: subDocs.documents,
       offers: offDocs.documents
     };
 

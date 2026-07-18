@@ -13,6 +13,7 @@ export function useCategories() {
 
   return {
     categories: (data?.categories || []) as Category[],
+    subcategories: (data?.subcategories || []) as Subcategory[],
     offers: data?.offers || [],
     isLoading,
     error,

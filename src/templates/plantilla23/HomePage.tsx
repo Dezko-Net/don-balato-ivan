@@ -2408,11 +2408,12 @@ export default function HomePage23() {
         anchor = exploraSection;
       }
 
-      // 2. Segundo: Mega Pack (bundle_products)
+      // 2. Segundo: Mega Pack (bundle_products) — TEMPORALMENTE OCULTO
       const bundleSection = tempDiv.querySelector('#shopify-section-template--27304712470809__bundle_products_3zgi3T') as HTMLElement | null;
       if (bundleSection) {
-        anchor.insertAdjacentElement('afterend', bundleSection);
-        anchor = bundleSection;
+        bundleSection.style.display = 'none';
+        // No lo insertamos en el DOM — temporalmente oculto
+        // anchor se mantiene en exploraSection para que el resto del layout funcione
       }
 
       // 3. Después del Mega Pack van todos los roots dinámicos de React

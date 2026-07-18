@@ -76,7 +76,7 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [primaryAddress, setPrimaryAddress] = useState<string | null>(null);
   const [ns, setNs] = useState(() => initialSettings || readNavSettings());
-  const { categories } = useCategories();
+  const { categories, subcategories } = useCategories();
   const [catDropdown, setCatDropdown] = useState(false);
 
   // Advanced Cinematic Scroll Tracking
@@ -534,30 +534,74 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
                       zIndex: 2147483647,
                       animation: 'nb-dropdown-in .15s ease-out',
                     }}>
-                      {categories.map(cat => (
-                        <Link
-                          key={cat.$id}
-                          href={`/productos?cat=${cat.$id}`}
-                          className="ml-cat-link"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '10px 14px',
-                            fontSize: 13,
-                            fontWeight: 450,
-                            color: '#333',
-                            textDecoration: 'none',
-                            borderRadius: 8,
-                            transition: 'background .12s, transform .12s',
-                          }}
-                          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = '#f0f4ff'; el.style.transform = 'translateX(3px)'; }}
-                          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'none'; el.style.transform = 'translateX(0)'; }}
+                    {categories.map(cat => {
+                      const catSubs = subcategories.filter(sc => sc.categoryId === cat.$id && !sc.parentSubcategoryId);
+                      const hasSubs = catSubs.length > 0;
+                      return (
+                        <div key={cat.$id} style={{ position: 'relative' }}
+                          onMouseEnter={e => { if (hasSubs) { const el = e.currentTarget as HTMLElement; const sub = el.querySelector('[data-submenu]') as HTMLElement; if (sub) sub.style.display = 'block'; } }}
+                          onMouseLeave={e => { if (hasSubs) { const el = e.currentTarget as HTMLElement; const sub = el.querySelector('[data-submenu]') as HTMLElement; if (sub) sub.style.display = 'none'; } }}
                         >
-                          <span style={{ color: '#333' }}>{cat.name}</span>
-                          <ChevronDown size={11} color="#bbb" style={{ transform: 'rotate(-90deg)', flexShrink: 0 }} />
-                        </Link>
-                      ))}
+                          <Link
+                            href={`/productos?cat=${cat.$id}`}
+                            className="ml-cat-link"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '10px 14px',
+                              fontSize: 13,
+                              fontWeight: 450,
+                              color: '#333',
+                              textDecoration: 'none',
+                              borderRadius: 8,
+                              transition: 'background .12s, transform .12s',
+                            }}
+                            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = '#f0f4ff'; el.style.transform = 'translateX(3px)'; }}
+                            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'none'; el.style.transform = 'translateX(0)'; }}
+                          >
+                            <span style={{ color: '#333' }}>{cat.name}</span>
+                            {hasSubs && <ChevronDown size={11} color="#bbb" style={{ transform: 'rotate(-90deg)', flexShrink: 0 }} />}
+                          </Link>
+                          {hasSubs && (
+                            <div data-submenu style={{
+                              display: 'none',
+                              position: 'absolute',
+                              left: '100%',
+                              top: 0,
+                              minWidth: 220,
+                              background: '#fff',
+                              borderRadius: 12,
+                              boxShadow: '0 12px 40px rgba(0,0,0,.15), 0 2px 6px rgba(0,0,0,.06)',
+                              padding: '6px',
+                              zIndex: 2147483647,
+                              animation: 'nb-dropdown-in .15s ease-out',
+                            }}>
+                              {catSubs.map(sc => (
+                                <Link
+                                  key={sc.$id}
+                                  href={`/productos?cat=${cat.$id}&subcat=${sc.$id}`}
+                                  style={{
+                                    display: 'block',
+                                    padding: '8px 14px',
+                                    fontSize: 12,
+                                    fontWeight: 450,
+                                    color: '#555',
+                                    textDecoration: 'none',
+                                    borderRadius: 8,
+                                    transition: 'background .12s',
+                                  }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f0f4ff'; }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+                                >
+                                  {sc.name}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                     </div>
                   </>
                 )}
@@ -1008,15 +1052,28 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
                       <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
                         <motion.h3 variants={{ initial: { opacity: 0, x: -30, filter: 'blur(10px)' }, animate: { opacity: 1, x: 0, filter: 'blur(0px)' } }} style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: 4, color: 'rgba(255,255,255,0.5)', marginBottom: 36, fontWeight: 800, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>Mundos y Colecciones</motion.h3>
                         <motion.div variants={{ initial: {}, animate: { transition: { staggerChildren: 0.03 } } }} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px 32px' }}>
-                          {(categories.length > 0 ? categories.slice(0, 15) : [{ $id: '1', name: 'Acción y Aventura' }, { $id: '2', name: 'Tecnología Elite' }, { $id: '3', name: 'Esenciales' }]).map((cat, i) => (
+                          {(categories.length > 0 ? categories.slice(0, 15) : [{ $id: '1', name: 'Acción y Aventura' }, { $id: '2', name: 'Tecnología Elite' }, { $id: '3', name: 'Esenciales' }]).map((cat, i) => {
+                            const catSubs = subcategories.filter((sc: any) => sc.categoryId === cat.$id && !sc.parentSubcategoryId);
+                            return (
                             <motion.div key={cat.$id} variants={{ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } }}>
                               <Link href={`/productos?cat=${cat.$id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <motion.div whileHover={{ x: 6, color: '#fff' }} style={{ color: '#b3b3b3', fontSize: 15, fontWeight: 500, transition: 'color 0.2s' }}>
                                   {cat.name}
                                 </motion.div>
                               </Link>
+                              {catSubs.length > 0 && (
+                                <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  {catSubs.slice(0, 5).map((sc: any) => (
+                                    <Link key={sc.$id} href={`/productos?cat=${cat.$id}&subcat=${sc.$id}`} style={{ textDecoration: 'none', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 400, paddingLeft: 12, transition: 'color 0.2s' }}
+                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.35)'; }}>
+                                      {sc.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
                             </motion.div>
-                          ))}
+                          );})}
                         </motion.div>
                       </div>
                       

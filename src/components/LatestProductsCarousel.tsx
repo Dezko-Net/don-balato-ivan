@@ -7,6 +7,8 @@ import { useCart } from '@/context/CartContext';
 import { Sparkles, ShoppingCart, Check, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { getSkuFromFeatures } from '@/lib/product-features';
+import { extractBrand, HOUSE_BRAND } from '@/lib/brands';
 
 export default function LatestProductsCarousel({ initialProducts }: { initialProducts?: Product[] } = {}) {
   const [products, setProducts] = useState<Product[]>(initialProducts || []);
@@ -94,7 +96,7 @@ export default function LatestProductsCarousel({ initialProducts }: { initialPro
       {/* Title section */}
       <div className="flex items-end justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider mb-1 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 bg-clip-text text-transparent">
+          <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider mb-1 bg-gradient-to-r from-pink-500 via-pink-600 to-rose-600 bg-clip-text text-transparent">
             <Sparkles size={14} className="animate-pulse" />
             Novedades y Reingresos
           </div>
@@ -194,6 +196,16 @@ export default function LatestProductsCarousel({ initialProducts }: { initialPro
             const hasDiscount = pricing.hasDiscount;
             const isAdding = addingId === p.$id;
 
+            const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+            const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+            const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+            const pBrand = p.BRAND || extractBrand(p.NAME) || HOUSE_BRAND;
+            const isSadoer = pBrand.toLowerCase() === 'sadoer';
+            const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
+            const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
+            const outOfStock = p.STOCK !== undefined && p.STOCK === 0;
+            const lowStock = p.STOCK !== undefined && p.STOCK > 0 && p.STOCK <= 10;
+
             const createdAt = new Date(p.$createdAt || '').getTime();
             const now = Date.now();
 
@@ -207,7 +219,7 @@ export default function LatestProductsCarousel({ initialProducts }: { initialPro
                 className="latest-product-card snap-start group"
               >
                 <div className="relative h-full rounded-3xl bg-white overflow-hidden flex flex-col border border-pink-100/70 shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(236,72,153,0.12)] hover:-translate-y-1 hover:border-pink-200 will-change-transform">
-                  <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gradient-to-br from-pink-50 via-white to-violet-50">
+                  <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gradient-to-br from-pink-50 via-white to-rose-50">
                     {p.IMAGEURL ? (
                       <img
                         src={p.IMAGEURL}
@@ -225,7 +237,7 @@ export default function LatestProductsCarousel({ initialProducts }: { initialPro
                     {/* New / Restock badge */}
                     <div className="absolute top-3 left-3 z-10">
                       {isNew ? (
-                        <span className="bg-gradient-to-br from-pink-500 to-fuchsia-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide shadow-md shadow-pink-500/30 flex items-center gap-1 ring-1 ring-white/40">
+                        <span className="bg-gradient-to-br from-pink-500 to-rose-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide shadow-md shadow-pink-500/30 flex items-center gap-1 ring-1 ring-white/40">
                           <Sparkles size={10} /> Nuevo
                         </span>
                       ) : (
@@ -235,8 +247,15 @@ export default function LatestProductsCarousel({ initialProducts }: { initialPro
                       )}
                     </div>
 
+                    {/* PACKQTY badge */}
+                    {p.PACKQTY && p.PACKQTY > 1 && (
+                      <span style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, fontSize: 10, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>
+                        {p.PACKQTY} un/paquete
+                      </span>
+                    )}
+
                     {/* Discount badge — compact */}
-                    {pricing.hasDiscount && (
+                    {pricing.hasDiscount && !p.PACKQTY && (
                       <span className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-rose-600 font-black text-[10px] px-2 py-0.5 rounded-full shadow-sm z-10 ring-1 ring-rose-100">
                         -{pricing.discountPercent}%
                       </span>
@@ -244,15 +263,34 @@ export default function LatestProductsCarousel({ initialProducts }: { initialPro
                   </a>
 
                   <div className="p-3.5 flex-1 flex flex-col justify-between">
-                    <h3 className="font-bold text-gray-900 text-[13px] leading-snug line-clamp-2 mb-2 group-hover:text-fuchsia-700 transition-colors min-h-[34px]">
+                    {/* Brand + SKU */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                      {pBrand && (
+                        <span style={{ fontSize: 9.5, fontWeight: 800, color: badgeColor, background: badgeBg, padding: '2px 7px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+                          {pBrand}
+                        </span>
+                      )}
+                      {cardSku && (
+                        <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700, whiteSpace: 'nowrap' }}>SKU: {cardSku}</span>
+                      )}
+                    </div>
+
+                    <h3 className="font-bold text-gray-900 text-[13px] leading-snug line-clamp-2 mb-2 group-hover:text-pink-700 transition-colors min-h-[34px]">
                       {p.NAME}
                     </h3>
 
+                    {/* Stock indicator */}
+                    <div className="flex items-center gap-1.5 mb-2" style={{ fontSize: 10.5, fontWeight: 700, color: outOfStock ? '#9ca3af' : lowStock ? '#d97706' : '#059669' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                      {outOfStock ? 'Sin stock' : lowStock ? `Quedan ${p.STOCK} unidades` : 'Stock disponible'}
+                    </div>
+
                     <div>
-                      <div className="flex items-baseline gap-2 mb-2.5">
+                      <div className="flex items-baseline gap-2 mb-2.5 flex-wrap">
                         <span className="font-black text-gray-950 text-lg leading-none tracking-tight">
                           {formatPrice(displayPrice)}
                         </span>
+                        <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
                         {hasDiscount && (
                           <span className="text-[11px] text-gray-400 line-through leading-none">
                             {formatPrice(p.PRICE)}
@@ -262,13 +300,21 @@ export default function LatestProductsCarousel({ initialProducts }: { initialPro
 
                       <button
                         onClick={(e) => handleAddToCart(e, p)}
+                        disabled={outOfStock}
                         className={`w-full py-2.5 px-3 rounded-xl font-black text-[11px] uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
-                          isAdding
+                          outOfStock
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : isAdding
                             ? 'bg-emerald-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)]'
-                            : 'bg-gradient-to-br from-pink-500 to-fuchsia-600 text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] hover:brightness-105'
+                            : 'bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] hover:brightness-105'
                         }`}
                       >
-                        {isAdding ? (
+                        {outOfStock ? (
+                          <>
+                            <ShoppingCart size={12} />
+                            Sin stock
+                          </>
+                        ) : isAdding ? (
                           <>
                             <Check size={13} strokeWidth={3} />
                             Listo
