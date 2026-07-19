@@ -7,42 +7,29 @@ import Navbar3 from '@/templates/plantilla3/Navbar';
 import Navbar4 from '@/templates/plantilla4/Navbar';
 import Navbar100 from '@/templates/plantilla100/Navbar';
 import Navbar101 from '@/templates/plantilla101/Navbar';
+import Navbar23 from '@/components/Navbar23';
 
 export default function DynamicNavbar() {
   const pathname = usePathname();
-  const { template, isLoading, getSectionTemplate } = useTemplate();
-  // Fallback to Navbar1 during initial loading/hydration to prevent bottom mobile nav flickering
+  const { isLoading, getSectionTemplate } = useTemplate();
+
+  // 🎀 Navbar unificado (jul 2026): en el HOME la plantilla 23 inyecta su propio
+  // navbar; en TODAS las demás páginas (product detail, catálogo, carrito, cuenta…)
+  // usamos el MISMO diseño con Navbar23 (React reutilizable). Navbar23 trae su
+  // propia data de categorías y el badge del carrito reactivo, así que no depende
+  // del template ni del estado de carga.
+  if (pathname !== '/') return <Navbar23 />;
+
+  // ── HOME (pathname === '/') ──
+  // La plantilla 23 inyecta su propio navbar; aquí devolvemos el navbar del
+  // template de landing (comportamiento previo intacto).
   if (isLoading) return <Navbar1 />;
-
-  const isProductDetail = pathname.includes('/producto/') || pathname.includes('/productos/');
-  const isCatalog = pathname.includes('/collections/all') || pathname === '/productos' || pathname === '/catalogo';
-  const isCollections = pathname.includes('/collections');
-  const isCart = pathname === '/carrito';
-  const isCheckout = pathname === '/checkout';
-
-  let activeTemplate = template;
-  if (isProductDetail) {
-    activeTemplate = getSectionTemplate('productDetail');
-  } else if (isCatalog) {
-    activeTemplate = getSectionTemplate('catalog');
-  } else if (isCollections) {
-    activeTemplate = getSectionTemplate('collections');
-  } else if (isCart) {
-    activeTemplate = getSectionTemplate('cart');
-  } else if (isCheckout) {
-    activeTemplate = getSectionTemplate('checkout');
-  } else {
-    activeTemplate = getSectionTemplate('landing');
-  }
-
-  if (activeTemplate === 1) return <Navbar1 />;
+  const activeTemplate = getSectionTemplate('landing');
   if (activeTemplate === 2) return <Navbar2 />;
   if (activeTemplate === 3) return <Navbar3 />;
   if (activeTemplate === 4) return <Navbar4 />;
   if (activeTemplate === 100) return <Navbar100 />;
   if (activeTemplate === 101) return <Navbar101 />;
-  
-  // By default, return Navbar1. For HTML-migrated themes (like 23),
-  // they will hide the top part of Navbar1 via CSS and only use the bottom mobile nav.
+  // Por defecto Navbar1 (temas migrados como el 23 ocultan su parte superior vía CSS).
   return <Navbar1 />;
 }
