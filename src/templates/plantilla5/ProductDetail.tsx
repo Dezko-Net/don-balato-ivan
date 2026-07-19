@@ -1225,56 +1225,68 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     }
 
     // 10. Integrar el Botón de Añadir al Carrito
+    const addToCartContainer = root.querySelector('add-to-cart-component') as HTMLElement | null;
     const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLButtonElement | null;
     if (addToCartBtn) {
-      if (isSoldOut) {
-        addToCartBtn.setAttribute('disabled', 'true');
-        addToCartBtn.style.opacity = '0.5';
-        addToCartBtn.style.cursor = 'not-allowed';
-        const textContent = addToCartBtn.querySelector('.add-to-cart-text__content');
-        if (textContent) {
-          textContent.textContent = 'Agotado';
-        }
-      } else {
-        addToCartBtn.removeAttribute('disabled');
-        addToCartBtn.style.opacity = '1';
-        addToCartBtn.style.cursor = 'pointer';
-        const textContent = addToCartBtn.querySelector('.add-to-cart-text__content');
-        if (textContent) {
-          textContent.textContent = 'Añadir al carrito';
-        }
-      }
+      // Hide the theme's original button entirely
+      addToCartBtn.style.setProperty('display', 'none', 'important');
 
-      if (!addToCartBtn.dataset.cartBound) {
-        addToCartBtn.dataset.cartBound = '1';
-        const newBtn = addToCartBtn.cloneNode(true) as HTMLButtonElement;
-        addToCartBtn.parentNode?.replaceChild(newBtn, addToCartBtn);
-        
-        newBtn.addEventListener('click', (e) => {
+      // Check if we already injected our custom button
+      let customAddBtn = addToCartContainer?.querySelector('.yaxsell-custom-add-to-cart') as HTMLButtonElement | null;
+      if (!customAddBtn && addToCartContainer) {
+        customAddBtn = document.createElement('button');
+        customAddBtn.type = 'button';
+        customAddBtn.className = 'yaxsell-custom-add-to-cart';
+        customAddBtn.textContent = isSoldOut ? 'Agotado' : 'Añadir al carrito';
+
+        // Match the Comprar Ahora button styling
+        const computedStyle = window.getComputedStyle(addToCartBtn);
+        const btn = customAddBtn;
+        btn.style.cssText = `
+          border-radius: ${computedStyle.borderRadius || '40px'};
+          min-height: ${computedStyle.minHeight || '0px'};
+          height: ${computedStyle.height || '50px'};
+          padding: ${computedStyle.padding || '10px 34px'};
+          font-size: ${computedStyle.fontSize || '15px'};
+          font-weight: ${computedStyle.fontWeight || '700'};
+          letter-spacing: ${computedStyle.letterSpacing || 'normal'};
+          font-family: ${computedStyle.fontFamily || '"Bricolage Grotesque", sans-serif'};
+          margin-top: 10px;
+          display: ${isSoldOut ? 'none' : 'block'};
+          width: auto;
+          max-width: 300px;
+          background: #e396bf;
+          color: #ffffff;
+          border: 1.5px solid #e396bf;
+          box-shadow: none;
+          cursor: pointer;
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        `;
+
+        btn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          
+
           const currentProduct = (activeVariantId && activeVariantId !== product.$id)
             ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
             : product;
-          
+
           const isCurrentSoldOut = (currentProduct.STOCK !== undefined && currentProduct.STOCK !== null && currentProduct.STOCK < 99999) && currentProduct.STOCK <= 0;
           if (isCurrentSoldOut) return;
 
           const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-          // 📦 Sin overrides ni ofertas: el carrito resuelve el nivel de
-          // volumen (detalle/intermedio/mayor/caja) según la cantidad.
           addItem(currentProduct, qty, undefined, undefined, undefined, isPaquetesMode);
-          
-          const textContent = newBtn.querySelector('.add-to-cart-text__content');
-          if (textContent) {
-            const originalText = textContent.textContent;
-            textContent.textContent = '¡Añadido al Carrito!';
-            setTimeout(() => {
-              textContent.textContent = originalText;
-            }, 2000);
-          }
+
+          const originalText = btn.textContent;
+          btn.textContent = '¡Añadido al Carrito!';
+          setTimeout(() => { btn.textContent = originalText; }, 2000);
         });
+
+        addToCartContainer.appendChild(btn);
+      } else if (customAddBtn) {
+        // Update text for variant changes
+        customAddBtn.textContent = isSoldOut ? 'Agotado' : 'Añadir al carrito';
+        customAddBtn.style.display = isSoldOut ? 'none' : 'block';
       }
     }
 
@@ -2861,7 +2873,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           flex: 0 1 auto !important;
         }
         /* Añadir al carrito: ROSA suave (rosa de marca), sin neón */
-        .tpl5-page-wrapper .add-to-cart-button {
+        .tpl5-page-wrapper add-to-cart-component button.add-to-cart-button,
+        .tpl5-page-wrapper .add-to-cart-component button.add-to-cart-button {
           width: auto !important;
           max-width: 300px !important;
           padding-left: 34px !important;
@@ -2871,15 +2884,45 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           color: #ffffff !important;
           border: 1.5px solid #e396bf !important;
           box-shadow: none !important;
-          transition: background-color 0.2s ease, border-color 0.2s ease !important;
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
         }
-        .tpl5-page-wrapper .add-to-cart-button .add-to-cart-text__content,
-        .tpl5-page-wrapper .add-to-cart-button span { color: #ffffff !important; }
-        .tpl5-page-wrapper .add-to-cart-button:hover {
-          background: #d982b4 !important;
-          background-color: #d982b4 !important;
-          border-color: #d982b4 !important;
+        .tpl5-page-wrapper add-to-cart-component button.add-to-cart-button .add-to-cart-text__content,
+        .tpl5-page-wrapper add-to-cart-component button.add-to-cart-button span,
+        .tpl5-page-wrapper .add-to-cart-component button.add-to-cart-button .add-to-cart-text__content,
+        .tpl5-page-wrapper .add-to-cart-component button.add-to-cart-button span {
           color: #ffffff !important;
+        }
+        .tpl5-page-wrapper add-to-cart-component button.add-to-cart-button:hover,
+        .tpl5-page-wrapper .add-to-cart-component button.add-to-cart-button:hover {
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+          border-color: #e396bf !important;
+          color: #111827 !important;
+        }
+        .tpl5-page-wrapper add-to-cart-component button.add-to-cart-button:hover *,
+        .tpl5-page-wrapper .add-to-cart-component button.add-to-cart-button:hover * {
+          color: #111827 !important;
+        }
+
+        /* Override theme styles for the real add-to-cart button, matching Comprar Ahora */
+        button.add-to-cart-button.btn.btn--secondary,
+        add-to-cart-component > button.add-to-cart-button {
+          background: #e396bf !important;
+          background-color: #e396bf !important;
+          color: #ffffff !important;
+          border: 1.5px solid #e396bf !important;
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+        }
+        button.add-to-cart-button.btn.btn--secondary:hover,
+        add-to-cart-component > button.add-to-cart-button:hover {
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+          color: #111827 !important;
+          border-color: #e396bf !important;
+        }
+        button.add-to-cart-button.btn.btn--secondary:hover *,
+        add-to-cart-component > button.add-to-cart-button:hover * {
+          color: #111827 !important;
         }
 
         /* Comprar Ahora: ROSA más intenso (jerarquía), sin neón (era negro).
@@ -2908,6 +2951,23 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         button.yaxsell-custom-buy-button:hover *,
         .tpl5-page-wrapper button.yaxsell-custom-buy-button:hover * {
           color: #111827 !important;
+        }
+
+        /* Añadir al carrito: misma lógica visual que Comprar Ahora */
+        button.yaxsell-custom-add-to-cart {
+          background-color: #e396bf !important;
+          background: #e396bf !important;
+          color: #ffffff !important;
+          border: 1.5px solid #e396bf !important;
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+          cursor: pointer !important;
+          box-shadow: none !important;
+        }
+        button.yaxsell-custom-add-to-cart:hover {
+          background-color: #ffffff !important;
+          background: #ffffff !important;
+          color: #111827 !important;
+          border: 1.5px solid #e396bf !important;
         }
 
         /* Bloquear hover gris del tema Shopify en el dialog de retiro local */

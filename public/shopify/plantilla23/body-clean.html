@@ -414,6 +414,21 @@ try { sessionStorage.removeItem('announcement-bar-closed'); } catch(e) {}
 </script>
 
 <style>
+  /* Add to cart button hover: white bg, black text */
+  .add-to-cart-button.btn--secondary {
+    transition: all 0.25s ease;
+  }
+  .add-to-cart-button.btn--secondary:hover {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+  }
+  .add-to-cart-button.btn--secondary:hover .add-to-cart-text__content {
+    color: #000000 !important;
+  }
+</style>
+
+<style>
   @media (max-width: 992px) {
     #custom-pc-navbar { display: none !important; }
     /* Mobile: pink chip becomes white, text in black */
