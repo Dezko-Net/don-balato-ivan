@@ -371,40 +371,66 @@
 
 <announcement-bar 
     class="header-element announcement-bar block relative w-full z-10 animation-wrapper" 
-    style="background-color: #ffffff; color: #db2777; font-weight: bold; font-size: 14px;"
+    style="background-color: #f48fb1; color: #ffffff; font-weight: bold; font-size: 14px;"
     data-id="sections--27304712274201__announcement-bar" 
-    data-time-interval="5000"
-    data-hidden="true"
+    data-time-interval="4000"
+    data-hidden="false"
 >
     <div class="custom-container relative">
         <div class="announcement overflow-hidden relative flex items-center">
             
             <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="false" >
-
-                <div class="body-text leading-normal break-words hyphens-auto"><span>🌸 Venta por mayor desde $20.000</span></div>
-
-
+                <div class="body-text leading-normal break-words hyphens-auto"><span>🚚 Envío gratis en toda la RM por compras sobre $20.000</span></div>
             </div>
 
             <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="true" inert>
+                <div class="body-text leading-normal break-words hyphens-auto"><span>💖 Todo para tu rutina de belleza y cuidado personal, en un solo lugar</span></div>
+            </div>
 
-                <div class="body-text leading-normal break-words hyphens-auto"><span>✨ Belleza auténtica, calidad garantizada</span></div>
+            <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="true" inert>
+                <div class="body-text leading-normal break-words hyphens-auto"><span>⏰ Pide antes de las 12 PM y recibe tu pedido el mismo día (Lun a Vie, RM)</span></div>
+            </div>
 
+            <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="true" inert>
+                <div class="body-text leading-normal break-words hyphens-auto"><span>💎 Productos 100% originales, calidad garantizada en cada compra</span></div>
+            </div>
 
+            <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="true" inert>
+                <div class="body-text leading-normal break-words hyphens-auto"><span>🎁 ¡Nuevos productos cada semana! Descúbrelos antes que nadie</span></div>
+            </div>
+
+            <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="true" inert>
+                <div class="body-text leading-normal break-words hyphens-auto"><span>🛍️ Aprovecha nuestras ofertas exclusivas por tiempo limitado</span></div>
             </div>
             
-            <div class="button-close absolute top-0 right-5 bottom-0 m-auto h-max p-0 flex items-center justify-center cursor-pointer opacity-55 hover:opacity-100 transition-all duration-150 z-1" role="button" tabindex="0" data-action="click" aria-label="Cerrar" data-close>
-                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-</svg>
-            </div>
         </div>
     </div>
 </announcement-bar>
 
+<script>
+// Clear announcement-bar cookie so it always shows on page refresh
+document.cookie = 'announcement-bar-closed=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+try { sessionStorage.removeItem('announcement-bar-closed'); } catch(e) {}
+</script>
+
 <style>
   @media (max-width: 992px) {
     #custom-pc-navbar { display: none !important; }
+    /* Mobile: pink chip becomes white, text in black */
+    .yaxsell-mobile-buy-chip {
+      background: #fff !important;
+      color: #000 !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+      border: 1px solid #e5e7eb !important;
+    }
+    .yaxsell-mobile-buy-switch .search-icon,
+    .yaxsell-mobile-buy-switch .cart-icon {
+      color: #000 !important;
+    }
+    .yaxsell-mobile-buy-switch .search-icon .link-hover-animation,
+    .yaxsell-mobile-buy-switch .cart-icon .link-hover-animation {
+      color: #000 !important;
+    }
   }
   @media (min-width: 993px) {
     #shopify-section-sections--27304712208665__header { display: none !important; }
@@ -421,13 +447,13 @@
   
   @media (min-width: 993px) {
     .tpl23-shopify-root .slideshow {
-      border-top: 30px solid #ffffff !important;
+      border-top: 0 !important;
     }
   }
 
   #custom-pc-navbar-placeholder {
     display: none;
-    height: 94px;
+    height: 46px;
     width: 100%;
   }
 
@@ -436,70 +462,201 @@
     top: 0;
     left: 0;
     z-index: 50;
-    background-color: #f8c8d8;
+    background-color: #ffffff;
     width: 100%;
     flex-direction: column;
     align-items: center;
-    padding-top: 15px;
-    padding-bottom: 15px;
-    box-shadow: 0 4px 15px rgba(227, 150, 191, 0.3);
+    padding-top: 7px;
+    padding-bottom: 7px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     font-family: 'Outfit', 'Inter', sans-serif;
     transition: top 0.2s ease, position 0s;
   }
   #custom-pc-navbar .navbar-container {
     width: 100%;
     max-width: 100%;
-    padding: 0 40px;
+    padding: 0 6.5%;
     display: flex;
-    flex-direction: column;
-    gap: 15px;
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
   }
   #custom-pc-navbar .top-row {
+    display: contents;
+  }
+  #custom-pc-navbar .logo {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    order: 1;
+    flex: 0 0 auto;
+    line-height: 0;
   }
   #custom-pc-navbar .logo img {
-    height: 75px;
+    height: 30px;
     width: auto;
-    filter: brightness(0) invert(1);
+    max-width: 112px;
+    object-fit: contain;
   }
   #custom-pc-navbar .right-actions {
     display: flex;
     align-items: center;
-    gap: 20px;
-    font-size: 11px;
+    gap: 18px;
+    order: 3;
+    margin-left: 18px;
+    flex: 0 0 auto;
+    font-size: 10px;
     font-weight: 900;
-    color: #fff;
+    color: #000;
     text-transform: uppercase;
   }
   #custom-pc-navbar .right-actions a {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     text-decoration: none;
-    color: #fff;
+    color: #000;
     transition: opacity 0.2s;
+    white-space: nowrap;
   }
   #custom-pc-navbar .right-actions a:hover {
     opacity: 0.7;
   }
+  #custom-pc-navbar .right-actions a[data-object="search"]::before {
+    content: '';
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  #custom-pc-navbar .right-actions a[data-object="cart"] {
+    position: relative;
+  }
+  #custom-pc-navbar .right-actions a[data-object="cart"]::before {
+    content: '';
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z'/%3E%3Cline x1='3' y1='6' x2='21' y2='6'/%3E%3Cpath d='M16 10a4 4 0 0 1-8 0'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  #custom-pc-navbar .right-actions a[href="/cuenta"]::before {
+    content: '';
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
   #custom-pc-navbar .bottom-row {
     display: flex;
     justify-content: center;
-    flex-wrap: wrap;
+    align-items: center;
+    order: 2;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
     gap: 20px;
-    font-size: 14px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 12px;
     font-weight: 600;
+    min-width: 0;
   }
   #custom-pc-navbar .bottom-row a {
-    color: #fff;
+    color: #001b2e;
     text-decoration: none;
     white-space: nowrap;
+    letter-spacing: 0.01em;
     transition: opacity 0.2s;
   }
   #custom-pc-navbar .bottom-row a:hover {
     opacity: 0.7;
+  }
+  #custom-pc-navbar .nav-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+  #custom-pc-navbar .nav-group > .nav-parent {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 100%;
+    cursor: pointer;
+  }
+  #custom-pc-navbar .nav-group > .nav-parent::after {
+    content: '⌄';
+    font-size: 9px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  #custom-pc-navbar .nav-group:hover > .nav-parent::after,
+  #custom-pc-navbar .nav-group.active > .nav-parent::after {
+    transform: rotate(180deg);
+  }
+  #custom-pc-navbar .nav-mega {
+    display: none;
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 600px;
+    padding: 24px 28px;
+    background: #fff;
+    color: #333;
+    border-radius: 0 0 14px 14px;
+    box-shadow: 0 14px 35px rgba(0,0,0,.16);
+    z-index: 100;
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+    gap: 22px 34px;
+    text-align: left;
+  }
+  #custom-pc-navbar .nav-group:hover .nav-mega,
+  #custom-pc-navbar .nav-group.active .nav-mega {
+    display: grid;
+  }
+  #custom-pc-navbar .nav-mega {
+    padding-top: 18px;
+    margin-top: 0;
+  }
+  #custom-pc-navbar .nav-mega::before {
+    content: '';
+    position: absolute;
+    top: -18px;
+    left: 0;
+    right: 0;
+    height: 18px;
+  }
+  #custom-pc-navbar .nav-mega-column {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  #custom-pc-navbar .nav-mega-title {
+    margin-bottom: 4px;
+    color: #333;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  #custom-pc-navbar .nav-mega a {
+    display: block;
+    color: #666;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  #custom-pc-navbar .nav-mega a:hover {
+    color: #d277a5;
+    opacity: 1;
   }
 </style>
 <div id="custom-pc-navbar-placeholder"></div>
@@ -507,36 +664,16 @@
   <div class="navbar-container">
     <div class="top-row">
       <a href="/" class="logo">
-        <img src="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04" alt="Kevin & Coco Chile" />
+        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784401902773-pegada-1784401898779.png" alt="Kevin & Coco Chile" />
       </a>
       <div class="right-actions">
-        <a href="/cuenta" style="font-size: 12px; justify-content: center; height: 100%;">INICIAR SESIÓN</a>
-        <div style="width:1px; height:28px; background:rgba(255,255,255,0.4);"></div>
-        <a href="/cuenta/registro" style="font-size: 12px; justify-content: center; height: 100%;">REGISTRARSE</a>
-        <div style="width:1px; height:28px; background:rgba(255,255,255,0.4);"></div>
-        <a href="/productos" style="font-size: 12px; justify-content: center; height: 100%;">Catálogo</a>
-        <div style="width:1px; height:28px; background:rgba(255,255,255,0.4);"></div>
-        <a href="#" data-action="open" data-object="search" style="font-size: 12px; justify-content: center; height: 100%;">BUSCAR</a>
-        <a href="#" data-action="open" data-object="cart" style="font-size: 12px; flex-direction: row; gap: 4px; justify-content: center; height: 100%;">CARRITO <span class="cart-item-size">(0)</span></a>
+        <a href="/productos" style="font-size: 12px; justify-content: center; height: 100%; color: #e0457b;">Catálogo</a>
+        <a href="#" data-action="open" data-object="search" style="font-size: 0; justify-content: center; height: 100%;"></a>
+        <a href="#" data-action="open" data-object="cart" style="font-size: 0; justify-content: center; height: 100%;"><span class="cart-item-size" style="font-size:10px;position:absolute;top:-4px;right:-6px;background:#e0457b;color:#fff;border-radius:999px;padding:1px 5px;font-weight:800;line-height:1.2">(0)</span></a>
+        <a href="/cuenta" style="font-size: 0; justify-content: center; height: 100%;" aria-label="Mi cuenta"></a>
       </div>
     </div>
-    <div class="bottom-row">
-      <a href="/" style="font-weight: 800;">Inicio</a>
-      <a href="/productos">Tienda</a>
-      <a href="/paquetes" style="display:none;">Paquetes</a>
-      <a href="/categoria/6a4f053debeebb389cda">Skincare Facial</a>
-      <a href="/categoria/6a4f053e4611fcc4e759">Otros</a>
-      <a href="/categoria/6a4f053e929ab4320ff0">Rubor e Iluminador</a>
-      <a href="/categoria/6a4f053ed1b7ef3c4dc4">Tónicos y Esencias</a>
-      <a href="/categoria/6a4f053f19114d642eb6">Cuidado del Cabello</a>
-      <a href="/categoria/6a4f053f5ff2cf8c5ed3">Limpiadores Faciales</a>
-      <a href="/categoria/6a4f053fabe210632df6">Desmaquillantes y Algodones</a>
-      <a href="/categoria/6a4f053ff3de495f553a">Exfoliantes</a>
-      <a href="/categoria/6a4f054041b659c258ce">Cuidado de Manos</a>
-      <a href="/categoria/6a4f0540954b9d038202">Cuidado de Pies</a>
-      <a href="/categoria/6a4f0540d999f8480790">Cuidado Corporal</a>
-      <a href="/categoria/6a4f05411df8350d53c7">Labios</a>
-    </div>
+    <nav class="bottom-row" aria-label="Navegación principal"></nav>
   </div>
 </div>
 <script>
@@ -580,21 +717,21 @@
     
   }
   .header[data-id="sections--27304712208665__header"][data-scroll="false"]{
-    --header-color-text: 255,255,255;
-    --header-background-transparency: 0%;
+    --header-color-text: 0,0,0;
+    --header-background-transparency: 100%;
     
       --header-background-backdrop: none;
     
 
     
-    --header-color-background: 180,97,116;
+    --header-color-background: 255,255,255;
     
 
     
     --header-background: rgba(var(--header-color-background), var(--header-background-transparency));
     
 
-    --color-links: 255,255,255;
+    --color-links: 0,0,0;
     --color-links-hover: 180,97,116;
     --color-accent: 223,225,70;
 
@@ -656,19 +793,19 @@
         
         
 
-        <img src="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04" alt="Kevin & Coco Chile" srcset="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04" width="300" height="150" class="logo py-1 custom-responsive-logo smooth-reveal" style="background: transparent !important;">
+        <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784401902773-pegada-1784401898779.png" alt="Kevin & Coco Chile" srcset="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784401902773-pegada-1784401898779.png" width="300" height="150" class="logo py-1 custom-responsive-logo smooth-reveal" style="background: transparent !important;">
     
 </a>
 
       <div class="lg:flex hidden items-center justify-center pl-[30px] gap-2 text-[0.9em]">
 
         <a href="/productos" class="px-[1rem] uppercase hover:opacity-80 transition-opacity flex flex-col items-center gap-0.5 text-[11px]">
-          <span class="link-hover-animation" style="font-weight:900; color:#fff; line-height:1.2;">
+          <span class="link-hover-animation" style="font-weight:900; color:#000; line-height:1.2;">
             <span style="font-size:12px;">Catálogo</span>
           </span>
         </a>
 
-        <div style="width:1px; height:28px; background:rgba(255,255,255,0.2);"></div>
+        <div style="width:1px; height:28px; background:rgba(0,0,0,0.2);"></div>
 
 <a href="#" data-action="open" data-object="search" role="button" aria-label="Buscar" class="search-icon px-[0.5rem] uppercase">
     <span class="link-hover-animation">

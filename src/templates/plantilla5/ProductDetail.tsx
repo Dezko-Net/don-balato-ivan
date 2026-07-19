@@ -2738,44 +2738,46 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           background: transparent !important;
         }
 
-        /* Selector de cantidad limpio: solo campo numerico, sin píldora ni botones visibles */
+        /* Selector de cantidad: stepper circular ( - ) N ( + ), rosa pastel */
         .tpl5-page-wrapper quantity-selector-component,
         .tpl5-page-wrapper .quantity-selector {
           display: inline-flex !important;
           align-items: center !important;
-          width: 92px !important;
-          min-width: 92px !important;
-          height: 48px !important;
-          border: 1px solid #d1d5db !important;
-          border-radius: 4px !important;
-          background: #ffffff !important;
-          overflow: hidden !important;
+          gap: 4px !important;
+          width: auto !important;
+          min-width: 0 !important;
+          height: auto !important;
+          border: none !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          overflow: visible !important;
           box-shadow: none !important;
         }
 
         .tpl5-page-wrapper quantity-selector-component:focus-within,
         .tpl5-page-wrapper .quantity-selector:focus-within {
-          border-color: #111827 !important;
-          box-shadow: 0 0 0 1px #111827 !important;
+          box-shadow: none !important;
         }
 
         .tpl5-page-wrapper quantity-selector-component .quantity-input,
         .tpl5-page-wrapper .quantity-selector .quantity-input,
         .tpl5-page-wrapper input.quantity-input {
           display: block !important;
-          width: 100% !important;
-          min-width: 0 !important;
-          height: 100% !important;
-          padding: 0 8px !important;
+          flex: 0 0 auto !important;
+          order: 1 !important;
+          width: 26px !important;
+          min-width: 26px !important;
+          height: auto !important;
+          padding: 0 !important;
           margin: 0 !important;
           border: 0 !important;
           border-radius: 0 !important;
           outline: none !important;
-          background: #ffffff !important;
+          background: transparent !important;
           color: #111827 !important;
           text-align: center !important;
           font-size: 16px !important;
-          font-weight: 600 !important;
+          font-weight: 800 !important;
           font-family: inherit !important;
           -moz-appearance: textfield !important;
         }
@@ -2788,28 +2790,124 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           margin: 0 !important;
         }
 
-        /* Se mantienen en el DOM para no romper la plantilla, pero no se muestran. */
+        /* Botones +/- CIRCULARES, rosa pastel, con glyph limpio */
         .tpl5-page-wrapper quantity-selector-component > button,
         .tpl5-page-wrapper .quantity-selector > button,
         .tpl5-page-wrapper quantity-selector-component .quantity-button,
         .tpl5-page-wrapper .quantity-selector .quantity-button {
+          position: static !important;
+          inset: auto !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 30px !important;
+          min-width: 30px !important;
+          height: 30px !important;
+          flex-shrink: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border: 1.5px solid #f2c6da !important;
+          border-radius: 50% !important;
+          background: #fdf2f8 !important;
+          color: #c0547a !important;
+          cursor: pointer !important;
+          box-shadow: none !important;
+          transition: background 0.18s ease, border-color 0.18s ease !important;
+          font-size: 0 !important;
+          line-height: 0 !important;
+        }
+        .tpl5-page-wrapper quantity-selector-component > button[name="minus"],
+        .tpl5-page-wrapper .quantity-selector > button[name="minus"] { order: 0 !important; }
+        .tpl5-page-wrapper quantity-selector-component > button[name="plus"],
+        .tpl5-page-wrapper .quantity-selector > button[name="plus"] { order: 2 !important; }
+
+        /* Ocultar el icono cuadrado del tema y pintar un glyph propio */
+        .tpl5-page-wrapper quantity-selector-component > button svg,
+        .tpl5-page-wrapper .quantity-selector > button svg,
+        .tpl5-page-wrapper quantity-selector-component > button .icon,
+        .tpl5-page-wrapper .quantity-selector > button .icon,
+        .tpl5-page-wrapper quantity-selector-component .quantity-button svg,
+        .tpl5-page-wrapper .quantity-selector .quantity-button svg {
           display: none !important;
         }
+        .tpl5-page-wrapper quantity-selector-component > button::after,
+        .tpl5-page-wrapper .quantity-selector > button::after {
+          display: inline-block !important;
+          font-size: 16px !important;
+          font-weight: 800 !important;
+          line-height: 1 !important;
+          color: #c0547a !important;
+          transition: color 0.18s ease !important;
+        }
+        .tpl5-page-wrapper quantity-selector-component > button[name="minus"]::after,
+        .tpl5-page-wrapper .quantity-selector > button[name="minus"]::after { content: "−" !important; }
+        .tpl5-page-wrapper quantity-selector-component > button[name="plus"]::after,
+        .tpl5-page-wrapper .quantity-selector > button[name="plus"]::after { content: "+" !important; }
 
-        /* Botón de Comprar Ahora (Píldora negra, texto blanco, hover: fondo blanco y texto negro) */
-        .yaxsell-custom-buy-button {
-          background-color: #000000 !important;
+        .tpl5-page-wrapper quantity-selector-component > button:hover,
+        .tpl5-page-wrapper .quantity-selector > button:hover,
+        .tpl5-page-wrapper quantity-selector-component .quantity-button:hover,
+        .tpl5-page-wrapper .quantity-selector .quantity-button:hover {
+          background: #f7d3e3 !important;
+          border-color: #e8b4cd !important;
+          box-shadow: none !important;
+        }
+        .tpl5-page-wrapper quantity-selector-component > button:active,
+        .tpl5-page-wrapper .quantity-selector > button:active { background: #efb9d3 !important; }
+
+        /* Botón "Añadir al carrito": ancho ajustado (no se estira a full-width) */
+        .tpl5-page-wrapper add-to-cart-component,
+        .tpl5-page-wrapper .add-to-cart-component {
+          flex: 0 1 auto !important;
+        }
+        /* Añadir al carrito: ROSA suave (rosa de marca), sin neón */
+        .tpl5-page-wrapper .add-to-cart-button {
+          width: auto !important;
+          max-width: 300px !important;
+          padding-left: 34px !important;
+          padding-right: 34px !important;
+          background: #e396bf !important;
+          background-color: #e396bf !important;
           color: #ffffff !important;
-          border: 1.5px solid #000000 !important;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-          width: 100% !important;
-          cursor: pointer !important;
+          border: 1.5px solid #e396bf !important;
+          box-shadow: none !important;
+          transition: background-color 0.2s ease, border-color 0.2s ease !important;
+        }
+        .tpl5-page-wrapper .add-to-cart-button .add-to-cart-text__content,
+        .tpl5-page-wrapper .add-to-cart-button span { color: #ffffff !important; }
+        .tpl5-page-wrapper .add-to-cart-button:hover {
+          background: #d982b4 !important;
+          background-color: #d982b4 !important;
+          border-color: #d982b4 !important;
+          color: #ffffff !important;
         }
 
-        .yaxsell-custom-buy-button:hover {
-          background-color: #ffffff !important; /* Fondo blanco en hover */
-          color: #000000 !important; /* Texto negro */
-          border: 1.5px solid #000000 !important;
+        /* Comprar Ahora: ROSA más intenso (jerarquía), sin neón (era negro).
+           Selector con doble clase para ganar a button.shopify-payment-button__button--unbranded del tema */
+        button.yaxsell-custom-buy-button,
+        .tpl5-page-wrapper button.yaxsell-custom-buy-button,
+        button.shopify-payment-button__button--unbranded.yaxsell-custom-buy-button {
+          background-color: #e396bf !important;
+          background: #e396bf !important;
+          color: #ffffff !important;
+          border: 1.5px solid #e396bf !important;
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+          width: 100% !important;
+          cursor: pointer !important;
+          box-shadow: none !important;
+        }
+        /* Hover: fondo blanco + letra NEGRA (antes se ponía blanca e invisible) */
+        button.yaxsell-custom-buy-button:hover,
+        .tpl5-page-wrapper button.yaxsell-custom-buy-button:hover,
+        button.shopify-payment-button__button--unbranded.yaxsell-custom-buy-button:hover {
+          background-color: #ffffff !important;
+          background: #ffffff !important;
+          color: #111827 !important;
+          border: 1.5px solid #e396bf !important;
+        }
+        button.yaxsell-custom-buy-button:hover *,
+        .tpl5-page-wrapper button.yaxsell-custom-buy-button:hover * {
+          color: #111827 !important;
         }
 
         /* Bloquear hover gris del tema Shopify en el dialog de retiro local */

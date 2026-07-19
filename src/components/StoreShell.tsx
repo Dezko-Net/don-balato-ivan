@@ -50,7 +50,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
     <MaintenanceGuard>
     <>
       <GlobalCanjeBanner />
-      <PopupBanner />
+      {pathname === '/' && <PopupBanner />}
       {!hideNavbarForCapturedLanding && <DynamicNavbar />}
       <PageTransition><main>{children}</main></PageTransition>
       {!hideNativeFooter && (

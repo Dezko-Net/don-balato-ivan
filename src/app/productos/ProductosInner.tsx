@@ -759,7 +759,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
                   const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: '#fff', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', border: '1px solid #f3e8ef', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 28px rgba(190,93,138,0.10)', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
@@ -773,7 +773,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           )}
                         </div>
                       </div>
-                      <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div className="pk-card-body" style={{ padding: '16px 16px 17px', display: 'flex', flexDirection: 'column', flex: 1, background: 'linear-gradient(180deg, #fff 0%, #fffafd 100%)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                           <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             {cardSku && <span className="pk-card-sku">SKU: {cardSku}</span>}
@@ -792,8 +792,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                             style={{
                               width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: '#f8f9fa',
-                              color: '#e396bf',
+                              background: '#fff7fb',
+                              color: '#d979a8',
                               boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
                             }}
                           >
@@ -818,7 +818,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           )}
                         </div>
                         <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
-                          style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12, fontWeight: 700, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
+                          style={{ marginTop: 12, padding: '10px 12px', borderRadius: 999, border: '1px solid #f5bfd7', background: p.STOCK === 0 ? '#f8fafc' : '#fce7f3', color: p.STOCK === 0 ? '#9ca3af' : '#b34f7e', fontSize: 12, fontWeight: 800, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 5px 14px rgba(190,93,138,0.14)', fontFamily: 'inherit' }}>
                           <ShoppingCart size={13} /> {p.STOCK === 0 ? 'Sin stock' : 'Agregar'}
                         </button>
                       </div>

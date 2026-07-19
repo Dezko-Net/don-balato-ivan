@@ -87,6 +87,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [timedOffersMap, setTimedOffersMap] = useState<Record<string, TimedOffer>>({});
   const [selectedSubcat, setSelectedSubcat] = useState('');
+  const [subcatExpanded, setSubcatExpanded] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   // Feedback visual "✓ Añadido" en el botón de la tarjeta tras agregar al carrito
@@ -167,6 +168,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     total,
     priceRange: fetchedPriceRange,
     categoryCounts: catCountMap,
+    subcategoryCounts: subCountMap,
     allTags,
     isLoadingInitialData: isLoading,
     isLoadingMore,
@@ -460,7 +462,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             Todas
           </button>
           {subcategories.map(sc => {
-            const scCount = products.filter(p => p.SUBCATEGORYID === sc.$id).length;
+            const scCount = subCountMap[sc.$id] || 0;
             if (scCount === 0) return null;
             return (
               <button key={sc.$id} onClick={() => setSelectedSubcat(sc.$id)}
@@ -572,7 +574,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
               if (count === 0) return null;
               const active = selectedCat === c.$id;
               return (
-                <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id); }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70, fontFamily: 'inherit', padding: 0 }}>
+                <button key={c.$id} onClick={() => {
+                  if (selectedCat === c.$id) {
+                    setSubcatExpanded(prev => !prev);
+                  } else {
+                    setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id);
+                    setSubcatExpanded(true);
+                  }
+                }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70, fontFamily: 'inherit', padding: 0 }}>
                   <span style={{ position: 'relative', width: 58, height: 58, display: 'block' }}>
                     {c.iconUrl ? (
                       <img src={c.iconUrl} alt={c.name} style={{ width: 58, height: 58, borderRadius: '50%', objectFit: 'cover', border: active ? '2.5px solid #e396bf' : '2.5px solid #f3f4f6', boxShadow: active ? '0 6px 16px rgba(227,150,191,0.35)' : '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.2s', display: 'block' }} />
@@ -581,10 +590,40 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     )}
                     <span style={{ position: 'absolute', top: -3, right: -5, background: active ? '#c0547a' : '#c0547a', color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: '2px 6px', border: '2px solid #fff', lineHeight: 1.2 }}>{count}</span>
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: active ? 800 : 600, color: active ? '#c0547a' : '#6b7280', whiteSpace: 'nowrap', maxWidth: 78, overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                  <span style={{ fontSize: 11, fontWeight: active ? 800 : 600, color: active ? '#c0547a' : '#6b7280', whiteSpace: 'nowrap' }}>{c.name}</span>
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* 🏷️ Banda de subcategorías — círculos celestes con animación suave de entrada/salida */}
+        {selectedCat && subcategories.length > 0 && (
+          <div className={`pk-subcatband-wrap${!subcatExpanded ? ' pk-subcatband-collapsed' : ''}`}>
+          <div className="pk-subcatband pk-h-scroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '4px 2px 12px', marginBottom: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+            <button onClick={() => setSelectedSubcat('')} className="pk-subcatband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 60, fontFamily: 'inherit', padding: 0 }}>
+              <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: !selectedSubcat ? '#fff' : '#0284c7', background: !selectedSubcat ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: !selectedSubcat ? '2px solid #38bdf8' : '2px solid #bae6fd', transition: 'all 0.2s' }}>✦</span>
+              <span style={{ fontSize: 10, fontWeight: !selectedSubcat ? 800 : 600, color: !selectedSubcat ? '#0284c7' : '#6b7280', whiteSpace: 'nowrap' }}>Todas</span>
+            </button>
+            {subcategories.map(sc => {
+              const scCount = subCountMap[sc.$id] || 0;
+              if (scCount === 0) return null;
+              const subActive = selectedSubcat === sc.$id;
+              return (
+                <button key={sc.$id} onClick={() => setSelectedSubcat(sc.$id)} className="pk-subcatband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 60, fontFamily: 'inherit', padding: 0 }}>
+                  <span style={{ position: 'relative', width: 48, height: 48, display: 'block' }}>
+                    {sc.ICON_URL ? (
+                      <img src={sc.ICON_URL} alt={sc.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: subActive ? '2px solid #38bdf8' : '2px solid #e0f2fe', boxShadow: subActive ? '0 4px 12px rgba(56,189,248,0.3)' : '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s', display: 'block' }} />
+                    ) : (
+                      <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, color: subActive ? '#fff' : '#0284c7', background: subActive ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: subActive ? '2px solid #38bdf8' : '2px solid #bae6fd', transition: 'all 0.2s' }}>{(sc.name || 'S').charAt(0).toUpperCase()}</span>
+                    )}
+                    <span style={{ position: 'absolute', top: -2, right: -4, background: '#0284c7', color: '#fff', fontSize: 8.5, fontWeight: 800, borderRadius: 999, padding: '1px 5px', border: '1.5px solid #fff', lineHeight: 1.2 }}>{scCount}</span>
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: subActive ? 800 : 600, color: subActive ? '#0284c7' : '#6b7280', whiteSpace: 'nowrap' }}>{sc.name}</span>
+                </button>
+              );
+            })}
+          </div>
           </div>
         )}
 
@@ -880,58 +919,54 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const lowStock = limitedStock && effectiveStock <= 10;
                   const added = !!justAdded[p.$id];
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: '#ffffff', borderRadius: 18, overflow: 'hidden', border: '1px solid #ececec', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(17,24,39,0.04)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: 'linear-gradient(180deg,#fff8fb 0%,#fdeef5 100%)', borderRadius: 18, overflow: 'hidden', border: '1px solid #f7d3e3', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 12px rgba(192,84,122,0.07)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: 'linear-gradient(135deg,#fdeef5,#ffffff)', overflow: 'hidden' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
                           {p.PACKQTY && p.PACKQTY > 1 && (
-                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paquete</span>
+                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#b4537a', background: 'rgba(255,255,255,0.95)', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>{p.PACKQTY} un/paquete</span>
                           )}
-                          {outOfStock && (
-                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                              <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="pk-card-body" style={{ padding: '12px 12px 14px', display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={{ fontSize: 10.5, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
-                            {cardSku && <span className="pk-card-sku" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>SKU {cardSku}</span>}
-                            {pBrand && (
-                              <span style={{ fontSize: 9.5, fontWeight: 800, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>
-                                {pBrand}
-                              </span>
-                            )}
-                            {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 9.5, fontWeight: 800, color: '#fff', background: '#e396bf', padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
-                            <ProductBadges product={p} />
-                          </div>
                           <button
                             type="button"
                             className="pk-card-fav"
                             aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                             onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
-                            style={{
-                              width: 32, height: 32, borderRadius: '50%', border: '1px solid #f0f0f0', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: '#fff',
-                              color: primaryColor,
-                              flexShrink: 0,
-                            }}
+                            style={{ position: 'absolute', top: 8, right: 8, zIndex: 4, width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', color: primaryColor, boxShadow: '0 2px 8px rgba(192,84,122,0.15)' }}
                           >
-                            <AnimHeart filled={fav} size={19} />
+                            <AnimHeart filled={fav} size={18} />
                           </button>
+                          {outOfStock && (
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+                              <span style={{ padding: '6px 14px', background: '#fff', color: '#c0547a', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fbcfe8' }}>Sin stock</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="pk-card-body" style={{ padding: '12px 12px 14px', display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0, fontSize: 10.5, color: '#9ca3af', fontWeight: 700 }}>
+                          {pBrand && (
+                            <span style={{ fontSize: 9.5, fontWeight: 800, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+                              {pBrand}
+                            </span>
+                          )}
+                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 9.5, fontWeight: 800, color: '#fff', background: '#e396bf', padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
+                          {cardSku && <span className="pk-card-sku" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>SKU {cardSku}</span>}
+                          <ProductBadges product={p} />
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
                         </Link>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 'auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, color: outOfStock ? '#9ca3af' : lowStock ? '#d97706' : '#059669' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                          {outOfStock ? 'Sin stock' : lowStock ? `Quedan ${effectiveStock} unidades` : 'Stock disponible'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 'auto', flexWrap: 'wrap' }}>
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 20, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>{isPackModeCard ? 'por paquete' : 'al detalle'}</span>
+                              <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{isPackModeCard ? 'por paquete' : 'c/u'}</span>
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
@@ -940,16 +975,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         {volTiers.length > 0 && (
                           <div className="pk-vol-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {volTiers.map(t => (
-                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#9d5878', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
-                                {t.minQty}+ un&nbsp;<span style={{ color: '#c9628f', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
+                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#9d5878', background: '#ffffff', border: '1px solid #f7d3e3', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
+                                {t.minQty}+ un&nbsp;<span style={{ color: '#c0547a', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
                               </span>
                             ))}
                           </div>
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, color: outOfStock ? '#9ca3af' : lowStock ? '#d97706' : '#059669' }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
-                          {outOfStock ? 'Sin stock' : lowStock ? `Quedan ${effectiveStock} unidades` : 'Stock disponible'}
-                        </div>
                         <button onClick={() => {
                           if (outOfStock) return;
                           const qtyToAdd = isPackModeCard && p.PACKQTY ? p.PACKQTY : 1;
@@ -1518,10 +1549,29 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         /* 🏷️ Banda de categorías: hover con lift sutil */
         .pk-catband { scrollbar-width: none; }
         .pk-catband::-webkit-scrollbar { display: none; }
+        .pk-subcatband { scrollbar-width: none; }
+        .pk-subcatband::-webkit-scrollbar { display: none; }
+        .pk-subcatband-wrap {
+          overflow: hidden;
+          max-height: 140px;
+          opacity: 1;
+          transform: translateY(0);
+          transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                      opacity 0.3s ease,
+                      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pk-subcatband-wrap.pk-subcatband-collapsed {
+          max-height: 0;
+          opacity: 0;
+          transform: translateY(-10px);
+        }
         @media (hover: hover) and (pointer: fine) {
           .pk-catband-item:hover > span:first-of-type,
           .pk-catband-item:hover img { transform: translateY(-3px); }
           .pk-catband-item > span:first-of-type, .pk-catband-item img { transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+          .pk-subcatband-item:hover > span:first-of-type,
+          .pk-subcatband-item:hover img { transform: translateY(-2px); }
+          .pk-subcatband-item > span:first-of-type, .pk-subcatband-item img { transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
         }
         .pk-filters-drawer-handle { width: 40px; height: 4px; border-radius: 999px; background: #e5e7eb; margin: 4px auto 0; flex-shrink: 0; }
         .pk-filters-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 8px; flex-shrink: 0; }
@@ -1631,13 +1681,13 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
         @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
-          /* 🎨 Hover elegante: lift sutil + sombra neutra (sin glow rosa) */
+          /* 🎀 Hover: lift + glow rosa pastel de marca */
           .pk-card:hover {
-            box-shadow: 0 12px 32px rgba(17,24,39,0.09) !important;
+            box-shadow: 0 18px 42px rgba(192,84,122,0.16) !important;
             transform: translateY(-3px);
-            border-color: #e2e2e2 !important;
+            border-color: #f2b4d0 !important;
           }
-          .pk-card:hover .pk-price { color: #c9628f !important; }
+          .pk-card:hover .pk-price { color: #c0547a !important; }
           .pk-add-btn:hover:not(:disabled) { filter: brightness(0.94); }
           .pk-add-btn:active:not(:disabled) { transform: scale(0.97); }
         }
@@ -1904,6 +1954,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-subtitle2 { font-size: 12.5px !important; }
           .pk-cover-strip { height: 120px !important; border-radius: 16px !important; }
           .pk-catband { gap: 11px !important; padding-bottom: 10px !important; }
+          .pk-subcatband { gap: 8px !important; padding-bottom: 8px !important; }
           .pk-toolbar.pk-toolbar-scrolled {
             position: -webkit-sticky !important;
             position: sticky !important;
@@ -1938,12 +1989,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
           .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
           .pk-card {
-            border-radius: 14px !important;
+            border-radius: 16px !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            background: #ffffff !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
-            border: 1px solid #efefef !important;
+            background: linear-gradient(180deg,#fff8fb 0%,#fdeef5 100%) !important;
+            box-shadow: 0 3px 12px rgba(192,84,122,0.07) !important;
+            border: 1px solid #f7d3e3 !important;
             transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
           }
           /* 📱 Comodidad táctil: buscador sin zoom iOS, botones de 42px+, chips legibles */

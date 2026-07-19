@@ -309,6 +309,10 @@ export default function HomePage23() {
   const { settings: apertura } = useAperturaPromotion();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [catalogCategories, setCatalogCategories] = useState<Category[]>([]);
+  const [catalogSubcategories, setCatalogSubcategories] = useState<Subcategory[]>([]);
+  const [catalogCategoryCounts, setCatalogCategoryCounts] = useState<Record<string, number>>({});
+  const [catalogSubcategoryCounts, setCatalogSubcategoryCounts] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [cheapestProducts, setCheapestProducts] = useState<Product[]>([]);
   const [destacadoTemporal, setDestacadoTemporal] = useState<any>(null);
@@ -1712,6 +1716,21 @@ export default function HomePage23() {
       custom-header[data-scroll="true"] .logo-wrapper img,
       .header[data-scroll="true"] .logo-wrapper img {
         filter: brightness(0) !important;
+      }
+      /* Mobile: pink chip becomes white */
+      @media (max-width: 992px) {
+        .yaxsell-mobile-buy-chip {
+          background: #fff !important;
+          color: #000 !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+          border: 1px solid #e5e7eb !important;
+        }
+        .yaxsell-mobile-buy-switch .search-icon,
+        .yaxsell-mobile-buy-switch .cart-icon,
+        .yaxsell-mobile-buy-switch .search-icon *,
+        .yaxsell-mobile-buy-switch .cart-icon * {
+          color: #000 !important;
+        }
       }
       custom-header[data-scroll="true"] a[href*="/productos"],
       custom-header[data-scroll="true"] a[href*="/paquetes"],
@@ -3565,7 +3584,7 @@ export default function HomePage23() {
     // (Exigir subcategories > 0 saltaba TODO este efecto: productos sin hidratar,
     // secciones vacías y el video del split-hero sin su observer de reproducción.)
     if (categories.length === 0) return;
-    if (containerRef.current.dataset.navInjected) return;
+    if (products.length === 0) return;
 
     const root = containerRef.current;
 
@@ -3588,9 +3607,14 @@ export default function HomePage23() {
       }
     });
 
-    // Sort all non-empty categories by product count; do not truncate the hierarchy.
+    const allowedParentNames = new Set([
+      'Skincare', 'Maquillaje', 'Capilar', 'Manicure', 'Herramientas',
+      'Otros', 'Aromaterapia y Difusores', 'Empaques y Regalos'
+    ]);
+
+    // Only parent/retained categories may appear in the navigation.
     const sortedCats = [...categories]
-      .filter(cat => (catProductCount[cat.$id] || 0) > 0)
+      .filter(cat => allowedParentNames.has(cat.name) && (catProductCount[cat.$id] || 0) > 0)
       .map(cat => ({
         ...cat,
         prodCount: catProductCount[cat.$id] || 0
@@ -4028,9 +4052,9 @@ export default function HomePage23() {
         }
 
         return `
-          <product-card class="group block w-full bg-white transition-colors duration-300 border border-transparent hover:border-gray-200 rounded-xl" style="max-width: 280px; margin: 0 auto; overflow: hidden;">
+          <product-card class="group block w-full bg-white transition-all duration-300 border rounded-2xl hover:-translate-y-1" style="max-width: 280px; margin: 0 auto; overflow: hidden; border-color: #f3e8ef; box-shadow: 0 10px 26px rgba(190,93,138,0.10);">
             <!-- Contenedor de Imagen Cuadrado y Limpio -->
-            <div class="relative w-full bg-[#f8f9fa] overflow-hidden" style="aspect-ratio: 1/1;">
+            <div class="relative w-full bg-[#fffafd] overflow-hidden" style="aspect-ratio: 1/1;">
               <a href="${pLink}" title="${pName}" aria-label="${pName}" class="block w-full h-full">
                 <img src="${pImg}" alt="${pName}" loading="lazy" class="w-full h-full object-cover mix-blend-multiply transition-transform duration-700 ease-out group-hover:scale-105" />
               </a>
@@ -4038,12 +4062,12 @@ export default function HomePage23() {
               <!-- Insignias Minimalistas -->
               <div class="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
                 ${hasDiscount ? `
-                  <span class="bg-gray-900 text-white text-[9px] font-bold tracking-widest px-2 py-1 uppercase shadow-sm">
+                  <span class="bg-[#fff1f7] text-[#b34f7e] text-[9px] font-extrabold tracking-widest px-2.5 py-1.5 rounded-full border border-[#f9cfe1] uppercase shadow-sm">
                     -${Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}%
                   </span>
                 ` : ''}
                 ${product.STOCK > 0 && product.STOCK <= 5 ? `
-                  <span class="bg-rose-500 text-white text-[9px] font-bold tracking-widest px-2 py-1 uppercase shadow-sm animate-pulse">
+                  <span class="bg-[#fce7f3] text-[#be5d8a] text-[9px] font-extrabold tracking-widest px-2.5 py-1.5 rounded-full border border-[#f5bfd7] uppercase shadow-sm">
                     ¡Solo ${product.STOCK}!
                   </span>
                 ` : ''}
@@ -4051,10 +4075,10 @@ export default function HomePage23() {
 
               <!-- Botón flotante al hover -->
               <div class="absolute bottom-3 right-3 z-20 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                <button class="pk-grid-add-to-cart w-10 h-10 bg-white text-gray-900 flex items-center justify-center shadow-lg hover:bg-gray-900 hover:text-white transition-colors duration-300"
+                <button class="pk-grid-add-to-cart w-11 h-11 rounded-full bg-[#fce7f3] text-[#b34f7e] border border-[#f5bfd7] flex items-center justify-center shadow-md hover:bg-[#f7c3da] hover:text-[#8f3e66] transition-all duration-300"
                         data-product-id="${product.$id}"
                         aria-label="Agregar ${pName} al carrito">
-                  <svg aria-hidden="true" width="18px" height="18px" viewBox="0 0 32 32" fill="currentColor">
+                  <svg aria-hidden="true" width="20px" height="20px" viewBox="0 0 32 32" fill="currentColor">
                     <path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795zM13.107 27.196c0 0.882-0.717 1.599-1.599 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599s1.599 0.718 1.599 1.599zM24.836 27.196c0 0.882-0.718 1.599-1.6 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599 0.882 0 1.6 0.718 1.6 1.599zM11.058 21.331l-2.585-10.662h20.662l-3.615 10.662h-14.462z"></path>
                   </svg>
                 </button>
@@ -4505,10 +4529,164 @@ export default function HomePage23() {
       headerActionsPC.insertBefore(notifBtn, headerActionsPC.querySelector('.cart-icon'));
     }
 
-    root.dataset.navInjected = '1';
-    // htmlInjected en deps: si el HTML se inyecta DESPUÉS de que lleguen los datos
-    // (fetch del body-clean.html lento), este efecto debe re-ejecutarse.
+    // The navbar is intentionally rebuilt on every data update so late-arriving
+    // catalog counts cannot leave stale categories in the DOM.
   }, [categories, subcategories, products, cheapestProducts, isAppwriteLoaded, unlimitedStock, htmlInjected]);
+
+  /* ── CUSTOM PC NAVBAR: independent fetch + build (same source as /productos) ── */
+  useEffect(() => {
+    if (isEditorMockEnabled()) return;
+    let active = true;
+
+    const buildCustomNavbar = async () => {
+      try {
+        const [catalogRes, productsRes] = await Promise.all([
+          fetch('/api/public-data/catalog'),
+          fetch('/api/public-data/products?limit=1'),
+        ]);
+        if (!catalogRes.ok || !productsRes.ok) return;
+        const [catalogData, productsData] = await Promise.all([
+          catalogRes.json(),
+          productsRes.json(),
+        ]);
+        if (!active) return;
+
+        const cats = (catalogData.categories || []) as Category[];
+        const subs = (catalogData.subcategories || []) as Subcategory[];
+        const catCounts = productsData.categoryCounts || {};
+        const subCounts = productsData.subcategoryCounts || {};
+
+        const customNav = document.querySelector('#custom-pc-navbar .bottom-row');
+        if (!customNav) return;
+
+        const emojiMap: Record<string, string> = {
+          'Skincare': '🧴',
+          'Skincare Facial': '🧴',
+          'Maquillaje': '💄',
+          'Capilar': '💇‍♀️',
+          'Manicure': '💅',
+          'Herramientas': '🔧',
+          'Otros': '📦',
+          'Aromaterapia y Difusores': '🕯️',
+          'Empaques y Regalos': '🎁',
+          'Fragancias': '🌸',
+          'Cabello': '💇‍♀️',
+          'Cuerpo': '🧼',
+          'Ofertas': '🏷️',
+        };
+
+        const catsWithProducts = cats
+          .filter(cat => (catCounts[cat.$id] || 0) > 0)
+          .sort((a, b) => (catCounts[b.$id] || 0) - (catCounts[a.$id] || 0));
+
+        if (catsWithProducts.length === 0) return;
+
+        customNav.innerHTML = '';
+
+        catsWithProducts.forEach(cat => {
+          const catLink = `/productos?categoria=${encodeURIComponent(cat.name)}`;
+          const emoji = emojiMap[cat.name] || '';
+          const catSubs = subs
+            .filter(sc => sc.categoryId === cat.$id && !sc.parentSubcategoryId)
+            .map(sc => ({ ...sc, prodCount: subCounts[sc.$id] || 0 }))
+            .filter(sc => sc.prodCount > 0)
+            .sort((a, b) => b.prodCount - a.prodCount);
+
+          if (catSubs.length === 0) {
+            const a = document.createElement('a');
+            a.href = catLink;
+            a.textContent = `${emoji} ${cat.name}`.trim();
+            customNav.appendChild(a);
+            return;
+          }
+
+          const group = document.createElement('div');
+          group.className = 'nav-group';
+
+          const parent = document.createElement('a');
+          parent.href = catLink;
+          parent.className = 'nav-parent';
+          parent.textContent = `${emoji} ${cat.name}`.trim();
+          parent.addEventListener('click', (e) => {
+            e.preventDefault();
+            const wasActive = group.classList.contains('active');
+            customNav.querySelectorAll('.nav-group.active').forEach(g => g.classList.remove('active'));
+            if (!wasActive) group.classList.add('active');
+          });
+          group.appendChild(parent);
+
+          const mega = document.createElement('div');
+          mega.className = 'nav-mega';
+
+          catSubs.forEach(sub => {
+            const col = document.createElement('div');
+            col.className = 'nav-mega-column';
+
+            const title = document.createElement('strong');
+            title.className = 'nav-mega-title';
+            title.textContent = sub.name;
+            col.appendChild(title);
+
+            const subSubs = subs.filter(sc => sc.parentSubcategoryId === sub.$id);
+            if (subSubs.length > 0) {
+              subSubs.forEach(ssc => {
+                const a = document.createElement('a');
+                a.href = `/productos?categoria=${encodeURIComponent(cat.name)}&subcat=${encodeURIComponent(sub.$id)}&subSubcat=${encodeURIComponent(ssc.$id)}`;
+                a.textContent = ssc.name;
+                col.appendChild(a);
+              });
+            } else {
+              const a = document.createElement('a');
+              a.href = `/productos?categoria=${encodeURIComponent(cat.name)}&subcat=${encodeURIComponent(sub.$id)}`;
+              a.textContent = `Ver todo (${sub.prodCount})`;
+              col.appendChild(a);
+            }
+
+            mega.appendChild(col);
+          });
+
+          group.appendChild(mega);
+          customNav.appendChild(group);
+        });
+
+        // Close all megamenus when clicking outside any nav-group
+        const outsideClickHandler = (e: MouseEvent) => {
+          const target = e.target as Node;
+          const anyGroup = customNav.querySelector('.nav-group.active');
+          if (anyGroup && !anyGroup.contains(target)) {
+            customNav.querySelectorAll('.nav-group.active').forEach(g => g.classList.remove('active'));
+          }
+        };
+        document.addEventListener('click', outsideClickHandler);
+        // Store cleanup on the element for the effect's cleanup
+        (customNav as any).__cleanupOutsideClick = () => {
+          document.removeEventListener('click', outsideClickHandler);
+        };
+      } catch (err) {
+        console.warn('[Plantilla23] Custom navbar build failed:', err);
+      }
+    };
+
+    // Wait for the HTML to be injected before trying to find the navbar element
+    if (containerRef.current && containerRef.current.dataset.htmlSet) {
+      buildCustomNavbar();
+    } else {
+      // Poll until the HTML is ready
+      const interval = setInterval(() => {
+        if (containerRef.current && containerRef.current.dataset.htmlSet) {
+          clearInterval(interval);
+          buildCustomNavbar();
+        }
+      }, 200);
+      return () => { clearInterval(interval); active = false; };
+    }
+
+    return () => {
+      active = false;
+      const nav = document.querySelector('#custom-pc-navbar .bottom-row');
+      if (nav && (nav as any).__cleanupOutsideClick) (nav as any).__cleanupOutsideClick();
+    };
+  }, [htmlInjected]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {
@@ -4766,7 +4944,7 @@ export default function HomePage23() {
         // ═══ Logo Instant Load Reveal & Override ═══
         const logo = document.querySelector('.header img.logo') as HTMLImageElement;
         if (logo) {
-          logo.src = "https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04";
+          logo.src = "https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784401902773-pegada-1784401898779.png";
           if (logo.complete) {
             logo.classList.add('is-loaded');
           } else {
