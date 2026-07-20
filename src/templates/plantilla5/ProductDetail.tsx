@@ -446,7 +446,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
       : product;
 
-    // 📦 Precios por Volumen (4 niveles: detalle/intermedio/mayor/caja).
+    // 📦 Precios por Volumen (3 niveles: detalle/mayor/caja).
     // SIN descuentos artificiales: el precio unitario depende SOLO de la
     // cantidad seleccionada. Nada de apertura, ofertas ni overrides.
     pricingProductRef.current = displayProduct;
@@ -767,7 +767,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       }
     });
 
-    // 4b. 📦 Tabla de Precios por Volumen — 4 niveles con umbrales dinámicos
+    // 4b. 📦 Tabla de Precios por Volumen — 3 niveles con umbrales dinámicos
     // según el PACKQTY de cada producto. Click en un nivel = saltar a su cantidad.
     // Sin porcentajes ni "descuentos": solo los precios reales de cada nivel.
     const priceAnchor = mainPriceContainer as HTMLElement | null;
@@ -2120,7 +2120,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   }, [product, refElement]);
 
   // ❌ Countdown de ofertas eliminado: sin descuentos artificiales,
-  // el precio se rige solo por el sistema de volumen (4 niveles).
+  // el precio se rige solo por el sistema de volumen (3 niveles).
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {

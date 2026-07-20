@@ -1,29 +1,25 @@
 /**
- * 📦 Precios por Volumen — 4 niveles según cantidad comprada.
+ * 📦 Precios por Volumen — 3 niveles según cantidad comprada.
  *
  * Fuente única de verdad para calcular qué precio unitario corresponde
- * a una cantidad dada. SIN descuentos artificiales: los 4 precios vienen
- * directos de Appwrite (calculados desde el Excel de costos del proveedor).
+ * a una cantidad dada. SIN descuentos artificiales.
  *
- *  Nivel       | Campo Appwrite     | Rango (packQty=12)
- *  ------------|--------------------|--------------------
- *  Detalle     | PRICE              | 1 – 5
- *  Intermedio  | INTERMEDIATEPRICE  | 6 – 11
- *  Mayor       | WHOLESALEPRICE     | 12 – 23
- *  Caja        | BOXPRICE           | 24+
+ *  Nivel       | Cálculo                    | Rango (packQty=12)
+ *  ------------|----------------------------|--------------------
+ *  Detalle     | WHOLESALEPRICE × 1.5       | 1 – 11
+ *  Mayor       | WHOLESALEPRICE             | 12 – 23
+ *  Caja        | BOXPRICE                   | 24+
  *
  * Los umbrales son DINÁMICOS según el PACKQTY de cada producto:
- *  - intermedio arranca en la mitad del paquete (packQty/2); si el paquete
- *    es impar pero múltiplo de 3, en un tercio (packQty/3).
  *  - mayor arranca en 1 paquete completo (packQty).
  *  - caja arranca en 2 paquetes (packQty × 2).
  *
- * Ej: packQty 12 → 1-5 / 6-11 / 12-23 / 24+
- *     packQty 36 → 1-17 / 18-35 / 36-71 / 72+
- *     packQty 9  → 1-2  / 3-8   / 9-17  / 18+
+ * Ej: packQty 12 → 1-11 / 12-23 / 24+
+ *     packQty 36 → 1-35 / 36-71 / 72+
+ *     packQty 9  → 1-8  / 9-17  / 18+
  */
 
-export type VolumeTierKey = 'detalle' | 'intermedio' | 'mayor' | 'caja';
+export type VolumeTierKey = 'detalle' | 'mayor' | 'caja';
 
 export interface VolumeTier {
   key: VolumeTierKey;
@@ -50,50 +46,33 @@ export function getPackQty(p: VolumePricedProduct): number {
   return !isNaN(raw) && raw > 1 ? Math.round(raw) : 0;
 }
 
-/** Umbral donde arranca el nivel intermedio, derivado del packQty. */
-export function getIntermediateMinQty(packQty: number): number {
-  if (packQty <= 1) return 1;
-  if (packQty % 2 === 0) return packQty / 2;
-  if (packQty % 3 === 0) return packQty / 3;
-  return Math.ceil(packQty / 2);
-}
-
 /**
  * Niveles de precio del producto, ordenados por cantidad ascendente.
  * Solo incluye niveles que realmente mejoran el precio; un producto sin
  * WHOLESALEPRICE o sin packQty devuelve únicamente el nivel Detalle.
+ *
+ * Precio Detalle = WHOLESALEPRICE × 1.5 (mayor + 50%), desde 1 unidad.
  */
 export function getVolumeTiers(p: VolumePricedProduct): VolumeTier[] {
-  const detail = p.PRICE || 0;
   const packQty = getPackQty(p);
   const mayor = p.WHOLESALEPRICE && p.WHOLESALEPRICE > 0 ? p.WHOLESALEPRICE : 0;
 
-  // Sin sistema de volumen → precio único
-  if (!packQty || !mayor || mayor >= detail || detail <= 0) {
-    return [{ key: 'detalle', label: 'Detalle', minQty: 1, maxQty: null, unitPrice: detail || mayor }];
+  // Sin sistema de volumen → precio único (usa PRICE de Appwrite como fallback)
+  if (!packQty || !mayor) {
+    const fallback = p.PRICE || mayor || 0;
+    return [{ key: 'detalle', label: 'Detalle', minQty: 1, maxQty: null, unitPrice: fallback }];
   }
 
-  const iMin = getIntermediateMinQty(packQty);
+  // Detalle = mayor + 50%
+  const detalle = Math.round(mayor * 1.5);
   const cajaMin = packQty * 2;
-
-  // Intermedio: campo de Appwrite, o fórmula puente (60% más cerca del detalle)
-  const intermedio = p.INTERMEDIATEPRICE && p.INTERMEDIATEPRICE > 0
-    ? p.INTERMEDIATEPRICE
-    : Math.round(mayor + (detail - mayor) * 0.6);
 
   // Caja: solo si existe y realmente mejora el precio mayor
   const caja = p.BOXPRICE && p.BOXPRICE > 0 && p.BOXPRICE < mayor ? p.BOXPRICE : 0;
 
   const tiers: VolumeTier[] = [
-    { key: 'detalle', label: 'Detalle', minQty: 1, maxQty: iMin - 1, unitPrice: detail },
+    { key: 'detalle', label: 'Detalle', minQty: 1, maxQty: packQty - 1, unitPrice: detalle },
   ];
-
-  // Intermedio solo si de verdad es un puente (entre mayor y detalle)
-  if (iMin < packQty && intermedio < detail && intermedio > mayor) {
-    tiers.push({ key: 'intermedio', label: 'Medio mayor', minQty: iMin, maxQty: packQty - 1, unitPrice: intermedio });
-  } else {
-    tiers[0].maxQty = packQty - 1;
-  }
 
   if (caja) {
     tiers.push({ key: 'mayor', label: 'Por mayor', minQty: packQty, maxQty: cajaMin - 1, unitPrice: mayor });
@@ -127,16 +106,14 @@ export function hasVolumePricing(p: VolumePricedProduct): boolean {
 
 /**
  * Puntos de control para el selector de cantidad:
- * unidades sueltas hasta el umbral intermedio, luego saltos por paquete.
- * Ej packQty 12: [1,2,3,4,5,6,12,24,36,48,...]
+ * unidades sueltas hasta el umbral mayor, luego saltos por paquete.
+ * Ej packQty 12: [1,2,3,4,5,6,7,8,9,10,11,12,24,36,48,...]
  */
 export function getQtyCheckpoints(p: VolumePricedProduct, maxStock = 99999): number[] {
   const packQty = getPackQty(p);
   if (!packQty || !hasVolumePricing(p)) return [];
-  const iMin = getIntermediateMinQty(packQty);
   const pts: number[] = [];
-  for (let i = 1; i < iMin; i++) pts.push(i);
-  if (iMin < packQty) pts.push(iMin);
+  for (let i = 1; i < packQty; i++) pts.push(i);
   const maxMultiples = 8; // hasta 8 paquetes por stepper; más se escribe a mano
   for (let m = packQty; m <= packQty * maxMultiples; m += packQty) pts.push(m);
   return pts.filter(v => v <= maxStock);

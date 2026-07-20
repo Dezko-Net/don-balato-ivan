@@ -81,7 +81,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return item.wholesalePrice * item.quantity;
     }
     
-    // 📦 Precios por volumen (detalle/intermedio/mayor/caja según cantidad).
+    // 📦 Precios por volumen (detalle/mayor/caja según cantidad).
     // Reemplaza al viejo wholesale + el descuento artificial de pack (20%),
     // que fue ELIMINADO: ya no existe ningún descuento fabricado en el código.
     // Va ANTES que isPack: con Paquetes oculto, el flag isPack de carritos

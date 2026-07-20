@@ -79,7 +79,7 @@ export function useCartItemPrice(item: CartItem): {
       };
     }
 
-    // 3. 📦 Precios por volumen (4 niveles: detalle/intermedio/mayor/caja).
+    // 3. 📦 Precios por volumen (3 niveles: detalle/mayor/caja).
     // El precio unitario baja según la cantidad — sin descuentos artificiales.
     if (!result && hasVolumePricing(item.product)) {
       const unit = resolveVolumeUnitPrice(item.product, item.quantity);
@@ -154,7 +154,7 @@ export function useCartPricing(items: CartItem[]) {
       if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
         unit = item.timedOfferPrice;
       } else if (hasVolumePricing(item.product)) {
-        // 📦 Precios por volumen: el nivel (detalle/intermedio/mayor/caja) según cantidad
+        // 📦 Precios por volumen: el nivel (detalle/mayor/caja) según cantidad
         unit = resolveVolumeUnitPrice(item.product, item.quantity);
       } else if (hasConfiguredWholesale && qtyMatches) {
         unit = item.product.WHOLESALEPRICE!;
