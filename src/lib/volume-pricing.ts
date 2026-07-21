@@ -4,19 +4,15 @@
  * Fuente única de verdad para calcular qué precio unitario corresponde
  * a una cantidad dada. SIN descuentos artificiales.
  *
- *  Nivel       | Cálculo                    | Rango (packQty=12)
+ *  Nivel       | Cálculo                    | Rango (packQty=12, boxQty=24)
  *  ------------|----------------------------|--------------------
  *  Detalle     | WHOLESALEPRICE × 1.5       | 1 – 11
  *  Mayor       | WHOLESALEPRICE             | 12 – 23
- *  Caja        | BOXPRICE                   | 24+
+ *  Caja        | BOXPRICE                   | 24+ (boxQty)
  *
- * Los umbrales son DINÁMICOS según el PACKQTY de cada producto:
+ * Los umbrales son DINÁMICOS según el PACKQTY y BOXQTY de cada producto:
  *  - mayor arranca en 1 paquete completo (packQty).
- *  - caja arranca en 2 paquetes (packQty × 2).
- *
- * Ej: packQty 12 → 1-11 / 12-23 / 24+
- *     packQty 36 → 1-35 / 36-71 / 72+
- *     packQty 9  → 1-8  / 9-17  / 18+
+ *  - caja arranca en BOXQTY (si está definido) o packQty × 2 como fallback.
  */
 
 export type VolumeTierKey = 'detalle' | 'mayor' | 'caja';
@@ -37,6 +33,7 @@ export interface VolumePricedProduct {
   WHOLESALEPRICE?: number | null;
   BOXPRICE?: number | null;
   PACKQTY?: number | null;
+  BOXQTY?: number | null;
   WHOLESALEMINQUANTITY?: number | null;
 }
 
@@ -65,7 +62,9 @@ export function getVolumeTiers(p: VolumePricedProduct): VolumeTier[] {
 
   // Detalle = mayor + 50%
   const detalle = Math.round(mayor * 1.5);
-  const cajaMin = packQty * 2;
+
+  // Caja: usa BOXQTY si está definido, sino packQty × 2 como fallback
+  const cajaMin = (p.BOXQTY && p.BOXQTY > packQty) ? Math.round(p.BOXQTY) : packQty * 2;
 
   // Caja: solo si existe y realmente mejora el precio mayor
   const caja = p.BOXPRICE && p.BOXPRICE > 0 && p.BOXPRICE < mayor ? p.BOXPRICE : 0;

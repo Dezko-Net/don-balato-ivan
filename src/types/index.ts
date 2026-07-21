@@ -22,6 +22,8 @@ export interface Product {
   INTERMEDIATEPRICE?: number;
   /** Precio por caja (2+ paquetes): el más bajo de todos */
   BOXPRICE?: number;
+  /** Cantidad mínima para precio caja (si no se define, usa PACKQTY × 2) */
+  BOXQTY?: number;
   PACKQTY?: number;
   PACK_MIN_PACKS?: number;
   PACK_DISCOUNT_PCT?: number;

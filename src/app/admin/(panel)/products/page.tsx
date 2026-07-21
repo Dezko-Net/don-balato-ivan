@@ -21,7 +21,7 @@ import { invalidateProductCache, cached, TTL } from '@/lib/cache';
 
 const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
-const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, BOXPRICE: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
+const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, BOXPRICE: 0, BOXQTY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
 
 const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: string; field: string; type?: string; value: any; onChange: (val: any) => void }) => (
   <div>
@@ -825,6 +825,7 @@ export default function ProductsPage() {
     if (!modal) return;
     const d = modal.data;
     if (!d.NAME?.trim()) { alert('El nombre es requerido'); return; }
+    if (!d.WHOLESALEPRICE || Number(d.WHOLESALEPRICE) <= 0) { alert('El Precio Paquete / Mayor es obligatorio'); return; }
     if (d._sku?.trim()) {
       const skuInput = d._sku.trim().toLowerCase();
       
@@ -869,6 +870,7 @@ export default function ProductsPage() {
         WHOLESALEMINQUANTITY: Math.round(Number(d.WHOLESALEMINQUANTITY)) || 0,
         PACKQTY: Math.round(Number(d.PACKQTY)) || 0,
         BOXPRICE: Math.round(Number(d.BOXPRICE)) || 0,
+        BOXQTY: Math.round(Number(d.BOXQTY)) || 0,
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
@@ -1721,12 +1723,12 @@ export default function ProductsPage() {
                     <Boxes className="w-3.5 h-3.5 text-gray-600" /> Precios por Volumen (3 niveles)
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Precio Mayor (editable) */}
+                    {/* Precio Mayor (obligatorio) */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Precio Mayor (CLP)</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Precio Paquete / Mayor (CLP) <span className="text-red-500">*</span></label>
                       <input type="number" value={modal.data.WHOLESALEPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value) } } : m)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-                      <p className="text-[10px] text-gray-500 mt-1">Aplica desde {modal.data.PACKQTY || 0} un.</p>
+                        className={`w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 ${!modal.data.WHOLESALEPRICE ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                      <p className="text-[10px] text-gray-500 mt-1">Aplica desde {modal.data.PACKQTY || 0} un. · Obligatorio</p>
                     </div>
                     {/* Precio Detalle (calculado = mayor × 1.5) */}
                     <div>
@@ -1734,27 +1736,39 @@ export default function ProductsPage() {
                       <div className="relative">
                         <input type="number" value={(() => {
                           const mayor = Number(modal.data.WHOLESALEPRICE) || 0;
-                          return mayor > 0 ? Math.round(mayor * 1.5) : (Number(modal.data.PRICE) || 0);
+                          return mayor > 0 ? Math.round(mayor * 1.5) : 0;
                         })()} readOnly
                           className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-100 text-gray-600 cursor-not-allowed" />
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 font-medium">= mayor × 1.5</span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-1">Aplica desde 1 un.</p>
                     </div>
-                    {/* Precio Caja (editable) */}
+                    {/* Precio Embalaje / Caja (opcional) */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Precio Caja (CLP)</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Precio Embalaje / Caja (CLP) <span className="text-gray-400 text-[9px]">opcional</span></label>
                       <input type="number" value={modal.data.BOXPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, BOXPRICE: Number(e.target.value) } } : m)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-                      <p className="text-[10px] text-gray-500 mt-1">Aplica desde {(modal.data.PACKQTY || 0) * 2} un.</p>
+                      <p className="text-[10px] text-gray-500 mt-1">Aplica desde {modal.data.BOXQTY || (modal.data.PACKQTY || 0) * 2} un.</p>
                     </div>
                   </div>
+                  {/* Cantidad por embalaje (solo si hay precio caja) */}
+                  {Number(modal.data.BOXPRICE) > 0 && (
+                    <div className="mt-3">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad por embalaje (un. mínimas para precio caja)</label>
+                      <input type="number" value={modal.data.BOXQTY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, BOXQTY: Number(e.target.value) } } : m)}
+                        placeholder={`Default: ${(modal.data.PACKQTY || 0) * 2}`}
+                        className="w-full max-w-xs px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                      <p className="text-[10px] text-gray-500 mt-1">Si se deja vacío, usa {(modal.data.PACKQTY || 0) * 2} (paquete × 2)</p>
+                    </div>
+                  )}
                   {/* Preview de los 3 niveles */}
                   {(() => {
                     const mayor = Number(modal.data.WHOLESALEPRICE) || 0;
                     const detalle = mayor > 0 ? Math.round(mayor * 1.5) : 0;
                     const caja = Number(modal.data.BOXPRICE) || 0;
                     const packQty = Number(modal.data.PACKQTY) || 0;
+                    const boxQty = Number(modal.data.BOXQTY) || 0;
+                    const cajaMin = boxQty > packQty ? boxQty : packQty * 2;
                     if (!mayor || !packQty) return null;
                     return (
                       <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
@@ -1762,11 +1776,11 @@ export default function ProductsPage() {
                           <strong>Detalle:</strong> ${detalle.toLocaleString('es-CL')} (1–{packQty - 1} un.)
                         </span>
                         <span className="px-2 py-1 bg-white rounded-lg border border-gray-200 text-gray-700">
-                          <strong>Mayor:</strong> ${mayor.toLocaleString('es-CL')} ({packQty}–{packQty * 2 - 1} un.)
+                          <strong>Mayor:</strong> ${mayor.toLocaleString('es-CL')} ({packQty}–{cajaMin - 1} un.)
                         </span>
                         {caja > 0 && caja < mayor && (
                           <span className="px-2 py-1 bg-white rounded-lg border border-gray-200 text-gray-700">
-                            <strong>Caja:</strong> ${caja.toLocaleString('es-CL')} ({packQty * 2}+ un.)
+                            <strong>Caja:</strong> ${caja.toLocaleString('es-CL')} ({cajaMin}+ un.)
                           </span>
                         )}
                       </div>

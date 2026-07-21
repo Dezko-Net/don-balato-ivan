@@ -58,6 +58,7 @@ export interface Product {
   WHOLESALEMINQUANTITY?: number;
   INTERMEDIATEPRICE?: number;
   BOXPRICE?: number;
+  BOXQTY?: number;
   PACKQTY?: number;
   PACK_MIN_PACKS?: number;
   PACK_DISCOUNT_PCT?: number;
