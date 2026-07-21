@@ -21,7 +21,7 @@ import { invalidateProductCache, cached, TTL } from '@/lib/cache';
 
 const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
-const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
+const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, BOXPRICE: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
 
 const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: string; field: string; type?: string; value: any; onChange: (val: any) => void }) => (
   <div>
@@ -868,6 +868,7 @@ export default function ProductsPage() {
         WHOLESALEPRICE: Math.round(Number(d.WHOLESALEPRICE)) || 0,
         WHOLESALEMINQUANTITY: Math.round(Number(d.WHOLESALEMINQUANTITY)) || 0,
         PACKQTY: Math.round(Number(d.PACKQTY)) || 0,
+        BOXPRICE: Math.round(Number(d.BOXPRICE)) || 0,
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
@@ -1714,11 +1715,70 @@ export default function ProductsPage() {
                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-800" /> Precios e Inventario
                 </h3>
+                {/* ── 3 Niveles de Precio ── */}
+                <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+                  <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+                    <Boxes className="w-3.5 h-3.5 text-gray-600" /> Precios por Volumen (3 niveles)
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Precio Mayor (editable) */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Precio Mayor (CLP)</label>
+                      <input type="number" value={modal.data.WHOLESALEPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value) } } : m)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                      <p className="text-[10px] text-gray-500 mt-1">Aplica desde {modal.data.PACKQTY || 0} un.</p>
+                    </div>
+                    {/* Precio Detalle (calculado = mayor × 1.5) */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Precio Detalle (auto)</label>
+                      <div className="relative">
+                        <input type="number" value={(() => {
+                          const mayor = Number(modal.data.WHOLESALEPRICE) || 0;
+                          return mayor > 0 ? Math.round(mayor * 1.5) : (Number(modal.data.PRICE) || 0);
+                        })()} readOnly
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-100 text-gray-600 cursor-not-allowed" />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 font-medium">= mayor × 1.5</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1">Aplica desde 1 un.</p>
+                    </div>
+                    {/* Precio Caja (editable) */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Precio Caja (CLP)</label>
+                      <input type="number" value={modal.data.BOXPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, BOXPRICE: Number(e.target.value) } } : m)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                      <p className="text-[10px] text-gray-500 mt-1">Aplica desde {(modal.data.PACKQTY || 0) * 2} un.</p>
+                    </div>
+                  </div>
+                  {/* Preview de los 3 niveles */}
+                  {(() => {
+                    const mayor = Number(modal.data.WHOLESALEPRICE) || 0;
+                    const detalle = mayor > 0 ? Math.round(mayor * 1.5) : 0;
+                    const caja = Number(modal.data.BOXPRICE) || 0;
+                    const packQty = Number(modal.data.PACKQTY) || 0;
+                    if (!mayor || !packQty) return null;
+                    return (
+                      <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
+                        <span className="px-2 py-1 bg-white rounded-lg border border-gray-200 text-gray-700">
+                          <strong>Detalle:</strong> ${detalle.toLocaleString('es-CL')} (1–{packQty - 1} un.)
+                        </span>
+                        <span className="px-2 py-1 bg-white rounded-lg border border-gray-200 text-gray-700">
+                          <strong>Mayor:</strong> ${mayor.toLocaleString('es-CL')} ({packQty}–{packQty * 2 - 1} un.)
+                        </span>
+                        {caja > 0 && caja < mayor && (
+                          <span className="px-2 py-1 bg-white rounded-lg border border-gray-200 text-gray-700">
+                            <strong>Caja:</strong> ${caja.toLocaleString('es-CL')} ({packQty * 2}+ un.)
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Precio Normal (CLP)</label>
                     <input type="number" value={modal.data.PRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value) } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                    <p className="text-[10px] text-gray-400 mt-1">Solo fallback sin volumen</p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Costo</label>
@@ -2567,7 +2627,7 @@ export default function ProductsPage() {
                           )}
                           {p.WHOLESALEPRICE ? (
                             <p className="text-xs text-gray-900">
-                              Mayor: {fmt(p.WHOLESALEPRICE)} × {p.WHOLESALEMINQUANTITY}
+                              Det: {fmt(Math.round(p.WHOLESALEPRICE * 1.5))} · Mayor: {fmt(p.WHOLESALEPRICE)}{p.BOXPRICE ? ` · Caja: ${fmt(p.BOXPRICE)}` : ''}
                             </p>
                           ) : null}
                           {!p.IMAGEURL && <p className="text-[10px] text-amber-500 font-medium">sin imagen</p>}
@@ -2588,7 +2648,14 @@ export default function ProductsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{catName(p.CATEGORYID)}</td>
                     <td className="px-4 py-3 text-right">
-                      {p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE ? (
+                      {p.WHOLESALEPRICE && p.PACKQTY ? (
+                        <div>
+                          <span className="font-semibold text-gray-900">{fmt(Math.round(p.WHOLESALEPRICE * 1.5))}</span>
+                          <p className="text-[10px] text-gray-400 mt-0.5 text-right">
+                            Mayor: {fmt(p.WHOLESALEPRICE)}{p.BOXPRICE ? ` · Caja: ${fmt(p.BOXPRICE)}` : ''}
+                          </p>
+                        </div>
+                      ) : p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE ? (
                         <div>
                           <span className="font-semibold text-red-600">{fmt(p.CURRENTPRICE)}</span>
                           <span className="text-xs text-gray-400 line-through ml-1">{fmt(p.PRICE)}</span>
