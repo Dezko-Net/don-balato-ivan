@@ -6,9 +6,9 @@ import { trackRead } from './appwrite-read-tracker';
 const APPWRITE_ENDPOINT =
   process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0a4e8d0032177f3f90';
+  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan';
 const DATABASE_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
+  process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28';
 const API_KEY = process.env.APPWRITE_API_KEY || '';
 
 export const getHeaders = () => ({

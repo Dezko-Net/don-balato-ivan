@@ -1,0 +1,19 @@
+{
+  "plantilla": 99,
+  "generatedAt": "2026-07-23T02:24:14.121Z",
+  "note": "Editá sections/*.html y recompilá con: node shopify-folla.js join 99",
+  "parts": [
+    {
+      "order": 0,
+      "role": "prelude",
+      "file": "000-_prelude.html",
+      "bytes": 122409
+    },
+    {
+      "order": 10,
+      "role": "tail",
+      "file": "010-_tail.html",
+      "bytes": 0
+    }
+  ]
+}

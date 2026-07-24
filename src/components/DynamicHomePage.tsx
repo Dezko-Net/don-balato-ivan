@@ -33,6 +33,7 @@ const TEMPLATES: Record<number, React.ComponentType> = {
   100: dynamic(() => import('@/templates/plantilla100/HomePage'), { loading: Loader, ssr: false }),
   101: dynamic(() => import('@/templates/plantilla101/HomePage'), { loading: Loader, ssr: false }),
   26: dynamic(() => import('@/templates/plantilla26/HomePage'), { loading: Loader, ssr: false }),
+  99: dynamic(() => import('@/templates/plantilla99/HomePage'), { loading: Loader, ssr: false }),
 };
 
 export default function DynamicHomePage({ children }: { children: React.ReactNode }) {

@@ -1,0 +1,87 @@
+{
+  "plantilla": 99,
+  "sourceUrl": "https://antigravity.google",
+  "shopifyHost": "antigravity.google",
+  "themeId": "6",
+  "capturedAt": "2026-07-23T02:24:14.123Z",
+  "css": [
+    "/shopify/plantilla99/assets/css/inline/index-inline-1.css",
+    "/shopify/plantilla99/assets/css/www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css",
+    "/shopify/plantilla99/assets/css/antigravity.google/_astro/BaseLayout.DG7uyOH1.css",
+    "/shopify/plantilla99/assets/css/antigravity.google/_astro/Header.BsI8e4AW.css",
+    "/shopify/plantilla99/assets/css/antigravity.google/_astro/index.BYZqGVMs.css"
+  ],
+  "js": [
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/Header.astro_astro_type_script_index_0_lang.KVEvS_RS.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/MainParticlesComponent.astro_astro_type_script_index_0_lang.Dox42TL8.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/TypedHeader.astro_astro_type_script_index_0_lang.gO3r8hlV.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/YoutubeVideoSection.astro_astro_type_script_index_0_lang.CBT2SQlO.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/AgentFirst.astro_astro_type_script_index_0_lang.DHglPJ15.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/FeatureExplorerNew.astro_astro_type_script_index_0_lang.ItaQhKl5.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/CustomCursor.astro_astro_type_script_index_0_lang.HIixua-1.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/Slider.astro_astro_type_script_index_0_lang.COD_D88F.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/UseCases.astro_astro_type_script_index_0_lang.BF9mW6Y7.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/MorphingParticlesComponent.astro_astro_type_script_index_0_lang.B4r3VvfF.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/LandingLatestBlogs.astro_astro_type_script_index_0_lang.C0pOmJid.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/DownloadSection.astro_astro_type_script_index_0_lang.DO3qSWET.js",
+    "/shopify/plantilla99/assets/js/antigravity.google/_astro/AntigravityFooter.astro_astro_type_script_index_0_lang.DQIYDjYp.js",
+    "/shopify/plantilla99/assets/js/www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js"
+  ],
+  "fonts": [],
+  "bodyClass": "",
+  "rootVarsCount": 204,
+  "segmentation": {
+    "sections": 0,
+    "dir": "sections/",
+    "liquid": true
+  },
+  "stats": {
+    "cssTotal": 4,
+    "jsTotal": 15,
+    "fontsTotal": 0,
+    "imagesTotal": 16,
+    "videosTotal": 2,
+    "svgMasksTotal": 0,
+    "inlineAnimScripts": 1,
+    "inlineCssKB": 14,
+    "bodyCleanKB": 120,
+    "downloaded": {
+      "css": {
+        "ok": 0,
+        "skip": 4,
+        "fail": 0,
+        "errors": []
+      },
+      "js": {
+        "ok": 0,
+        "skip": 15,
+        "fail": 0,
+        "errors": []
+      },
+      "fonts": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "images": {
+        "ok": 0,
+        "skip": 16,
+        "fail": 0,
+        "errors": []
+      },
+      "videos": {
+        "ok": 0,
+        "skip": 2,
+        "fail": 0,
+        "errors": []
+      },
+      "svgMasks": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      }
+    }
+  }
+}

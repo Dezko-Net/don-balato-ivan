@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
-const PROJECT_ID = '6a0a4e8d0032177f3f90';
-const DATABASE_ID = '6a0a58ca001798410d86';
+const PROJECT_ID = 'donbalatoivan';
+const DATABASE_ID = '6a62e7440033d2278d28';
 const COLLECTION_ID = 'theme_config';
 const DOC_ID = 'homepage_sections';
 const API_KEY = process.env.APPWRITE_API_KEY || '';

@@ -1,0 +1,70 @@
+{
+  "plantilla": 99,
+  "sourceUrl": "https://antigravity.google",
+  "capturedAt": "2026-07-23T02:24:14.126Z",
+  "elapsedSeconds": "13.3",
+  "files": {
+    "html": "C:\\Proyectos\\PROJECT YAXSEL (PRODUCCION) - 14-06-2026 (3GB)\\public\\shopify\\plantilla99\\index.html",
+    "bodyClean": "C:\\Proyectos\\PROJECT YAXSEL (PRODUCCION) - 14-06-2026 (3GB)\\public\\shopify\\plantilla99\\body-clean.html",
+    "manifest": "C:\\Proyectos\\PROJECT YAXSEL (PRODUCCION) - 14-06-2026 (3GB)\\public\\shopify\\plantilla99\\manifest.json",
+    "tsx": "C:\\Proyectos\\PROJECT YAXSEL (PRODUCCION) - 14-06-2026 (3GB)\\src\\templates\\plantilla99\\HomePage.tsx"
+  },
+  "stats": {
+    "cssTotal": 4,
+    "jsTotal": 15,
+    "fontsTotal": 0,
+    "imagesTotal": 16,
+    "videosTotal": 2,
+    "svgMasksTotal": 0,
+    "inlineAnimScripts": 1,
+    "inlineCssKB": 14,
+    "bodyCleanKB": 120,
+    "downloaded": {
+      "css": {
+        "ok": 0,
+        "skip": 4,
+        "fail": 0,
+        "errors": []
+      },
+      "js": {
+        "ok": 0,
+        "skip": 15,
+        "fail": 0,
+        "errors": []
+      },
+      "fonts": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "images": {
+        "ok": 0,
+        "skip": 16,
+        "fail": 0,
+        "errors": []
+      },
+      "videos": {
+        "ok": 0,
+        "skip": 2,
+        "fail": 0,
+        "errors": []
+      },
+      "svgMasks": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      }
+    }
+  },
+  "errors": [],
+  "nextSteps": [
+    "1. Editar piezas en public/shopify/plantilla99/sections/*.html (una sección por archivo)",
+    "2. Recompilar: node shopify-folla.js join 99  (regenera body-clean.html)",
+    "3. Plantilla auto-registrada en DynamicHomePage.tsx y preview (si no, registrá a mano)",
+    "4. Probar en http://localhost:3000/preview/plantilla/99",
+    "5. Para subir a una tienda Shopify real: usar public/shopify/plantilla99/sections-liquid/*.liquid",
+    "6. Si algo se ve mal, probar FOLLA_VARS=1 para inyectar variables :root capturadas"
+  ]
+}

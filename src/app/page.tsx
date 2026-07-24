@@ -136,7 +136,7 @@ export default function HomePage() {
           {/* Mobile banner */}
           <div className="block md:hidden absolute inset-0">
             <Image 
-              src="https://nyc.cloud.appwrite.io/v1/storage/buckets/6a15f9a5001070a3c408/files/6a30d3b00006861dc8fd/view?project=6a0a4e8d0032177f3f90&impersonateuserid=&mode=admin" 
+              src="https://nyc.cloud.appwrite.io/v1/storage/buckets/6a15f9a5001070a3c408/files/6a30d3b00006861dc8fd/view?project=donbalatoivan&impersonateuserid=&mode=admin" 
               alt="Hero Mobile" 
               fill 
               sizes="100vw" 
@@ -147,7 +147,7 @@ export default function HomePage() {
           {/* Desktop/PC banner */}
           <div className="hidden md:block absolute inset-0">
             <Image 
-              src="https://nyc.cloud.appwrite.io/v1/storage/buckets/6a15f9a5001070a3c408/files/6a30dd06000106a7bb64/view?project=6a0a4e8d0032177f3f90&impersonateuserid=&mode=admin" 
+              src="https://nyc.cloud.appwrite.io/v1/storage/buckets/6a15f9a5001070a3c408/files/6a30dd06000106a7bb64/view?project=donbalatoivan&impersonateuserid=&mode=admin" 
               alt="Hero PC" 
               fill 
               sizes="100vw" 
