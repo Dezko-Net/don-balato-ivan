@@ -10,6 +10,7 @@ import { Product, Category, Subcategory } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload, FileSpreadsheet, FileText, ShoppingBag, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import ImageUploadField from '@/components/admin/ImageUploadField';
+import ProductPhotoUploader from '@/components/admin/ProductPhotoUploader';
 import MobileProductList from '@/components/admin/mobile/MobileProductList';
 import MobileProductEditor from '@/components/admin/mobile/MobileProductEditor';
 import { generateProductTitle, generateProductDescription, generateProductAiPack } from '@/lib/aiAdmin';
@@ -121,6 +122,8 @@ export default function ProductsPage() {
   const imageDrawerFileRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
   const [aiLoading, setAiLoading] = useState<'title' | 'desc' | 'tabs' | 'all' | null>(null);
   const [aiTitles, setAiTitles] = useState<string[]>([]);
+  const [desktopMarginPct, setDesktopMarginPct] = useState<string>('');
+  const [desktopCatalogPct, setDesktopCatalogPct] = useState<string>('');
   const [KeniaOpen, setKeniaOpen] = useState(false);
   const [KeniaMessages, setKeniaMessages] = useState<{role: string; content: string}[]>([]);
   const [KeniaInput, setKeniaInput] = useState('');
@@ -1683,19 +1686,14 @@ export default function ProductsPage() {
               {/* Product image + basic info */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex gap-6 flex-col lg:flex-row">
-                  {/* Image section */}
-                  <div className="lg:w-80 shrink-0 space-y-3">
-                    <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}
-                      value={modal.data.IMAGEURL || ''}
-                      onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: v } } : m)} />
-                    <div className="grid grid-cols-2 gap-2">
-                      <ImageUploadField label="Imagen 2" bucketId={PRODUCTS_BUCKET_ID}
-                        value={modal.data.IMAGEURL2 || ''}
-                        onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL2: v } } : m)} />
-                      <ImageUploadField label="Imagen 3" bucketId={PRODUCTS_BUCKET_ID}
-                        value={modal.data.IMAGEURL3 || ''}
-                        onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL3: v } } : m)} />
-                    </div>
+                  {/* Image section with AI search */}
+                  <div className="lg:w-80 shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fotos del producto</label>
+                    <ProductPhotoUploader
+                      imageUrls={[modal.data.IMAGEURL || '', modal.data.IMAGEURL2 || '', modal.data.IMAGEURL3 || ''].filter(Boolean).slice(0, 3)}
+                      onChange={urls => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: urls[0] || '', IMAGEURL2: urls[1] || '', IMAGEURL3: urls[2] || '' } } : m)}
+                      compact
+                    />
                   </div>
                   {/* Name + Description */}
                   <div className="flex-1 space-y-4">
@@ -1774,12 +1772,54 @@ export default function ProductsPage() {
                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-800" /> Precios e Inventario
                 </h3>
-                {/* ── Precio ── */}
+                {/* ── Costo + Margen → Precio ── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio (CLP) <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Costo (lo que pagas)</label>
+                    <input type="number" value={modal.data.COST || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, COST: Number(e.target.value) || 0 } } : m)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-emerald-700 mb-1">Margen de ganancia (%)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number" inputMode="numeric"
+                        value={desktopMarginPct}
+                        placeholder="Ej: 100"
+                        onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
+                        onChange={e => {
+                          setDesktopMarginPct(e.target.value);
+                          const pct = Number(e.target.value);
+                          const cost = Number(modal.data.COST) || 0;
+                          if (pct !== 0 && cost > 0) {
+                            const price = Math.round(cost * (1 + pct / 100));
+                            setModal(m => m ? { ...m, data: { ...m.data, PRICE: price, WHOLESALEPRICE: price } } : m);
+                          }
+                        }}
+                        className="w-24 px-2 py-2 border border-emerald-300 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      {modal.data.COST && modal.data.PRICE && (
+                        <span className="text-xs font-semibold text-emerald-600">
+                          Ganancia: ${(Number(modal.data.PRICE) - Number(modal.data.COST)).toLocaleString('es-CL')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio venta (CLP) <span className="text-red-500">*</span></label>
                     <input type="number" value={modal.data.PRICE || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value) || 0, WHOLESALEPRICE: Number(e.target.value) || 0 } } : m)}
                       className={`w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 ${!modal.data.PRICE ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                    {(() => {
+                      const price = Number(modal.data.PRICE) || 0;
+                      const cost = Number(modal.data.COST) || 0;
+                      if (!price || !cost) return null;
+                      const margin = Math.round(((price - cost) / price) * 100);
+                      return (
+                        <p className={`text-[10px] mt-1 font-medium ${margin >= 40 ? 'text-emerald-600' : margin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>
+                          Margen actual: {margin}%
+                        </p>
+                      );
+                    })()}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-amber-700 font-bold mb-1">Precio Catálogo (CLP) ✨</label>
@@ -1787,46 +1827,28 @@ export default function ProductsPage() {
                       placeholder="Auto o manual"
                       className="w-full px-3 py-2 border border-amber-300 bg-amber-50/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold" />
                     <div className="flex items-center gap-1 mt-1">
-                      <span className="text-[10px] text-amber-600 font-medium">% sobre precio:</span>
-                      <select
+                      <span className="text-[10px] text-amber-600 font-medium">% sobre costo:</span>
+                      <input
+                        type="number" inputMode="numeric"
+                        value={desktopCatalogPct}
+                        placeholder="Ej: 10"
+                        onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
                         onChange={e => {
+                          setDesktopCatalogPct(e.target.value);
                           const pct = Number(e.target.value);
-                          const basePrice = Number(modal.data.PRICE) || 0;
-                          if (pct > 0 && basePrice > 0) {
-                            const catPrice = Math.round(basePrice * (1 + pct / 100));
-                            setModal(m => m ? { ...m, data: { ...m.data, CATALOGPRICE: catPrice } } : m);
+                          const cost = Number(modal.data.COST) || 0;
+                          if (pct !== 0 && cost > 0) {
+                            setModal(m => m ? { ...m, data: { ...m.data, CATALOGPRICE: Math.round(cost * (1 + pct / 100)) } } : m);
                           }
                         }}
-                        defaultValue=""
-                        className="text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white"
-                      >
-                        <option value="">Manual</option>
-                        <option value="2">+2%</option>
-                        <option value="5">+5%</option>
-                        <option value="10">+10%</option>
-                        <option value="15">+15%</option>
-                        <option value="20">+20%</option>
-                        <option value="-5">-5%</option>
-                        <option value="-10">-10%</option>
-                      </select>
+                        className="w-16 px-1 py-0.5 border border-amber-300 rounded text-[10px] bg-white font-semibold text-amber-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      />
+                      {modal.data.COST && modal.data.CATALOGPRICE && (
+                        <span className="text-[10px] text-amber-500 font-medium">
+                          Ganancia: ${(Number(modal.data.CATALOGPRICE) - Number(modal.data.COST)).toLocaleString('es-CL')}
+                        </span>
+                      )}
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Costo</label>
-                    <input type="number" value={modal.data.COST || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, COST: Number(e.target.value) || 0 } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-                    {(() => {
-                      const price = Number(modal.data.PRICE) || 0;
-                      const cost = Number(modal.data.COST) || 0;
-                      if (!price || !cost) return null;
-                      const margin = Math.round(((price - cost) / price) * 100);
-                      const profit = price - cost;
-                      return (
-                        <p className={`text-xs mt-1 font-medium ${margin >= 40 ? 'text-emerald-600' : margin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>
-                          Margen: {margin}% · Ganancia: ${profit.toLocaleString('es-CL')}
-                        </p>
-                      );
-                    })()}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center justify-between">

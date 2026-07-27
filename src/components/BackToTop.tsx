@@ -44,15 +44,13 @@ export default function BackToTop() {
   return (
     <button
       onClick={handleClick}
-      onTouchStart={(e) => { e.preventDefault(); handleClick(); }}
       aria-label="Volver arriba"
       style={{
         position: 'fixed', bottom: 90, right: 20, zIndex: 40,
         width: 44, height: 44, borderRadius: '50%',
         background: 'rgba(255,255,255,0.92)', border: '2px solid #000000', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
-        transition: 'opacity .2s, transform .2s, box-shadow .2s',
+        transition: 'opacity .2s, transform .2s',
         opacity: 1,
         transform: 'translateY(0)',
         backdropFilter: 'blur(12px)',
