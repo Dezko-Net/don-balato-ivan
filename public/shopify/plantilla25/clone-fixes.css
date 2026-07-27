@@ -1650,8 +1650,8 @@ input, textarea {
 }
 
 /* ── 6. PERMITIR SCROLL VERTICAL TOCANDO IMÁGENES DEL HERO BANNER ── */
-/* touch-action: pan-y permite scroll vertical del navegador mientras
-   el JS del slideshow sigue manejando el swipe horizontal */
+/* touch-action: pan-y pinch-zoom permite scroll vertical del navegador
+   pero evita el mini scroll no deseado dentro del slideshow */
 @media screen and (max-width: 767px) {
   .slideshow-element,
   .slideshow,
@@ -1663,7 +1663,9 @@ input, textarea {
   .slideshow picture,
   .slideshow .banner__image,
   .slideshow img {
-    touch-action: pan-y !important;
+    touch-action: pan-y pinch-zoom !important;
+    overscroll-behavior: none !important;
+    overflow: hidden !important;
   }
 
   .video-hero,
@@ -1671,7 +1673,16 @@ input, textarea {
   .video-hero .media,
   .video-hero picture,
   .video-hero img {
-    touch-action: pan-y !important;
+    touch-action: pan-y pinch-zoom !important;
+    overscroll-behavior: none !important;
+    overflow: hidden !important;
+  }
+
+  .banner__media,
+  .banner .media,
+  .banner picture.media {
+    overscroll-behavior: none !important;
+    overflow: hidden !important;
   }
 }
 
