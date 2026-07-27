@@ -508,6 +508,15 @@ sticky-header,
   }
 }
 
+/* ── LOGO MÁS A LA IZQUIERDA ── */
+.header__logo {
+  justify-content: flex-start !important;
+  justify-self: start !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+  text-align: left !important;
+}
+
 /* ── BARRA DE ANUNCIO AMARILLA ── */
 .topbar-section {
   --gradient-background: #facc15 !important;

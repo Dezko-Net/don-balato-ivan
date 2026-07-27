@@ -504,7 +504,7 @@ main, .page-transition-container, .pk-products-container, .pk-page, .pk-content-
   clip-path: none !important;
 }
 
-/* Mobile header logo position nudge (un poquitito a la izquierda) */
+/* Mobile header logo & SVG icons nudge */
 @media screen and (max-width: 768px) {
   .logo-col,
   .musk-main-header .logo-col,
@@ -515,5 +515,51 @@ main, .page-transition-container, .pk-products-container, .pk-page, .pk-content-
     margin-left: -6px !important;
     transform: translateX(-4px);
   }
+
+  /* SVGs de la navbar superior más pequeños en mobile */
+  .musk-main-header .musk-header-info-col svg,
+  .musk-main-header .header-resource-link svg,
+  .musk-main-header .search-icon svg,
+  .musk-main-header .cart-icon svg,
+  .header__icon svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  /* Footer en mobile: eliminar esquinas redondeadas (evitar huecos blancos en esquinas) y rellenar fondo oscuro hasta la barra inferior */
+  .main_footer_wrapp {
+    background: #111111 !important;
+    margin-top: 0 !important;
+    overflow: hidden !important;
+  }
+  .musk-main-footer,
+  footer.musk-main-footer,
+  .site-footer {
+    border-radius: 0 !important;
+    background-color: #111111 !important;
+    padding-bottom: 75px !important;
+    margin-bottom: 0 !important;
+  }
+  .musk-main-footer .footer-bottom,
+  .musk-main-footer .footer-copyright,
+  .footer__copyright {
+    background-color: #111111 !important;
+    padding-bottom: 25px !important;
+  }
+
+  /* Permitir scroll vertical natural sobre imágenes de productos sin atrapamiento táctil horizontal */
+  .fusion-product-item img,
+  .product-img,
+  .product-img img,
+  .pk-card-image,
+  .pk-card-image img,
+  .product-item img,
+  .grid_item img,
+  .product-card img,
+  .pd-gallery-main img {
+    touch-action: pan-y pinch-zoom !important;
+    overflow: hidden !important;
+  }
 }
+
 
