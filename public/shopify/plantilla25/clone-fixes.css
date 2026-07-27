@@ -1612,5 +1612,59 @@ input, textarea {
   }
 }
 
+/* ── 5. OCULTAR SCROLLBAR GRIS EN MÓVIL ── */
+@media screen and (max-width: 767px) {
+  ::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+    background: transparent !important;
+  }
+
+  html,
+  body {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  * {
+    scrollbar-width: none !important;
+    scrollbar-color: transparent transparent !important;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+    background: transparent !important;
+  }
+}
+
+/* ── 6. PERMITIR SCROLL VERTICAL TOCANDO IMÁGENES DEL HERO BANNER ── */
+/* touch-action: pan-y permite scroll vertical del navegador mientras
+   el JS del slideshow sigue manejando el swipe horizontal */
+@media screen and (max-width: 767px) {
+  .slideshow-element,
+  .slideshow,
+  .slideshow .banner,
+  .slideshow .banner__media,
+  .slideshow .media-element,
+  .slideshow animate-element,
+  .slideshow .media,
+  .slideshow picture,
+  .slideshow .banner__image,
+  .slideshow img {
+    touch-action: pan-y !important;
+  }
+
+  .video-hero,
+  .video-hero .banner__media,
+  .video-hero .media,
+  .video-hero picture,
+  .video-hero img {
+    touch-action: pan-y !important;
+  }
+}
+
 
 
