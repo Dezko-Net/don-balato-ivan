@@ -503,3 +503,17 @@ main, .page-transition-container, .pk-products-container, .pk-page, .pk-content-
   contain: none !important;
   clip-path: none !important;
 }
+
+/* Mobile header logo position nudge (un poquitito a la izquierda) */
+@media screen and (max-width: 768px) {
+  .logo-col,
+  .musk-main-header .logo-col,
+  .site-header__logo,
+  .header__heading-link,
+  .nav-logo-container,
+  .tpl1-nav-logo {
+    margin-left: -6px !important;
+    transform: translateX(-4px);
+  }
+}
+

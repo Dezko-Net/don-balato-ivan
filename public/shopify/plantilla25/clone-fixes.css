@@ -1666,5 +1666,31 @@ input, textarea {
   }
 }
 
+/* ── 7. ANIMACIÓN HIGHLIGHTED-TEXT VISIBLE EN MÓVIL ── */
+/* El JS del tema no añade .in-view en móvil, por lo que la animación
+   del subrayado amarillo no se dispara. Forzarla siempre. */
+@media screen and (max-width: 767px) {
+  .highlighted-text.animated .icon path {
+    opacity: 1 !important;
+    animation: strokeAnimation 1.3s cubic-bezier(.65,0,.35,1) forwards !important;
+  }
+
+  .highlighted-text.animated[data-style=full_text] {
+    background-size: 100% 80% !important;
+  }
+
+  .highlighted-text.animated[data-style=half_text] {
+    background-size: 100% 28% !important;
+  }
+
+  .highlighted-text.animated[data-style=underline] {
+    background-size: 100% 3px, 0% 80% !important;
+  }
+
+  .highlighted-text.animated[data-style=marker]:before {
+    background-size: 100% 80% !important;
+  }
+}
+
 
 

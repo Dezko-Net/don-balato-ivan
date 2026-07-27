@@ -100,10 +100,15 @@
     padding-right: 16px !important;
   }
 
-  /* Logo mÃ¡s pequeÃ±o */
+  /* Logo más pequeño y desplazado un poco a la izquierda en mobile */
+  [data-template="1"] header.musk-main-header .logo-col {
+    margin-left: -8px !important;
+    padding-left: 0 !important;
+  }
   [data-template="1"] header.musk-main-header .logo-col img {
     max-width: 110px !important;
     height: auto !important;
+    transform: translateX(-4px) !important;
   }
 
   /* Iconos del header (search, cart, user) con espacio justo */
@@ -117,8 +122,12 @@
 }
 
 @media screen and (max-width: 600px) {
+  [data-template="1"] header.musk-main-header .logo-col {
+    margin-left: -10px !important;
+  }
   [data-template="1"] header.musk-main-header .logo-col img {
     max-width: 90px !important;
+    transform: translateX(-6px) !important;
   }
   [data-template="1"] header.musk-main-header .musk-header-info-col {
     gap: 8px !important;
