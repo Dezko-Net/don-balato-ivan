@@ -309,6 +309,43 @@ export default function HomePage25() {
     root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
     root.querySelectorAll('.mobile-dock-section, #shopify-section-sections--27201778909465__mobile-dock, nav.mobile-dock').forEach(el => el.remove());
 
+    // Hide product-bundle__sidebar on mobile unless intersecting the bundle section
+    const bundleSidebar = root.querySelector('.product-bundle__sidebar') as HTMLElement | null;
+    const bundleSection = root.querySelector('#shopify-section-template--27201783660825__product-bundle, #shopify-section-template--27619508257049__product-bundle, .shopify-section:has(.product-bundle)') as HTMLElement | null;
+    if (bundleSidebar && bundleSection) {
+      const styleId = 'bundle-sidebar-mobile-fix';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+          @media (max-width: 1023px) {
+            .product-bundle__sidebar {
+              transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out !important;
+            }
+            .product-bundle__sidebar.yaxsell-mobile-hidden {
+              transform: translateY(150%) !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      bundleSidebar.classList.add('yaxsell-mobile-hidden'); // initially hidden
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            bundleSidebar.classList.remove('yaxsell-mobile-hidden');
+          } else {
+            bundleSidebar.classList.add('yaxsell-mobile-hidden');
+          }
+        });
+      }, { threshold: 0.05, rootMargin: '0px 0px -100px 0px' });
+      observer.observe(bundleSection);
+    }
+
     // ⚠️ innerHTML NO ejecuta los <script> inline. Re-crearlos para que corran
     //    (necesario para configs del theme como window.filepaths = { async_css: ... }).
     root.querySelectorAll('script:not([src])').forEach(old => {

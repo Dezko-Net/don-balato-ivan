@@ -637,7 +637,7 @@ export default function MobileProductEditor({
                 />
                 {d.COST && d.PRICE && (
                   <span className="text-sm font-semibold text-emerald-600">
-                    → Precio: ${d.PRICE.toLocaleString('es-CL')}
+                    Ganancia: ${(Number(d.PRICE) - Number(d.COST)).toLocaleString('es-CL')}
                   </span>
                 )}
               </div>
@@ -664,7 +664,7 @@ export default function MobileProductEditor({
             {/* Precio Catálogo con % manual */}
             <div className="pt-2 border-t border-gray-100">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] text-amber-600 font-medium shrink-0">% sobre precio:</span>
+                <span className="text-[11px] text-amber-600 font-medium shrink-0">% sobre costo:</span>
                 <input
                   type="number" inputMode="numeric"
                   value={catalogPct}
@@ -673,9 +673,9 @@ export default function MobileProductEditor({
                   onChange={e => {
                     setCatalogPct(e.target.value);
                     const pct = Number(e.target.value);
-                    const basePrice = Number(d.PRICE) || 0;
-                    if (pct !== 0 && basePrice > 0) {
-                      update({ CATALOGPRICE: Math.round(basePrice * (1 + pct / 100)) });
+                    const cost = Number(d.COST) || 0;
+                    if (pct !== 0 && cost > 0) {
+                      update({ CATALOGPRICE: Math.round(cost * (1 + pct / 100)) });
                     }
                   }}
                   className="w-20 px-2 py-1 border border-amber-300 rounded-lg text-[11px] bg-white font-semibold text-amber-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
