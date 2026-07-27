@@ -18,7 +18,10 @@ async function getAccessTokenFromSA(): Promise<string> {
 
   let credentials: any;
   try {
-    const cleaned = credentialsJson.trim().replace(/\\n/g, '\n');
+    // Vercel puede meter saltos de línea reales dentro del private_key del JSON
+    // Escapar saltos de línea reales (no escapados) a \n para que JSON.parse funcione
+    let cleaned = credentialsJson.trim();
+    cleaned = cleaned.replace(/(?<!\\)\n/g, '\\n').replace(/(?<!\\)\r/g, '\\r');
     credentials = JSON.parse(cleaned);
   } catch (e: any) {
     throw new Error('GOOGLE_APPLICATION_CREDENTIALS_JSON no es JSON válido: ' + e.message);
