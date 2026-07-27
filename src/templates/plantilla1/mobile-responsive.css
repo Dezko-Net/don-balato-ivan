@@ -885,7 +885,7 @@
   .pk-page .pk-h-scroll {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
-    touch-action: pan-x !important;
+    touch-action: pan-y pinch-zoom !important;
     -webkit-overflow-scrolling: touch !important;
   }
   .pk-page .pk-h-scroll::-webkit-scrollbar {
@@ -1018,7 +1018,7 @@
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     scroll-snap-type: x proximity !important;
-    touch-action: pan-x !important;
+    touch-action: pan-y pinch-zoom !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
     padding-bottom: 0 !important;

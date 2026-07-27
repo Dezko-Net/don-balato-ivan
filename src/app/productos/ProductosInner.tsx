@@ -1075,7 +1075,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
         .pk-mobile-only { display: none; }
         .pk-filters-btn { display: none; }
 
-        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x; -webkit-overflow-scrolling: touch; }
+        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
         .pk-h-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
         .pk-filters-drawer {

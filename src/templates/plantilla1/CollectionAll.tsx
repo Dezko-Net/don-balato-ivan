@@ -1522,7 +1522,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         .pk-mobile-only { display: none; }
         /* (el botón Filtros ahora vive en la toolbar en TODOS los breakpoints) */
 
-        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x; -webkit-overflow-scrolling: touch; }
+        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
         .pk-h-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
         .pk-filters-drawer {

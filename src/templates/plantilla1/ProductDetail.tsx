@@ -442,7 +442,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           .pd-container { margin-top: -64px !important; padding: 0 12px 20px !important; }
           .pd-main-grid { grid-template-columns: 1fr !important; padding: 18px 14px !important; gap: 18px !important; border-radius: 16px !important; }
           .pd-gallery { flex-direction: column !important; width: 100% !important; align-items: stretch !important; }
-          .pd-h-scroll { overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important; scroll-snap-type: x proximity !important; touch-action: pan-x !important; scrollbar-width: none !important; -ms-overflow-style: none !important; padding-bottom: 0 !important; max-height: none !important; }
+          .pd-h-scroll { overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important; scroll-snap-type: x proximity !important; touch-action: pan-y pinch-zoom !important; scrollbar-width: none !important; -ms-overflow-style: none !important; padding-bottom: 0 !important; max-height: none !important; }
           .pd-h-scroll::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; background: transparent !important; }
           .pd-gallery-thumbs { flex-direction: row !important; gap: 8px !important; width: 100% !important; }
           .pd-gallery-thumb-btn { flex-shrink: 0 !important; scroll-snap-align: start !important; }
