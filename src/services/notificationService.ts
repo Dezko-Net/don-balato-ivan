@@ -262,7 +262,7 @@ export async function notifyOrderStatusChange(
 
       const generateAIMessage = async (status: string, name: string, orderCode: string): Promise<string> => {
         const fallbackMessages: Record<string, string> = {
-          paid: `¡Hola ${name}! 🌸 Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pago del pedido #${orderCode} fue verificado con éxito 💖 Ahora empezamos a preparar tu pedido con mucho cariño. ¡Pronto te avisaré del avance! 👑`,
+          paid: `¡Hola ${name}! 🌸 Soy Kenia de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pago del pedido #${orderCode} fue verificado con éxito 💖 Ahora empezamos a preparar tu pedido con mucho cariño. ¡Pronto te avisaré del avance! 👑`,
           confirming_stock: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} está en proceso 🔍 Estamos confirmando el stock de tus productos en bodega. Enseguida te cuento novedades 💖`,
           stock_confirmed: `¡Hola ${name}! 🌸 ¡Buenas noticias! El stock de tu pedido #${orderCode} está confirmado ✔️ Todo está listo para empezar a embalar tu pedido con cariño 📦💖`,
           ready_to_ship: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} ya está listo para despachar 📦✨ Mira qué hermoso quedó tu paquete 👇 ¡Pronto saldrá en camino! 🚚💖`,
@@ -273,7 +273,7 @@ export async function notifyOrderStatusChange(
           const { getGeminiAuthHeaders, buildGeminiUrl } = await import(/* webpackIgnore: true */ '@/lib/google-auth');
           const GEMINI_MODELS = GEMINI_TEXT_MODELS;
           const statusLabel = STATUS_LABELS[status] || status;
-          const prompt = `Eres Kenia, asistente de Kevin&Coco Chile (tienda de cosméticos). Escribe un mensaje corto (máx 3 líneas) para notificar a ${name} que su pedido #${orderCode} cambió de estado a: ${statusLabel}. Personalidad: cercana, femenina, usa emojis (🌸💖✨). No inventes información. Sé breve y alegre. Solo el mensaje, sin saludo separado.`;
+          const prompt = `Eres Kenia, asistente de Don Balato Iván Chile (tienda de cosméticos). Escribe un mensaje corto (máx 3 líneas) para notificar a ${name} que su pedido #${orderCode} cambió de estado a: ${statusLabel}. Personalidad: cercana, femenina, usa emojis (🌸💖✨). No inventes información. Sé breve y alegre. Solo el mensaje, sin saludo separado.`;
 
           const geminiHeaders = await getGeminiAuthHeaders();
           for (const model of GEMINI_MODELS) {
@@ -316,7 +316,7 @@ export async function notifyOrderStatusChange(
         const waResponse = await sendWhatsAppTemplate(phone, templateName, lang, components, WA_TOKEN);
         const waMessageId = waResponse?.messages?.[0]?.id || 'no-id';
 
-        const simulatedMessage = `[Plantilla Automática - Pedido Recibido] ¡Hola, ${customerName}! 🛍️✨ Hemos recibido tu pedido ${code} con éxito. Pronto te avisaremos cuando cambie de estado. ¡Gracias por confiar en Kevin&Coco Chile! 🇨🇱💖`;
+        const simulatedMessage = `[Plantilla Automática - Pedido Recibido] ¡Hola, ${customerName}! 🛍️✨ Hemos recibido tu pedido ${code} con éxito. Pronto te avisaremos cuando cambie de estado. ¡Gracias por confiar en Don Balato Iván Chile! 🇨🇱💖`;
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
 
       } else {

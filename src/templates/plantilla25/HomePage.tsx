@@ -13,33 +13,53 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
+import { useCart } from '@/context/CartContext';
+import {
+  enhanceConceptHeader,
+  enhanceConceptCombos,
+  syncConceptCartCount,
+  type EnhCategory,
+  type EnhSubcategory,
+  type EnhFeaturedProduct,
+  type ComboRealHydrationData,
+} from './enhanceConceptHeader';
+import { fixCloneBehaviour } from './fixCloneBehaviour';
+
+const STORE_LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png';
+const STORE_NAME = 'Don Balato Iván';
 
 const SHOPIFY_BASE = '/shopify/plantilla25/assets';
+
+/* ── Clases reales del <body> del theme original (capturadas por FOLLA) ── */
+const CAPTURED_BODY_CLASS = 'template-index loaded';
 
 /* ── CSS files: ORDEN CRÍTICO — inline primero, luego core, luego secciones ── */
 const CSS_FILES = [
   `/shopify/plantilla25/assets/css/inline/index-inline-1.css`,
-  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/theme.css`,
-  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/apps.css`,
-  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/newsletter-popup.css`,
-  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/mobile-dock.css`,
-  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/pickup-availability.css`,
-  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/blog.css`
+  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/theme.css`,
+  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/apps.css`,
+  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/newsletter-popup.css`,
+  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/mobile-dock.css`,
+  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/pickup-availability.css`,
+  `/shopify/plantilla25/assets/css/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/blog.css`,
+  `/shopify/plantilla25/clone-fixes.css`,
+  `/shopify/plantilla25/tailwind-patch.css`
 ];
 
 /* ── JS files: solo los críticos del tema ── */
 type JsFile = { src: string; module?: boolean };
 const JS_FILES: JsFile[] = [
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/vendor.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/theme.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/tab-attention.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/cart.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/gift-wrapping.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/search.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/newsletter-popup.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/mobile-dock.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/pickup-availability.js` },
-  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/instant-page.js` }
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/vendor.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/theme.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/tab-attention.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/cart.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/gift-wrapping.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/search.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/newsletter-popup.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/mobile-dock.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/pickup-availability.js` },
+  { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/instant-page.js`, module: true },
+  { src: `/shopify/plantilla25/assets/js/cdn.shopify.com/storefront/standard-actions.js`, module: true }
 ];
 
 /* ── Font faces ── */
@@ -90,68 +110,152 @@ export default function HomePage25() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const { totalItems, addItem } = useCart();
 
-  /* ── Mark template attribute on document for CSS scoping & add js/body attributes ── */
+  const [cats, setCats] = useState<EnhCategory[]>([]);
+  const [subs, setSubs] = useState<EnhSubcategory[]>([]);
+  const [catCounts, setCatCounts] = useState<Record<string, number>>({});
+  const [subCounts, setSubCounts] = useState<Record<string, number>>({});
+  const [featuredProd, setFeaturedProd] = useState<EnhFeaturedProduct | null>(null);
+  const [combos, setCombos] = useState<ComboRealHydrationData[]>([]);
+
+  /* ── Fetch combos / packs configuration ── */
   useEffect(() => {
-    // DocumentElement settings
+    fetch('/api/public-data/combos')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && Array.isArray(d.combos) && d.combos.length > 0) {
+          setCombos(d.combos);
+          const feat = d.combos[0].featuredProduct || d.combos[0].mainProduct;
+          if (feat) {
+            setFeaturedProd(feat as EnhFeaturedProduct);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ── Mark template attribute on document for CSS scoping ── */
+  useEffect(() => {
     document.documentElement.dataset.template = '25';
     document.documentElement.classList.add('js');
     const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
     document.documentElement.classList.add(isTouch ? 'touch' : 'no-touch');
-
-    // Body settings
-    document.body.classList.add('template-index');
-    document.body.setAttribute('data-rounded-button', 'round');
-    document.body.setAttribute('data-rounded-input', 'round-slight');
-    document.body.setAttribute('data-rounded-block', 'round');
-    document.body.setAttribute('data-rounded-card', 'round');
-    document.body.setAttribute('data-button-hover', 'standard');
-    document.body.setAttribute('data-page-transition', '');
-    document.body.setAttribute('data-lazy-image', '');
-    document.body.setAttribute('data-modal-swipe-only', '');
     document.body.setAttribute('data-title-animation', '');
-    document.body.setAttribute('data-page-rendering', '');
-
+    // Drag-to-scroll with pointer events
+    let isDragging = false;
+    let startY = 0;
+    let startScrollY = 0;
+    let hasMoved = false;
+    let activePointerId: number | null = null;
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return;
+      const target = e.target as HTMLElement;
+      if (target.closest('a, button, input, textarea, select, [role="button"], .pointer-events-auto, details, summary')) return;
+      isDragging = true;
+      hasMoved = false;
+      activePointerId = e.pointerId;
+      startY = e.clientY;
+      startScrollY = window.scrollY;
+      document.body.style.userSelect = 'none';
+      document.documentElement.setPointerCapture?.(e.pointerId);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDragging || e.pointerId !== activePointerId) return;
+      const dy = e.clientY - startY;
+      if (Math.abs(dy) > 3) hasMoved = true;
+      window.scrollTo({ top: startScrollY - dy, behavior: 'auto' });
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (!isDragging || e.pointerId !== activePointerId) return;
+      isDragging = false;
+      activePointerId = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    const onClickBlock = (e: MouseEvent) => {
+      if (hasMoved) {
+        e.preventDefault();
+        e.stopPropagation();
+        hasMoved = false;
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+    document.addEventListener('click', onClickBlock, true);
     return () => {
       delete document.documentElement.dataset.template;
       document.documentElement.classList.remove('js', 'touch', 'no-touch');
-      
-      document.body.classList.remove('template-index');
-      document.body.removeAttribute('data-rounded-button');
-      document.body.removeAttribute('data-rounded-input');
-      document.body.removeAttribute('data-rounded-block');
-      document.body.removeAttribute('data-rounded-card');
-      document.body.removeAttribute('data-button-hover');
-      document.body.removeAttribute('data-page-transition');
-      document.body.removeAttribute('data-lazy-image');
-      document.body.removeAttribute('data-modal-swipe-only');
       document.body.removeAttribute('data-title-animation');
-      document.body.removeAttribute('data-page-rendering');
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      document.removeEventListener('click', onClickBlock, true);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
   }, []);
 
-  /* ── Load custom overrides and font faces ── */
+  /* ── Aplicar clases del <body> original mientras la plantilla está montada (fidelidad) ── */
+  useEffect(() => {
+    if (!CAPTURED_BODY_CLASS) return;
+    const added = CAPTURED_BODY_CLASS.split(/\s+/).filter(c => c && !document.body.classList.contains(c));
+    added.forEach(c => document.body.classList.add(c));
+    // Atributos data-* del theme original (necesarios para bordes redondeados, etc.)
+    const dataAttrs: Record<string, string> = {
+      'data-rounded-button': 'round',
+      'data-rounded-input': 'round-slight',
+      'data-rounded-block': 'round',
+      'data-rounded-card': 'round',
+      'data-button-hover': 'standard',
+      'data-title-animation': '',
+      'data-lazy-image': '',
+      'data-page-transition': '',
+      'data-modal-swipe-only': '',
+      'data-page-rendering': '',
+    };
+    for (const [k, v] of Object.entries(dataAttrs)) {
+      if (!document.body.hasAttribute(k)) document.body.setAttribute(k, v);
+    }
+    return () => {
+      added.forEach(c => document.body.classList.remove(c));
+      for (const k of Object.keys(dataAttrs)) {
+        if (document.body.getAttribute(k) === dataAttrs[k]) document.body.removeAttribute(k);
+      }
+    };
+  }, []);
+
+  /* ── Host guard: el CSS global del theme pone el wrapper de YAXSEL (TemplateContext monta
+        <body> > <div class="contents">) en display:none. Solo el inline !important le gana,
+        pero React re-renderiza y lo borra → re-aplicar con MutationObserver + red de seguridad. ── */
+  useEffect(() => {
+    const apply = () => {
+      const wrap = document.querySelector('body > .contents') as HTMLElement | null;
+      if (wrap && wrap.style.getPropertyValue('display') !== 'contents') {
+        wrap.style.setProperty('display', 'contents', 'important');
+      }
+    };
+    apply();
+    // El wrapper lo re-renderiza React (TemplateContext) y el theme lo re-oculta (regla nivel-ID
+    // !important; solo el inline le gana) → re-aplicar. Observer acotado a <body> (no al subtree
+    // del theme, que con GSAP mutaría sin parar) + interval barato como red de seguridad.
+    const obs = new MutationObserver(apply);
+    obs.observe(document.body, { childList: true });
+    const wrap0 = document.querySelector('body > .contents');
+    if (wrap0) obs.observe(wrap0, { attributes: true, attributeFilter: ['style', 'class'] });
+    const iv = window.setInterval(apply, 400);
+    // No removemos el display en cleanup: 'contents' es el valor natural del wrapper de YAXSEL.
+    return () => { obs.disconnect(); window.clearInterval(iv); };
+  }, []);
+
+  /* ── Load font faces ── */
   useEffect(() => {
     const styleEl = document.createElement('style');
-    styleEl.id = 'tpl25-custom-styles';
-    styleEl.textContent = FONT_FACE_CSS + `
-/* Ocultar iconos del menu start (hamburguesa/search de la izquierda) en desktop */
-@media screen and (min-width: 1024px) {
-  .header__icons--start {
-    display: none !important;
-  }
-}
-
-/* Fix Tailwind utilities for newsletter bar */
-.grid {
-  display: grid;
-}
-@media (min-width: 768px) {
-  .md\\:grid {
-    display: grid !important;
-  }
-}
-`;
+    styleEl.id = 'tpl25-fontfaces';
+    styleEl.textContent = FONT_FACE_CSS;
     document.head.appendChild(styleEl);
     return () => { styleEl.remove(); };
   }, []);
@@ -159,11 +263,12 @@ export default function HomePage25() {
   /* ── Load CSS files dynamically ── */
   useEffect(() => {
     CSS_FILES.forEach(href => {
+      const bust = `${href}?v=${Date.now()}`;
       const existing = document.querySelector(`link[data-tpl25="${href}"]`);
-      if (existing) return;
+      if (existing) { existing.setAttribute('href', bust); return; }
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = `${href}?v=${Date.now()}`;
+      link.href = bust;
       link.setAttribute('data-tpl25', href);
       document.head.appendChild(link);
     });
@@ -193,141 +298,129 @@ export default function HomePage25() {
   useEffect(() => {
     if (!bodyHtml || !containerRef.current) return;
     if (containerRef.current.dataset.htmlSet) return;
+    const route = window.location.pathname.replace(/\/$/, '') || '/';
+    document.documentElement.classList.toggle('keep-mobile-dock', route === '/carrito' || route === '/cuenta');
     containerRef.current.innerHTML = bodyHtml;
     containerRef.current.dataset.htmlSet = '1';
 
     // Remove leftover Shopify elements
     const root = containerRef.current;
     root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
+    root.querySelectorAll('.mobile-dock-section, #shopify-section-sections--27201778909465__mobile-dock, nav.mobile-dock').forEach(el => el.remove());
+
+    // ⚠️ innerHTML NO ejecuta los <script> inline. Re-crearlos para que corran
+    //    (necesario para configs del theme como window.filepaths = { async_css: ... }).
+    root.querySelectorAll('script:not([src])').forEach(old => {
+      const s = document.createElement('script');
+      for (const a of Array.from(old.attributes)) s.setAttribute(a.name, a.value);
+      s.textContent = old.textContent;
+      old.replaceWith(s);
+    });
+
+    const menuDrawer = root.querySelector<HTMLElement>('#MenuDrawer');
+    const closeMenuDrawer = () => {
+      if (!menuDrawer) return;
+      menuDrawer.removeAttribute('open');
+      menuDrawer.setAttribute('hidden', '');
+      menuDrawer.style.display = 'none';
+      menuDrawer.querySelectorAll<HTMLElement>('.overlay').forEach(overlay => {
+        overlay.style.opacity = '0';
+        overlay.style.visibility = 'hidden';
+        overlay.style.pointerEvents = 'none';
+      });
+      document.body.classList.remove('has-modal-opening', 'has-modal-open', 'drawer-open');
+      document.querySelectorAll<HTMLElement>('[aria-controls="MenuDrawer"]').forEach(button => {
+        button.setAttribute('aria-expanded', 'false');
+      });
+      window.setTimeout(() => {
+        if (menuDrawer) menuDrawer.style.display = '';
+      }, 0);
+    };
+    menuDrawer?.querySelectorAll<HTMLElement>('.drawer__close').forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeMenuDrawer();
+      };
+      button.ontouchend = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeMenuDrawer();
+      };
+    });
+
+    const handleCartTrigger = (event: Event) => {
+        const target = event.target as Element | null;
+        const trigger = target?.closest<HTMLElement>('[data-cart-drawer-trigger="true"], a[href="/cart"], a[href="/carrito"], .cart-drawer-button, [aria-controls="CartDrawer"]');
+        if (!trigger) return;
+        if (trigger.closest('.mobile-dock, .dock__item, .global-mobile-nav')) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.dispatchEvent(new CustomEvent('yaxsel:open-cart'));
+      };
+
+    document.addEventListener('pointerdown', handleCartTrigger, true);
+    document.addEventListener('click', handleCartTrigger, true);
+
+    root.querySelectorAll<HTMLAnchorElement>('a[href="/cart"], a[href="/carrito"], .cart-drawer-button').forEach(trigger => {
+      if (trigger.closest('.mobile-dock, .dock__item, .global-mobile-nav')) {
+        trigger.setAttribute('href', '/carrito');
+        trigger.removeAttribute('aria-controls');
+        trigger.removeAttribute('data-no-instant');
+        return;
+      }
+      trigger.setAttribute('data-cart-drawer-trigger', 'true');
+      trigger.removeAttribute('href');
+      trigger.setAttribute('role', 'button');
+    });
   }, [bodyHtml]);
 
-  /* ── Inject window.Shopify and window.theme stubs BEFORE loading JS ── */
+  /* ── Inject window.Shopify + window.theme stubs BEFORE loading JS ── */
   useEffect(() => {
-    if (!(window as any).Shopify) {
-      (window as any).Shopify = {
+    const w = window as any;
+    if (!w.Shopify) {
+      w.Shopify = {
         shop: 'concept-theme-tech.myshopify.com',
         country: 'US',
         currency: 'USD',
         locale: 'es',
-        theme: { name: 'Captured Theme', id: '188' },
-        routes: { root_url: '/', cart_url: '/cart', search_url: '/productos' },
+        theme: { name: 'Captured Theme', id: '191' },
+        routes: { root_url: '/', cart_url: '/cart', search_url: '/search' },
         customerAccountsEnabled: false,
       };
     }
-
-    if (!(window as any).theme) {
-      const themeObj: any = {
+    if (!w.theme) {
+      w.theme = {
         routes: {
-          shop_url: 'https://concept-theme-tech.myshopify.com',
-          root_url: '/',
-          cart_url: '/cart',
-          cart_add_url: '/cart/add',
-          cart_change_url: '/cart/change',
-          cart_update_url: '/cart/update',
-          search_url: '/productos',
-          predictive_search_url: '/search/suggest'
+          root_url: '/', cart_url: '/carrito', cart_add_url: '/cart/add',
+          cart_change_url: '/cart/change', cart_update_url: '/cart/update',
+          search_url: '/productos', predictive_search_url: '/search/suggest',
         },
-        variantStrings: {
-          preOrder: "Pre-order",
-          addToCart: "Add to cart",
-          soldOut: "Sold Out",
-          unavailable: "Unavailable",
-          addToBundle: "Add to bundle",
-          backInStock: "Notify me when it’s available"
-        },
-        shippingCalculatorStrings: {
-          error: "One or more errors occurred while retrieving the shipping rates:",
-          notFound: "Sorry, we do not ship to your address.",
-          oneResult: "There is one shipping rate for your address:",
-          multipleResults: "There are multiple shipping rates for your address:"
-        },
-        discountStrings: {
-          error: "Discount code cannot be applied to your cart",
-          shippingError: "Shipping discounts are shown at checkout after adding an address"
-        },
-        recipientFormStrings: {
-          expanded: "Gift card recipient form expanded",
-          collapsed: "Gift card recipient form collapsed"
-        },
-        quickOrderListStrings: {
-          itemsAdded: "[quantity] items added",
-          itemAdded: "[quantity] item added",
-          itemsRemoved: "[quantity] items removed",
-          itemRemoved: "[quantity] item removed",
-          viewCart: "View cart",
-          each: "[money]/ea",
-          minError: "This item has a minimum of [min]",
-          maxError: "This item has a maximum of [max]",
-          stepError: "You can only add this item in increments of [step]"
-        },
-        cartStrings: {
-          error: "There was an error while updating your cart. Please try again.",
-          quantityError: "You can only add [quantity] of this item to your cart.",
-          giftNoteAttribute: "Gift note",
-          giftWrapAttribute: "Gift wrapping",
-          giftWrapBooleanTrue: "Yes",
-          targetProductAttribute: "For"
-        },
-        dateStrings: {
-          d: "d",
-          day: "Day",
-          days: "Days",
-          h: "h",
-          hour: "Hour",
-          hours: "Hours",
-          m: "m",
-          minute: "Min",
-          minutes: "Mins",
-          s: "s",
-          second: "Sec",
-          seconds: "Secs"
-        },
-        tabAttentionStrings: {
-          firstMessage: "Something we said?",
-          nextMessage: "We're still here!",
-          messageDelay: 3
-        },
-        strings: {
-          recentlyViewedEmpty: "Your recently viewed is empty.",
-          close: "Close",
-          next: "Next",
-          previous: "Previous",
-          qrImageAlt: "QR code — scan to redeem gift card"
-        },
-        settings: {
-          moneyFormat: "${{amount}}",
-          moneyWithCurrencyFormat: "${{amount}} USD",
-          currencyCodeEnabled: false,
-          externalLinksNewTab: false,
-          cartType: "drawer",
-          isCartTemplate: false,
-          pswpModule: "//concept-theme-tech.myshopify.com/cdn/shop/t/188/assets/photoswipe.min.js?v=41760041872977459911778211903",
-          themeName: 'Concept',
-          themeVersion: '5.3.3',
-          agencyId: ''
-        }
+        settings: { moneyFormat: '${{amount}}', cartType: 'drawer', themeName: 'Concept', themeVersion: '5.3.3' },
+        strings: {}, variantStrings: {}, cartStrings: {}, dateStrings: {},
       };
-      (window as any).theme = themeObj;
-      (window as any).themeVariables = themeObj;
+      w.themeVariables = w.theme;
+    }
+    if (!w.countdown) {
+      w.countdown = {
+        long: { day: 'día', hour: 'hora', second: 'segundo', one: { day: 'día', hour: 'hora', second: 'segundo' }, other: { day: 'días', hour: 'horas', second: 'segundos' } },
+        short: { day: 'd', hour: 'h', second: 's', one: { day: 'd', hour: 'h', second: 's' }, other: { day: 'd', hour: 'h', second: 's' } },
+      };
     }
 
-    // Intercept fetch/XHR to prevent 404s on /products/* and external APIs
+    // Intercept fetch to prevent 404s on Shopify routes (/products/*, /variants/*, /cart/*)
+    // but DO NOT block Appwrite calls — those are from the app itself
     const origFetch = window.fetch.bind(window);
     window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
-      const isShopifyPath = 
-        url.startsWith('/products/') || 
-        url.startsWith('/variants/') || 
-        url.startsWith('/cart') || 
-        url.startsWith('/search') || 
-        url.startsWith('/recommendations/') ||
-        ((url.includes('/products/') || url.includes('/variants/') || url.includes('/cart/') || url.includes('/recommendations/')) && !url.includes('/shopify/'));
-      
-      if (isShopifyPath) {
+      if (url.startsWith('/products/') || (url.includes('/products/') && !url.includes('/shopify/'))) {
         return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
       }
-      if (url.includes('appwrite.io') || url.includes('nyc.cloud.appwrite')) {
-        return Promise.resolve(new Response(JSON.stringify({}), { status: 401, headers: { 'Content-Type': 'application/json' } }));
+      if (url.startsWith('/variants/') || url.includes('/variants/')) {
+        return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      }
+      if (url.startsWith('/cart/') || url.startsWith('/cart/add') || url.startsWith('/cart/change') || url.startsWith('/cart/update')) {
+        return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
       }
       return origFetch(input, init);
     };
@@ -342,7 +435,7 @@ export default function HomePage25() {
     const loadOne = (file: JsFile) => new Promise<void>((resolve) => {
       if (document.querySelector(`script[data-tpl25="${file.src}"]`)) { resolve(); return; }
       const s = document.createElement('script');
-      s.src = `${file.src}?v=${Date.now()}`;
+      s.src = file.src;
       if (file.module) s.type = 'module';
       else s.async = false;
       s.setAttribute('data-tpl25', file.src);
@@ -357,6 +450,7 @@ export default function HomePage25() {
       document.querySelectorAll('.animation-element, .animation-wrapper').forEach(el => {
         el.classList.add('in-view');
       });
+
       // Forzar autoplay en videos del split hero
       document.querySelectorAll('split-hero video, .split-hero video').forEach(el => {
         const video = el as HTMLVideoElement;
@@ -389,11 +483,114 @@ export default function HomePage25() {
         } catch (e) {
           console.warn('[Plantilla25] dispatch DOMContentLoaded/load failed:', e);
         }
+
+        // ── BTN-FILL MOBILE: theme.js desactiva HoverButton en táctil.
+        //    Disparamos la misma animación nativa (translate3d(0,0,0) al tocar,
+        //    translate3d(0,-76%,0) al soltar = valor original del theme). ──
+        document.querySelectorAll<HTMLElement>('.button').forEach(btn => {
+          if (btn.dataset.fillWired) return;
+          btn.dataset.fillWired = '1';
+          const fill = btn.querySelector<HTMLElement>('[data-fill]');
+          if (!fill) return;
+
+          btn.addEventListener('touchstart', () => {
+            fill.style.transition = 'transform 0.3s cubic-bezier(0.165,0.84,0.44,1)';
+            fill.style.transform = 'translate3d(0,0,0)';
+          }, { passive: true });
+
+          btn.addEventListener('touchend', () => {
+            setTimeout(() => {
+              fill.style.transition = 'transform 0.45s cubic-bezier(0.165,0.84,0.44,1)';
+              fill.style.transform = 'translate3d(0,-76%,0)';
+            }, 350);
+          }, { passive: true });
+
+          btn.addEventListener('touchcancel', () => {
+            fill.style.transform = 'translate3d(0,-76%,0)';
+          }, { passive: true });
+        });
       }, 500);
     })();
 
     return () => { (window as any).__tpl25ScriptsLoaded = false; };
   }, [bodyHtml]);
+
+  /* ── Fetch categories + product counts from API ── */
+  useEffect(() => {
+    let active = true;
+    const getJSON = async (url: string, isValid?: (d: any) => boolean, tries = 5): Promise<any | null> => {
+      let last: any = null;
+      for (let i = 0; i < tries; i++) {
+        try {
+          const r = await fetch(url, { cache: 'no-store' });
+          if (r.ok) { const d = await r.json(); last = d; if (!isValid || isValid(d)) return d; }
+        } catch { /* retry */ }
+        await new Promise(res => setTimeout(res, 600));
+      }
+      return last;
+    };
+    (async () => {
+      const [catData, prodData, featData] = await Promise.all([
+        getJSON('/api/public-data/catalog', d => (d?.categories?.length || 0) > 0),
+        getJSON('/api/public-data/products?limit=1', d => Object.keys(d?.categoryCounts || {}).length > 0),
+        getJSON('/api/public-data/products?limit=1', d => (d?.products?.length || 0) > 0),
+      ]);
+      if (!active) return;
+      if (catData) { setCats((catData.categories || []) as EnhCategory[]); setSubs((catData.subcategories || []) as EnhSubcategory[]); }
+      if (prodData) { setCatCounts(prodData.categoryCounts || {}); setSubCounts(prodData.subcategoryCounts || {}); }
+      if (featData?.products?.[0]) { setFeaturedProd(featData.products[0] as EnhFeaturedProduct); }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  /* ── Enhance header with real data + fix clone behaviour ── */
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root || !root.dataset.htmlSet) return;
+    if (cats.length === 0) return; // esperar a que las categorías carguen
+
+    const run = () => {
+      const r = containerRef.current;
+      if (!r || !r.dataset.htmlSet) return;
+      enhanceConceptHeader(r, {
+        categories: cats, subcategories: subs, catCounts, subCounts,
+        logoUrl: STORE_LOGO, storeName: STORE_NAME,
+        featuredProduct: featuredProd || undefined,
+        onFeaturedAddToCart: (product) => {
+          addItem({
+            ...product,
+            STOCK: (product as any).STOCK ?? 99999,
+          } as any, 1);
+        },
+      });
+      if (combos.length > 0) {
+        enhanceConceptCombos(r, combos[0], (selectedItems) => {
+          selectedItems.forEach(item => {
+            addItem({
+              $id: item.id,
+              NAME: item.name,
+              PRICE: item.price,
+              IMAGEURL: item.image,
+              STOCK: 99,
+            } as any);
+          });
+        });
+      } else {
+        enhanceConceptCombos(r, null);
+      }
+      syncConceptCartCount(r, totalItems);
+      fixCloneBehaviour(r);
+    };
+    // Pequeño delay para asegurar que el DOM del theme está estable
+    const t = setTimeout(run, 100);
+    return () => clearTimeout(t);
+  }, [bodyHtml, cats, subs, catCounts, subCounts, totalItems, featuredProd, combos, addItem]);
+
+  /* ── Sync cart badge reactively ── */
+  useEffect(() => {
+    const root = containerRef.current;
+    if (root?.dataset.htmlSet) syncConceptCartCount(root, totalItems);
+  }, [totalItems, bodyHtml]);
 
   /* ── Loading/error states ── */
   if (loadError) {
@@ -408,8 +605,28 @@ export default function HomePage25() {
 
   if (!bodyHtml) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', fontFamily: 'system-ui, sans-serif', color: '#888' }}>
-        Cargando plantilla 25...
+      <div
+        aria-label="Cargando"
+        role="status"
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#fff',
+        }}
+      >
+        <span
+          style={{
+            width: 24,
+            height: 24,
+            border: '3px solid #e5e7eb',
+            borderTopColor: '#111827',
+            borderRadius: '50%',
+            animation: 'template25-spin .7s linear infinite',
+          }}
+        />
+        <style>{'@keyframes template25-spin { to { transform: rotate(360deg); } }'}</style>
       </div>
     );
   }

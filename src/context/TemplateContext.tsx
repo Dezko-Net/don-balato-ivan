@@ -32,20 +32,20 @@ export function useTemplate() {
 }
 
 export function TemplateProvider({ children }: { children: ReactNode }) {
-  const [template, setTemplate] = useState(23);
-  const [sections, setSections] = useState<SectionTemplates>({ landing: 23, collections: 23, catalog: 23, productDetail: 5, cart: 23, checkout: 23 });
+  const [template, setTemplate] = useState(25);
+  const [sections, setSections] = useState<SectionTemplates>({ landing: 25, collections: 25, catalog: 25, productDetail: 5, cart: 25, checkout: 25 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      let dbGlobal = 23;
-      let dbSections = { landing: 23, collections: 23, catalog: 23, productDetail: 5, cart: 23, checkout: 23 };
+      let dbGlobal = 25;
+      let dbSections = { landing: 25, collections: 25, catalog: 25, productDetail: 5, cart: 25, checkout: 25 };
 
       try {
         const res = await fetch(`/api/template`);
         if (res.ok) {
           const data = await res.json();
-          dbGlobal = Number(data.template) || 23;
+          dbGlobal = Number(data.template) || 25;
           if (data.sections) {
             dbSections = {
               landing: Number(data.sections.landing) || dbGlobal,

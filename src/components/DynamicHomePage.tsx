@@ -6,7 +6,7 @@ import { useTemplate } from '@/context/TemplateContext';
 function Loader() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 40, height: 40, border: '3px solid #f3f4f6', borderTopColor: '#e396bf', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+      <div style={{ width: 40, height: 40, border: '3px solid #f3f4f6', borderTopColor: '#eab308', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -34,6 +34,7 @@ const TEMPLATES: Record<number, React.ComponentType> = {
   101: dynamic(() => import('@/templates/plantilla101/HomePage'), { loading: Loader, ssr: false }),
   26: dynamic(() => import('@/templates/plantilla26/HomePage'), { loading: Loader, ssr: false }),
   99: dynamic(() => import('@/templates/plantilla99/HomePage'), { loading: Loader, ssr: false }),
+  666: dynamic(() => import('@/templates/plantilla666/HomePage'), { loading: Loader, ssr: false }),
 };
 
 export default function DynamicHomePage({ children }: { children: React.ReactNode }) {

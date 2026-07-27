@@ -1,0 +1,2115 @@
+[
+  {
+    "sku": "DB0001",
+    "name": "CEPILLO A VAPOR MASCOTA",
+    "category": "Hogar",
+    "subcategory": "Mascotas",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33185150/IMG-20260103-WA0213_282_29.jpg?1767626374",
+    "local_file": "DB0001_CEPILLO_A_VAPOR_MASCOTA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/DB0001_CEPILLO_A_VAPOR_MASCOTA.jpg"
+  },
+  {
+    "sku": "30U",
+    "name": "MUEBLE ORGANIZADOR",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33185208/IMG-20260103-WA0430_281_29.jpg?1767627003",
+    "local_file": "30U_MUEBLE_ORGANIZADOR.jpg",
+    "new_url": null,
+    "error": "No such object: asistoraerp.firebasestorage.app/DONBALATO/productos/30U_MUEBLE_ORGANIZADOR.jpg"
+  },
+  {
+    "sku": "1E",
+    "name": "DISPENSADOR DE AGUA USB",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33185864/IMG-20251024-WA0168_281_29.jpg?1767629589",
+    "local_file": "1E_DISPENSADOR_DE_AGUA_USB.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E_DISPENSADOR_DE_AGUA_USB.jpg"
+  },
+  {
+    "sku": "100u",
+    "name": "MINI LINTERNA ENCENDEDOR",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33193808/D_NQ_NP_2X_766478-MLV82656114815_022025-T.webp?1775488510",
+    "local_file": "100u_MINI_LINTERNA_ENCENDEDOR.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u_MINI_LINTERNA_ENCENDEDOR.webp"
+  },
+  {
+    "sku": "30-3",
+    "name": "RIZADOR DE PESTAÑA RECARGABLE",
+    "category": "Electronica",
+    "subcategory": "Cuidado Personal",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33193899/IMG-20260103-WA0259.jpg?1767655795",
+    "local_file": "30-3_RIZADOR_DE_PESTAÑA_RECARGABLE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30-3_RIZADOR_DE_PESTAÑA_RECARGABLE.jpg"
+  },
+  {
+    "sku": "30u(20)",
+    "name": "REMOVEDOR DE CALLO",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33207839/IMG-20260103-WA0225_281_29.jpg?1775485628",
+    "local_file": "30u(20)_REMOVEDOR_DE_CALLO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u(20)_REMOVEDOR_DE_CALLO.jpg"
+  },
+  {
+    "sku": "30u-1",
+    "name": "CEPILLO MAGICO 5 EN 1",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33207855/FB_IMG_1767698577058.jpg?1767698672",
+    "local_file": "30u-1_CEPILLO_MAGICO_5_EN_1.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-1_CEPILLO_MAGICO_5_EN_1.jpg"
+  },
+  {
+    "sku": "2E",
+    "name": "COLORES PUNTA GRUESA 36PCS",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33231924/9ba8a527-bb03-4d67-ab92-c7cd596ca553.jpeg?1767880708",
+    "local_file": "2E_COLORES_PUNTA_GRUESA_36PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E_COLORES_PUNTA_GRUESA_36PCS.jpg"
+  },
+  {
+    "sku": "2E-1",
+    "name": "BOLÍGRAFO AZUL, ROJO, NEGRO 50PCS",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33231904/12739455-b0af-497a-9726-94d23363e931.jpeg?1767880364",
+    "local_file": "2E-1_BOLÍGRAFO_AZUL,_ROJO,_NEGRO_50PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-1_BOLÍGRAFO_AZUL,_ROJO,_NEGRO_50PCS.jpg"
+  },
+  {
+    "sku": "1E-3",
+    "name": "COLORES PUNTA GRUESA 24PCS",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33231974/e280ce26-3cd8-4639-a019-6de7aa5337eb.jpeg?1767881248",
+    "local_file": "1E-3_COLORES_PUNTA_GRUESA_24PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-3_COLORES_PUNTA_GRUESA_24PCS.jpg"
+  },
+  {
+    "sku": "2E-2",
+    "name": "MALETA ARTE 84PCS",
+    "category": "Hogar",
+    "subcategory": "Manualidades",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33232320/cddccc36-2eae-479a-9639-888fd07bbaa8.jpeg?1767882463",
+    "local_file": "2E-2_MALETA_ARTE_84PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-2_MALETA_ARTE_84PCS.jpg"
+  },
+  {
+    "sku": "1E-12",
+    "name": "BLOCK DE DIBUJO 20HOJAS 21X26.5CM",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33232837/a11674e1-db30-45bf-8a87-579e6be48e48.jpeg?1767885801",
+    "local_file": "1E-12_BLOCK_DE_DIBUJO_20HOJAS_21X26.5CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-12_BLOCK_DE_DIBUJO_20HOJAS_21X26.5CM.jpg"
+  },
+  {
+    "sku": "50U",
+    "name": "AUDÍFONO M20",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33236900/5a0bd40e-3c95-4ed1-bd6d-dbfbd88008c1.jpeg?1767898508",
+    "local_file": "50U_AUDÍFONO_M20.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U_AUDÍFONO_M20.jpg"
+  },
+  {
+    "sku": "15U-1",
+    "name": "ESTANTE ORGANIZADOR 2 LAYER",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237173/4777cea5-d39a-46c1-b709-68d20e326312.jpeg?1767899272",
+    "local_file": "15U-1_ESTANTE_ORGANIZADOR_2_LAYER.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15U-1_ESTANTE_ORGANIZADOR_2_LAYER.jpg"
+  },
+  {
+    "sku": "15U-2",
+    "name": "PARLANTE GTS -2083",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237253/d38693fc-621d-4f9f-8d27-23362117e71a.jpeg?1767899647",
+    "local_file": "15U-2_PARLANTE_GTS_-2083.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15U-2_PARLANTE_GTS_-2083.jpg"
+  },
+  {
+    "sku": "20U-2",
+    "name": "PARLANTE GTS-2166",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237280/8123b6ba-79e5-434d-b92b-802b18ef6bd3.jpeg?1767899929",
+    "local_file": "20U-2_PARLANTE_GTS-2166.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-2_PARLANTE_GTS-2166.jpg"
+  },
+  {
+    "sku": "20U-3",
+    "name": "AUDÍFONO A15",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237305/218c4bff-078a-4bd4-8450-45b9f42fdd34.jpeg?1767900216",
+    "local_file": "20U-3_AUDÍFONO_A15.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-3_AUDÍFONO_A15.jpg"
+  },
+  {
+    "sku": "5U",
+    "name": "PARLANTE KTX - 1476 30X11.5X13CM",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237547/5e3419e0-9ed9-4da5-b4d7-13528e161458.jpeg?1767900797",
+    "local_file": "5U_PARLANTE_KTX_-_1476_30X11.5X13CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5U_PARLANTE_KTX_-_1476_30X11.5X13CM.jpg"
+  },
+  {
+    "sku": "100U-1",
+    "name": "OXIMETRO",
+    "category": "Hogar",
+    "subcategory": "Salud y Bienestar",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237696/1eb37d05-2483-4a8d-860b-374fc991243d.jpeg?1767901468",
+    "local_file": "100U-1_OXIMETRO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100U-1_OXIMETRO.jpg"
+  },
+  {
+    "sku": "20U-4",
+    "name": "REMOVEDOR DE PELUSA LINT",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237783/f7e63c55-1892-47de-a245-aa866429ab18.jpeg?1767902041",
+    "local_file": "20U-4_REMOVEDOR_DE_PELUSA_LINT.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-4_REMOVEDOR_DE_PELUSA_LINT.jpg"
+  },
+  {
+    "sku": "50U-4",
+    "name": "MINI ALISADORA KAWAIII",
+    "category": "Electronica",
+    "subcategory": "Cuidado Personal",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237892/38d501f0-05f3-4d27-aa77-1509ed84da4d.jpeg?1767902563",
+    "local_file": "50U-4_MINI_ALISADORA_KAWAIII.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-4_MINI_ALISADORA_KAWAIII.jpg"
+  },
+  {
+    "sku": "20U-5",
+    "name": "AUDÍFONO M19",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33237805/eaa7b4c2-46f8-4f86-b739-b35d021098a1.jpeg?1767902228",
+    "local_file": "20U-5_AUDÍFONO_M19.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-5_AUDÍFONO_M19.jpg"
+  },
+  {
+    "sku": "30-7",
+    "name": "PICADORA SPIN CUTTER",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33239072/37345105-4d0f-4c4d-8833-75e06559f9a2.jpeg?1767903042",
+    "local_file": "30-7_PICADORA_SPIN_CUTTER.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30-7_PICADORA_SPIN_CUTTER.jpg"
+  },
+  {
+    "sku": "30U-5",
+    "name": "PARLANTE GTS -1835",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33240324/28ed73cd-bf8a-47ad-aea3-7420e7933c63.jpeg?1767903585",
+    "local_file": "30U-5_PARLANTE_GTS_-1835.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-5_PARLANTE_GTS_-1835.jpg"
+  },
+  {
+    "sku": "10u-6",
+    "name": "CÁMARA WI-FI 2 ANTENAS",
+    "category": "Electronica",
+    "subcategory": "Camaras",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33250813/FB_IMG_1776380104934.jpg?1776380290",
+    "local_file": "10u-6_CÁMARA_WI-FI_2_ANTENAS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10u-6_CÁMARA_WI-FI_2_ANTENAS.jpg"
+  },
+  {
+    "sku": "30U-7",
+    "name": "AMPOLLETA USB T01",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33250903/4bf85532-ed91-4976-bb95-b0b30d8285ce.jpeg?1767970879",
+    "local_file": "30U-7_AMPOLLETA_USB_T01.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-7_AMPOLLETA_USB_T01.jpg"
+  },
+  {
+    "sku": "20U-6",
+    "name": "TERMÓMETRO DIGITAL",
+    "category": "Hogar",
+    "subcategory": "Salud y Bienestar",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33250882/36c18ef2-efe3-458f-ad9c-9fcafcbc4b74.jpeg?1767970708",
+    "local_file": "20U-6_TERMÓMETRO_DIGITAL.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-6_TERMÓMETRO_DIGITAL.jpg"
+  },
+  {
+    "sku": "25u",
+    "name": "TENSIOMETRO",
+    "category": "Hogar",
+    "subcategory": "Salud y Bienestar",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33250925/9c3e7872-9de6-46c9-8c0a-ec2da715e834.jpeg?1767971005",
+    "local_file": "25u_TENSIOMETRO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/25u_TENSIOMETRO.jpg"
+  },
+  {
+    "sku": "20U-8",
+    "name": "SOPORTE CON PARLANTE",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251012/97713008-666e-4ab7-982a-0bb1fdb8fe19.jpeg?1767971619",
+    "local_file": "20U-8_SOPORTE_CON_PARLANTE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-8_SOPORTE_CON_PARLANTE.jpg"
+  },
+  {
+    "sku": "20U-9",
+    "name": "AUDÍFONO GATITO P47M",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251069/b2c6b5cb-51ee-4058-98de-381f646554f3.jpeg?1767971841",
+    "local_file": "20U-9_AUDÍFONO_GATITO_P47M.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-9_AUDÍFONO_GATITO_P47M.jpg"
+  },
+  {
+    "sku": "20U-10",
+    "name": "CÁMARA WI-Fi AMPOLLETA",
+    "category": "Electronica",
+    "subcategory": "Camaras",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251096/7befe74d-d04a-46e2-829b-5987727aab49.jpeg?1767972017",
+    "local_file": "20U-10_CÁMARA_WI-Fi_AMPOLLETA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-10_CÁMARA_WI-Fi_AMPOLLETA.jpg"
+  },
+  {
+    "sku": "20U-11",
+    "name": "PARLANTE MINI-113",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251257/811af33b-1628-4d1f-afc0-e12dd6c9e373.jpeg?1767973205",
+    "local_file": "20U-11_PARLANTE_MINI-113.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-11_PARLANTE_MINI-113.jpg"
+  },
+  {
+    "sku": "20 U-1",
+    "name": "PARLANTE ALTAVOZ PORTABLE",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251178/681a799c-80ff-4832-bb3f-424221e46e4d.jpeg?1767972889",
+    "local_file": "20_U-1_PARLANTE_ALTAVOZ_PORTABLE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20_U-1_PARLANTE_ALTAVOZ_PORTABLE.jpg"
+  },
+  {
+    "sku": "50U-5",
+    "name": "SELLADOR DE BOLSAS",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251527/f81b8f88-e829-4da0-852a-413b2cf40b93.jpeg?1767974455",
+    "local_file": "50U-5_SELLADOR_DE_BOLSAS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-5_SELLADOR_DE_BOLSAS.jpg"
+  },
+  {
+    "sku": "20U-16",
+    "name": "LINTERNA EMERGENCIA SOLAR-2701272",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251749/ad71cd7f-060a-4c0f-8700-e55a0f13f6d1.jpeg?1767976750",
+    "local_file": "20U-16_LINTERNA_EMERGENCIA_SOLAR-2701272.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-16_LINTERNA_EMERGENCIA_SOLAR-2701272.jpg"
+  },
+  {
+    "sku": "50U-6",
+    "name": "SET DE COSTURA 56PCS",
+    "category": "Hogar",
+    "subcategory": "Manualidades",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33251732/63c7c681-c590-421c-87e0-429822126ada.jpeg?1767976412",
+    "local_file": "50U-6_SET_DE_COSTURA_56PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-6_SET_DE_COSTURA_56PCS.jpg"
+  },
+  {
+    "sku": "1E-17",
+    "name": "VASO MUG TRIPLE TRANSPARENTE",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253187/a1ad1345-6e3c-466d-b269-757b7caf739b.jpeg?1767986027",
+    "local_file": "1E-17_VASO_MUG_TRIPLE_TRANSPARENTE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-17_VASO_MUG_TRIPLE_TRANSPARENTE.jpg"
+  },
+  {
+    "sku": "50U-7",
+    "name": "BOTELLA OSO TRANSPARENTE 300ml",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253523/bdc3f2de-8598-4ebf-b0f9-c9f81ff9a75e.jpeg?1767986957",
+    "local_file": "50U-7_BOTELLA_OSO_TRANSPARENTE_300ml.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-7_BOTELLA_OSO_TRANSPARENTE_300ml.jpg"
+  },
+  {
+    "sku": "10U-10",
+    "name": "MALLA PARASOL TRIANGULO 3x3x3",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253213/9e7ddcf4-f62a-40af-b45d-b6b620472a1d.jpeg?1767986195",
+    "local_file": "10U-10_MALLA_PARASOL_TRIANGULO_3x3x3.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-10_MALLA_PARASOL_TRIANGULO_3x3x3.jpg"
+  },
+  {
+    "sku": "50U-8",
+    "name": "BOTELLA OSO 300ml",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253553/7257e1be-0807-4a88-967f-57e765e5b150.jpeg?1767987162",
+    "local_file": "50U-8_BOTELLA_OSO_300ml.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-8_BOTELLA_OSO_300ml.jpg"
+  },
+  {
+    "sku": "1E-18",
+    "name": "TENDEDERO 3 CUERPOS 40kg",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253168/53f0eaf8-b63f-474a-b43e-cf19903cf3e0.jpeg?1767985879",
+    "local_file": "1E-18_TENDEDERO_3_CUERPOS_40kg.jpg",
+    "new_url": null,
+    "error": "No such object: asistoraerp.firebasestorage.app/DONBALATO/productos/1E-18_TENDEDERO_3_CUERPOS_40kg.jpg"
+  },
+  {
+    "sku": "1E-19",
+    "name": "BOTELLA CALABAZA 750ml",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253768/6eb47dc9-caef-4c12-ba12-5dc2ee670f9f.jpeg?1767987890",
+    "local_file": "1E-19_BOTELLA_CALABAZA_750ml.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-19_BOTELLA_CALABAZA_750ml.jpg"
+  },
+  {
+    "sku": "10U-12",
+    "name": "MALLA PARASOL 3x4",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253832/78a22a1d-8210-42e0-b59b-930b6e930cf6.jpeg?1767988027",
+    "local_file": "10U-12_MALLA_PARASOL_3x4.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-12_MALLA_PARASOL_3x4.jpg"
+  },
+  {
+    "sku": "1E-20",
+    "name": "BOTELLA CON INFUSOR DE FRUTAS 680ml",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33253887/01dd2de8-41aa-4d1b-af90-a3914885d049.jpeg?1767988666",
+    "local_file": "1E-20_BOTELLA_CON_INFUSOR_DE_FRUTAS_680ml.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-20_BOTELLA_CON_INFUSOR_DE_FRUTAS_680ml.jpg"
+  },
+  {
+    "sku": "10E",
+    "name": "HIELERA PARLANTE BLUETOOTH LED  7Lt",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33254412/a30d105d-045d-4860-878e-f4cd89474752.jpeg?1767989389",
+    "local_file": "10E_HIELERA_PARLANTE_BLUETOOTH_LED_7Lt.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10E_HIELERA_PARLANTE_BLUETOOTH_LED_7Lt.jpg"
+  },
+  {
+    "sku": "10E-1",
+    "name": "HIELERA PARLANTE BLUETOOTH LED 5Lt",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33254783/a30d105d-045d-4860-878e-f4cd89474752.jpeg?1767989542",
+    "local_file": "10E-1_HIELERA_PARLANTE_BLUETOOTH_LED_5Lt.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10E-1_HIELERA_PARLANTE_BLUETOOTH_LED_5Lt.jpg"
+  },
+  {
+    "sku": "5U-5",
+    "name": "CARPA LONA RESPUESTO DE TOLDO 3X3",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33255200/4fe6c2c8-d6a7-49df-9e79-83fdbe3424e3.jpeg?1767989766",
+    "local_file": "5U-5_CARPA_LONA_RESPUESTO_DE_TOLDO_3X3.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5U-5_CARPA_LONA_RESPUESTO_DE_TOLDO_3X3.jpg"
+  },
+  {
+    "sku": "10E-2",
+    "name": "ZAPATILLAS KIDS SIZE 13-24",
+    "category": "Ropa",
+    "subcategory": "Ninos",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33255234/b5405733-a581-428a-a9db-f2ec9ddca903.jpeg?1767990122",
+    "local_file": "10E-2_ZAPATILLAS_KIDS_SIZE_13-24.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10E-2_ZAPATILLAS_KIDS_SIZE_13-24.jpg"
+  },
+  {
+    "sku": "100u-2",
+    "name": "FUNDA CARPETA SANRIO",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33309220/WhatsApp_20Image_202026-01-12_20at_205.27.33_20PM.jpeg?1768249728",
+    "local_file": "100u-2_FUNDA_CARPETA_SANRIO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-2_FUNDA_CARPETA_SANRIO.jpg"
+  },
+  {
+    "sku": "50U-9",
+    "name": "MOCHILA CLASSIC",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33309407/WhatsApp_20Image_202026-01-12_20at_205.50.54_20PM.jpeg?1771439137",
+    "local_file": "50U-9_MOCHILA_CLASSIC.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-9_MOCHILA_CLASSIC.jpg"
+  },
+  {
+    "sku": "50U-10",
+    "name": "LENTES DE SOL",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33309530/WhatsApp_20Image_202026-01-12_20at_205.46.34_20PM.jpeg?1768250845",
+    "local_file": "50U-10_LENTES_DE_SOL.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-10_LENTES_DE_SOL.jpg"
+  },
+  {
+    "sku": "50U-11",
+    "name": "ABANICO ANIME",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33331688/WhatsApp_20Image_202026-01-13_20at_203.57.02_20PM.jpeg?1768330665",
+    "local_file": "50U-11_ABANICO_ANIME.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-11_ABANICO_ANIME.jpg"
+  },
+  {
+    "sku": "20U-19",
+    "name": "GRAMERA 10K",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33384137/WhatsApp_20Image_202026-01-16_20at_2011.16.49_20AM.jpeg?1768573100",
+    "local_file": "20U-19_GRAMERA_10K.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-19_GRAMERA_10K.jpg"
+  },
+  {
+    "sku": "1e-23",
+    "name": "ESCURRIDOR 2 NIVELES",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33384167/WhatsApp_20Image_202026-01-16_20at_2011.23.48_20AM.jpeg?1768573469",
+    "local_file": "1e-23_ESCURRIDOR_2_NIVELES.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-23_ESCURRIDOR_2_NIVELES.jpg"
+  },
+  {
+    "sku": "20u-20",
+    "name": "MOCHILA DISEÑO 3D 3PCS LED CON RUEDA",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33391967/IMG-20260208-WA0113.jpg?1770589487",
+    "local_file": "20u-20_MOCHILA_DISEÑO_3D_3PCS_LED_CON_RUEDA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-20_MOCHILA_DISEÑO_3D_3PCS_LED_CON_RUEDA.jpg"
+  },
+  {
+    "sku": "20u-21",
+    "name": "MOCHILA DISEÑO 3D LED CON RUEDA 3PCS",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33392180/IMG-20260208-WA0117.jpg?1770589436",
+    "local_file": "20u-21_MOCHILA_DISEÑO_3D_LED_CON_RUEDA_3PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-21_MOCHILA_DISEÑO_3D_LED_CON_RUEDA_3PCS.jpg"
+  },
+  {
+    "sku": "1E-24",
+    "name": "QUITASOL",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33397176/WhatsApp_20Image_202026-01-16_20at_204.41.39_20PM.jpeg?1768653141",
+    "local_file": "1E-24_QUITASOL.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-24_QUITASOL.jpg"
+  },
+  {
+    "sku": "1E-25",
+    "name": "MOPA AURORA DISEÑO",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33397194/WhatsApp_20Image_202026-01-16_20at_203.02.58_20PM.jpeg?1768653710",
+    "local_file": "1E-25_MOPA_AURORA_DISEÑO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-25_MOPA_AURORA_DISEÑO.jpg"
+  },
+  {
+    "sku": "2E+",
+    "name": "SILLA PLEGABLE",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33397395/WhatsApp_20Image_202026-01-16_20at_206.26.47_20PM.jpeg?1768659483",
+    "local_file": "2E+_SILLA_PLEGABLE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E+_SILLA_PLEGABLE.jpg"
+  },
+  {
+    "sku": "12E",
+    "name": "ESPECIERO GIRATORIO 18 PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33425642/WhatsApp_20Image_202026-01-20_20at_2011.26.03_20AM.jpeg?1768919212",
+    "local_file": "12E_ESPECIERO_GIRATORIO_18_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/12E_ESPECIERO_GIRATORIO_18_PCS.jpg"
+  },
+  {
+    "sku": "40U-5",
+    "name": "ORGANIZADOR DE LAPICES KAWAII",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33425666/WhatsApp_20Image_202026-01-20_20at_2011.31.26_20AM.jpeg?1768919527",
+    "local_file": "40U-5_ORGANIZADOR_DE_LAPICES_KAWAII.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/40U-5_ORGANIZADOR_DE_LAPICES_KAWAII.jpg"
+  },
+  {
+    "sku": "1E-31",
+    "name": "ROSA LED BEST",
+    "category": "Regalos",
+    "subcategory": "Ramos y Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33425976/WhatsApp_20Image_202026-01-20_20at_2012.01.12_20PM.jpeg?1768923109",
+    "local_file": "1E-31_ROSA_LED_BEST.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-31_ROSA_LED_BEST.jpg"
+  },
+  {
+    "sku": "60U-1",
+    "name": "FLOTADOR INFLABLE LILY FOND (SIZE80-30¨ CDG 1051), (SIZE 70-26¨ CDG 1050) (SIZE 60-22¨ CDG 1049)",
+    "category": "Hogar",
+    "subcategory": "Juguetes y Bebes",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33390865/WhatsApp_20Image_202026-01-16_20at_205.05.21_20PM.jpeg?1775236915",
+    "local_file": "60U-1_FLOTADOR_INFLABLE_LILY_FOND_(SIZE80-30¨_CDG_1051),_(SIZE_70-26¨_CDG_1050)_(SIZE_.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/60U-1_FLOTADOR_INFLABLE_LILY_FOND_(SIZE80-30¨_CDG_1051),_(SIZE_70-26¨_CDG_1050)_(SIZE_.jpg"
+  },
+  {
+    "sku": "1e-32",
+    "name": "SET DE CUCHILLO GRANDE 6 PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33427634/WhatsApp_20Image_202026-01-20_20at_205.08.41_20PM.jpeg?1768939777",
+    "local_file": "1e-32_SET_DE_CUCHILLO_GRANDE_6_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-32_SET_DE_CUCHILLO_GRANDE_6_PCS.jpg"
+  },
+  {
+    "sku": "1E-36",
+    "name": "JABON ROSA 12 PCS + OSO CDG- 11638",
+    "category": "Hogar",
+    "subcategory": "Bano",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33427799/WhatsApp_20Image_202026-01-20_20at_205.29.29_20PM.jpeg?1768941057",
+    "local_file": "1E-36_JABON_ROSA_12_PCS_+_OSO_CDG-_11638.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-36_JABON_ROSA_12_PCS_+_OSO_CDG-_11638.jpg"
+  },
+  {
+    "sku": "1E-37",
+    "name": "ESPECIERO GIRATORIO 12 PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33427843/WhatsApp_20Image_202026-01-20_20at_205.34.48_20PM.jpeg?1768941321",
+    "local_file": "1E-37_ESPECIERO_GIRATORIO_12_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-37_ESPECIERO_GIRATORIO_12_PCS.jpg"
+  },
+  {
+    "sku": "1E-40",
+    "name": "SET UNTENSILIOS 5 PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33427971/WhatsApp_20Image_202026-01-20_20at_205.51.22_20PM.jpeg?1768942307",
+    "local_file": "1E-40_SET_UNTENSILIOS_5_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-40_SET_UNTENSILIOS_5_PCS.jpg"
+  },
+  {
+    "sku": "1E-41",
+    "name": "SET ESPECIERO DISEÑO 5 PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33427987/WhatsApp_20Image_202026-01-20_20at_205.54.26_20PM.jpeg?1768942496",
+    "local_file": "1E-41_SET_ESPECIERO_DISEÑO_5_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-41_SET_ESPECIERO_DISEÑO_5_PCS.jpg"
+  },
+  {
+    "sku": "1E-42",
+    "name": "ESPECIERO GIRATORIO 7PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33428001/WhatsApp_20Image_202026-01-20_20at_205.56.11_20PM.jpeg?1768942599",
+    "local_file": "1E-42_ESPECIERO_GIRATORIO_7PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-42_ESPECIERO_GIRATORIO_7PCS.jpg"
+  },
+  {
+    "sku": "1E-43",
+    "name": "ESPECIERO GIRATORIO 20PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33428036/WhatsApp_20Image_202026-01-20_20at_206.01.06_20PM.jpeg?1768942892",
+    "local_file": "1E-43_ESPECIERO_GIRATORIO_20PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-43_ESPECIERO_GIRATORIO_20PCS.jpg"
+  },
+  {
+    "sku": "100U-4",
+    "name": "LAPICES COLORES GIOTTO 24 PCS",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33428097/WhatsApp_20Image_202026-01-20_20at_206.07.47_20PM.jpeg?1768943321",
+    "local_file": "100U-4_LAPICES_COLORES_GIOTTO_24_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100U-4_LAPICES_COLORES_GIOTTO_24_PCS.jpg"
+  },
+  {
+    "sku": "100U-5",
+    "name": "LAPIZ GRAFITO FABER-CASTELL 12 PCS",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33428123/WhatsApp_20Image_202026-01-20_20at_206.11.50_20PM.jpeg?1768943548",
+    "local_file": "100U-5_LAPIZ_GRAFITO_FABER-CASTELL_12_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100U-5_LAPIZ_GRAFITO_FABER-CASTELL_12_PCS.jpg"
+  },
+  {
+    "sku": "2E-4",
+    "name": "SET ALMACENAMIENTO 7PCS",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33428206/WhatsApp_20Image_202026-01-20_20at_206.27.09_20PM.jpeg?1768944470",
+    "local_file": "2E-4_SET_ALMACENAMIENTO_7PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-4_SET_ALMACENAMIENTO_7PCS.jpg"
+  },
+  {
+    "sku": "1E-47",
+    "name": "MINI SARTEN DISEÑO",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33428292/WhatsApp_20Image_202026-01-20_20at_206.30.12_20PM.jpeg?1768944633",
+    "local_file": "1E-47_MINI_SARTEN_DISEÑO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-47_MINI_SARTEN_DISEÑO.jpg"
+  },
+  {
+    "sku": "1E-48",
+    "name": "CUPULA ROSA ETERNA LED",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33428364/WhatsApp_20Image_202026-01-20_20at_206.31.46_20PM.jpeg?1768944726",
+    "local_file": "1E-48_CUPULA_ROSA_ETERNA_LED.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-48_CUPULA_ROSA_ETERNA_LED.jpg"
+  },
+  {
+    "sku": "2E-6",
+    "name": "SET JUEGO CUBIERTOS 24PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33435498/WhatsApp_20Image_202026-01-20_20at_206.04.31_20PM.jpeg?1769027060",
+    "local_file": "2E-6_SET_JUEGO_CUBIERTOS_24PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-6_SET_JUEGO_CUBIERTOS_24PCS.jpg"
+  },
+  {
+    "sku": "1E-50",
+    "name": "VELA AROMÁTICA",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33435154/WhatsApp_20Image_202026-01-20_20at_205.53.28_20PM.jpeg?1769026095",
+    "local_file": "1E-50_VELA_AROMÁTICA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-50_VELA_AROMÁTICA.jpg"
+  },
+  {
+    "sku": "1E-52",
+    "name": "REBANADORA DE VEGETALES",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33435776/WhatsApp_20Image_202026-01-20_20at_206.08.47_20PM.jpeg?1769027317",
+    "local_file": "1E-52_REBANADORA_DE_VEGETALES.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-52_REBANADORA_DE_VEGETALES.jpg"
+  },
+  {
+    "sku": "10U-15",
+    "name": "CALCETINES NIKE",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33444860/WhatsApp_20Image_202026-01-22_20at_206.41.05_20PM.jpeg?1769118103",
+    "local_file": "10U-15_CALCETINES_NIKE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-15_CALCETINES_NIKE.jpg"
+  },
+  {
+    "sku": "1E-59",
+    "name": "PARASOL DE AUTO",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33451837/WhatsApp_20Image_202026-01-23_20at_201.51.24_20PM.jpeg?1769199911",
+    "local_file": "1E-59_PARASOL_DE_AUTO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-59_PARASOL_DE_AUTO.jpg"
+  },
+  {
+    "sku": "1E-60",
+    "name": "AUDIFONO P47",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33455652/WhatsApp_20Image_202026-01-20_20at_205.57.39_20PM.jpeg?1769274948",
+    "local_file": "1E-60_AUDIFONO_P47.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-60_AUDIFONO_P47.jpg"
+  },
+  {
+    "sku": "1E-62",
+    "name": "ALFOMBRA TRÉBOL 40X60CM",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33456045/FB_IMG_1776719925260.jpg?1776719968",
+    "local_file": "1E-62_ALFOMBRA_TRÉBOL_40X60CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-62_ALFOMBRA_TRÉBOL_40X60CM.jpg"
+  },
+  {
+    "sku": "1E-65",
+    "name": "BOTELLA SPACE 1000ML",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33456235/IMG-20260125-WA0030_281_29.jpg?1769350780",
+    "local_file": "1E-65_BOTELLA_SPACE_1000ML.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-65_BOTELLA_SPACE_1000ML.jpg"
+  },
+  {
+    "sku": "1E-67",
+    "name": "BOTELLA PELOTA PLEGABLE",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33456938/WhatsApp_20Image_202026-01-24_20at_204.14.20_20PM.jpeg?1769282141",
+    "local_file": "1E-67_BOTELLA_PELOTA_PLEGABLE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-67_BOTELLA_PELOTA_PLEGABLE.jpg"
+  },
+  {
+    "sku": "1E-68",
+    "name": "MINI MOPA",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33456944/WhatsApp_20Image_202026-01-24_20at_204.02.11_20PM_20_281_29.jpeg?1769282260",
+    "local_file": "1E-68_MINI_MOPA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-68_MINI_MOPA.jpg"
+  },
+  {
+    "sku": "2E-8",
+    "name": "SET ARTE DREAMS 46PCS",
+    "category": "Hogar",
+    "subcategory": "Manualidades",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33456974/WhatsApp_20Image_202026-01-24_20at_204.22.38_20PM.jpeg?1769282608",
+    "local_file": "2E-8_SET_ARTE_DREAMS_46PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-8_SET_ARTE_DREAMS_46PCS.jpg"
+  },
+  {
+    "sku": "1E-69",
+    "name": "VENTILADOR LÁMPARA DESKTOP",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33456981/WhatsApp_20Image_202026-01-24_20at_204.05.52_20PM.jpeg?1769282739",
+    "local_file": "1E-69_VENTILADOR_LÁMPARA_DESKTOP.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-69_VENTILADOR_LÁMPARA_DESKTOP.jpg"
+  },
+  {
+    "sku": "1E-72",
+    "name": "TRIPLE TRANSPARENTE",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33457020/WhatsApp_20Image_202026-01-24_20at_204.23.18_20PM_20_281_29.jpeg?1769283322",
+    "local_file": "1E-72_TRIPLE_TRANSPARENTE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-72_TRIPLE_TRANSPARENTE.jpg"
+  },
+  {
+    "sku": "1E-76",
+    "name": "ALFOMBRA 40X60CM",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33457031/WhatsApp_20Image_202026-01-24_20at_204.25.04_20PM.jpeg?1773959544",
+    "local_file": "1E-76_ALFOMBRA_40X60CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-76_ALFOMBRA_40X60CM.jpg"
+  },
+  {
+    "sku": "1E-80",
+    "name": "SET ALFOMBRA COCINA 2PCS",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33471531/FB_IMG_1773958932217.jpg?1773959113",
+    "local_file": "1E-80_SET_ALFOMBRA_COCINA_2PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-80_SET_ALFOMBRA_COCINA_2PCS.jpg"
+  },
+  {
+    "sku": "5U-8",
+    "name": "CAMARA DE SEGURIDAD WI-FI VIDEO LLAMADA",
+    "category": "Electronica",
+    "subcategory": "Camaras",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33522580/WhatsApp_20Image_202026-01-28_20at_201.30.52_20PM_20_281_29.jpeg?1769692425",
+    "local_file": "5U-8_CAMARA_DE_SEGURIDAD_WI-FI_VIDEO_LLAMADA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5U-8_CAMARA_DE_SEGURIDAD_WI-FI_VIDEO_LLAMADA.jpg"
+  },
+  {
+    "sku": "1E-81",
+    "name": "DUPLICADOR DE PANTALLA HDMI",
+    "category": "Electronica",
+    "subcategory": "Accesorios Tech",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33550061/WhatsApp_20Image_202026-01-30_20at_2012.30.28_20PM.jpeg?1769792080",
+    "local_file": "1E-81_DUPLICADOR_DE_PANTALLA_HDMI.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-81_DUPLICADOR_DE_PANTALLA_HDMI.jpg"
+  },
+  {
+    "sku": "1E-82",
+    "name": "MICRÓFONO PARA PODCAST Y RADIO TN-35",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33550072/WhatsApp_20Image_202026-01-30_20at_2012.54.54_20PM.jpeg?1769792223",
+    "local_file": "1E-82_MICRÓFONO_PARA_PODCAST_Y_RADIO_TN-35.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-82_MICRÓFONO_PARA_PODCAST_Y_RADIO_TN-35.jpg"
+  },
+  {
+    "sku": "48U",
+    "name": "TAPER KAWAII",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33557555/WhatsApp_20Image_202026-01-30_20at_2012.57.53_20PM.jpeg?1769807695",
+    "local_file": "48U_TAPER_KAWAII.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/48U_TAPER_KAWAII.jpg"
+  },
+  {
+    "sku": "1E-85",
+    "name": "MOPA GIRATORIA",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33642805/WhatsApp_20Image_202026-02-05_20at_2010.32.35_20AM.jpeg?1770310211",
+    "local_file": "1E-85_MOPA_GIRATORIA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-85_MOPA_GIRATORIA.jpg"
+  },
+  {
+    "sku": "30U-14",
+    "name": "PARLANTE LES  BT1305",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33642819/WhatsApp_20Image_202026-02-04_20at_207.02.08_20PM.jpeg?1770310419",
+    "local_file": "30U-14_PARLANTE_LES_BT1305.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-14_PARLANTE_LES_BT1305.jpg"
+  },
+  {
+    "sku": "25U-1",
+    "name": "AMPOLLETA BALÓN ZQ-40W",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33642879/WhatsApp_20Image_202026-02-04_20at_207.14.39_20PM_20_281_29.jpeg?1770310930",
+    "local_file": "25U-1_AMPOLLETA_BALÓN_ZQ-40W.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/25U-1_AMPOLLETA_BALÓN_ZQ-40W.jpg"
+  },
+  {
+    "sku": "50U-15",
+    "name": "PARLANTE BLUETOOH LED",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33642887/WhatsApp_20Image_202026-02-04_20at_207.17.42_20PM.jpeg?1770311028",
+    "local_file": "50U-15_PARLANTE_BLUETOOH_LED.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-15_PARLANTE_BLUETOOH_LED.jpg"
+  },
+  {
+    "sku": "10U-19",
+    "name": "SET ESPECIERO 5PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33643248/WhatsApp_20Image_202026-02-04_20at_207.21.46_20PM.jpeg?1770315310",
+    "local_file": "10U-19_SET_ESPECIERO_5PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-19_SET_ESPECIERO_5PCS.jpg"
+  },
+  {
+    "sku": "30u-15",
+    "name": "JUGUERA PORTABLE YE-07",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33643259/WhatsApp_20Image_202026-02-04_20at_207.23.56_20PM.jpeg?1770315436",
+    "local_file": "30u-15_JUGUERA_PORTABLE_YE-07.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-15_JUGUERA_PORTABLE_YE-07.jpg"
+  },
+  {
+    "sku": "30U-16",
+    "name": "PARLANTE+MICRÓFONO ZQS1367",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33644331/WhatsApp_20Image_202026-02-04_20at_207.38.15_20PM.jpeg?1770319940",
+    "local_file": "30U-16_PARLANTE+MICRÓFONO_ZQS1367.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-16_PARLANTE+MICRÓFONO_ZQS1367.jpg"
+  },
+  {
+    "sku": "12u",
+    "name": "CEPILLO MULTIFUNCIONAL 9 EN 1",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33644392/WhatsApp_20Image_202026-02-04_20at_207.46.37_20PM.jpeg?1770320689",
+    "local_file": "12u_CEPILLO_MULTIFUNCIONAL_9_EN_1.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/12u_CEPILLO_MULTIFUNCIONAL_9_EN_1.jpg"
+  },
+  {
+    "sku": "100u-8",
+    "name": "TAPAS DE SILICONA 6PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33644367/WhatsApp_20Image_202026-02-04_20at_207.42.12_20PM.jpeg?1770320383",
+    "local_file": "100u-8_TAPAS_DE_SILICONA_6PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-8_TAPAS_DE_SILICONA_6PCS.jpg"
+  },
+  {
+    "sku": "20U-27",
+    "name": "MINI WAFLERA",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33644377/WhatsApp_20Image_202026-02-04_20at_207.44.10_20PM.jpeg?1770320460",
+    "local_file": "20U-27_MINI_WAFLERA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-27_MINI_WAFLERA.jpg"
+  },
+  {
+    "sku": "40u-9",
+    "name": "ORGANIZADOR DE HUEVOS 3 NIVELES 24PCS",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33644882/WhatsApp_20Image_202026-02-04_20at_208.16.09_20PM.jpeg?1770322030",
+    "local_file": "40u-9_ORGANIZADOR_DE_HUEVOS_3_NIVELES_24PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/40u-9_ORGANIZADOR_DE_HUEVOS_3_NIVELES_24PCS.jpg"
+  },
+  {
+    "sku": "18U-1",
+    "name": "SET TAPER ACERO INOXIDABLE 3PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33644990/WhatsApp_20Image_202026-02-04_20at_208.23.43_20PM.jpeg?1770322196",
+    "local_file": "18U-1_SET_TAPER_ACERO_INOXIDABLE_3PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/18U-1_SET_TAPER_ACERO_INOXIDABLE_3PCS.jpg"
+  },
+  {
+    "sku": "5u-9",
+    "name": "CÁMARA WI-FI Q17",
+    "category": "Electronica",
+    "subcategory": "Camaras",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645002/WhatsApp_20Image_202026-02-04_20at_208.26.12_20PM.jpeg?1770322292",
+    "local_file": "5u-9_CÁMARA_WI-FI_Q17.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5u-9_CÁMARA_WI-FI_Q17.jpg"
+  },
+  {
+    "sku": "15U-4",
+    "name": "PEINE ALISADOR 5 EN 1",
+    "category": "Electronica",
+    "subcategory": "Cuidado Personal",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645008/WhatsApp_20Image_202026-02-04_20at_208.31.08_20PM.jpeg?1770322361",
+    "local_file": "15U-4_PEINE_ALISADOR_5_EN_1.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15U-4_PEINE_ALISADOR_5_EN_1.jpg"
+  },
+  {
+    "sku": "50U-16",
+    "name": "AUDÍFONO PANTALLA DIGITAL XY-262BT",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645020/WhatsApp_20Image_202026-02-04_20at_208.36.10_20PM.jpeg?1770322441",
+    "local_file": "50U-16_AUDÍFONO_PANTALLA_DIGITAL_XY-262BT.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-16_AUDÍFONO_PANTALLA_DIGITAL_XY-262BT.jpg"
+  },
+  {
+    "sku": "25U-2",
+    "name": "SELLADOR AL VACÍO VACUUM",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645026/WhatsApp_20Image_202026-02-04_20at_208.38.01_20PM.jpeg?1770322539",
+    "local_file": "25U-2_SELLADOR_AL_VACÍO_VACUUM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/25U-2_SELLADOR_AL_VACÍO_VACUUM.jpg"
+  },
+  {
+    "sku": "30U-17",
+    "name": "PARLANTE M3",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645052/WhatsApp_20Image_202026-02-04_20at_208.47.06_20PM.jpeg?1770322836",
+    "local_file": "30U-17_PARLANTE_M3.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-17_PARLANTE_M3.jpg"
+  },
+  {
+    "sku": "10U-21",
+    "name": "PARLANTE+MICRÓFONO ZQS1429",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645068/WhatsApp_20Image_202026-02-04_20at_208.50.46_20PM.jpeg?1770322994",
+    "local_file": "10U-21_PARLANTE+MICRÓFONO_ZQS1429.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-21_PARLANTE+MICRÓFONO_ZQS1429.jpg"
+  },
+  {
+    "sku": "50U-17",
+    "name": "AUDÍFONO K18",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645089/WhatsApp_20Image_202026-02-04_20at_208.57.26_20PM.jpeg?1770323222",
+    "local_file": "50U-17_AUDÍFONO_K18.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-17_AUDÍFONO_K18.jpg"
+  },
+  {
+    "sku": "17U",
+    "name": "ASPIRADORA ROBOT",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645113/WhatsApp_20Image_202026-02-04_20at_209.22.49_20PM_20_281_29.jpeg?1770323442",
+    "local_file": "17U_ASPIRADORA_ROBOT.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/17U_ASPIRADORA_ROBOT.jpg"
+  },
+  {
+    "sku": "30U-18",
+    "name": "PARLANTE SH-319",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645155/WhatsApp_20Image_202026-02-05_20at_201.27.26_20PM.jpeg?1770323829",
+    "local_file": "30U-18_PARLANTE_SH-319.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-18_PARLANTE_SH-319.jpg"
+  },
+  {
+    "sku": "30U-19",
+    "name": "CORTINA HIGH 140X240CM",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645327/WhatsApp_20Image_202026-02-13_20at_2010.57.53_20AM.jpeg?1772889839",
+    "local_file": "30U-19_CORTINA_HIGH_140X240CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-19_CORTINA_HIGH_140X240CM.jpg"
+  },
+  {
+    "sku": "6U-3",
+    "name": "PARLANTE MS-3629BT-M",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33645353/WhatsApp_20Image_202026-02-05_20at_202.54.30_20PM.jpeg?1770324811",
+    "local_file": "6U-3_PARLANTE_MS-3629BT-M.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/6U-3_PARLANTE_MS-3629BT-M.jpg"
+  },
+  {
+    "sku": "7U",
+    "name": "SOPORTE CELULAR PARLANTE+CARGA INALÁMBRICA",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33682419/WhatsApp_20Image_202026-02-04_20at_209.23.49_20PM.jpeg?1770481957",
+    "local_file": "7U_SOPORTE_CELULAR_PARLANTE+CARGA_INALÁMBRICA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/7U_SOPORTE_CELULAR_PARLANTE+CARGA_INALÁMBRICA.jpg"
+  },
+  {
+    "sku": "30u-20",
+    "name": "ESTUCHE 3D ESCOLAR",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33734447/IMG-20260207-WA0166.jpg?1770589788",
+    "local_file": "30u-20_ESTUCHE_3D_ESCOLAR.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-20_ESTUCHE_3D_ESCOLAR.jpg"
+  },
+  {
+    "sku": "5u-12",
+    "name": "Maquina donnuts 7pcs grande 4647",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33758269/IMG-20260210-WA0002.jpg?1770723545",
+    "local_file": "5u-12_Maquina_donnuts_7pcs_grande_4647.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5u-12_Maquina_donnuts_7pcs_grande_4647.jpg"
+  },
+  {
+    "sku": "1e-89",
+    "name": "PICADORA ELECTRICA YDM  0099",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33759787/IMG-20260210-WA0011_281_29.jpg?1770724851",
+    "local_file": "1e-89_PICADORA_ELECTRICA_YDM_0099.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-89_PICADORA_ELECTRICA_YDM_0099.jpg"
+  },
+  {
+    "sku": "10U-23",
+    "name": "FUNDA DE SILLA+MANTEL 7PCS",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760443/WhatsApp_20Image_202026-02-08_20at_206.25.01_20PM.jpeg?1770726994",
+    "local_file": "10U-23_FUNDA_DE_SILLA+MANTEL_7PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-23_FUNDA_DE_SILLA+MANTEL_7PCS.jpg"
+  },
+  {
+    "sku": "5U-13",
+    "name": "INFLADOR DE GLOBOS",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760507/WhatsApp_20Image_202026-02-09_20at_2010.04.50_20PM.jpeg?1770728241",
+    "local_file": "5U-13_INFLADOR_DE_GLOBOS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5U-13_INFLADOR_DE_GLOBOS.jpg"
+  },
+  {
+    "sku": "10U-25",
+    "name": "PARLANTE M5",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760630/WhatsApp_20Image_202026-02-09_20at_2010.21.26_20PM.jpeg?1770730069",
+    "local_file": "10U-25_PARLANTE_M5.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-25_PARLANTE_M5.jpg"
+  },
+  {
+    "sku": "24U-1",
+    "name": "LÁPIZ COLORES 48PCS",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760641/WhatsApp_20Image_202026-02-09_20at_2010.22.27_20PM.jpeg?1770730242",
+    "local_file": "24U-1_LÁPIZ_COLORES_48PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/24U-1_LÁPIZ_COLORES_48PCS.jpg"
+  },
+  {
+    "sku": "50U-18",
+    "name": "FAJA MISS BELT",
+    "category": "Hogar",
+    "subcategory": "Salud y Bienestar",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760654/WhatsApp_20Image_202026-02-09_20at_2010.24.07_20PM.jpeg?1770730621",
+    "local_file": "50U-18_FAJA_MISS_BELT.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50U-18_FAJA_MISS_BELT.jpg"
+  },
+  {
+    "sku": "100U-10",
+    "name": "CABLE AUXILIAR USB 3 EN 1",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760708/WhatsApp_20Image_202026-02-09_20at_2010.28.06_20PM.jpeg?1770731399",
+    "local_file": "100U-10_CABLE_AUXILIAR_USB_3_EN_1.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100U-10_CABLE_AUXILIAR_USB_3_EN_1.jpg"
+  },
+  {
+    "sku": "20U-32",
+    "name": "PARLANTE LS-1023",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760767/WhatsApp_20Image_202026-02-09_20at_2010.33.27_20PM.jpeg?1770732082",
+    "local_file": "20U-32_PARLANTE_LS-1023.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20U-32_PARLANTE_LS-1023.jpg"
+  },
+  {
+    "sku": "15U-5",
+    "name": "PARLANTE CON MICRÓFONO",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760783/WhatsApp_20Image_202026-02-09_20at_2010.34.02_20PM_20_281_29.jpeg?1770732294",
+    "local_file": "15U-5_PARLANTE_CON_MICRÓFONO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15U-5_PARLANTE_CON_MICRÓFONO.jpg"
+  },
+  {
+    "sku": "30U-22",
+    "name": "CORTINA DISEÑO 140X240CM",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33760793/WhatsApp_20Image_202026-02-14_20at_2010.15.38_20AM.jpeg?1771075057",
+    "local_file": "30U-22_CORTINA_DISEÑO_140X240CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-22_CORTINA_DISEÑO_140X240CM.jpg"
+  },
+  {
+    "sku": "2E-13",
+    "name": "MOCHILA ESCOLAR STITCH",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33802643/WhatsApp_20Image_202026-02-16_20at_203.25.03_20PM.jpeg?1771266331",
+    "local_file": "2E-13_MOCHILA_ESCOLAR_STITCH.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-13_MOCHILA_ESCOLAR_STITCH.jpg"
+  },
+  {
+    "sku": "2E-15",
+    "name": "MOCHILA CON RUEDA BARBIE",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33802670/WhatsApp_20Image_202026-02-13_20at_2010.30.59_20AM.jpeg?1770992564",
+    "local_file": "2E-15_MOCHILA_CON_RUEDA_BARBIE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-15_MOCHILA_CON_RUEDA_BARBIE.jpg"
+  },
+  {
+    "sku": "1E-94",
+    "name": "MOCHILA HOPPS OREJA ZOOTOPIA",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33802882/WhatsApp_20Image_202026-02-13_20at_2010.04.12_20AM.jpeg?1770994075",
+    "local_file": "1E-94_MOCHILA_HOPPS_OREJA_ZOOTOPIA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-94_MOCHILA_HOPPS_OREJA_ZOOTOPIA.jpg"
+  },
+  {
+    "sku": "1E-96",
+    "name": "PELUCHE INTENSAMENTE ALEGRÍA",
+    "category": "Hogar",
+    "subcategory": "Juguetes y Bebes",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33802939/WhatsApp_20Image_202026-02-13_20at_2010.36.48_20AM.jpeg?1770994433",
+    "local_file": "1E-96_PELUCHE_INTENSAMENTE_ALEGRÍA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-96_PELUCHE_INTENSAMENTE_ALEGRÍA.jpg"
+  },
+  {
+    "sku": "2E-17",
+    "name": "MOCHILA WILDE ZOOTOPIA",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33803241/WhatsApp_20Image_202026-02-13_20at_2010.06.23_20AM.jpeg?1770995015",
+    "local_file": "2E-17_MOCHILA_WILDE_ZOOTOPIA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-17_MOCHILA_WILDE_ZOOTOPIA.jpg"
+  },
+  {
+    "sku": "2E-18",
+    "name": "MOCHILA HOPPS ZOOTOPIA",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33803284/WhatsApp_20Image_202026-02-13_20at_2010.37.52_20AM.jpeg?1770995140",
+    "local_file": "2E-18_MOCHILA_HOPPS_ZOOTOPIA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2E-18_MOCHILA_HOPPS_ZOOTOPIA.jpg"
+  },
+  {
+    "sku": "10U-26",
+    "name": "CORTINA TOP LUCKY 140X230CM",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33804093/WhatsApp_20Image_202026-02-13_20at_204.52.10_20PM_20_282_29.jpeg?1771074726",
+    "local_file": "10U-26_CORTINA_TOP_LUCKY_140X230CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-26_CORTINA_TOP_LUCKY_140X230CM.jpg"
+  },
+  {
+    "sku": "1E-98",
+    "name": "MOCHILA WILDE OREJA ZOOTOPIA",
+    "category": "Escolar",
+    "subcategory": "Materiales",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33900490/WhatsApp_20Image_202026-02-13_20at_2010.06.42_20AM.jpeg?1771440116",
+    "local_file": "1E-98_MOCHILA_WILDE_OREJA_ZOOTOPIA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-98_MOCHILA_WILDE_OREJA_ZOOTOPIA.jpg"
+  },
+  {
+    "sku": "5U-15",
+    "name": "CONJUNTO NAUTICA",
+    "category": "Ropa",
+    "subcategory": "Hombre",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33916538/WhatsApp_20Image_202026-02-13_20at_206.16.45_20PM.jpeg?1771517068",
+    "local_file": "5U-15_CONJUNTO_NAUTICA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5U-15_CONJUNTO_NAUTICA.jpg"
+  },
+  {
+    "sku": "42U",
+    "name": "BUZO TOMMY",
+    "category": "Ropa",
+    "subcategory": "Hombre",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33916650/WhatsApp_20Image_202026-02-13_20at_206.04.43_20PM.jpeg?1771517899",
+    "local_file": "42U_BUZO_TOMMY.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/42U_BUZO_TOMMY.jpg"
+  },
+  {
+    "sku": "6U-4",
+    "name": "POLERONES CALVIN KLEIN",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/33933538/WhatsApp_20Image_202026-02-13_20at_203.30.01_20PM.jpeg?1771525267",
+    "local_file": "6U-4_POLERONES_CALVIN_KLEIN.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/6U-4_POLERONES_CALVIN_KLEIN.jpg"
+  },
+  {
+    "sku": "DB0004",
+    "name": "INDIVIDUAL 30X40CM",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34067889/WhatsApp_20Image_202026-02-09_20at_2012.15.07_20PM.jpeg?1772029784",
+    "local_file": "DB0004_INDIVIDUAL_30X40CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/DB0004_INDIVIDUAL_30X40CM.jpg"
+  },
+  {
+    "sku": "3u-2",
+    "name": "QUITASOL TELA 260X240CM",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34070386/WhatsApp_20Image_202026-02-25_20at_2012.49.18_20PM.jpeg?1772046418",
+    "local_file": "3u-2_QUITASOL_TELA_260X240CM.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/3u-2_QUITASOL_TELA_260X240CM.jpg"
+  },
+  {
+    "sku": "10U-29",
+    "name": "CARRO DE FERIA GRANDE",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34070395/WhatsApp_20Image_202026-02-25_20at_2012.48.41_20PM.jpeg?1772046579",
+    "local_file": "10U-29_CARRO_DE_FERIA_GRANDE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10U-29_CARRO_DE_FERIA_GRANDE.jpg"
+  },
+  {
+    "sku": "3U-3",
+    "name": "QUITASOL TELA DISEÑO 270X230CM CÓDIGO 001",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34070404/WhatsApp_20Image_202026-02-25_20at_2012.49.34_20PM.jpeg?1772046706",
+    "local_file": "3U-3_QUITASOL_TELA_DISEÑO_270X230CM_CÓDIGO_001.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/3U-3_QUITASOL_TELA_DISEÑO_270X230CM_CÓDIGO_001.jpg"
+  },
+  {
+    "sku": "3U-4",
+    "name": "MANIQUÍES FEMENINO",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34070415/WhatsApp_20Image_202026-02-25_20at_2012.55.19_20PM.jpeg?1772046827",
+    "local_file": "3U-4_MANIQUÍES_FEMENINO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/3U-4_MANIQUÍES_FEMENINO.jpg"
+  },
+  {
+    "sku": "10u-30",
+    "name": "PICADOR MULTIFUNCIONAL VEGETALES 14PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34074396/WhatsApp_20Image_202026-02-26_20at_209.48.59_20AM.jpeg?1772110231",
+    "local_file": "10u-30_PICADOR_MULTIFUNCIONAL_VEGETALES_14PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10u-30_PICADOR_MULTIFUNCIONAL_VEGETALES_14PCS.jpg"
+  },
+  {
+    "sku": "1E-99",
+    "name": "TERMO VACUUM 800ML",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075044/1776255628670.png?1776255778",
+    "local_file": "1E-99_TERMO_VACUUM_800ML.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-99_TERMO_VACUUM_800ML.png"
+  },
+  {
+    "sku": "34u",
+    "name": "BOTELLA WATER 500ML",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075058/WhatsApp_20Image_202026-02-25_20at_208.26.15_20PM_20_281_29.jpeg?1772113585",
+    "local_file": "34u_BOTELLA_WATER_500ML.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/34u_BOTELLA_WATER_500ML.jpg"
+  },
+  {
+    "sku": "30-8",
+    "name": "GORRO OSO CUELLO (5839)",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075066/WhatsApp_20Image_202026-02-25_20at_208.26.15_20PM_20_282_29.jpeg?1772113744",
+    "local_file": "30-8_GORRO_OSO_CUELLO_(5839).jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30-8_GORRO_OSO_CUELLO_(5839).jpg"
+  },
+  {
+    "sku": "25",
+    "name": "TERMO DIAMOND",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075175/1776254656089.png?1776254723",
+    "local_file": "25_TERMO_DIAMOND.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/25_TERMO_DIAMOND.png"
+  },
+  {
+    "sku": "25u-4",
+    "name": "DUCHA CON FILTRO",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075203/WhatsApp_20Image_202026-02-26_20at_2010.05.39_20AM_20_281_29.jpeg?1772115954",
+    "local_file": "25u-4_DUCHA_CON_FILTRO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/25u-4_DUCHA_CON_FILTRO.jpg"
+  },
+  {
+    "sku": "50u-20",
+    "name": "MINI PICADORA MANUAL",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075214/WhatsApp_20Image_202026-02-26_20at_2010.05.40_20AM.jpeg?1772126841",
+    "local_file": "50u-20_MINI_PICADORA_MANUAL.jpg",
+    "new_url": null,
+    "error": "No such object: asistoraerp.firebasestorage.app/DONBALATO/productos/50u-20_MINI_PICADORA_MANUAL.jpg"
+  },
+  {
+    "sku": "30u-23",
+    "name": "TAZA OSO GLASS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075306/WhatsApp_20Image_202026-02-26_20at_209.31.53_20AM.jpeg?1772117242",
+    "local_file": "30u-23_TAZA_OSO_GLASS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-23_TAZA_OSO_GLASS.jpg"
+  },
+  {
+    "sku": "30u-24",
+    "name": "VASO DIAMOND GLASS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075316/WhatsApp_20Image_202026-02-25_20at_209.23.25_20PM.jpeg?1772117348",
+    "local_file": "30u-24_VASO_DIAMOND_GLASS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-24_VASO_DIAMOND_GLASS.jpg"
+  },
+  {
+    "sku": "50u-21",
+    "name": "COLADOR PLEGABLE PEQUEÑO",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075328/WhatsApp_20Image_202026-02-26_20at_209.32.41_20AM.jpeg?1772117468",
+    "local_file": "50u-21_COLADOR_PLEGABLE_PEQUEÑO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50u-21_COLADOR_PLEGABLE_PEQUEÑO.jpg"
+  },
+  {
+    "sku": "50u-22",
+    "name": "COLADOR PLEGABLE REDONDO PEQUEÑO",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075351/WhatsApp_20Image_202026-02-26_20at_209.32.50_20AM.jpeg?1772117575",
+    "local_file": "50u-22_COLADOR_PLEGABLE_REDONDO_PEQUEÑO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50u-22_COLADOR_PLEGABLE_REDONDO_PEQUEÑO.jpg"
+  },
+  {
+    "sku": "30u-25",
+    "name": "GORRO BEBE (9734)",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075403/WhatsApp_20Image_202026-02-25_20at_209.25.51_20PM.jpeg?1772118066",
+    "local_file": "30u-25_GORRO_BEBE_(9734).jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-25_GORRO_BEBE_(9734).jpg"
+  },
+  {
+    "sku": "30u-26",
+    "name": "GORRO BUFANDA KAWAII (9727)",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075433/WhatsApp_20Image_202026-02-25_20at_209.25.51_20PM_20_281_29.jpeg?1772118327",
+    "local_file": "30u-26_GORRO_BUFANDA_KAWAII_(9727).jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-26_GORRO_BUFANDA_KAWAII_(9727).jpg"
+  },
+  {
+    "sku": "30u-27",
+    "name": "GORRO BEBE KAWAII  (9741)",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075444/WhatsApp_20Image_202026-02-25_20at_209.26.20_20PM.jpeg?1772118463",
+    "local_file": "30u-27_GORRO_BEBE_KAWAII_(9741).jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-27_GORRO_BEBE_KAWAII_(9741).jpg"
+  },
+  {
+    "sku": "30U-28",
+    "name": "MACETERO DISEÑO 2821B PEQUEÑO",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34075647/WhatsApp_20Image_202026-02-26_20at_2012.18.40_20PM_20_282_29.jpeg?1772119773",
+    "local_file": "30U-28_MACETERO_DISEÑO_2821B_PEQUEÑO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30U-28_MACETERO_DISEÑO_2821B_PEQUEÑO.jpg"
+  },
+  {
+    "sku": "1e-101",
+    "name": "TAZA+PLATO 12PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34089937/WhatsApp_20Image_202026-02-26_20at_202.49.54_20PM.jpeg?1772140086",
+    "local_file": "1e-101_TAZA+PLATO_12PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-101_TAZA+PLATO_12PCS.jpg"
+  },
+  {
+    "sku": "30u-29",
+    "name": "LÁMPARA MATA MOSQUITOS YG-002",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34090113/WhatsApp_20Image_202026-02-27_20at_2012.18.50_20AM.jpeg?1773348972",
+    "local_file": "30u-29_LÁMPARA_MATA_MOSQUITOS_YG-002.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-29_LÁMPARA_MATA_MOSQUITOS_YG-002.jpg"
+  },
+  {
+    "sku": "36U-2",
+    "name": "SET DE COCINA 3PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34171781/WhatsApp_20Image_202026-02-27_20at_202.08.27_20PM.jpeg?1772223713",
+    "local_file": "36U-2_SET_DE_COCINA_3PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/36U-2_SET_DE_COCINA_3PCS.jpg"
+  },
+  {
+    "sku": "DB0005",
+    "name": "GORRO CON POMPÓN",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34233437/WhatsApp_20Image_202026-02-26_20at_206.08.21_20PM_20_281_29.jpeg?1772485558",
+    "local_file": "DB0005_GORRO_CON_POMPÓN.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/DB0005_GORRO_CON_POMPÓN.jpg"
+  },
+  {
+    "sku": "2e-19",
+    "name": "HERVIDOR DE VIDRIO LED",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34299450/WhatsApp_20Image_202026-03-10_20at_202.22.20_20AM.jpeg?1773348834",
+    "local_file": "2e-19_HERVIDOR_DE_VIDRIO_LED.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2e-19_HERVIDOR_DE_VIDRIO_LED.jpg"
+  },
+  {
+    "sku": "30u-31",
+    "name": "SET TAPER ALUMINIO 5PCS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34382384/WhatsApp_20Image_202026-03-07_20at_206.05.16_20PM.jpeg?1773061364",
+    "local_file": "30u-31_SET_TAPER_ALUMINIO_5PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-31_SET_TAPER_ALUMINIO_5PCS.jpg"
+  },
+  {
+    "sku": "20u-37",
+    "name": "PARLANTE 2 MICRÓFONO K12",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34382394/WhatsApp_20Image_202026-03-10_20at_202.22.21_20AM_20_281_29.jpeg?1773348761",
+    "local_file": "20u-37_PARLANTE_2_MICRÓFONO_K12.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-37_PARLANTE_2_MICRÓFONO_K12.jpg"
+  },
+  {
+    "sku": "20u-38",
+    "name": "PARLANTE 1 MICRÓFONO K12",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34382407/WhatsApp_20Image_202026-03-07_20at_206.21.02_20PM.jpeg?1773061778",
+    "local_file": "20u-38_PARLANTE_1_MICRÓFONO_K12.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-38_PARLANTE_1_MICRÓFONO_K12.jpg"
+  },
+  {
+    "sku": "50u-23",
+    "name": "MINI AMPOLLETA 4 ASPAS",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34382422/WhatsApp_20Image_202026-03-09_20at_207.47.34_20AM.jpeg?1773173402",
+    "local_file": "50u-23_MINI_AMPOLLETA_4_ASPAS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50u-23_MINI_AMPOLLETA_4_ASPAS.jpg"
+  },
+  {
+    "sku": "2u",
+    "name": "CALEFACTOR ELÉCTRICO CHIMENEA 3D",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34382435/WhatsApp_20Image_202026-03-07_20at_207.01.54_20PM.jpeg?1773062202",
+    "local_file": "2u_CALEFACTOR_ELÉCTRICO_CHIMENEA_3D.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2u_CALEFACTOR_ELÉCTRICO_CHIMENEA_3D.jpg"
+  },
+  {
+    "sku": "15u-6",
+    "name": "PARLANTE G",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34382458/WhatsApp_20Image_202026-03-07_20at_208.25.28_20PM.jpeg?1773062631",
+    "local_file": "15u-6_PARLANTE_G.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15u-6_PARLANTE_G.jpg"
+  },
+  {
+    "sku": "120u-1",
+    "name": "MINI LINTERNA 3 EN 1",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34382590/WhatsApp_20Image_202026-03-07_20at_208.43.35_20PM.jpeg?1773063542",
+    "local_file": "120u-1_MINI_LINTERNA_3_EN_1.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/120u-1_MINI_LINTERNA_3_EN_1.jpg"
+  },
+  {
+    "sku": "100u-11",
+    "name": "MINI JOYERO LD-1035",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385249/WhatsApp_20Image_202026-03-09_20at_201.43.31_20PM.jpeg?1773082895",
+    "local_file": "100u-11_MINI_JOYERO_LD-1035.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-11_MINI_JOYERO_LD-1035.jpg"
+  },
+  {
+    "sku": "9u-1",
+    "name": "TOSTADOR DE PAN SILVER LOVE",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385400/WhatsApp_20Image_202026-03-09_20at_201.44.20_20PM.jpeg?1773082984",
+    "local_file": "9u-1_TOSTADOR_DE_PAN_SILVER_LOVE.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/9u-1_TOSTADOR_DE_PAN_SILVER_LOVE.jpg"
+  },
+  {
+    "sku": "50u-24",
+    "name": "AUDÍFONO I12",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385470/WhatsApp_20Image_202026-03-09_20at_201.51.06_20PM.jpeg?1773083414",
+    "local_file": "50u-24_AUDÍFONO_I12.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50u-24_AUDÍFONO_I12.jpg"
+  },
+  {
+    "sku": "1e-108",
+    "name": "MURAL TIPO MÁRMOL 60CMX3MTS",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385512/WhatsApp_20Image_202026-03-09_20at_201.52.36_20PM.jpeg?1773083554",
+    "local_file": "1e-108_MURAL_TIPO_MÁRMOL_60CMX3MTS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-108_MURAL_TIPO_MÁRMOL_60CMX3MTS.jpg"
+  },
+  {
+    "sku": "1e-109",
+    "name": "SET DE PICNIC 34PCS",
+    "category": "Jardin y Exterior",
+    "subcategory": "Exterior",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385534/WhatsApp_20Image_202026-03-09_20at_201.53.58_20PM.jpeg?1773083702",
+    "local_file": "1e-109_SET_DE_PICNIC_34PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-109_SET_DE_PICNIC_34PCS.jpg"
+  },
+  {
+    "sku": "1e-110",
+    "name": "CALZA FASHION",
+    "category": "Ropa",
+    "subcategory": "Mujer",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385539/WhatsApp_20Image_202026-03-09_20at_201.55.37_20PM.jpeg?1773083790",
+    "local_file": "1e-110_CALZA_FASHION.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-110_CALZA_FASHION.jpg"
+  },
+  {
+    "sku": "1e-111",
+    "name": "PARLANTE ALEXA PRO MAX",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385578/WhatsApp_20Image_202026-03-09_20at_201.57.19_20PM.jpeg?1773083975",
+    "local_file": "1e-111_PARLANTE_ALEXA_PRO_MAX.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-111_PARLANTE_ALEXA_PRO_MAX.jpg"
+  },
+  {
+    "sku": "20u-40",
+    "name": "SET ALFOMBRA GOME EVA PELUDA 10PCS",
+    "category": "Hogar",
+    "subcategory": "Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385600/WhatsApp_20Image_202026-03-09_20at_201.59.34_20PM.jpeg?1773084086",
+    "local_file": "20u-40_SET_ALFOMBRA_GOME_EVA_PELUDA_10PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-40_SET_ALFOMBRA_GOME_EVA_PELUDA_10PCS.jpg"
+  },
+  {
+    "sku": "1e-112",
+    "name": "SANITARIO MASCOTA",
+    "category": "Hogar",
+    "subcategory": "Mascotas",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385625/WhatsApp_20Image_202026-03-09_20at_202.02.26_20PM.jpeg?1773084253",
+    "local_file": "1e-112_SANITARIO_MASCOTA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-112_SANITARIO_MASCOTA.jpg"
+  },
+  {
+    "sku": "15u-8",
+    "name": "PROYECTOR ASTRONAUTA",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385642/WhatsApp_20Image_202026-03-11_20at_203.39.32_20AM.jpeg?1773348303",
+    "local_file": "15u-8_PROYECTOR_ASTRONAUTA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15u-8_PROYECTOR_ASTRONAUTA.jpg"
+  },
+  {
+    "sku": "5u-18",
+    "name": "ORGANIZADOR DE VERDURAS 3 NIVELES",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385706/WhatsApp_20Image_202026-03-09_20at_202.06.58_20PM.jpeg?1773084561",
+    "local_file": "5u-18_ORGANIZADOR_DE_VERDURAS_3_NIVELES.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5u-18_ORGANIZADOR_DE_VERDURAS_3_NIVELES.jpg"
+  },
+  {
+    "sku": "1E-113",
+    "name": "ORGANIZADOR DE VERDURAS 2 NIVELES",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385744/WhatsApp_20Image_202026-03-09_20at_202.06.58_20PM_20_281_29.jpeg?1773084861",
+    "local_file": "1E-113_ORGANIZADOR_DE_VERDURAS_2_NIVELES.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-113_ORGANIZADOR_DE_VERDURAS_2_NIVELES.jpg"
+  },
+  {
+    "sku": "100u-13",
+    "name": "MAQUINA T9",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385764/WhatsApp_20Image_202026-03-09_20at_202.09.19_20PM.jpeg?1773085047",
+    "local_file": "100u-13_MAQUINA_T9.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-13_MAQUINA_T9.jpg"
+  },
+  {
+    "sku": "100u-14",
+    "name": "GORRO CON CUELLO ADULTO  (734)",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385777/IMG-20260316-WA0192.jpg?1774036767",
+    "local_file": "100u-14_GORRO_CON_CUELLO_ADULTO_(734).jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-14_GORRO_CON_CUELLO_ADULTO_(734).jpg"
+  },
+  {
+    "sku": "25u-5",
+    "name": "VASO MUG ESCARCHADO 890ML",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34385883/WhatsApp_20Image_202026-03-09_20at_202.14.07_20PM.jpeg?1773085592",
+    "local_file": "25u-5_VASO_MUG_ESCARCHADO_890ML.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/25u-5_VASO_MUG_ESCARCHADO_890ML.jpg"
+  },
+  {
+    "sku": "20u-41",
+    "name": "Mini donuts 3 pcs",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34577930/IMG-20251102-WA0298.jpg?1775474347",
+    "local_file": "20u-41_Mini_donuts_3_pcs.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-41_Mini_donuts_3_pcs.jpg"
+  },
+  {
+    "sku": "200u-3",
+    "name": "Organizador de ropa",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34608948/FB_IMG_1774022891875.jpg?1774023058",
+    "local_file": "200u-3_Organizador_de_ropa.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/200u-3_Organizador_de_ropa.jpg"
+  },
+  {
+    "sku": "1e-116",
+    "name": "ESCURRIDOR DE PLATOS",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34732182/IMG-20260319-WA0023.jpg?1774568074",
+    "local_file": "1e-116_ESCURRIDOR_DE_PLATOS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-116_ESCURRIDOR_DE_PLATOS.jpg"
+  },
+  {
+    "sku": "10p",
+    "name": "PIJAMAS TEXTURIZADAS LISAS PACK DE 3",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34763281/IMG-20260319-WA0033.jpg?1775351936",
+    "local_file": "10p_PIJAMAS_TEXTURIZADAS_LISAS_PACK_DE_3.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10p_PIJAMAS_TEXTURIZADAS_LISAS_PACK_DE_3.jpg"
+  },
+  {
+    "sku": "4p",
+    "name": "PIJAMA PLUSH PACK DE 3",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34849635/IMG-20260404-WA0014_281_29.jpg?1775353407",
+    "local_file": "4p_PIJAMA_PLUSH_PACK_DE_3.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/4p_PIJAMA_PLUSH_PACK_DE_3.jpg"
+  },
+  {
+    "sku": "4p-1",
+    "name": "PIJAMA DISEÑO PACK DE 3",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34849667/IMG-20260404-WA0015_282_29.jpg?1778083201",
+    "local_file": "4p-1_PIJAMA_DISEÑO_PACK_DE_3.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/4p-1_PIJAMA_DISEÑO_PACK_DE_3.jpg"
+  },
+  {
+    "sku": "100u-15",
+    "name": "calentador orejas multicolor",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34851191/1775416984223.png?1775417906",
+    "local_file": "100u-15_calentador_orejas_multicolor.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-15_calentador_orejas_multicolor.png"
+  },
+  {
+    "sku": "15u-9",
+    "name": "Set especiero 4pcs",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34853985/FB_IMG_1775470878012.jpg?1775470956",
+    "local_file": "15u-9_Set_especiero_4pcs.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15u-9_Set_especiero_4pcs.jpg"
+  },
+  {
+    "sku": "30u-32",
+    "name": "AUDIFONO P9",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34853986/FB_IMG_1775471074967.jpg?1775471133",
+    "local_file": "30u-32_AUDIFONO_P9.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-32_AUDIFONO_P9.jpg"
+  },
+  {
+    "sku": "50u-27",
+    "name": "ONDULADOR DE CABELLO",
+    "category": "Electronica",
+    "subcategory": "Cuidado Personal",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34853988/FB_IMG_1775471179213.jpg?1775471264",
+    "local_file": "50u-27_ONDULADOR_DE_CABELLO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50u-27_ONDULADOR_DE_CABELLO.jpg"
+  },
+  {
+    "sku": "10u-37",
+    "name": "RALLADOR MULTIUSO",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34853989/IMG-20260404-WA0020.jpg?1775471598",
+    "local_file": "10u-37_RALLADOR_MULTIUSO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10u-37_RALLADOR_MULTIUSO.jpg"
+  },
+  {
+    "sku": "5u-19",
+    "name": "CAMARA WIFI DOBLE",
+    "category": "Electronica",
+    "subcategory": "Camaras",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34854030/1775473543783.png?1775473650",
+    "local_file": "5u-19_CAMARA_WIFI_DOBLE.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/5u-19_CAMARA_WIFI_DOBLE.png"
+  },
+  {
+    "sku": "20u-42",
+    "name": "PARLANTE ZQS-1372",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34854039/1775474156487.png?1775474220",
+    "local_file": "20u-42_PARLANTE_ZQS-1372.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-42_PARLANTE_ZQS-1372.png"
+  },
+  {
+    "sku": "1e-119",
+    "name": "ROSA DE JABON 50 UNIDADES",
+    "category": "Hogar",
+    "subcategory": "Bano",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34854294/1777946390411.png?1777946748",
+    "local_file": "1e-119_ROSA_DE_JABON_50_UNIDADES.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-119_ROSA_DE_JABON_50_UNIDADES.png"
+  },
+  {
+    "sku": "20u-43",
+    "name": "PARLANTE KTS-1057 LED",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34854311/IMG-20260404-WA0062_281_29.jpg?1775485359",
+    "local_file": "20u-43_PARLANTE_KTS-1057_LED.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-43_PARLANTE_KTS-1057_LED.jpg"
+  },
+  {
+    "sku": "15u-10",
+    "name": "LONCHERA ELECTRICA",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34855595/FB_IMG_1775486530611.jpg?1775486573",
+    "local_file": "15u-10_LONCHERA_ELECTRICA.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/15u-10_LONCHERA_ELECTRICA.jpg"
+  },
+  {
+    "sku": "30u-33",
+    "name": "PLANCHA A VAPOR",
+    "category": "Electronica",
+    "subcategory": "Cocina Electrica",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34855612/IMG-20251102-WA0288.jpg?1775486844",
+    "local_file": "30u-33_PLANCHA_A_VAPOR.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-33_PLANCHA_A_VAPOR.jpg"
+  },
+  {
+    "sku": "100U-16",
+    "name": "Mini linterna led llavero",
+    "category": "Electronica",
+    "subcategory": "Iluminacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34855689/FB_IMG_1775487889190.jpg?1775487940",
+    "local_file": "100U-16_Mini_linterna_led_llavero.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100U-16_Mini_linterna_led_llavero.jpg"
+  },
+  {
+    "sku": "30u-34",
+    "name": "PARLANTE LED MAGNETICO",
+    "category": "Electronica",
+    "subcategory": "Audio",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34855767/1775488619439.png?1775488874",
+    "local_file": "30u-34_PARLANTE_LED_MAGNETICO.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/30u-34_PARLANTE_LED_MAGNETICO.png"
+  },
+  {
+    "sku": "1e-121",
+    "name": "Set taper 7pcs",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34855858/FB_IMG_1775490521549.jpg?1775490587",
+    "local_file": "1e-121_Set_taper_7pcs.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-121_Set_taper_7pcs.jpg"
+  },
+  {
+    "sku": "10u-38",
+    "name": "SECADOR DE PELO HAIR DRYER",
+    "category": "Electronica",
+    "subcategory": "Cuidado Personal",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34855875/IMG-20250922-WA0209.jpg?1775490805",
+    "local_file": "10u-38_SECADOR_DE_PELO_HAIR_DRYER.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10u-38_SECADOR_DE_PELO_HAIR_DRYER.jpg"
+  },
+  {
+    "sku": "10u-40",
+    "name": "COBERTOR CON CHIPORRO 2 PLAZA TAMAÑO KING 230X250",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34917565/IMG-20260412-WA0035.jpg?1776099846",
+    "local_file": "10u-40_COBERTOR_CON_CHIPORRO_2_PLAZA_TAMAÑO_KING_230X250.jpg",
+    "new_url": null,
+    "error": "No such object: asistoraerp.firebasestorage.app/DONBALATO/productos/10u-40_COBERTOR_CON_CHIPORRO_2_PLAZA_TAMAÑO_KING_230X250.jpg"
+  },
+  {
+    "sku": "1E-124",
+    "name": "SET TERMO + 2 TAZA 800 ML",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34945817/-Oo6ZciZviZQapAdg6aK_20_281_29.jpg?1776255105",
+    "local_file": "1E-124_SET_TERMO_+_2_TAZA_800_ML.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-124_SET_TERMO_+_2_TAZA_800_ML.jpg"
+  },
+  {
+    "sku": "1E-125",
+    "name": "TERMO VACUUM 1000 ML",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34945830/1776255226886.png?1776255345",
+    "local_file": "1E-125_TERMO_VACUUM_1000_ML.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-125_TERMO_VACUUM_1000_ML.png"
+  },
+  {
+    "sku": "1e-126",
+    "name": "VASO MUG FASHION",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34945840/1776254096220.png?1776255511",
+    "local_file": "1e-126_VASO_MUG_FASHION.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-126_VASO_MUG_FASHION.png"
+  },
+  {
+    "sku": "1E-127",
+    "name": "ORGANIZADOR DE BAÑO",
+    "category": "Hogar",
+    "subcategory": "Organizacion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34952277/IMG-20250929-WA0048.jpg?1776299987",
+    "local_file": "1E-127_ORGANIZADOR_DE_BAÑO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-127_ORGANIZADOR_DE_BAÑO.jpg"
+  },
+  {
+    "sku": "10u-44",
+    "name": "SET DE 3 PCS",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34961817/IMG-20260316-WA0197_281_29.jpg?1776438676",
+    "local_file": "10u-44_SET_DE_3_PCS.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/10u-44_SET_DE_3_PCS.jpg"
+  },
+  {
+    "sku": "20u-44",
+    "name": "BATA DEYSI",
+    "category": "Hogar",
+    "subcategory": "Otros",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34978958/IMG-20260417-WA0209_282_29.jpg?1776565056",
+    "local_file": "20u-44_BATA_DEYSI.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-44_BATA_DEYSI.jpg"
+  },
+  {
+    "sku": "10pack",
+    "name": "PIJAMA TEXTURIZADA PACK 2 UNIDADES",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34979477/IMG-20260417-WA0218.jpg?1778084515",
+    "local_file": "10pack_PIJAMA_TEXTURIZADA_PACK_2_UNIDADES.jpg",
+    "new_url": null,
+    "error": "No such object: asistoraerp.firebasestorage.app/DONBALATO/productos/10pack_PIJAMA_TEXTURIZADA_PACK_2_UNIDADES.jpg"
+  },
+  {
+    "sku": "2e-21",
+    "name": "Tendedero 3 cuerpo",
+    "category": "Hogar",
+    "subcategory": "Limpieza",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/34995189/IMG-20260319-WA0046_281_29.jpg?1776722458",
+    "local_file": "2e-21_Tendedero_3_cuerpo.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/2e-21_Tendedero_3_cuerpo.jpg"
+  },
+  {
+    "sku": "100u-17",
+    "name": "GORRO REMATE KAWAII",
+    "category": "Ropa",
+    "subcategory": "Accesorios",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35029903/IMG-20260421-WA0186_281_29.jpg?1776915325",
+    "local_file": "100u-17_GORRO_REMATE_KAWAII.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-17_GORRO_REMATE_KAWAII.jpg"
+  },
+  {
+    "sku": "1e-130",
+    "name": "COBERTOR CN CHIPORRO 2PLAZA",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35030792/FB_IMG_1776918384131.jpg?1776918572",
+    "local_file": "1e-130_COBERTOR_CN_CHIPORRO_2PLAZA.jpg",
+    "new_url": null,
+    "error": "No such object: asistoraerp.firebasestorage.app/DONBALATO/productos/1e-130_COBERTOR_CN_CHIPORRO_2PLAZA.jpg"
+  },
+  {
+    "sku": "40U-13",
+    "name": "RAMO ROSA CON CAJA",
+    "category": "Regalos",
+    "subcategory": "Ramos y Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35180821/D_NQ_NP_981452-MLC75990340095_042024-O-ramo-de-rosas-artificiales-diseno-elegante-luces-led-en-caja.webp?1777941535",
+    "local_file": "40U-13_RAMO_ROSA_CON_CAJA.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/40U-13_RAMO_ROSA_CON_CAJA.webp"
+  },
+  {
+    "sku": "40U-14",
+    "name": "RAMO OSO ROSA CN CAJA",
+    "category": "Regalos",
+    "subcategory": "Ramos y Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35180873/D_Q_NP_714631-MLU77963616871_072024-O.webp?1777942686",
+    "local_file": "40U-14_RAMO_OSO_ROSA_CN_CAJA.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/40U-14_RAMO_OSO_ROSA_CN_CAJA.webp"
+  },
+  {
+    "sku": "1e-133",
+    "name": "Cupula rosa led",
+    "category": "Regalos",
+    "subcategory": "Ramos y Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35180896/D_NQ_NP_802236-CBT104956488035_012026-O-lampara-rosa-eterna-para-regalo-de-ninas.webp?1777943453",
+    "local_file": "1e-133_Cupula_rosa_led.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1e-133_Cupula_rosa_led.webp"
+  },
+  {
+    "sku": "60u-5",
+    "name": "CUPULA OSO LED",
+    "category": "Regalos",
+    "subcategory": "Ramos y Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35180932/-Nwq9LWWG7GqV4Nf2emF_20_281_29.jpg?1777944512",
+    "local_file": "60u-5_CUPULA_OSO_LED.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/60u-5_CUPULA_OSO_LED.jpg"
+  },
+  {
+    "sku": "20u-49",
+    "name": "RAMO ROSA OSO",
+    "category": "Regalos",
+    "subcategory": "Ramos y Decoracion",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35181088/1777944752467.png?1777946609",
+    "local_file": "20u-49_RAMO_ROSA_OSO.png",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/20u-49_RAMO_ROSA_OSO.png"
+  },
+  {
+    "sku": "1E-134",
+    "name": "TAZA DIA DE MADRE SURTIDO",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35181093/IMG-20260504-WA0012.jpg?1777946668",
+    "local_file": "1E-134_TAZA_DIA_DE_MADRE_SURTIDO.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-134_TAZA_DIA_DE_MADRE_SURTIDO.jpg"
+  },
+  {
+    "sku": "6",
+    "name": "PACK de 6 CINTAS EMBALAR 100 METROS",
+    "category": "Hogar",
+    "subcategory": "Manualidades",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35193174/D_NQ_NP_967584-MLA99950767429_112025-O.webp?1778040558",
+    "local_file": "6_PACK_de_6_CINTAS_EMBALAR_100_METROS.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/6_PACK_de_6_CINTAS_EMBALAR_100_METROS.webp"
+  },
+  {
+    "sku": "6P",
+    "name": "PACK de 6 CINTAS EMBALAR 200 METROS",
+    "category": "Hogar",
+    "subcategory": "Manualidades",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35193192/D_NQ_NP_783558-MLA92465475619_092025-O.webp?1778041117",
+    "local_file": "6P_PACK_de_6_CINTAS_EMBALAR_200_METROS.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/6P_PACK_de_6_CINTAS_EMBALAR_200_METROS.webp"
+  },
+  {
+    "sku": "1E-135",
+    "name": "Film negro 300 metros",
+    "category": "Hogar",
+    "subcategory": "Manualidades",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35194176/D_NQ_NP_770160-MLC71591876895_092023-O.webp?1778077644",
+    "local_file": "1E-135_Film_negro_300_metros.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/1E-135_Film_negro_300_metros.webp"
+  },
+  {
+    "sku": "6P-1",
+    "name": "PLATO CERAMICA 22CM PACK DE 4",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35194963/IMG-20260506-WA0027.jpg?1778081587",
+    "local_file": "6P-1_PLATO_CERAMICA_22CM_PACK_DE_4.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/6P-1_PLATO_CERAMICA_22CM_PACK_DE_4.jpg"
+  },
+  {
+    "sku": "6u-6",
+    "name": "Jarra ceramica 25cm",
+    "category": "Hogar",
+    "subcategory": "Cocina",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35195029/Screenshot_20260506_113635_Google_2.jpg?1778081962",
+    "local_file": "6u-6_Jarra_ceramica_25cm.jpg",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/6u-6_Jarra_ceramica_25cm.jpg"
+  },
+  {
+    "sku": "50u-29",
+    "name": "Conjunto deportivo calidad",
+    "category": "Ropa",
+    "subcategory": "Hombre",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35195111/D_NQ_NP_888478-MLC80085769587_102024-O-conjunto-unicolor-de-calza-y-peto-con-cierre.webp?1778082347",
+    "local_file": "50u-29_Conjunto_deportivo_calidad.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/50u-29_Conjunto_deportivo_calidad.webp"
+  },
+  {
+    "sku": "100u-19",
+    "name": "Conjunto deportivo calidad manga larga",
+    "category": "Ropa",
+    "subcategory": "Hombre",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35195177/D_NQ_NP_650522-MLC83824125085_042025-O.webp?1778082544",
+    "local_file": "100u-19_Conjunto_deportivo_calidad_manga_larga.webp",
+    "new_url": "https://storage.googleapis.com/asistoraerp.firebasestorage.app/DONBALATO/productos/100u-19_Conjunto_deportivo_calidad_manga_larga.webp"
+  },
+  {
+    "sku": "10p-1",
+    "name": "PIJAMA TEXTURIZADA  PACK DE 2",
+    "category": "Ropa",
+    "subcategory": "Invierno",
+    "image_url": "https://images.jumpseller.com/store/don-balato-mayorista/35195796/IMG-20260506-WA0060.jpg?1778084906",
+    "local_file": "10p-1_PIJAMA_TEXTURIZADA_PACK_DE_2.jpg",
+    "new_url": null,
+    "error": "No such object: asistoraerp.firebasestorage.app/DONBALATO/productos/10p-1_PIJAMA_TEXTURIZADA_PACK_DE_2.jpg"
+  }
+]

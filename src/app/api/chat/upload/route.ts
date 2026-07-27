@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverUploadFile, getServerFileUrl } from '@/lib/appwrite-server';
 
-const STORAGE_BUCKET_ID = '6a15f9a5001070a3c408';
+const STORAGE_BUCKET_ID = 'media';
 
 export async function POST(req: NextRequest) {
   try {

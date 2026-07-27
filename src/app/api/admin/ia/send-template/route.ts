@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       token
     );
 
-    const logText = "🌸 [Plantilla Enviada] ¡Hola! Soy Kenia de Kevin&Coco Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #TEST-001 ya cambió de estado a: En Camino 🚚✨ 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo! Estoy atenta para ayudarte. 💖";
+    const logText = "🌸 [Plantilla Enviada] ¡Hola! Soy Kenia de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #TEST-001 ya cambió de estado a: En Camino 🚚✨ 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo! Estoy atenta para ayudarte. 💖";
     await addToHistory(phone, 'assistant', logText);
 
     return NextResponse.json({ success: true });

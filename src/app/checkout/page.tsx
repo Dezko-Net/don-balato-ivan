@@ -34,8 +34,8 @@ const FALLBACK_AGENCIES: AgencyOption[] = [
   { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal (sin costo de envío)', logo: '', active: true },
 ];
 
-const PINK = '#e396bf'; const PINK_LIGHT = '#f5a8cf'; const PINK_BG = '#fdf2f8'; const FF = '"DM Sans", system-ui, sans-serif';
-const inp: React.CSSProperties = { width: '100%', padding: '12px 14px', border: '1.5px solid #fce7f3', borderRadius: 12, fontSize: 14, outline: 'none', color: '#111', background: '#fff', boxSizing: 'border-box', transition: 'all .2s', fontFamily: FF };
+const PINK = '#2563eb'; const PINK_LIGHT = '#60a5fa'; const PINK_BG = '#eff6ff'; const FF = '"DM Sans", system-ui, sans-serif';
+const inp: React.CSSProperties = { width: '100%', padding: '12px 14px', border: '1.5px solid #dbeafe', borderRadius: 12, fontSize: 14, outline: 'none', color: '#111', background: '#fff', boxSizing: 'border-box', transition: 'all .2s', fontFamily: FF };
 const selectStyle: React.CSSProperties = { ...inp, appearance: 'none', paddingRight: 32, backgroundColor: '#fff', color: '#111' };
 const optionStyle: React.CSSProperties = { backgroundColor: '#fff', color: '#111' };
 const label: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 6, fontFamily: FF };
@@ -903,8 +903,8 @@ function CheckoutInner() {
           100% { transform: translateX(40px) scaleX(0); opacity: 0; }
         }
         @keyframes ckPulse {
-          0%, 100% { box-shadow: 0 0 8px rgba(227,150,191,0.3), inset 0 0 12px rgba(255,255,255,0.1); }
-          50% { box-shadow: 0 0 20px rgba(227,150,191,0.5), inset 0 0 20px rgba(255,255,255,0.2); }
+          0%, 100% { box-shadow: 0 0 8px rgba(37,99,235,0.3), inset 0 0 12px rgba(255,255,255,0.1); }
+          50% { box-shadow: 0 0 20px rgba(37,99,235,0.5), inset 0 0 20px rgba(255,255,255,0.2); }
         }
         @keyframes ckShimmer {
           0% { left: -40%; }
@@ -955,7 +955,7 @@ function CheckoutInner() {
         .ck-confirm-btn {
           animation: ckBtnShift 3s ease infinite, ckPulse 2s ease-in-out infinite;
         }
-        .ck-confirm-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(227,150,191,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
+        .ck-confirm-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(37,99,235,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
         .ck-confirm-btn-wholesale {
           animation: ckBtnShift 3s ease infinite, ckPulseWholesale 2s ease-in-out infinite;
         }
@@ -1017,11 +1017,7 @@ function CheckoutInner() {
         .ck-input-placeholder::placeholder { color: #6b7280; opacity: 1; }
         .ck-textarea-placeholder::placeholder { color: #6b7280; opacity: 1; }
       `}</style>
-    <div className="ck-page" style={{ minHeight: '100vh', padding: '24px 4%', fontFamily: FF, position: 'relative' }}>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        <img src="https://img.magnific.com/free-vector/monochrome-realistic-liquid-effect-background_474888-7306.jpg?semt=ais_hybrid&w=740&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(3px) brightness(1.1) saturate(0.4)', transform: 'scale(1.1)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 10%,rgba(227,150,191,0.12),transparent 32%), linear-gradient(180deg,rgba(255,245,248,0.82) 0%,rgba(255,255,255,0.92) 100%)' }} />
-      </div>
+    <div className="ck-page" style={{ minHeight: '100vh', padding: '24px 4%', fontFamily: FF, position: 'relative', background: '#ffffff' }}>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
@@ -1041,14 +1037,14 @@ function CheckoutInner() {
             <div style={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               {/* Shipping agencies */}
-              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 50 }}>
+              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 50 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
                   <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>1</span>
                   Agencia de envío
                 </h2>
                 <div style={{ position: 'relative', zIndex: 10 }}>
                   <button type="button" onClick={() => setAgencyDropdownOpen(!agencyDropdownOpen)}
-                    style={{ width: '100%', padding: '14px 16px', border: `2px solid ${agency ? PINK : '#fce7f3'}`, borderRadius: 14, background: agency ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 10, boxShadow: agency ? '0 4px 14px rgba(227,150,191,0.1)' : 'none' }}>
+                    style={{ width: '100%', padding: '14px 16px', border: `2px solid ${agency ? PINK : '#dbeafe'}`, borderRadius: 14, background: agency ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 10, boxShadow: agency ? '0 4px 14px rgba(37,99,235,0.1)' : 'none' }}>
                     {agency ? (() => {
                       const ag = agencies.find((a: AgencyOption) => a.name === agency);
                       return ag ? (
@@ -1068,13 +1064,13 @@ function CheckoutInner() {
                     <ChevronDown size={16} color="#999" style={{ marginLeft: 'auto', transition: 'transform .2s', transform: agencyDropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
                   </button>
                   {agencyDropdownOpen && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: 4, background: '#fff', borderRadius: 14, border: '1px solid #fce7f3', boxShadow: '0 12px 40px rgba(0,0,0,0.12)', maxHeight: 280, overflowY: 'auto' }}>
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: 4, background: '#fff', borderRadius: 14, border: '1px solid #dbeafe', boxShadow: '0 12px 40px rgba(0,0,0,0.12)', maxHeight: 280, overflowY: 'auto' }}>
                       {agencies.map((ag: AgencyOption) => {
                         const sel = agency === ag.name;
                         return (
                           <button type="button" key={ag.name} onClick={() => { setAgency(ag.name); setAgencyDropdownOpen(false); if (ag.name === 'RETIRO EN TIENDA') { setForm(f => ({ ...f, region: 'Región Metropolitana', comuna: 'Santiago', address: 'Toesca 2537, Santiago Centro, Chile' })); setSelectedAddressId(null); setShowingNewAddress(true); } }}
-                            style={{ width: '100%', padding: '12px 16px', border: 'none', background: sel ? PINK_BG : 'transparent', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #fdf2f8', transition: 'background .15s' }}
-                            onMouseEnter={e => { if (!sel) e.currentTarget.style.background = '#fefcfe'; }}
+                            style={{ width: '100%', padding: '12px 16px', border: 'none', background: sel ? PINK_BG : 'transparent', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #eff6ff', transition: 'background .15s' }}
+                            onMouseEnter={e => { if (!sel) e.currentTarget.style.background = '#f8fafc'; }}
                             onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent'; }}>
                             <div style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 9, flexShrink: 0, overflow: 'hidden' }}>
                               {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 26, height: 26, objectFit: 'contain' }} /> : <Truck size={15} color={ag.color} />}
@@ -1083,7 +1079,7 @@ function CheckoutInner() {
                               <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: sel ? ag.color : '#333' }}>{ag.name}</p>
                               <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>{ag.desc}</p>
                             </div>
-                            {sel && <span style={{ width: 20, height: 20, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {sel && <span style={{ width: 20, height: 20, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                             </span>}
                           </button>
@@ -1099,7 +1095,7 @@ function CheckoutInner() {
 
               {/* Saved Addresses */}
               {savedAddresses.length > 0 && !showingNewAddress && (
-                <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
+                <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)' }}>
                   <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
                     <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>2</span>
                     Dirección de envío
@@ -1110,8 +1106,8 @@ function CheckoutInner() {
                       const aliasIcon = addr.alias === 'Casa' ? '🏠' : addr.alias === 'Trabajo' ? '💼' : '📍';
                       return (
                         <button type="button" key={addr.id} onClick={() => selectAddress(addr)}
-                          style={{ padding: '14px 16px', border: `2px solid ${sel ? PINK : '#fce7f3'}`, borderRadius: 14, background: sel ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', position: 'relative', boxShadow: sel ? '0 4px 14px rgba(227,150,191,0.15)' : 'none' }}>
-                          {sel && <span style={{ position: 'absolute', top: 8, right: 10, width: 18, height: 18, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          style={{ padding: '14px 16px', border: `2px solid ${sel ? PINK : '#dbeafe'}`, borderRadius: 14, background: sel ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', position: 'relative', boxShadow: sel ? '0 4px 14px rgba(37,99,235,0.15)' : 'none' }}>
+                          {sel && <span style={{ position: 'absolute', top: 8, right: 10, width: 18, height: 18, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                           </span>}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
@@ -1125,8 +1121,8 @@ function CheckoutInner() {
                     })}
                   </div>
                   <button type="button" onClick={() => { setShowingNewAddress(true); setSelectedAddressId(null); setDeliveryType('domicilio'); setForm({ name: '', rut: '', phone: '', email: '', region: '', comuna: '', address: '', additionalInfo: '' }); }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', border: '1.5px dashed #f5a8cf', borderRadius: 12, color: PINK, fontSize: 13, fontWeight: 600, background: PINK_BG, transition: 'all .15s', cursor: 'pointer', fontFamily: FF }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#fce7f3'; }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', border: '1.5px dashed #60a5fa', borderRadius: 12, color: PINK, fontSize: 13, fontWeight: 600, background: PINK_BG, transition: 'all .15s', cursor: 'pointer', fontFamily: FF }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#dbeafe'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = PINK_BG; }}>
                     <Plus size={14} /> Agregar nueva dirección
                   </button>
@@ -1134,7 +1130,7 @@ function CheckoutInner() {
               )}
 
               {/* Personal data */}
-              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 1 }}>
+              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 1 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
                   <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>3</span>
                   Datos personales
@@ -1146,37 +1142,37 @@ function CheckoutInner() {
                   <div style={{ gridColumn: '1/-1' }}>
                     <label style={label}>Nombre completo *</label>
                     <input required value={form.name} onChange={e => set('name', e.target.value)} placeholder="Juan Pérez" style={inp}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }} />
                   </div>
                   <div>
                     <label style={label}>RUT *</label>
                     <input required value={form.rut} onChange={e => set('rut', formatRut(e.target.value))} placeholder="12.345.678-9" maxLength={12} style={inp}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }} />
                   </div>
                   <div>
                     <label style={label}>Teléfono *</label>
                     <input required type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+56 9 1234 5678" style={inp}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }} />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label style={label}>Email (para notificaciones)</label>
                     <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="juan@email.com" style={inp}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }} />
                   </div>
                 </div>
               </div>
 
               {/* Shipping address - only show if no saved addresses OR user is adding new */}
               {(savedAddresses.length === 0 || showingNewAddress) && (
-                <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
+                <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                      <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>4</span>
+                      <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>4</span>
                       Dirección de envío
                     </h2>
                     {showingNewAddress && savedAddresses.length > 0 && (
                       <button type="button" onClick={() => { setShowingNewAddress(false); if (savedAddresses.length > 0) { setSelectedAddressId(savedAddresses[0].id); fillFormFromAddress(savedAddresses[0]); } }}
-                        style={{ padding: '6px 12px', border: '1.5px solid #fce7f3', borderRadius: 10, color: PINK, background: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s', fontFamily: FF }}
+                        style={{ padding: '6px 12px', border: '1.5px solid #dbeafe', borderRadius: 10, color: PINK, background: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s', fontFamily: FF }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = PINK_BG; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}>
                         ← Usar dirección guardada
@@ -1194,7 +1190,7 @@ function CheckoutInner() {
                           style={{
                             flex: 1,
                             padding: '12px',
-                            border: `2px solid ${deliveryType === 'domicilio' ? PINK : '#fce7f3'}`,
+                            border: `2px solid ${deliveryType === 'domicilio' ? PINK : '#dbeafe'}`,
                             borderRadius: 12,
                             background: deliveryType === 'domicilio' ? PINK_BG : '#fff',
                             color: deliveryType === 'domicilio' ? PINK : '#6b7280',
@@ -1214,7 +1210,7 @@ function CheckoutInner() {
                           style={{
                             flex: 1,
                             padding: '12px',
-                            border: `2px solid ${deliveryType === 'agencia' ? PINK : '#fce7f3'}`,
+                            border: `2px solid ${deliveryType === 'agencia' ? PINK : '#dbeafe'}`,
                             borderRadius: 12,
                             background: deliveryType === 'agencia' ? PINK_BG : '#fff',
                             color: deliveryType === 'agencia' ? PINK : '#6b7280',
@@ -1239,7 +1235,7 @@ function CheckoutInner() {
                     <label style={label}>Región *</label>
                     <select required value={form.region} onChange={e => { set('region', e.target.value); set('comuna', ''); }}
                       style={selectStyle}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} >
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }} >
                       <option value="" style={optionStyle}>Selecciona región</option>
                       {Object.keys(CHILE_REGIONES).map(r => <option key={r} value={r} style={optionStyle}>{r}</option>)}
                     </select>
@@ -1249,7 +1245,7 @@ function CheckoutInner() {
                     <label style={label}>Comuna *</label>
                     <select required value={form.comuna} onChange={e => set('comuna', e.target.value)} disabled={!form.region}
                       style={{ ...selectStyle, opacity: form.region ? 1 : 0.5 }}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }}>
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }}>
                       <option value="" style={optionStyle}>Selecciona comuna</option>
                       {comunas.map(c => <option key={c} value={c} style={optionStyle}>{c}</option>)}
                     </select>
@@ -1262,20 +1258,20 @@ function CheckoutInner() {
                     <input required value={form.address} onChange={e => set('address', e.target.value)}
                       placeholder={agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' ? 'Ej: Starken Sucursal Padre Las Casas (o dirección de la sucursal)' : 'Calle, número, departamento/casa'}
                       style={inp}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }}
-                      onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
+                      onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }} />
                     {agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && (
-                      <p style={{ margin: '6px 0 0', fontSize: 11, color: '#e06b9b', fontWeight: 600, fontFamily: FF }}>
+                      <p style={{ margin: '6px 0 0', fontSize: 11, color: '#2563eb', fontWeight: 600, fontFamily: FF }}>
                         ⚠️ Indica claramente el nombre o dirección de la sucursal de destino. No ingreses tu dirección particular aquí para evitar confusiones de despacho.
                       </p>
                     )}
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label style={label}>Información adicional (opcional)</label>
-                    <textarea value={form.additionalInfo} onChange={e => set('additionalInfo', e.target.value)}
+                    <textarea value={form.additionalInfo} onChange={e => setCustomerNote(e.target.value)}
                       placeholder="Referencias, instrucciones para la entrega..." rows={2}
                       style={{ ...inp, resize: 'none', fontFamily: FF }}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#dbeafe'; e.target.style.boxShadow = 'none'; }} />
                   </div>
                 </div>
                 </div>
@@ -1287,11 +1283,11 @@ function CheckoutInner() {
             <div className="ck-sidebar" style={{ width: 340, flexShrink: 0, position: 'sticky', top: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
               {/* Summary card */}
-              <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 22, border: '1px solid #fce7f3', boxShadow: '0 12px 40px rgba(227,150,191,0.1)', backdropFilter: 'blur(14px)', overflow: 'hidden' }}>
+              <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 22, border: '1px solid #dbeafe', boxShadow: '0 12px 40px rgba(37,99,235,0.08)', backdropFilter: 'blur(14px)', overflow: 'hidden' }}>
                 {/* Header */}
-                <div style={{ background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', padding: '18px 22px 14px', borderBottom: '1px solid #fce7f3' }}>
+                <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', padding: '18px 22px 14px', borderBottom: '1px solid #dbeafe' }}>
                   <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#111', fontFamily: FF, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Package size={14} color="#fff" />
                     </span>
                     Resumen de compra
@@ -1306,27 +1302,27 @@ function CheckoutInner() {
                       const pricing = resolveProductDisplayPrice(item.product, apertura);
                       const price = pricing.displayPrice;
                       return (
-                        <div key={`${item.product.$id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
+                        <div key={`${item.product.$id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 12, background: '#f8fafc', border: '1px solid #eff6ff', transition: 'all .15s' }}>
                           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                            <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fdf2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
+                            <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #eff6ff, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #dbeafe' }}>
                               {item.product.IMAGEURL
                                 ? <img src={resolveStorageImageUrl(item.product.IMAGEURL)} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
                                 : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}
-                              <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(227,150,191,0.3)' }}>{item.quantity}</span>
+                              <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(37,99,235,0.3)' }}>{item.quantity}</span>
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>
                                 {item.product.NAME}
                               </p>
                               {pricing.fromApertura && (
-                                <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
+                                <span style={{ fontSize: 9, fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
                               )}
                             </div>
                             <div style={{ textAlign: 'right', flexShrink: 0 }}>
                               {pricing.hasDiscount && pricing.originalPrice != null && (
                                 <p style={{ margin: '0 0 2px', fontSize: 10, color: '#9ca3af', textDecoration: 'line-through', fontFamily: FF }}>{formatPrice(pricing.originalPrice * item.quantity)}</p>
                               )}
-                              <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#e396bf' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#2563eb' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
                               
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
                                 <button
@@ -1340,7 +1336,7 @@ function CheckoutInner() {
                                       removeItem(item.product.$id);
                                     }
                                   }}
-                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #fce7f3', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#ec4899', cursor: 'pointer' }}
+                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #dbeafe', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}
                                 >
                                   -
                                 </button>
@@ -1354,7 +1350,7 @@ function CheckoutInner() {
                                     e.stopPropagation();
                                     updateQuantity(item.product.$id, item.quantity + 1);
                                   }}
-                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #fce7f3', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#ec4899', cursor: 'pointer' }}
+                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #dbeafe', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}
                                 >
                                   +
                                 </button>
@@ -1371,7 +1367,7 @@ function CheckoutInner() {
                                 width: '100%', 
                                 padding: '6px 10px', 
                                 fontSize: 11, 
-                                border: '1.5px solid #fce7f3', 
+                                border: '1.5px solid #dbeafe', 
                                 borderRadius: 8, 
                                 outline: 'none',
                                 background: '#fff',
@@ -1388,7 +1384,7 @@ function CheckoutInner() {
 
                 {/* Totals */}
                 <div style={{ padding: '0 22px 14px' }}>
-                  <div style={{ borderTop: '1px dashed #fce7f3', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ borderTop: '1px dashed #dbeafe', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                       <span style={{ color: '#6b7280', fontFamily: FF }}>Subtotal</span>
                       <span style={{ color: '#374151', fontWeight: 600, fontFamily: FF }}>{formatPrice(subtotal + aperturaSavings)}</span>
@@ -1409,7 +1405,7 @@ function CheckoutInner() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                         <span style={{ color: '#00a650', display: 'flex', alignItems: 'center', gap: 4, fontFamily: FF }}>
                           🎟 {couponApplied}
-                          <button type="button" onClick={removeCoupon} style={{ background: 'none', border: 'none', color: '#f5a8cf', cursor: 'pointer', fontSize: 10, textDecoration: 'underline', padding: 0, fontFamily: FF }}>quitar</button>
+                          <button type="button" onClick={removeCoupon} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: 10, textDecoration: 'underline', padding: 0, fontFamily: FF }}>quitar</button>
                         </span>
                         <span style={{ color: '#00a650', fontWeight: 700, fontFamily: FF }}>-{formatPrice(couponDiscount)}</span>
                       </div>
@@ -1425,7 +1421,7 @@ function CheckoutInner() {
                 </div>
 
                 {/* Total highlight */}
-                <div style={{ margin: '0 22px 16px', padding: '12px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', border: `1px solid ${belowMinimum ? '#fca5a5' : '#fbcfe8'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ margin: '0 22px 16px', padding: '12px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: `1px solid ${belowMinimum ? '#fca5a5' : '#bfdbfe'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#111', fontFamily: FF }}>Total a pagar</span>
                   <span style={{ fontSize: 24, fontWeight: 900, color: belowMinimum ? '#dc2626' : PINK, fontFamily: FF, letterSpacing: '-0.03em' }}>{formatPrice(total)}</span>
                 </div>
@@ -1447,14 +1443,14 @@ function CheckoutInner() {
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
                         className="ck-input-placeholder"
                         style={{ flex: 1, padding: '10px 12px', border: `1.5px solid ${couponError ? '#fca5a5' : '#e5e7eb'}`, borderRadius: 10, fontSize: 13, outline: 'none', color: '#111', background: '#f9fafb', textTransform: 'uppercase', letterSpacing: 1.5, fontFamily: FF, fontWeight: 600 }}
-                        onFocus={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.08)'; }}
+                        onFocus={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
                         onBlur={e => { e.currentTarget.style.borderColor = couponError ? '#fca5a5' : '#e5e7eb'; e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.boxShadow = 'none'; }}
                       />
                       <button
                         type="button"
                         onClick={applyCoupon}
                         disabled={couponLoading || !couponCode.trim()}
-                        style={{ padding: '10px 18px', background: couponCode.trim() ? `linear-gradient(135deg, ${PINK}, #c0547a)` : '#e5e7eb', color: couponCode.trim() ? '#fff' : '#9ca3af', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: couponCode.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', opacity: couponLoading ? 0.6 : 1, fontFamily: FF, transition: 'all .2s', boxShadow: couponCode.trim() ? '0 4px 12px rgba(227,150,191,0.2)' : 'none' }}
+                        style={{ padding: '10px 18px', background: couponCode.trim() ? `linear-gradient(135deg, ${PINK}, #1d4ed8)` : '#e5e7eb', color: couponCode.trim() ? '#fff' : '#9ca3af', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: couponCode.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', opacity: couponLoading ? 0.6 : 1, fontFamily: FF, transition: 'all .2s', boxShadow: couponCode.trim() ? '0 4px 12px rgba(37,99,235,0.2)' : 'none' }}
                       >
                         {couponLoading ? '...' : 'Aplicar'}
                       </button>
@@ -1484,9 +1480,9 @@ function CheckoutInner() {
                               const label = discType === 'percent' || discType === 'percentage' ? `${discVal}% OFF` : formatPrice(discVal);
                               return (
                                 <button key={c.$id} type="button" onClick={() => { setCouponCode(code); setCouponError(''); }}
-                                  style={{ padding: '5px 10px', borderRadius: 999, border: `1.5px solid ${couponCode === code ? PINK : '#fce7f3'}`, background: couponCode === code ? PINK_BG : '#fff', color: couponCode === code ? PINK : '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all .15s', letterSpacing: 0.5 }}
+                                  style={{ padding: '5px 10px', borderRadius: 999, border: `1.5px solid ${couponCode === code ? PINK : '#dbeafe'}`, background: couponCode === code ? PINK_BG : '#fff', color: couponCode === code ? PINK : '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all .15s', letterSpacing: 0.5 }}
                                   onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
-                                  onMouseLeave={e => { if (couponCode !== code) { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.color = '#6b7280'; } }}>
+                                  onMouseLeave={e => { if (couponCode !== code) { e.currentTarget.style.borderColor = '#dbeafe'; e.currentTarget.style.color = '#6b7280'; } }}>
                                   🎟 {code} <span style={{ fontWeight: 800, color: '#00a650' }}>{label}</span>
                                 </button>
                               );
@@ -1500,8 +1496,8 @@ function CheckoutInner() {
 
                 {/* Agency badge — only show when selected */}
                 {agency && (
-                <div style={{ margin: '0 22px 14px', padding: '10px 14px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(227,150,191,0.06), rgba(249,168,212,0.1))', border: '1px solid #fce7f3', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: PINK_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #fce7f3' }}>
+                <div style={{ margin: '0 22px 14px', padding: '10px 14px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(37,99,235,0.06), rgba(96,165,250,0.1))', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: PINK_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #dbeafe' }}>
                     <Truck size={13} color={PINK} />
                   </div>
                   <div>
@@ -1516,7 +1512,7 @@ function CheckoutInner() {
                     placeholder="💬 Notas para tu pedido (opcional)..."
                     className="ck-textarea-placeholder"
                     style={{ width: '100%', padding: '10px 12px', fontSize: 12, border: '1.5px solid #f3f4f6', borderRadius: 10, resize: 'none', minHeight: 44, maxHeight: 80, outline: 'none', color: '#374151', boxSizing: 'border-box', fontFamily: FF, background: '#f9fafb', transition: 'all .2s' }}
-                    onFocus={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.08)'; }}
+                    onFocus={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
                     onBlur={e => { e.currentTarget.style.borderColor = '#f3f4f6'; e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.boxShadow = 'none'; }} />
                 </div>
 
@@ -1543,7 +1539,7 @@ function CheckoutInner() {
           {/* Submit button — full width at bottom */}
           <div style={{ marginTop: 16, padding: '0 0 8px' }}>
             <button type="submit" disabled={submitting || belowMinimum} className={hasPackItems ? "ck-confirm-btn-wholesale" : "ck-confirm-btn"}
-              style={{ display: 'block', width: '100%', padding: '18px 0', backgroundImage: submitting ? 'none' : (hasPackItems ? 'linear-gradient(135deg, #f7e5d4, #eed9c4, #d4b290, #eed9c4, #f7e5d4)' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf, #f5a8cf, #fbcfe8)'), backgroundColor: submitting ? (hasPackItems ? '#eed9c4' : '#f5a8cf') : 'transparent', color: hasPackItems ? '#5c3d24' : '#fff', textAlign: 'center', borderRadius: 16, fontSize: 17, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
+              style={{ display: 'block', width: '100%', padding: '18px 0', backgroundImage: submitting ? 'none' : (hasPackItems ? 'linear-gradient(135deg, #f7e5d4, #eed9c4, #d4b290, #eed9c4, #f7e5d4)' : 'linear-gradient(135deg, #bfdbfe, #60a5fa, #2563eb, #60a5fa, #bfdbfe)'), backgroundColor: submitting ? (hasPackItems ? '#eed9c4' : '#60a5fa') : 'transparent', color: hasPackItems ? '#5c3d24' : '#fff', textAlign: 'center', borderRadius: 16, fontSize: 17, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
               {!submitting && <>
                 <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                   <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
@@ -1567,7 +1563,7 @@ function CheckoutInner() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
             <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
               <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
-                <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(227,150,191,0.2)` }}>
+                <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(37,99,235,0.2)` }}>
                   <Truck size={32} color={PINK} strokeWidth={2.5} />
                 </div>
                 <h3 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 800, color: '#111', fontFamily: FF, lineHeight: 1.2 }}>¿Por dónde enviamos tu pedido? 📦</h3>
@@ -1592,7 +1588,7 @@ function CheckoutInner() {
                         padding: '16px', borderRadius: 16, border: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = hasPackItems ? '#cda178' : PINK; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = hasPackItems ? '0 6px 16px rgba(92,61,36,0.1)' : '0 6px 16px rgba(227,150,191,0.15)'; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = hasPackItems ? '#cda178' : PINK; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = hasPackItems ? '0 6px 16px rgba(92,61,36,0.1)' : '0 6px 16px rgba(37,99,235,0.15)'; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
                     >
                       <div style={{ width: 44, height: 44, borderRadius: 12, background: a.bg, border: `1px solid ${a.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} className="ck-agency-logo-wrapper">
@@ -1651,7 +1647,7 @@ function CheckoutInner() {
                   <p style={{ margin: 0, fontSize: 14, color: '#374151', fontFamily: FF }}><strong>RUT:</strong> {form.rut}</p>
                 </div>
 
-                <div style={{ background: 'linear-gradient(135deg, rgba(227,150,191,0.06), rgba(249,168,212,0.1))', borderRadius: 16, padding: '16px', border: '1px solid #fce7f3' }}>
+                <div style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.06), rgba(96,165,250,0.1))', borderRadius: 16, padding: '16px', border: '1px solid #dbeafe' }}>
                   <h4 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 800, color: PINK, textTransform: 'uppercase', letterSpacing: 1, fontFamily: FF }}>Agencia Seleccionada</h4>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
@@ -1670,7 +1666,7 @@ function CheckoutInner() {
                   Volver
                 </button>
                 <button type="button" onClick={executeCheckout}
-                  style={{ flex: 2, padding: '16px', background: hasPackItems ? 'linear-gradient(135deg, #eed9c4, #e1c2a4, #cda178)' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf)', color: hasPackItems ? '#5c3d24' : '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: FF, boxShadow: hasPackItems ? '0 8px 20px rgba(92,61,36,0.15)' : '0 8px 20px rgba(227,150,191,0.3)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+                  style={{ flex: 2, padding: '16px', background: hasPackItems ? 'linear-gradient(135deg, #eed9c4, #e1c2a4, #cda178)' : 'linear-gradient(135deg, #bfdbfe, #60a5fa, #2563eb)', color: hasPackItems ? '#5c3d24' : '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: FF, boxShadow: hasPackItems ? '0 8px 20px rgba(92,61,36,0.15)' : '0 8px 20px rgba(37,99,235,0.3)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
                   <span className="ck-shimmer-line" />
                   <span style={{ position: 'relative', zIndex: 2, textShadow: hasPackItems ? 'none' : '0 1px 3px rgba(0,0,0,0.12)' }}>Confirmar y Enviar</span>
                 </button>
@@ -1685,7 +1681,7 @@ function CheckoutInner() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
             <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
               <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
-                <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(227,150,191,0.2)` }}>
+                <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(37,99,235,0.2)` }}>
                   <MapPin size={32} color={PINK} strokeWidth={2.5} />
                 </div>
                 <h3 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 800, color: '#111', fontFamily: FF, lineHeight: 1.2 }}>Mejora la precisión<br/>de tu envío 📍</h3>
@@ -1699,7 +1695,7 @@ function CheckoutInner() {
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <button onClick={handleGeolocate} disabled={isGeolocating || submitting}
-                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf)', color: '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: (isGeolocating || submitting) ? 'not-allowed' : 'pointer', fontFamily: FF, boxShadow: '0 8px 20px rgba(227,150,191,0.3)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.6 : 1 }}>
+                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #bfdbfe, #60a5fa, #2563eb)', color: '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: (isGeolocating || submitting) ? 'not-allowed' : 'pointer', fontFamily: FF, boxShadow: '0 8px 20px rgba(37,99,235,0.3)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.6 : 1 }}>
                     {isGeolocating ? (
                       <><RefreshCw size={18} className="animate-spin" /> Obteniendo ubicación...</>
                     ) : submitting ? (
@@ -1709,7 +1705,7 @@ function CheckoutInner() {
                     )}
                   </button>
                   <button onClick={handleSkipGeo} disabled={isGeolocating || submitting}
-                    style={{ width: '100%', padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 14, fontWeight: 700, cursor: (isGeolocating || submitting) ? 'not-allowed' : 'pointer', fontFamily: FF, transition: 'all 0.2s', opacity: submitting ? 0.6 : 1 }}>
+                    style={{ width: '100%', padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 14, fontWeight: 700, cursor: (isGeolocating || submitting) ? 'not-allowed' : 'pointer', fontFamily: FF, transition: 'all .2s', opacity: submitting ? 0.6 : 1 }}>
                     No estoy en mi casa, prefiero escribirla.
                   </button>
                 </div>
@@ -1731,7 +1727,7 @@ function CheckoutInner() {
 export default function CheckoutPage() {
   return (
     <DynamicCheckout>
-      <Suspense fallback={<div style={{ background: 'linear-gradient(180deg, #fdf2f8 0%, #fff 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}><p style={{ color: '#f5a8cf' }}>Cargando...</p></div>}>
+      <Suspense fallback={<div style={{ background: 'linear-gradient(180deg, #eff6ff 0%, #fff 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}><p style={{ color: '#2563eb' }}>Cargando...</p></div>}>
         <CheckoutInner />
       </Suspense>
     </DynamicCheckout>

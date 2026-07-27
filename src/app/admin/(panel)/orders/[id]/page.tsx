@@ -2506,7 +2506,7 @@ export default function OrderDetailPage() {
             const nombre = order.CUSTOMERNAME?.split(' ')[0] || order.CUSTOMERNAME || 'Cliente';
             const codigo = order.ORDERCODE || '#' + order.$id.slice(-6);
 
-            let msg = `Hola ${nombre} 👋, te escribimos de Kevin & Coco Chile por tu pedido ${codigo}.\n\n`;
+            let msg = `Hola ${nombre} 👋, te escribimos de Don Balato Iván Chile por tu pedido ${codigo}.\n\n`;
             msg += `Lamentablemente, al revisar tu pedido en bodega nos dimos cuenta que hay productos agotados:\n\n`;
             missingItems.forEach((it: any) => { 
               msg += `🚫 ${it.name} (Cant: ${it.qty})\n`;
@@ -2520,7 +2520,7 @@ export default function OrderDetailPage() {
             msg += `Para solucionar esto rápido, hemos habilitado una zona especial de CANJE donde puedes elegir qué productos quieres llevar en reemplazo con tu saldo.\n\n`;
             msg += `✨ ¡En la zona de canje *TODO TIENE 20% DE DESCUENTO* desde la unidad 1! ✨\n\n`;
             msg += `Ingresa aquí para elegir tus productos:\n`;
-            msg += `👉 https://kevincocochile.cl/canje\n\n`;
+            msg += `👉 https://donbalatoivan.cl/canje\n\n`;
             msg += `Me avisas cuando hayas elegido tus reemplazos para despacharte enseguida 💕`;
 
             const waLink = order.CUSTOMERPHONE
@@ -2970,7 +2970,7 @@ export default function OrderDetailPage() {
               </a>
             )}
             {order.CUSTOMERPHONE && (
-              <a href={`https://wa.me/${order.CUSTOMERPHONE.replace(/[^0-9+]/g, '')}?text=${encodeURIComponent(`¡Hola ${order.CUSTOMERNAME}! Te escribimos de Kevin & Coco Chile. 😊 Queríamos contarte que ya tenemos reservado tu pedido ${order.ORDERCODE || '#' + order.$id.slice(-6)} por un total de ${fmt(order.TOTAL)}. Escríbenos por aquí cuando tengas listo tu comprobante de transferencia para poder procesarlo y comenzar a prepararlo hoy mismo. ¡Muchas gracias por tu preferencia!`)}`} target="_blank" rel="noreferrer"
+              <a href={`https://wa.me/${order.CUSTOMERPHONE.replace(/[^0-9+]/g, '')}?text=${encodeURIComponent(`¡Hola ${order.CUSTOMERNAME}! Te escribimos de Don Balato Iván Chile. 😊 Queríamos contarte que ya tenemos reservado tu pedido ${order.ORDERCODE || '#' + order.$id.slice(-6)} por un total de ${fmt(order.TOTAL)}. Escríbenos por aquí cuando tengas listo tu comprobante de transferencia para poder procesarlo y comenzar a prepararlo hoy mismo. ¡Muchas gracias por tu preferencia!`)}`} target="_blank" rel="noreferrer"
                 className="flex items-center gap-2 w-full p-2 sm:p-2.5 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium text-amber-800 hover:bg-amber-100 transition">
                 <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" /> WhatsApp Pago Pendiente
               </a>

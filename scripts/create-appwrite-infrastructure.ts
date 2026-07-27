@@ -12,9 +12,9 @@
 // CONFIGURACIÓN - ACTUALIZAR ESTO
 // ============================================
 const NEW_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
-const NEW_PROJECT_ID = '6a0a4e8d0032177f3f90';
-const NEW_DATABASE_ID = '6a0a58ca001798410d86';
-const NEW_API_KEY = 'standard_dea4a8654ed430bf3626a6cd6506a562cbfcebb7caeb417a1e83c8228ed1de0a84d60b11cc4776d023d0c5ac8d1dcb0ba59e43fef5fb8831a7252aaf5b2f13896769e2a5af222f9853d7f7abcada2d034e1d92e3b73d8de53d1c29adde00cd723aa5612189b2ee702e798acb0dffeb9ff154714a5f7af060c78567391d49923d';
+const NEW_PROJECT_ID = 'donbalatoivan';
+const NEW_DATABASE_ID = '6a62e7440033d2278d28';
+const NEW_API_KEY = 'standard_36d66a586c5975803e1bb17c5bcd8bb4146a1ee594b31be56fd22a537043adf5cbae612072df4f25873e3d388c4f6dc494beb6a8a56fbfd0c5d878552a622a35762e78dae181636818840ba3eeb07227efbc0b2a1d08893e740e7f56941b427b81f6c675fdd90ca5fe896cd46aeb7e5027736fe5fb40c480ea2f8363ca89740a';
 
 const headers: Record<string, string> = {
   'Content-Type': 'application/json',
@@ -576,6 +576,215 @@ const COLLECTIONS: CollDef[] = [
     name: 'Theme Config',
     attributes: [
       { key: 'config', type: 'string', size: 50000, required: false },
+      { key: 'NAME', type: 'string', size: 256, required: false },
+      { key: 'SECTIONS', type: 'string', size: 50000, required: false },
+    ],
+  },
+
+  // ── inventory_products ─────────────────────────────────
+  {
+    collectionId: 'inventory_products',
+    name: 'Inventory Products',
+    attributes: [
+      { key: 'sku', type: 'string', size: 256, required: false },
+      { key: 'barcode', type: 'string', size: 256, required: false },
+      { key: 'NAME', type: 'string', size: 256, required: true },
+      { key: 'PRICE', type: 'integer', required: false, min: 0 },
+      { key: 'STOCK', type: 'integer', required: false, min: 0 },
+      { key: 'CATEGORYID', type: 'string', size: 256, required: false },
+      { key: 'SUBCATEGORYID', type: 'string', size: 256, required: false },
+      { key: 'IMAGEURL', type: 'string', size: 2048, required: false },
+      { key: 'IMAGEURL2', type: 'string', size: 2048, required: false },
+      { key: 'IMAGEURL3', type: 'string', size: 2048, required: false },
+      { key: 'IMAGEURL4', type: 'string', size: 1024, required: false },
+      { key: 'IMAGEURL5', type: 'string', size: 1024, required: false },
+      { key: 'WHOLESALEPRICE', type: 'integer', required: false, min: 0 },
+      { key: 'WHOLESALEMINQUANTITY', type: 'integer', required: false, min: 0 },
+      { key: 'ISACTIVE', type: 'boolean', required: false },
+      { key: 'published_product_id', type: 'string', size: 256, required: false },
+      { key: 'published_at', type: 'string', size: 64, required: false },
+      { key: 'imported_at', type: 'string', size: 64, required: false },
+      { key: 'FEATURES', type: 'string', size: 2048, required: false },
+      { key: 'TAGS', type: 'string', size: 512, required: false },
+      { key: 'name_cn', type: 'string', size: 256, required: false },
+      { key: 'PACKQTY', type: 'integer', required: false, min: 0 },
+      { key: 'section', type: 'integer', required: false },
+      { key: 'COMING_SOON', type: 'boolean', required: false },
+      { key: 'DATE_ADDED', type: 'string', size: 256, required: false },
+    ],
+  },
+
+  // ── catalog_products ───────────────────────────────────
+  // Mirror de products para el catálogo público
+  {
+    collectionId: 'catalog_products',
+    name: 'Catalog Products',
+    attributes: [
+      { key: 'NAME', type: 'string', size: 256, required: true },
+      { key: 'DESCRIPTION', type: 'string', size: 8192, required: false },
+      { key: 'PRICE', type: 'integer', required: true, min: 0 },
+      { key: 'CURRENTPRICE', type: 'integer', required: false, min: 0 },
+      { key: 'STOCK', type: 'integer', required: false, min: 0 },
+      { key: 'CATEGORYID', type: 'string', size: 256, required: false },
+      { key: 'SUBCATEGORYID', type: 'string', size: 256, required: false },
+      { key: 'IMAGEURL', type: 'string', size: 2048, required: false },
+      { key: 'IMAGEURL2', type: 'string', size: 2048, required: false },
+      { key: 'IMAGEURL3', type: 'string', size: 2048, required: false },
+      { key: 'ISACTIVE', type: 'boolean', required: false },
+      { key: 'ISFEATURED', type: 'boolean', required: false },
+    ],
+  },
+
+  // ── store_settings ─────────────────────────────────────
+  {
+    collectionId: 'store_settings',
+    name: 'Store Settings',
+    attributes: [
+      { key: 'STORENAME', type: 'string', size: 256, required: false },
+      { key: 'PHONE', type: 'string', size: 100, required: false },
+      { key: 'EMAIL', type: 'string', size: 256, required: false },
+      { key: 'ADDRESS', type: 'string', size: 512, required: false },
+      { key: 'WEBSITE', type: 'string', size: 300, required: false },
+      { key: 'DESCRIPTION', type: 'string', size: 1000, required: false },
+      { key: 'SHOWINANNOUNCEMENTBAR', type: 'boolean', required: false },
+      { key: 'UNLIMITEDSTOCK', type: 'boolean', required: false },
+      { key: 'WHATSAPP', type: 'string', size: 100, required: false },
+      { key: 'LOGOURL', type: 'string', size: 2048, required: false },
+      { key: 'CURRENCY', type: 'string', size: 10, required: false },
+    ],
+  },
+
+  // ── admin_chat ─────────────────────────────────────────
+  {
+    collectionId: 'admin_chat',
+    name: 'Admin Chat',
+    attributes: [
+      { key: 'userId', type: 'string', size: 128, required: true },
+      { key: 'senderRole', type: 'string', size: 20, required: true },
+      { key: 'message', type: 'string', size: 2000, required: true },
+      { key: 'readByUser', type: 'boolean', required: false, default: false },
+      { key: 'readByAdmin', type: 'boolean', required: false, default: false },
+    ],
+  },
+
+  // ── cart_items ─────────────────────────────────────────
+  {
+    collectionId: 'cart_items',
+    name: 'Cart Items',
+    attributes: [
+      { key: 'userId', type: 'string', size: 128, required: true },
+      { key: 'productId', type: 'string', size: 128, required: true },
+      { key: 'quantity', type: 'integer', required: false, min: 1, max: 999, default: 1 },
+      { key: 'addedAt', type: 'integer', required: false },
+    ],
+  },
+
+  // ── cart_snapshots ─────────────────────────────────────
+  {
+    collectionId: 'cart_snapshots',
+    name: 'Cart Snapshots',
+    attributes: [
+      { key: 'userId', type: 'string', size: 128, required: true },
+      { key: 'userName', type: 'string', size: 256, required: false },
+      { key: 'email', type: 'string', size: 256, required: false },
+      { key: 'itemsJson', type: 'string', size: 15000, required: false },
+      { key: 'updatedAt', type: 'integer', required: false },
+    ],
+  },
+
+  // ── stock_requests ─────────────────────────────────────
+  {
+    collectionId: 'stock_requests',
+    name: 'Stock Requests',
+    attributes: [
+      { key: 'productId', type: 'string', size: 256, required: true },
+      { key: 'userId', type: 'string', size: 256, required: true },
+      { key: 'status', type: 'string', size: 50, required: false, default: 'pending' },
+      { key: 'productName', type: 'string', size: 256, required: false },
+      { key: 'productImage', type: 'string', size: 2048, required: false },
+      { key: 'createdAt', type: 'integer', required: false },
+    ],
+  },
+
+  // ── product_views ──────────────────────────────────────
+  {
+    collectionId: 'product_views',
+    name: 'Product Views',
+    attributes: [
+      { key: 'productId', type: 'string', size: 256, required: true },
+      { key: 'views', type: 'integer', required: false, default: 0 },
+      { key: 'date', type: 'string', size: 20, required: false },
+    ],
+  },
+
+  // ── page_views ─────────────────────────────────────────
+  {
+    collectionId: 'page_views',
+    name: 'Page Views',
+    attributes: [
+      { key: 'PAGE', type: 'string', size: 256, required: true },
+      { key: 'DATE', type: 'string', size: 20, required: true },
+      { key: 'VIEWS', type: 'integer', required: true, min: 0 },
+    ],
+  },
+
+  // ── wholesale_orders ───────────────────────────────────
+  // Mismo schema que orders
+  {
+    collectionId: 'wholesale_orders',
+    name: 'Wholesale Orders',
+    attributes: [
+      { key: 'USERID', type: 'string', size: 256, required: false },
+      { key: 'ORDERCODE', type: 'string', size: 50, required: true },
+      { key: 'ORDERINDEX', type: 'integer', required: true, min: 0 },
+      { key: 'CUSTOMERNAME', type: 'string', size: 256, required: true },
+      { key: 'CUSTOMEREMAIL', type: 'string', size: 256, required: false },
+      { key: 'CUSTOMERRUT', type: 'string', size: 50, required: false },
+      { key: 'CUSTOMERPHONE', type: 'string', size: 50, required: false },
+      { key: 'REGION', type: 'string', size: 100, required: false },
+      { key: 'COMUNA', type: 'string', size: 100, required: false },
+      { key: 'ADDRESS', type: 'string', size: 512, required: false },
+      { key: 'PAYMENTMETHOD', type: 'string', size: 50, required: false },
+      { key: 'SHIPPINGAGENCY', type: 'string', size: 100, required: false },
+      { key: 'SHIPPINGADDRESS', type: 'string', size: 2048, required: false },
+      { key: 'SUBTOTAL', type: 'integer', required: true, min: 0 },
+      { key: 'SHIPPINGCOST', type: 'integer', required: false, min: 0 },
+      { key: 'TOTAL', type: 'integer', required: true, min: 0 },
+      { key: 'STATUS', type: 'string', size: 50, required: true },
+      { key: 'ITEMS', type: 'string', size: 50000, required: false },
+      { key: 'CREATEDAT', type: 'integer', required: true, min: 0 },
+      { key: 'UPDATEDAT', type: 'integer', required: false, min: 0 },
+      { key: 'PAYMENTPROOFURL', type: 'string', size: 2048, required: false },
+      { key: 'COUPONCODE', type: 'string', size: 100, required: false },
+      { key: 'CUSTOMERNOTE', type: 'string', size: 2048, required: false },
+      { key: 'adminNotes', type: 'string', size: 10000, required: false },
+    ],
+  },
+
+  // ── shipping_agencies ──────────────────────────────────
+  {
+    collectionId: 'shipping_agencies',
+    name: 'Shipping Agencies',
+    attributes: [
+      { key: 'name', type: 'string', size: 256, required: true },
+      { key: 'color', type: 'string', size: 50, required: false, default: '#3483fa' },
+      { key: 'bg', type: 'string', size: 50, required: false, default: '#e8f0fe' },
+      { key: 'desc', type: 'string', size: 512, required: false },
+      { key: 'logo', type: 'string', size: 2048, required: false },
+      { key: 'active', type: 'boolean', required: false, default: true },
+    ],
+  },
+
+  // ── cotizaciones ───────────────────────────────────────
+  {
+    collectionId: 'cotizaciones',
+    name: 'Cotizaciones',
+    attributes: [
+      { key: 'userId', type: 'string', size: 256, required: false },
+      { key: 'items', type: 'string', size: 50000, required: false },
+      { key: 'total', type: 'integer', required: false, min: 0 },
+      { key: 'status', type: 'string', size: 50, required: false, default: 'pending' },
+      { key: 'createdAt', type: 'integer', required: false },
     ],
   },
 ];
@@ -584,9 +793,10 @@ const COLLECTIONS: CollDef[] = [
 // STORAGE BUCKETS
 // ============================================
 const BUCKETS: BucketDef[] = [
-  // Un solo bucket para todos los archivos, organizados con prefijos
-  // products/, banners/, categories/, comprobantes/, thumbnails/
+  // Bucket principal para media (productos, banners, categorias, comprobantes, chat)
   { bucketId: 'media', name: 'Media' },
+  // Bucket para fotos de cajas de pedidos
+  { bucketId: 'order_box_photos', name: 'Order Box Photos' },
 ];
 
 // ============================================

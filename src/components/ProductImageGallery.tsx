@@ -34,7 +34,7 @@ export default function ProductImageGallery({ product, alt, onImageClick, sizes 
         {activeImage ? (
           <Image src={activeImage} alt={productAlt} fill sizes={sizes} unoptimized style={{ objectFit: 'contain', backgroundColor: '#fff' }} />
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: compact ? 36 : 48, color: '#fbcfe8' }}>📦</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: compact ? 36 : 48, color: '#facc15' }}>📦</div>
         )}
       </div>
       {images.length > 0 && (
@@ -50,7 +50,7 @@ export default function ProductImageGallery({ product, alt, onImageClick, sizes 
                 event.stopPropagation();
                 setActiveIndex(index);
               }}
-              style={{ width: compact ? 21 : 34, height: compact ? 21 : 34, padding: 2, borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `${index === activeIndex ? 2 : 1}px solid ${index === activeIndex ? '#db2777' : '#e5e7eb'}`, background: '#fff', boxShadow: index === activeIndex ? '0 0 0 2px rgba(219,39,119,0.14)' : 'none', opacity: index === activeIndex ? 1 : 0.78, transition: 'all 0.18s ease' }}
+              style={{ width: compact ? 21 : 34, height: compact ? 21 : 34, padding: 2, borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `${index === activeIndex ? 2 : 1}px solid ${index === activeIndex ? '#eab308' : '#e5e7eb'}`, background: '#fff', boxShadow: index === activeIndex ? '0 0 0 2px rgba(234,179,8,0.14)' : 'none', opacity: index === activeIndex ? 1 : 0.78, transition: 'all 0.18s ease' }}
             >
               <Image src={image} alt="" width={compact ? 17 : 30} height={compact ? 17 : 30} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%', display: 'block', background: '#fff' }} />
             </button>

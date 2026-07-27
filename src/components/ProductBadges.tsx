@@ -16,19 +16,19 @@ export default function ProductBadges({ product, style }: Props) {
     const created = new Date(createdAt).getTime();
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     if (Date.now() - created < sevenDays) {
-      badges.push({ label: 'Nuevo', bg: '#fce7f3', color: '#be5d8a' });
+      badges.push({ label: 'Nuevo', bg: '#fef9c3', color: '#a16207' });
     }
   }
 
   // Best seller: sold > 20
   if (product.SOLDQUANTITY && product.SOLDQUANTITY >= 20) {
-    badges.push({ label: 'Más vendido', bg: '#fbcfe8', color: '#9d4772' });
+    badges.push({ label: 'Más vendido', bg: '#fef3c7', color: '#92400e' });
   }
 
   // On sale
   if (product.CURRENTPRICE && product.CURRENTPRICE > 0 && product.CURRENTPRICE < product.PRICE) {
     const pct = Math.round(((product.PRICE - product.CURRENTPRICE) / product.PRICE) * 100);
-    badges.push({ label: `-${pct}%`, bg: '#ffe4e6', color: '#c2415d' });
+    badges.push({ label: `-${pct}%`, bg: '#fef9c3', color: '#a16207' });
   }
 
   // Low stock
@@ -45,7 +45,7 @@ export default function ProductBadges({ product, style }: Props) {
           fontSize: 10, fontWeight: 800, padding: '4px 9px',
           borderRadius: 999, background: b.bg, color: b.color,
           lineHeight: 1.2, whiteSpace: 'nowrap',
-          border: '1px solid rgba(190,93,138,0.12)',
+          border: '1px solid rgba(202,138,4,0.15)',
         }}>
           {b.label}
         </span>

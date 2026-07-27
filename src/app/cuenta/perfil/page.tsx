@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 export default function PerfilPage() {
   const { user, isLoggedIn, updateProfile } = useAuth();
@@ -141,7 +141,7 @@ export default function PerfilPage() {
           <div style={{ position: 'relative' }}>
             <div style={{
               width: 100, height: 100, borderRadius: '50%',
-              background: avatarPreview ? 'transparent' : '#fdf2f8',
+              background: avatarPreview ? 'transparent' : '#eff6ff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 36, fontWeight: 800, color: PINK, overflow: 'hidden',
               border: '4px solid #fff', boxShadow: '0 4px 14px rgba(0,0,0,0.1)',

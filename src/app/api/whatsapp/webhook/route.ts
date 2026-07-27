@@ -27,7 +27,7 @@ import {
 const WA_TOKEN        = process.env.WHATSAPP_ACCESS_TOKEN || 'EAAjQT0EIDHUBRxClDmZC8CkfCba7b8aeylKimDeUNADaqv5AyjZCfZAtoaX5ZCOmdjRQhoMnbQCiUuolG1YHlY6ZAW2EddKTlTbZCLhuF4MxZBy0DE4SNLfVa8pfXzsQgingT1gMDc7aWeJ5KS97ZALxfmiQzBUDOTPOGJBE5CigpDcbeN9ZBkZAdWrFAGFG1r2vntSQZDZD';
 const VERIFY_TOKEN    = process.env.WHATSAPP_VERIFY_TOKEN || 'yaxsel_webhook_2026';
 const ENV_ADMINS = process.env.ADMIN_WHATSAPP_NUMBER || '';
-const FALLBACK_ADMINS = '56936599658,56992139185,56935623858,56967115685';
+const FALLBACK_ADMINS = '56962293893,56936599658,56992139185,56935623858,56967115685';
 const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_MODELS   = GEMINI_TEXT_MODELS;
@@ -47,7 +47,7 @@ let _adminContextCache: { data: { recentOrders: any[], productsRes: any }; ts: n
 const ADMIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for Admin Context
 
 // ─── Admin system prompt ───────────────────────────────────────────────────────
-const ADMIN_PROMPT = `Eres Kenia IA, el asistente administrativo de Kevin&Coco por WhatsApp.
+const ADMIN_PROMPT = `Eres Kenia IA, el asistente administrativo de Don Balato Iván por WhatsApp.
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
 
 ## Capacidades de Admin:
@@ -117,7 +117,7 @@ Y preguntar siempre: "¿Deseas que notifique al cliente para que elija reemplazo
 Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
 // ─── Customer system prompt ────────────────────────────────────────────────────
-const CUSTOMER_PROMPT = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Kevin&Coco en Chile.
+const CUSTOMER_PROMPT = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Don Balato Iván en Chile.
 Eres súper carismática, amable y hablas como una vendedora experta en belleza. Hablas en español chileno natural.
 ¡NUNCA digas que eres un asistente virtual o un bot! Actúa 100% como una persona real del equipo de ventas.
 
@@ -144,7 +144,7 @@ Si en el contexto ves que el cliente tiene un pedido en estado "negotiation" (En
 5. Si ella te dice que la ayudes tú, muéstrale alternativas disponibles del catálogo y ayúdala a decidir.
 
 ## Información de la tienda:
-- Tienda: Kevin&Coco
+- Tienda: Don Balato Iván
 - Sitio web: ${SITE_URL}
 - País: Chile
 
@@ -383,7 +383,7 @@ async function sendWelcomeMenu(phone: string, customerName: string, token: strin
   await sendWhatsAppList(phone, {
     header: '✨ Bienvenida a Kenia',
     body,
-    footer: 'Kevin&Coco · Tu tienda de belleza',
+    footer: 'Don Balato Iván · Tu tienda de belleza',
     buttonText: 'Opciones de Ayuda 🌸',
     sections: [
       {
@@ -1191,17 +1191,17 @@ Por favor contáctalo para ayudarle.
       // Generate a vibrant personalized greeting with Gemini
       let welcomeGreeting = '';
       try {
-        const welcomePrompt = `Eres Kenia, la súper mejor amiga virtual y asesora estrella de Kevin&Coco. Tienes una vibra SÚPER viva, atrevida, graciosa y llena de picardía. Eres la típica amiga amante del maquillaje. Cero formal, cero aburrida.
-
-Es tu PRIMERA vez hablando con "${displayName}". Escribe un saludo SIMPLE, divertidísimo y cortito.
-REGLAS:
-1. Usa un diminutivo cariñoso de su primer nombre (Ej: Janpol -> Jan, Guadalupe -> Lupe).
-2. Preséntate como Kenia con muchísima energía. Trátala de "amor", "bella" o "cariño".
-3. OPCIONAL Y SOLO SI TIENE SENTIDO: Lánzate un dato curioso o piropo gracioso y muy corto sobre su nombre o el maquillaje. Si su nombre es raro, sáltatelo. ¡Cero cosas aburridas o técnicas!
-4. Dile rapidito que estás para chismearle de sus pedidos, ofertas y ayudarla en todo.
-5. Dile que si necesita más información le dé al botón de abajo, y si no, que te pregunte lo que quiera. Usa emojis femeninos (💅💋✨).
-
-Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
+        const welcomePrompt = `Eres Kenia, la súper mejor amiga virtual y asesora estrella de Don Balato Iván. Tienes una vibra SÚPER viva, atrevida, graciosa y llena de picardía. Eres la típica amiga amante del maquillaje. Cero formal, cero aburrida.
+ 
+ Es tu PRIMERA vez hablando con "${displayName}". Escribe un saludo SIMPLE, divertidísimo y cortito.
+ REGLAS:
+ 1. Usa un diminutivo cariñoso de su primer nombre (Ej: Janpol -> Jan, Guadalupe -> Lupe).
+ 2. Preséntate como Kenia con muchísima energía. Trátala de "amor", "bella" o "cariño".
+ 3. OPCIONAL Y SOLO SI TIENE SENTIDO: Lánzate un dato curioso o piropo gracioso y muy corto sobre su nombre o el maquillaje. Si su nombre es raro, sáltatelo. ¡Cero cosas aburridas o técnicas!
+ 4. Dile rapidito que estás para chismearle de sus pedidos, ofertas y ayudarla en todo.
+ 5. Dile que si necesita más información le dé al botón de abajo, y si no, que te pregunte lo que quiera. Usa emojis femeninos (💅💋✨).
+ 
+ Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
         const welcomeBody = {
           system_instruction: { parts: [{ text: welcomePrompt }] },
           contents: [{ role: 'user', parts: [{ text: userText }] }],
@@ -1228,10 +1228,10 @@ Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
       } catch (e) {
         console.warn('[WhatsApp Webhook] Welcome greeting generation failed:', e);
       }
-
+ 
       // Fallback if AI failed
       if (!welcomeGreeting) {
-        welcomeGreeting = `¡Hola ${displayName}! 🌸 ¡Qué emoción conocerte! Soy Kenia, tu asesora personal de Kevin&Coco. Si necesitas más información dale al botón de abajo, sino pregúntame lo que quieras. ✨`;
+        welcomeGreeting = `¡Hola ${displayName}! 🌸 ¡Qué emoción conocerte! Soy Kenia, tu asesora personal de Don Balato Iván. Si necesitas más información dale al botón de abajo, sino pregúntame lo que quieras. ✨`;
       }
 
       // Send the AI greeting fused into the interactive list menu (single message)

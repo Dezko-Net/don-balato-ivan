@@ -19,7 +19,7 @@ const AMBER_BG = '#fef9f4';
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string; icon: React.ReactNode }> = {
   pending:            { label: 'Pendiente',              bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
   pending_stock:      { label: 'Verificando stock',      bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
-  confirming_stock:   { label: 'Confirmando stock',      bg: '#fdf2f8', color: '#be185d', icon: <RefreshCw size={13} /> },
+  confirming_stock:   { label: 'Confirmando stock',      bg: '#eff6ff', color: '#1d4ed8', icon: <RefreshCw size={13} /> },
   stock_confirmed:    { label: 'Stock confirmado',       bg: '#e8f5e9', color: '#2e7d32', icon: <CheckCircle size={13} /> },
   partial_stock:      { label: 'Stock parcial',          bg: '#fff3e0', color: '#e65c00', icon: <RefreshCw size={13} /> },
   waiting_payment:    { label: 'Esperando pago',         bg: '#e3f2fd', color: '#1565c0', icon: <Clock size={13} /> },
@@ -27,7 +27,7 @@ const STATUS_MAP: Record<string, { label: string; bg: string; color: string; ico
   paid:               { label: 'Pago verificado',        bg: '#e8f5e9', color: '#1b5e20', icon: <CheckCircle size={13} /> },
   assembling:         { label: 'Embalando pedido',       bg: '#f3e5f5', color: '#7b1fa2', icon: <Box size={13} /> },
   packing:            { label: 'Embalando pedido',       bg: '#fff8e1', color: '#d97706', icon: <Box size={13} /> },
-  negotiation:        { label: 'Negociación',            bg: '#fdf2f8', color: '#be185d', icon: <MessageCircle size={13} /> },
+  negotiation:        { label: 'Negociación',            bg: '#eff6ff', color: '#1d4ed8', icon: <MessageCircle size={13} /> },
   preparing_shipping: { label: 'Etiqueta lista',         bg: '#efebe9', color: '#5d4037', icon: <FileText size={13} /> },
   ready_to_ship:      { label: 'Listo para enviar',      bg: '#e0f7fa', color: '#00838f', icon: <Package size={13} /> },
   shipped:            { label: 'Enviado',                bg: '#faf5ff', color: '#6b21a8', icon: <Truck size={13} /> },
@@ -248,9 +248,9 @@ export default function PedidosMayoristasPage() {
                         </div>
                       )}
                       {req.STATUS === 'negotiation' && (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#fdf2f8', borderRadius: 8, border: '1px solid #f9a8d4' }}>
-                          <MessageCircle size={14} color="#be185d" style={{ flexShrink: 0, marginTop: 1 }} />
-                          <p style={{ margin: 0, fontSize: 11, color: '#831843', lineHeight: 1.4 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#eff6ff', borderRadius: 8, border: '1px solid #dbeafe' }}>
+                          <MessageCircle size={14} color="#1d4ed8" style={{ flexShrink: 0, marginTop: 1 }} />
+                          <p style={{ margin: 0, fontSize: 11, color: '#1e3a8a', lineHeight: 1.4 }}>
                             Estamos revisando la disponibilidad de algunos productos. Te contactaremos pronto.
                           </p>
                         </div>

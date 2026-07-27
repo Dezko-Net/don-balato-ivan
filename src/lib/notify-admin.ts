@@ -3,7 +3,7 @@
 import { sendWhatsAppMessage, formatWhatsAppPhone, addToHistory } from '@/lib/whatsapp';
 import { getKeniaRuntimeSnapshot } from '@/lib/kenia-runtime';
 
-const ADMIN_FALLBACK_PHONE = '56936599658';
+const ADMIN_FALLBACK_PHONE = '56962293893';
 
 export async function getAdminAlertPhone(): Promise<string> {
   try {

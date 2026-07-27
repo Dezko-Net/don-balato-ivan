@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <!-- ═══ CACHE BUSTER — siempre fuerza carga fresca ═══ -->
+  <script>
+  (function(){
+    var BUILD='20260714b';
+    try {
+      var stored = localStorage.getItem('siteVer');
+      if (stored !== BUILD) {
+        localStorage.setItem('siteVer', BUILD);
+        try {
+          if ('caches' in window) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
+          if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.unregister(); }); });
+        } catch(e){}
+        if (stored !== null && !sessionStorage.getItem('__vReloaded')) {
+          sessionStorage.setItem('__vReloaded', '1');
+          location.reload();
+          return;
+        }
+      }
+      sessionStorage.removeItem('__vReloaded');
+    } catch(e){}
+  })();
+  </script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛍️</text></svg>">
+  <title>DON BALATO IVAN · Catálogo Mayorista</title>
+  <meta name="description" content="Catálogo mayorista Don Balato Ivan: productos de hogar, electrónica, ropa y más al por mayor con los mejores precios. Pide por WhatsApp.">
+  <meta name="theme-color" content="#5a96d8">
+  <!-- Open Graph / compartir en WhatsApp y redes -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="DON BALATO IVAN · Catálogo Mayorista">
+  <meta property="og:description" content="Productos al por mayor con los mejores precios. Pide por WhatsApp.">
+  <meta property="og:locale" content="es_CL">
+  <script>
+    // Silenciar el warning de Tailwind CDN que asusta en la consola
+    const origWarn = console.warn;
+    console.warn = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) return;
+      origWarn.apply(console, args);
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <script>
+    // Override "rose" → soft sky blue, "pink" → soft pastel yellow.
+    // This way app.js's existing rose-* classes map to our new theme without refactor.
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            rose: {
+              50: '#f5fbff', 100: '#e3f2ff', 200: '#cce4fb', 300: '#9fc7f0',
+              400: '#7eb1e6', 500: '#5a96d8', 600: '#3a78c2', 700: '#2a5d9e'
+            },
+            pink: {
+              50: '#fffdf2', 100: '#fff8d6', 200: '#fff1ad', 300: '#ffe680',
+              400: '#ffd75c', 500: '#fcc13a', 600: '#e0a624', 700: '#a87715'
+            }
+          },
+          fontFamily: {
+            sans: ['Quicksand', 'system-ui', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --blue-900:#1e3a5f; --blue-800:#234b78; --blue-700:#2a5d9e; --blue-600:#3a78c2;
+      --blue-500:#5a96d8; --blue-400:#7eb1e6; --blue-100:#cce4fb; --blue-50:#e3f2ff;
+      --gold-500:#fcc13a; --gold-400:#ffd75c; --gold-300:#ffe680;
+    }
+    * { -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Quicksand', system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse 70% 50% at 8% -5%, rgba(255,232,128,.55) 0%, transparent 55%),
+        radial-gradient(ellipse 75% 55% at 100% -8%, rgba(126,177,230,.55) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 60% at 50% 110%, rgba(204,228,251,.45) 0%, transparent 60%),
+        linear-gradient(180deg, #ffffff 0%, #f3f9ff 55%, #fffdf3 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      color: #234b78;
+      overflow-x: hidden;
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .card-shadow { box-shadow: 0 6px 22px -8px rgba(42, 93, 158, 0.18), 0 2px 6px rgba(42, 93, 158, 0.06); }
+    .card-shadow-hover { transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
+    .card-shadow-hover:hover { box-shadow: 0 18px 40px -12px rgba(42, 93, 158, 0.28); transform: translateY(-4px); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7eb1e6 0%, #5a96d8 45%, #2a5d9e 100%);
+      box-shadow: 0 8px 18px -6px rgba(42, 93, 158, 0.5), inset 0 1px 0 rgba(255,255,255,.3);
+    }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-accent {
+      background: linear-gradient(135deg, #ffe680 0%, #fcc13a 100%);
+      color: #5a3d0a;
+      box-shadow: 0 8px 18px -6px rgba(252, 193, 58, 0.55), inset 0 1px 0 rgba(255,255,255,.4);
+    }
+
+    @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    .pop { animation: pop 0.3s ease; }
+    @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+    .bounce { animation: bounce 0.3s ease; }
+    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes spinSlow { to { transform: rotate(360deg); } }
+
+    /* Fly to cart */
+    .fly-img {
+      position: fixed; z-index: 90; border-radius: 14px; object-fit: cover;
+      box-shadow: 0 10px 28px -6px rgba(42,93,158,.5); pointer-events: none;
+      transition: left .7s cubic-bezier(.5,-0.4,.55,1.1), top .7s cubic-bezier(.5,-0.4,.55,1.1),
+                  width .7s ease, height .7s ease, opacity .7s ease, transform .7s ease;
+    }
+    @keyframes cartThump { 0%,100% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); } }
+    .cart-thump { animation: cartThump .45s ease; }
+
+    /* Toolbar select */
+    .tb-select {
+      -webkit-appearance:none; appearance:none; background:rgba(255,255,255,.9);
+      border:1px solid rgba(204,228,251,.9); color:#2a5d9e; font-weight:700; font-size:13px;
+      padding:8px 30px 8px 13px; border-radius:14px; box-shadow:0 3px 10px -4px rgba(42,93,158,.2);
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%232a5d9e' stroke-width='2.5' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 9px center; background-size:15px; cursor:pointer;
+    }
+    .qty-step { width:40px; height:40px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; background:#eaf3fc; color:#2a5d9e; transition:transform .12s ease; }
+    .qty-step:active { transform:scale(.88); }
+
+    /* Filter / sort pills */
+    .filter-bar {
+      position: sticky; top: var(--hdr-h, 0px); z-index: 20; margin: 0 -16px 16px; padding: 10px 16px;
+      display: flex; align-items: center; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; -ms-overflow-style: none;
+      background: linear-gradient(180deg, rgba(247,251,255,.96) 70%, rgba(247,251,255,0));
+      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+      padding: 9px 15px; border-radius: 99px; font-weight: 700; font-size: 13px;
+      background: rgba(255,255,255,.95); color: #2a5d9e; border: 1px solid rgba(204,228,251,.9);
+      box-shadow: 0 3px 10px -4px rgba(42,93,158,.2); transition: transform .12s ease, background .2s ease; cursor: pointer;
+    }
+    .pill:active { transform: scale(.95); }
+    .pill.on { background: linear-gradient(135deg,#5a96d8,#2a5d9e); color:#fff; border-color: transparent; box-shadow:0 6px 14px -4px rgba(42,93,158,.45); }
+    .pill .pill-sub { color: #7eb1e6; font-weight: 700; }
+    .pill.on .pill-sub { color: rgba(255,255,255,.75); }
+
+    /* Image upload boxes */
+    .img-upload-box {
+      position: relative; aspect-ratio: 1; border-radius: 1rem; overflow: hidden;
+      border: 2px dashed rgba(42,93,158,.25); background: rgba(237,246,255,.5);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .img-upload-box:hover { border-color: rgba(42,93,158,.5); background: rgba(237,246,255,.8); }
+    .img-upload-box.has-img { border-style: solid; border-color: rgba(42,93,158,.15); }
+    .img-upload-box img { width: 100%; height: 100%; object-fit: cover; }
+    .img-upload-box .upload-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: rgba(42,93,158,.45); font-size: 11px; font-weight: 700; text-align: center; padding: 8px;
+    }
+    .img-upload-box .upload-placeholder svg { width: 28px; height: 28px; }
+    .img-upload-box .remove-btn {
+      position: absolute; top: 6px; right: 6px; width: 26px; height: 26px;
+      border-radius: 50%; background: rgba(0,0,0,.55); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+      cursor: pointer; z-index: 5; border: none;
+    }
+    .img-upload-box .img-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,.5));
+      color: #fff; font-size: 10px; font-weight: 700; text-align: center; padding: 4px;
+    }
+
+    /* Product modal gallery */
+    .modal-gallery { position: relative; }
+    .modal-gallery .main-img { width: 128px; height: 128px; border-radius: 1rem; overflow: hidden; flex-shrink: 0; background: #eaf3fc; }
+    .modal-gallery .main-img img { width: 100%; height: 100%; object-fit: cover; }
+    .modal-gallery .thumbs { display: flex; gap: 6px; margin-top: 8px; }
+    .modal-gallery .thumb {
+      width: 36px; height: 36px; border-radius: 8px; overflow: hidden; cursor: pointer;
+      border: 2px solid transparent; transition: border-color .2s ease;
+    }
+    .modal-gallery .thumb.active { border-color: #2a5d9e; }
+    .modal-gallery .thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Bottom sheet (sort) */
+    #sortSheet .sheet-panel { animation: sheetUp .32s cubic-bezier(.2,.9,.25,1); }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .sort-opt {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 15px 16px; border-radius: 16px; font-weight: 700; font-size: 15px;
+      color: #2a5d9e; background: transparent; transition: background .15s ease; cursor: pointer;
+    }
+    .sort-opt:active { background: #eaf3fc; }
+    .sort-opt.sel { background: #eaf3fc; color: #1e3a5f; }
+
+    /* Dual range price slider */
+    .range-wrap { position: relative; height: 38px; margin: 6px 12px 0; }
+    .range-track { position: absolute; top: 17px; left: 0; right: 0; height: 5px; border-radius: 99px; background: #dbeafe; }
+    .range-fill { position: absolute; top: 17px; height: 5px; border-radius: 99px; background: linear-gradient(90deg,#5a96d8,#2a5d9e); }
+    .range-in { position: absolute; top: 0; left: 0; width: 100%; height: 38px; margin: 0; background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none; }
+    .range-in::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 4px solid #2a5d9e; box-shadow: 0 2px 8px rgba(42,93,158,.45); cursor: grab; margin-top: 6px; }
+    .range-in::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.12); }
+    .range-in::-moz-range-thumb { pointer-events: auto; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 4px solid #2a5d9e; box-shadow: 0 2px 8px rgba(42,93,158,.45); cursor: grab; }
+    .price-preset { padding: 8px 13px; border-radius: 99px; font-weight: 700; font-size: 12.5px; background: #eaf3fc; color: #2a5d9e; white-space: nowrap; cursor: pointer; transition: transform .12s ease; }
+    .price-preset:active { transform: scale(.94); }
+    .price-preset.sel { background: linear-gradient(135deg,#5a96d8,#2a5d9e); color: #fff; }
+
+    /* Pull to refresh */
+    #ptr {
+      position: fixed; top: 0; left: 50%; margin-left: -22px; z-index: 30;
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; box-shadow: 0 6px 18px -4px rgba(42,93,158,.4);
+      transform: translateY(-60px); opacity: 0; pointer-events: none;
+      transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
+    }
+    #ptr svg { width: 22px; height: 22px; color: #2a5d9e; transition: transform .2s ease; }
+    #ptr.ready svg { transform: rotate(180deg); }
+    #ptr.spinning svg { animation: spinSlow .7s linear infinite; }
+
+    /* Sheet drag */
+    .sheet-grab { touch-action: none; }
+
+    .img-placeholder {
+      background: linear-gradient(135deg, #e3f2ff 0%, #fff8d6 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #5a96d8; font-weight: 700; letter-spacing: .05em;
+    }
+
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .stagger > * { animation: fadeIn .45s cubic-bezier(.2,.8,.2,1) both; }
+    .stagger > *:nth-child(1){animation-delay:.02s}.stagger > *:nth-child(2){animation-delay:.06s}
+    .stagger > *:nth-child(3){animation-delay:.10s}.stagger > *:nth-child(4){animation-delay:.14s}
+    .stagger > *:nth-child(5){animation-delay:.18s}.stagger > *:nth-child(6){animation-delay:.22s}
+    .stagger > *:nth-child(7){animation-delay:.26s}.stagger > *:nth-child(8){animation-delay:.30s}
+
+    /* Loading skeleton shimmer */
+    .skeleton {
+      background: linear-gradient(100deg, #eaf3fc 30%, #f7fbff 50%, #eaf3fc 70%);
+      background-size: 200% 100%;
+      animation: shimmer 1.3s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Lightbox */
+    #lightbox { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(10,20,35,0.94); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); justify-content: center; align-items: center; }
+    #lightbox.active { display: flex; }
+    #lightbox img { max-width: 95vw; max-height: 95vh; object-fit: contain; border-radius: 12px; }
+    #lightbox-close { position: absolute; top: 16px; right: 16px; color: white; background: rgba(255,255,255,0.18); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    /* === Section title with accent bar === */
+    .section-title { display:flex; align-items:center; gap:9px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:1.05rem; color:#234b78; }
+    .section-title::before { content:''; width:5px; height:20px; border-radius:99px; background:linear-gradient(180deg,#ffd75c,#fcc13a); box-shadow:0 2px 6px rgba(252,193,58,.5); }
+
+    /* === Product card === */
+    .product-card {
+      background: rgba(255,255,255,.92);
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease;
+      border: 1px solid rgba(204,228,251,.6);
+      position: relative;
+    }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 42px -14px rgba(42, 93, 158, 0.32); }
+    .product-card .pc-img { transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+    .product-card:hover .pc-img { transform: scale(1.07); }
+    .price-chip { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; color:#1e3a5f; }
+    /* Floating add button */
+    .fab-add {
+      background: linear-gradient(135deg, #ffe680 0%, #fcc13a 100%);
+      color:#5a3d0a;
+      box-shadow: 0 6px 14px -3px rgba(252,193,58,.6), inset 0 1px 0 rgba(255,255,255,.5);
+      transition: transform .15s ease;
+    }
+    .fab-add:active { transform: scale(.85) rotate(90deg); }
+    .deal-badge {
+      background: linear-gradient(135deg,#ff8a8a,#ef5a5a);
+      color:#fff; box-shadow:0 4px 10px -2px rgba(239,90,90,.5);
+    }
+
+    /* Brand title styling */
+    .brand-wrap { display: flex; align-items: center; gap: 10px; }
+    .brand-mark {
+      width: 40px; height: 40px; border-radius: 13px;
+      background: linear-gradient(135deg, #ffe680 0%, #fcc13a 100%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(252, 193, 58, 0.55), inset 0 1px 0 rgba(255,255,255,.5);
+      color: #5a3d0a; font-weight: 800; font-size: 18px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .brand-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; letter-spacing: 0.01em; color: #ffffff; line-height: 1;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
+    .brand-title .accent { color: #ffe680; }
+    .brand-sub { font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.9); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+
+    /* === Category tiles (gradient) === */
+    .cat-card {
+      position: relative; border-radius: 22px; padding: 16px 14px 14px; overflow: hidden;
+      transition: transform .25s ease, box-shadow .25s ease;
+      border: 1px solid rgba(255,255,255,.6);
+    }
+    .cat-card::after { content:''; position:absolute; right:-24px; top:-24px; width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,.35); }
+    .cat-card:active { transform: scale(.96); }
+    .cat-g0 { background: linear-gradient(135deg,#eaf4ff 0%,#cfe5fb 100%); }
+    .cat-g1 { background: linear-gradient(135deg,#fff6da 0%,#ffe9a8 100%); }
+    .cat-g2 { background: linear-gradient(135deg,#e9f0ff 0%,#d6e0fb 100%); }
+    .cat-g3 { background: linear-gradient(135deg,#fdeef0 0%,#fbd9de 100%); }
+    .cat-icon-wrap {
+      width: 56px; height: 56px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px; position: relative;
+      background: rgba(255,255,255,.75);
+      box-shadow: 0 6px 14px -6px rgba(42,93,158,.35), inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    .cat-icon-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; }
+    .cat-icon-wrap img[src*="flaticon"] { padding: 11px; object-fit: contain; }
+
+    /* horizontal category chips */
+    .chip-row { display:flex; gap:9px; overflow-x:auto; padding:2px 2px 4px; }
+    .chip {
+      flex:0 0 auto; display:inline-flex; align-items:center; gap:7px;
+      padding:8px 14px; border-radius:99px; font-weight:700; font-size:13px;
+      background:rgba(255,255,255,.9); color:#2a5d9e; border:1px solid rgba(204,228,251,.8);
+      box-shadow:0 3px 10px -4px rgba(42,93,158,.2); transition:all .2s ease; cursor:pointer;
+    }
+    .chip:active { transform:scale(.94); }
+    .chip.active { background:linear-gradient(135deg,#5a96d8,#2a5d9e); color:#fff; border-color:transparent; }
+
+    /* Header glass */
+    header.glass {
+      background: linear-gradient(180deg, rgba(90, 150, 216, 0.97), rgba(58, 120, 194, 0.96));
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: 0 6px 22px -6px rgba(30, 58, 95, 0.35);
+    }
+
+    /* === Bottom nav === */
+    .nav-bottom {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: 14px; z-index: 45; width: calc(100% - 28px); max-width: 30rem;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 9px 8px; border-radius: 24px;
+      background: rgba(255,255,255,.82);
+      -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
+      box-shadow: 0 12px 34px -10px rgba(30,58,95,.4), inset 0 1px 0 rgba(255,255,255,.7);
+      border: 1px solid rgba(255,255,255,.6);
+    }
+    .nav-item { position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 14px; border-radius:16px; color:#7ea3c8; font-size:10px; font-weight:700; transition:color .2s ease; }
+    .nav-item svg { width:23px; height:23px; }
+    .nav-item.active { color:#2a5d9e; }
+    .nav-item.active::before { content:''; position:absolute; top:-9px; width:26px; height:4px; border-radius:99px; background:linear-gradient(90deg,#ffd75c,#fcc13a); }
+    .nav-badge { position:absolute; top:1px; right:8px; min-width:17px; height:17px; padding:0 4px; border-radius:99px; background:#ef5a5a; color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(239,90,90,.5); }
+  </style>
+</head>
+<body class="text-rose-700">
+
+  <!-- Header sticky -->
+  <header class="glass sticky top-0 z-40">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+      <button id="backBtn" class="hidden p-2 -ml-1 rounded-full hover:bg-white/20 active:scale-95">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <a href="#/" class="brand-wrap">
+        <span class="brand-mark">DB</span>
+        <span class="flex flex-col">
+          <span class="brand-title text-base sm:text-lg">DON BALATO <span class="accent">IVAN</span></span>
+          <span class="brand-sub">Catálogo Mayorista</span>
+        </span>
+      </a>
+      <div class="ml-auto flex items-center gap-1">
+        <span id="modeTag" class="hidden text-[10px] px-2 py-1 rounded-full bg-yellow-300/95 text-blue-900 font-bold tracking-wide">ADMIN</span>
+        <button id="cartBtn" class="relative p-2 rounded-full hover:bg-white/20 active:scale-95">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span id="cartCount" class="hidden absolute -top-1 -right-1 bg-yellow-300 text-blue-900 text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold ring-2 ring-white">0</span>
+        </button>
+      </div>
+    </div>
+    <!-- Search bar -->
+    <div class="max-w-3xl mx-auto px-4 pb-3">
+      <div class="relative">
+        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="searchInput" type="search" placeholder="Buscar producto..." class="w-full pl-11 pr-4 py-2.5 bg-white/95 rounded-2xl border-0 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-blue-800 placeholder-blue-300 text-sm shadow-sm">
+      </div>
+      <div class="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-bold text-blue-900 bg-yellow-300/95 rounded-full py-1 px-3 shadow-sm">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L9.91 8.26 3.27 8.27l5.36 4.59L6.55 19 12 14.77 17.45 19l-2.08-6.14 5.36-4.59-6.64-.01z"/></svg>
+        <span id="minPurchaseDisplay">Compra mínima · $50.000</span>
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L9.91 8.26 3.27 8.27l5.36 4.59L6.55 19 12 14.77 17.45 19l-2.08-6.14 5.36-4.59-6.64-.01z"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- Pull-to-refresh indicator -->
+  <div id="ptr">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+  </div>
+
+  <!-- Main content -->
+  <main id="app" class="max-w-3xl mx-auto px-4 py-5 pb-32"></main>
+
+  <!-- Bottom navigation (Desactivado para vista limpia) -->
+  <nav id="bottomNav" class="nav-bottom" style="display: none !important;">
+    <a href="#/" data-nav="home" class="nav-item">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V10"/></svg>
+      <span>Inicio</span>
+    </a>
+    <a href="#/all" data-nav="all" class="nav-item">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg>
+      <span>Catálogo</span>
+    </a>
+    <button data-nav="search" onclick="document.getElementById('searchInput').focus(); window.scrollTo({top:0,behavior:'smooth'});" class="nav-item">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <span>Buscar</span>
+    </button>
+    <button data-nav="cart" onclick="openCart()" class="nav-item">
+      <span id="navCartBadge" class="nav-badge hidden">0</span>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      <span>Carrito</span>
+    </button>
+  </nav>
+
+  <!-- Cart drawer -->
+  <div id="cartDrawer" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40" onclick="closeCart()"></div>
+    <div class="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b border-blue-100 bg-gradient-to-r from-blue-50 to-yellow-50">
+        <h2 class="font-bold text-lg text-blue-700 font-display">Tu pedido</h2>
+        <button onclick="closeCart()" class="p-2 rounded-full hover:bg-blue-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div id="cartItems" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+      <div class="border-t border-blue-100 p-4 bg-gradient-to-b from-blue-50 to-yellow-50">
+        <div class="flex justify-between font-bold text-lg mb-3 text-blue-800">
+          <span>Total:</span>
+          <span id="cartTotal">$0</span>
+        </div>
+        <button id="whatsappBtn" class="w-full btn-primary text-white font-bold py-3 rounded-2xl active:scale-95 flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+          Enviar por WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-blue-700 text-white px-5 py-3 rounded-full shadow-lg z-50 hidden font-semibold"></div>
+
+  <!-- Lightbox -->
+  <div id="lightbox">
+    <div id="lightbox-close">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </div>
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <!-- Product detail modal -->
+  <div id="productModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closeProductModal()"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto">
+      <div class="p-5">
+        <div class="w-12 h-1 bg-blue-200 rounded-full mx-auto mb-4"></div>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sort bottom sheet -->
+  <div id="sortSheet" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closeSortSheet()"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-5 pb-8 sheet-panel">
+      <div class="w-12 h-1.5 bg-blue-200 rounded-full mx-auto mb-4"></div>
+      <h3 class="font-display font-extrabold text-lg text-blue-800 mb-3 px-1">Ordenar por</h3>
+      <div id="sortOptions"></div>
+    </div>
+  </div>
+
+  <!-- Price range bottom sheet -->
+  <div id="priceSheet" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closePriceSheet()"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-5 pb-8 sheet-panel">
+      <div class="w-12 h-1.5 bg-blue-200 rounded-full mx-auto mb-4"></div>
+      <div class="flex items-center justify-between mb-1 px-1">
+        <h3 class="font-display font-extrabold text-lg text-blue-800">Rango de precio</h3>
+        <button onclick="clearPrice()" class="text-sm font-bold text-blue-400 active:scale-95">Limpiar</button>
+      </div>
+      <div class="flex items-center justify-between text-blue-700 font-extrabold text-lg px-1 mb-1">
+        <span id="priceMinLabel">$0</span>
+        <span class="text-blue-300 font-bold">—</span>
+        <span id="priceMaxLabel">$0</span>
+      </div>
+      <div class="range-wrap">
+        <div class="range-track"></div>
+        <div id="rangeFill" class="range-fill"></div>
+        <input id="rangeMin" type="range" class="range-in" oninput="onPriceInput()">
+        <input id="rangeMax" type="range" class="range-in" oninput="onPriceInput()">
+      </div>
+      <div id="pricePresets" class="flex gap-2 overflow-x-auto scrollbar-hide mt-4 mb-5 -mx-1 px-1"></div>
+      <button onclick="applyPrice()" class="w-full btn-primary text-white font-bold py-3.5 rounded-2xl active:scale-95">Aplicar</button>
+    </div>
+  </div>
+
+  <!-- WhatsApp contact selector modal -->
+  <div id="waContactModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closeWaContactModal()"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6">
+      <div class="w-12 h-1 bg-blue-200 rounded-full mx-auto mb-4"></div>
+      <h3 class="font-bold text-lg text-blue-800 text-center mb-1">¿Con quién quieres hacer tu pedido?</h3>
+      <p class="text-sm text-blue-400 text-center mb-5">Selecciona una contacto para enviar por WhatsApp</p>
+      <div class="grid grid-cols-2 gap-3" id="waContactList">
+        <!-- Dynamic content injected by app.js -->
+      </div>
+      <button onclick="closeWaContactModal()" class="mt-4 w-full py-3 rounded-2xl text-blue-400 font-semibold text-sm hover:bg-blue-50 transition">Cancelar</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  <script>
+    // Cache-buster agresivo: version + timestamp único cada carga
+    const _v = '20260714b';
+    const s = document.createElement('script');
+    s.src = 'app.js?v=' + _v + '_' + Date.now();
+    s.onerror = function(){ console.error('Error cargando app.js'); };
+    document.body.appendChild(s);
+  </script>
+</body>
+</html>

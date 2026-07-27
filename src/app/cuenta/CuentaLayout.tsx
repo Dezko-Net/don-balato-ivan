@@ -12,7 +12,7 @@ import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from 
 import { CuentaBgProvider, useCuentaBgUrl } from './CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 const SIDEBAR_NAV = [
   { icon: User,         label: 'Mi cuenta',      href: '/cuenta'               },
@@ -69,7 +69,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
   if (!isLoggedIn || !user) {
     return (
       <div style={{ minHeight: '100vh', fontFamily: FF }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 12px 60px', boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 12px 80px', boxSizing: 'border-box' }}>
           {children}
         </div>
       </div>
@@ -88,9 +88,9 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
     <div style={{ minHeight: '100vh', position: 'relative', fontFamily: FF }}>
       {/* Soft premium background — tinted gradient + pink/lavender glows */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, #fdf4f9 0%, #faf7fe 38%, #f7f9ff 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, #eff6ff 0%, #faf7fe 38%, #f7f9ff 100%)' }} />
         {/* Radial glows */}
-        <div style={{ position: 'absolute', top: '-12%', left: '-8%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(227,150,191,0.22) 0%, transparent 68%)', filter: 'blur(8px)' }} />
+        <div style={{ position: 'absolute', top: '-12%', left: '-8%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.22) 0%, transparent 68%)', filter: 'blur(8px)' }} />
         <div style={{ position: 'absolute', top: '-6%', right: '-10%', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.18) 0%, transparent 68%)', filter: 'blur(8px)' }} />
         <div style={{ position: 'absolute', bottom: '-14%', left: '34%', width: 560, height: 560, borderRadius: '50%', background: 'radial-gradient(circle, rgba(129,140,248,0.10) 0%, transparent 70%)', filter: 'blur(10px)' }} />
         {/* Faint dot grid */}
@@ -98,7 +98,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
-        body { background-color: #fdf4f9 !important; }
+        body { background-color: #eff6ff !important; }
         .cl-sidebar { display: none }
         @media (min-width: 900px) {
           .cl-sidebar { display: flex !important }
@@ -112,7 +112,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
           font-family: ${FF}; transition: all 0.18s;
         }
         .sb-link:hover { background: #f9fafb; color: #1a1a1a; }
-        .sb-link.active { background: #fdf2f8; color: ${PINK}; font-weight: 700; }
+        .sb-link.active { background: #eff6ff; color: ${PINK}; font-weight: 700; }
         .sb-link-content { display: flex; align-items: center; gap: 14px; }
         @keyframes pageSlideIn {
           0% { opacity: 0; transform: translateX(24px) scale(0.98); filter: blur(4px); }
@@ -120,6 +120,25 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
           100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
         }
         .cl-content-fade { animation: pageSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+        .account-mobile-dock {
+          display: flex !important; flex-direction: row !important; position: fixed !important;
+          z-index: 1000 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+          width: 100vw !important; max-width: 100vw !important; height: 64px !important;
+          align-items: stretch !important; justify-content: space-around !important;
+          padding: 7px 6px max(7px, env(safe-area-inset-bottom)) !important;
+          margin: 0 !important; background: #fff !important;
+          border-top: 1px solid rgba(0,0,0,.1) !important;
+          box-shadow: 0 -4px 18px rgba(0,0,0,.08) !important; box-sizing: border-box !important;
+        }
+        .account-mobile-dock__item {
+          display: flex !important; flex: 1 1 0 !important; flex-direction: column !important;
+          align-items: center !important; justify-content: center !important; min-width: 0 !important;
+          gap: 3px !important; color: #4b5563 !important; text-decoration: none !important;
+          font-size: 10px !important; font-weight: 600 !important; line-height: 1.1 !important;
+        }
+        .account-mobile-dock__item svg { display: block !important; width: 19px !important; height: 19px !important; }
+        .account-mobile-dock__item--active { color: ${PINK} !important; }
+        @media (min-width: 900px) { .account-mobile-dock { display: none !important; } }
       `}</style>
 
       {/* ── Main content (flex layout on desktop) ── */}
@@ -130,7 +149,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ background: '#fff', borderRadius: 18, padding: 20, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.02), 0 1px 2px 0 rgba(0,0,0,0.03), 0 2px 8px 0 rgba(0,0,0,0.04), 0 4px 16px 0 rgba(0,0,0,0.02)', position: 'sticky', top: 92 }}>
               {/* Profile mini */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 8px 20px', borderBottom: '1px solid #f3f4f6', marginBottom: 10 }}>
-                <div style={{ width: 52, height: 52, borderRadius: '50%', background: avatarUrl ? 'transparent' : '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, color: PINK, fontWeight: 700, fontSize: 17 }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: avatarUrl ? 'transparent' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, color: PINK, fontWeight: 700, fontSize: 17 }}>
                   {avatarUrl ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
                 </div>
                 <div style={{ minWidth: 0 }}>
@@ -155,7 +174,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
                             right: '-8px', 
                             width: 18, 
                             height: 18, 
-                            background: '#e396bf', 
+                            background: '#3b82f6', 
                             color: '#fff', 
                             borderRadius: '50%', 
                             fontSize: 11, 

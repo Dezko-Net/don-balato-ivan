@@ -55,11 +55,15 @@ export function getProductImageUrl(product: Partial<Record<(typeof IMAGE_KEYS)[n
   return '';
 }
 
-export function normalizeProductImages<T extends { IMAGEURL?: string; IMAGEURL2?: string; IMAGEURL3?: string; IMAGEURL4?: string; IMAGEURL5?: string }>(product: T): T {
+export function normalizeProductImages<T extends Record<string, any>>(product: T): T {
   const out = { ...product };
   for (const key of IMAGE_KEYS) {
-    const val = out[key];
-    if (val) (out as Record<string, string>)[key] = resolveStorageImageUrl(val);
+    try {
+      const val = out[key];
+      if (val) (out as Record<string, string>)[key] = resolveStorageImageUrl(val);
+    } catch {
+      // Field may not exist in Appwrite schema yet — skip silently
+    }
   }
   return out;
 }

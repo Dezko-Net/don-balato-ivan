@@ -4,7 +4,7 @@ import { getCachedAllProducts } from '@/lib/catalog-cache';
 
 const ProductosClient = dynamic(() => import('./ProductosClient'));
 
-const BASE = 'https://www.kevincocochile.cl';
+const BASE = 'https://www.donbalatoivan.cl';
 
 export const metadata: Metadata = {
   title: 'Catálogo de Productos | Cosmética, Maquillaje y Skincare',
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     'Explora nuestro catálogo completo de cosmética, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen. Envíos a todo Chile.',
   alternates: { canonical: `${BASE}/productos` },
   openGraph: {
-    title: 'Catálogo de Productos | Kevin & Coco',
+    title: 'Catálogo de Productos | Don Balato Iván',
     description:
       'Explora nuestro catálogo completo de cosmética, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen.',
     url: `${BASE}/productos`,

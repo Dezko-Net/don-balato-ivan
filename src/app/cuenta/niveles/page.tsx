@@ -8,7 +8,7 @@ import { formatPrice } from '@/lib/appwrite';
 import { motion, Variants } from 'framer-motion';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 const LEVELS = [
   { id: 'bronze', name: 'Bronce', icon: Award, color: '#cd7f32', bgColor: 'linear-gradient(135deg, #eaddcf, #d4a373)', requiredOrders: 0, pointsMultiplier: 1 },

@@ -55,6 +55,7 @@ export interface Product {
   CURRENTPRICE?: number;
   COST?: number;
   WHOLESALEPRICE?: number;
+  CATALOGPRICE?: number;
   WHOLESALEMINQUANTITY?: number;
   INTERMEDIATEPRICE?: number;
   BOXPRICE?: number;

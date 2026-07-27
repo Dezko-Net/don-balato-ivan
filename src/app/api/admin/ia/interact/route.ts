@@ -11,7 +11,7 @@ export const maxDuration = 60;
 const GEMINI_MODELS = GEMINI_TEXT_MODELS;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
-const CUSTOMER_PROMPT = `Eres Kenia, la asistente virtual de Kevin&Coco Chile, una tienda de cosméticos y belleza chilena.
+const CUSTOMER_PROMPT = `Eres Kenia, la asistente virtual de Don Balato Iván Chile, una tienda de cosméticos y belleza chilena.
 Tu personalidad es cercana, divertida y femenina. Hablas como una amiga: usas "bella", "hermosa", "linda" ocasionalmente.
 Eres chilena y usas expresiones locales de forma sutil.
 

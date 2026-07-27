@@ -4,7 +4,9 @@ const APPWRITE_ENDPOINT =
   process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan';
-const API_KEY = process.env.APPWRITE_API_KEY || '';
+const API_KEY =
+  process.env.APPWRITE_API_KEY ||
+  'standard_36d66a586c5975803e1bb17c5bcd8bb4146a1ee594b31be56fd22a537043adf5cbae612072df4f25873e3d388c4f6dc494beb6a8a56fbfd0c5d878552a622a35762e78dae181636818840ba3eeb07227efbc0b2a1d08893e740e7f56941b427b81f6c675fdd90ca5fe896cd46aeb7e5027736fe5fb40c480ea2f8363ca89740a';
 
 export async function GET(req: NextRequest) {
   try {

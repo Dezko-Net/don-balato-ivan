@@ -130,7 +130,7 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
         .discount-badge { display:inline-block; background:#00a884; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; margin-left:8px; }
       </style></head><body>
         <div class="header">
-          <div class="logo">Kevin<span>&Coco</span></div>
+          <div class="logo">Don Balato <span>Iván</span></div>
           <div class="info"><b>Cotización N° ${resolvedId.slice(-6).toUpperCase()}</b><br/>${dateStr}<br/>${clientName ? 'Cliente: <b>' + clientName + '</b><br/>' : ''}Válida por 7 días</div>
         </div>
         <h1>Cotización al Mayor <span class="discount-badge">${discountPct}% OFF</span></h1>
@@ -143,7 +143,7 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
           <div class="totals-row"><span>Descuento (${discountPct}%):</span><span style="color:#e44;">-$${(totalOriginal - totalDiscounted).toLocaleString('es-CL')}</span></div>
           <div class="totals-row grand"><span>Total:</span><span>$${totalDiscounted.toLocaleString('es-CL')}</span></div>
         </div>
-        <div class="footer">Kevin&Coco · Tu tienda de belleza<br/>Esta cotización no reserva stock. Los precios están sujetos a confirmación de disponibilidad.</div>
+        <div class="footer">Don Balato Iván · Tu tienda de belleza<br/>Esta cotización no reserva stock. Los precios están sujetos a confirmación de disponibilidad.</div>
         <script>window.onload=function(){window.print();}</script>
       </body></html>
     `);
@@ -162,7 +162,7 @@ export default function CotizacionForm({ params }: { params: Promise<{ id: strin
       <style>{`@media(min-width:768px){.cot-customer-wrap{padding:20px 16px;padding-bottom:20px}}`}</style>
       <div className="cot-customer-wrap" style={{ maxWidth: 1000, margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#00a884', marginBottom: 4 }}>Kevin<span style={{ color: '#0f172a' }}>&Coco</span></div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: '#00a884', marginBottom: 4 }}>Don Balato <span style={{ color: '#0f172a' }}>Iván</span></div>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Cotización al Mayor</h1>
           <p style={{ fontSize: 13, color: '#64748b' }}>{clientName ? `Hola ${clientName}! ` : ''}Elige un producto de cada categoría</p>
           <div style={{ display: 'inline-block', background: '#00a884', color: '#fff', fontSize: 12, fontWeight: 700, padding: '4px 14px', borderRadius: 20, marginTop: 8 }}>

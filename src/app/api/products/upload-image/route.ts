@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
 
     // Upload to Appwrite Storage
     const arrayBuffer = await file.arrayBuffer();
-    const uploaded = await serverUploadFile('6a15f9a5001070a3c408', arrayBuffer, file.name || 'upload.jpg');
-    const imageUrl = cleanStorageUrl(getServerFileUrl('6a15f9a5001070a3c408', uploaded.$id));
+    const uploaded = await serverUploadFile('media', arrayBuffer, file.name || 'upload.jpg');
+    const imageUrl = cleanStorageUrl(getServerFileUrl('media', uploaded.$id));
 
     // If productName or productId provided, update the product
     if (productName || productId) {

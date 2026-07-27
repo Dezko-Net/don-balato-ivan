@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Query, ID } from 'appwrite';
 import { useCuentaBg } from '../CuentaBgContext';
 
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 const FF = '"DM Sans",system-ui,sans-serif';
 const TICKETS_COLLECTION = 'support_tickets';
 
@@ -94,7 +94,7 @@ export default function TicketsPage() {
           background: #fff; border-radius: 14px; padding: 16px; border: 1px solid #f0f0f0;
           transition: all 0.2s;
         }
-        .ticket-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); border-color: rgba(227,150,191,0.2); }
+        .ticket-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); border-color: rgba(59,130,246,0.2); }
         .ticket-form {
           background: #fff; border-radius: 16px; padding: 24px; border: 1px solid #f0f0f0;
           margin-bottom: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);
@@ -103,7 +103,7 @@ export default function TicketsPage() {
           padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 12px;
           cursor: pointer; transition: all 0.2s; font-family: ${FF};
         }
-        .cat-btn.active { border: 1.5px solid ${PINK}; background: #fdf2f8; color: ${PINK}; }
+        .cat-btn.active { border: 1.5px solid ${PINK}; background: #eff6ff; color: ${PINK}; }
         .cat-btn.inactive { border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; }
       `}</style>
 
@@ -149,7 +149,7 @@ export default function TicketsPage() {
           </div>
 
           <button type="submit" disabled={submitting}
-            style={{ width: '100%', padding: '13px 0', background: submitting ? '#f5a8cf' : PINK, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: FF, boxShadow: '0 4px 14px rgba(227,150,191,0.3)', transition: 'background 0.2s' }}>
+            style={{ width: '100%', padding: '13px 0', background: submitting ? '#60a5fa' : PINK, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: FF, boxShadow: '0 4px 14px rgba(59,130,246,0.3)', transition: 'background 0.2s' }}>
             {submitting ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={16} />}
             {submitting ? 'Enviando...' : 'Enviar ticket'}
           </button>
@@ -162,14 +162,14 @@ export default function TicketsPage() {
         </div>
       ) : tickets.length === 0 && !showForm ? (
         <div style={{ textAlign: 'center', paddingTop: 60, paddingBottom: 40 }}>
-          <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'linear-gradient(135deg,#fdf2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', boxShadow: '0 8px 24px rgba(227,150,191,0.15)' }}>
+          <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', boxShadow: '0 8px 24px rgba(59,130,246,0.15)' }}>
             <HelpCircle size={64} color={PINK} style={{ opacity: 0.7 }} />
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', margin: '0 0 12px', letterSpacing: '-0.01em' }}>Sin tickets de soporte</h2>
           <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>
             ¿Tenés algún problema o consulta? Creá un ticket y nuestro equipo te ayudará lo antes posible.
           </p>
-          <button onClick={() => setShowForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 36px', background: PINK, color: '#fff', borderRadius: 12, border: 'none', fontWeight: 700, fontSize: 16, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.35)', fontFamily: FF }}>
+          <button onClick={() => setShowForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 36px', background: PINK, color: '#fff', borderRadius: 12, border: 'none', fontWeight: 700, fontSize: 16, cursor: 'pointer', boxShadow: '0 6px 20px rgba(59,130,246,0.35)', fontFamily: FF }}>
             <Plus size={18} /> Crear ticket
           </button>
         </div>
@@ -186,7 +186,7 @@ export default function TicketsPage() {
                   </div>
                   <span style={{ fontSize: 12, color: '#9ca3af', flexShrink: 0, fontWeight: 500 }}>{timeAgo(t.$createdAt)}</span>
                 </div>
-                {t.category && <span style={{ display: 'inline-block', fontSize: 11, color: PINK, background: '#fdf2f8', borderRadius: 20, padding: '3px 10px', marginBottom: 8, fontWeight: 600 }}>{t.category}</span>}
+                {t.category && <span style={{ display: 'inline-block', fontSize: 11, color: PINK, background: '#eff6ff', borderRadius: 20, padding: '3px 10px', marginBottom: 8, fontWeight: 600 }}>{t.category}</span>}
                 <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.message}</p>
                 {t.adminNotes && (
                   <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, borderLeft: `3px solid #22c55e` }}>

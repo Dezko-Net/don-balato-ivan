@@ -337,7 +337,7 @@ export default function HomePage4() {
     const email = fd.get('email') as string;
     const msg = fd.get('message') as string;
     const waMsg = `Hola Chinamart 👋\n\nNombre: ${name}\nTeléfono: ${phone}${email ? `\nEmail: ${email}` : ''}\n\nMensaje:\n${msg}`;
-    window.open(`https://wa.me/56982342539?text=${encodeURIComponent(waMsg)}`, '_blank');
+    window.open(`https://wa.me/56962293893?text=${encodeURIComponent(waMsg)}`, '_blank');
   };
 
   if (sectionCfg.length === 0) return null;
@@ -501,7 +501,7 @@ export default function HomePage4() {
                     </div>
                     <div>
                       <span className="material-icons">phone</span>
-                      <div><strong>WhatsApp</strong><p><a href="https://wa.me/56982342539">+56 9 8234 2539</a></p></div>
+                      <div><strong>WhatsApp</strong><p><a href="https://wa.me/56962293893">+56 9 6229 3893</a></p></div>
                     </div>
                     <div>
                       <span className="material-icons">email</span>
@@ -721,7 +721,7 @@ export default function HomePage4() {
                 </button>
               )}
               <a
-                href={navSettings.cmNavBtnLink || 'https://wa.me/56982342539'}
+                href={navSettings.cmNavBtnLink || 'https://wa.me/56962293893'}
                 className="btn btn--cta btn--sm"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -763,7 +763,7 @@ export default function HomePage4() {
                 <a href="#" className="social-btn" aria-label="Instagram"><i className="material-icons">camera_alt</i></a>
                 <a href="#" className="social-btn" aria-label="TikTok"><i className="material-icons">music_note</i></a>
                 <a href="#" className="social-btn" aria-label="Facebook"><i className="material-icons">facebook</i></a>
-                <a href="https://wa.me/56982342539" className="social-btn social-btn--whatsapp" aria-label="WhatsApp"><i className="material-icons">chat</i></a>
+                <a href="https://wa.me/56962293893" className="social-btn social-btn--whatsapp" aria-label="WhatsApp"><i className="material-icons">chat</i></a>
               </div>
             </div>
             <div className="footer__links">
@@ -776,7 +776,7 @@ export default function HomePage4() {
             </div>
             <div className="footer__links">
               <h5>Atención</h5>
-              <a href="https://wa.me/56982342539" className="footer__contact-item"><i className="material-icons">phone_iphone</i> +56 9 8234 2539</a>
+              <a href="https://wa.me/56962293893" className="footer__contact-item"><i className="material-icons">phone_iphone</i> +56 9 6229 3893</a>
               <a href="#" className="footer__contact-item"><i className="material-icons">location_on</i> Gorbea 2727, Santiago</a>
               <a href="mailto:chinamart.santiago@gmail.com" className="footer__contact-item"><i className="material-icons">alternate_email</i> chinamart.santiago</a>
               <a href="https://www.lider.cl/search?q=chinamart" target="_blank" rel="noopener noreferrer" className="footer__contact-item"><i className="material-icons">shopping_bag</i> Tienda en Líder.cl</a>

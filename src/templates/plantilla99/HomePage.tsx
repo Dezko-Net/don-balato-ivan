@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 const SHOPIFY_BASE = '/shopify/plantilla99/assets';
 
 /* ── Clases reales del <body> del theme original (capturadas por FOLLA) ── */
-const CAPTURED_BODY_CLASS = '';
+const CAPTURED_BODY_CLASS: string = '';
 
 /* ── CSS files: ORDEN CRÍTICO — inline primero, luego core, luego secciones ── */
 const CSS_FILES = [
@@ -66,9 +66,9 @@ export default function HomePage99() {
   /* ── Aplicar clases del <body> original mientras la plantilla está montada (fidelidad) ── */
   useEffect(() => {
     if (!CAPTURED_BODY_CLASS) return;
-    const added = CAPTURED_BODY_CLASS.split(/\s+/).filter(c => c && !document.body.classList.contains(c));
-    added.forEach(c => document.body.classList.add(c));
-    return () => { added.forEach(c => document.body.classList.remove(c)); };
+    const added = CAPTURED_BODY_CLASS.split(/\s+/).filter((c: string) => c && !document.body.classList.contains(c));
+    added.forEach((c: string) => document.body.classList.add(c));
+    return () => { added.forEach((c: string) => document.body.classList.remove(c)); };
   }, []);
 
   /* ── Host guard: el CSS global del theme pone el wrapper de YAXSEL (TemplateContext monta

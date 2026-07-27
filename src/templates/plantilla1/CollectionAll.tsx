@@ -71,15 +71,15 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const modeQueryParam = isPaquetes ? '?mode=paquetes' : '';
   // 🎨 Rediseño jul 2026: fondo blanco limpio, rosa SOLO como acento puntual.
   // CTAs en negro elegante, sombras neutras (nada de glow rosa neón).
-  const primaryColor = isPaquetes ? '#b8895a' : (isEmbalajes ? '#0ea5e9' : '#e396bf');
-  const gradientColor = isPaquetes ? 'linear-gradient(135deg,#f5ede0,#e8dcc8)' : (isEmbalajes ? 'linear-gradient(135deg,#e0f2fe,#bae6fd)' : 'linear-gradient(135deg,#e396bf,#c0547a)');
+  const primaryColor = isPaquetes ? '#b8895a' : (isEmbalajes ? '#0ea5e9' : '#3b82f6');
+  const gradientColor = isPaquetes ? 'linear-gradient(135deg,#f5ede0,#e8dcc8)' : (isEmbalajes ? 'linear-gradient(135deg,#e0f2fe,#bae6fd)' : 'linear-gradient(135deg,#3b82f6,#2563eb)');
   const buttonTextColor = isPaquetes ? '#5c3d24' : (isEmbalajes ? '#0369a1' : '#fff');
   const lightBgColor = isPaquetes ? '#faf7f2' : (isEmbalajes ? '#f0f9ff' : '#faf9fa');
   const lightBorderColor = isPaquetes ? '#e8dcc8' : (isEmbalajes ? '#bae6fd' : '#eceaec');
   const shadowColor = isPaquetes ? 'rgba(198,139,89,0.25)' : (isEmbalajes ? 'rgba(14,165,233,0.2)' : 'rgba(17,24,39,0.07)');
   const shadowColorLight = isPaquetes ? 'rgba(198,139,89,0.1)' : (isEmbalajes ? 'rgba(14,165,233,0.08)' : 'rgba(17,24,39,0.045)');
-  const radialBgColor = isPaquetes ? 'rgba(198,139,89,0.08)' : (isEmbalajes ? 'rgba(14,165,233,0.12)' : 'rgba(227,150,191,0.05)');
-  const packQtyColor = isPaquetes ? '#0ea5e9' : (isEmbalajes ? '#0284c7' : '#db2777');
+  const radialBgColor = isPaquetes ? 'rgba(198,139,89,0.08)' : (isEmbalajes ? 'rgba(14,165,233,0.12)' : 'rgba(59,130,246,0.05)');
+  const packQtyColor = isPaquetes ? '#0ea5e9' : (isEmbalajes ? '#0284c7' : '#1d4ed8');
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState(qParam);
@@ -525,33 +525,33 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
               <>
                 <Link href="/productos" style={{ color: '#9ca3af', textDecoration: 'none' }}>Tienda</Link>
                 <span style={{ color: '#d1d5db' }}>/</span>
-                <span style={{ color: '#c0547a', fontWeight: 700 }}>{lockedCategory?.name || 'Categoría'}</span>
+                <span style={{ color: '#2563eb', fontWeight: 700 }}>{lockedCategory?.name || 'Categoría'}</span>
               </>
             ) : (
-              <span style={{ color: '#c0547a', fontWeight: 700 }}>{isPaquetes ? 'Paquetes' : (isEmbalajes ? 'Embalajes' : 'Tienda')}</span>
+              <span style={{ color: '#2563eb', fontWeight: 700 }}>{isPaquetes ? 'Paquetes' : (isEmbalajes ? 'Embalajes' : 'Tienda')}</span>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
               <h1 className="pk-title2" style={{ fontSize: 34, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.08, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 {heroTitleText}
-                <span style={{ fontSize: 12.5, fontWeight: 800, color: '#c0547a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '5px 13px', letterSpacing: 0, whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: '#2563eb', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '5px 13px', letterSpacing: 0, whiteSpace: 'nowrap' }}>
                   {total} {isPaquetes ? 'paquetes' : 'productos'}
                 </span>
               </h1>
               <p className="pk-subtitle2" style={{ fontSize: 13.5, color: '#6b7280', margin: '6px 0 0', maxWidth: 560, lineHeight: 1.5 }}>{heroSubtitleText}</p>
             </div>
             <div className="pk-view-toggle" style={{ display: 'flex', background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 3, flexShrink: 0 }}>
-              <button onClick={() => setView('grid')} style={{ padding: '8px 12px', background: view === 'grid' ? '#fdf2f8' : 'transparent', color: view === 'grid' ? '#c0547a' : '#6b7280', border: 'none', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800, transition: 'all 0.2s', outline: 'none', fontFamily: 'inherit' }} aria-label="Cuadrícula">
+              <button onClick={() => setView('grid')} style={{ padding: '8px 12px', background: view === 'grid' ? '#eff6ff' : 'transparent', color: view === 'grid' ? '#2563eb' : '#6b7280', border: 'none', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800, transition: 'all 0.2s', outline: 'none', fontFamily: 'inherit' }} aria-label="Cuadrícula">
                 <Grid3x3 size={14} /> <span className="pk-desktop-only">Cuadrícula</span>
               </button>
-              <button onClick={() => setView('list')} style={{ padding: '8px 12px', background: view === 'list' ? '#fdf2f8' : 'transparent', color: view === 'list' ? '#c0547a' : '#6b7280', border: 'none', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800, transition: 'all 0.2s', outline: 'none', fontFamily: 'inherit' }} aria-label="Lista">
+              <button onClick={() => setView('list')} style={{ padding: '8px 12px', background: view === 'list' ? '#eff6ff' : 'transparent', color: view === 'list' ? '#2563eb' : '#6b7280', border: 'none', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 800, transition: 'all 0.2s', outline: 'none', fontFamily: 'inherit' }} aria-label="Lista">
                 <List size={14} /> <span className="pk-desktop-only">Lista</span>
               </button>
             </div>
           </div>
           {heroImageToUse && !lockCategoryId && (
-            <div className="pk-cover-strip" style={{ position: 'relative', marginTop: 14, borderRadius: 20, overflow: 'hidden', height: 170, background: 'linear-gradient(135deg,#fff5f9,#fce7f3)' }}>
+            <div className="pk-cover-strip" style={{ position: 'relative', marginTop: 14, borderRadius: 20, overflow: 'hidden', height: 170, background: 'linear-gradient(135deg,#f0f9ff,#e0e7ff)' }}>
               <img src={heroImageToUse} alt="Portada catálogo" onLoad={() => setHeroImgLoaded(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(17,24,39,0.32) 0%, rgba(17,24,39,0) 55%)' }} />
               <div style={{ position: 'absolute', left: 18, bottom: 14, display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fff', fontWeight: 900, fontSize: 15, textShadow: '0 2px 8px rgba(0,0,0,0.35)' }}>
@@ -566,8 +566,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         {!lockCategoryId && categories.length > 0 && (
           <div className="pk-catband pk-h-scroll" style={{ display: 'flex', gap: 14, overflowX: 'auto', padding: '6px 2px 14px', marginBottom: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
             <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70, fontFamily: 'inherit', padding: 0 }}>
-              <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 900, color: !selectedCat ? '#fff' : '#c0547a', background: !selectedCat ? 'linear-gradient(135deg,#e396bf,#c0547a)' : '#fdf2f8', border: !selectedCat ? '2.5px solid #e396bf' : '2.5px solid #fbcfe8', boxShadow: !selectedCat ? '0 6px 16px rgba(227,150,191,0.35)' : 'none', transition: 'all 0.2s' }}>✦</span>
-              <span style={{ fontSize: 11, fontWeight: !selectedCat ? 800 : 600, color: !selectedCat ? '#c0547a' : '#6b7280', whiteSpace: 'nowrap' }}>Todos</span>
+              <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 900, color: !selectedCat ? '#fff' : '#2563eb', background: !selectedCat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#eff6ff', border: !selectedCat ? '2.5px solid #3b82f6' : '2.5px solid #dbeafe', boxShadow: !selectedCat ? '0 6px 16px rgba(59,130,246,0.35)' : 'none', transition: 'all 0.2s' }}>✦</span>
+              <span style={{ fontSize: 11, fontWeight: !selectedCat ? 800 : 600, color: !selectedCat ? '#2563eb' : '#6b7280', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>Todos</span>
             </button>
             {categories.map(c => {
               const count = catCountMap[c.$id] || 0;
@@ -581,16 +581,16 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id);
                     setSubcatExpanded(true);
                   }
-                }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70, fontFamily: 'inherit', padding: 0 }}>
+                }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 78, maxWidth: 84, width: 78, fontFamily: 'inherit', padding: 0, flexShrink: 0 }}>
                   <span style={{ position: 'relative', width: 58, height: 58, display: 'block' }}>
                     {c.iconUrl ? (
-                      <img src={c.iconUrl} alt={c.name} style={{ width: 58, height: 58, borderRadius: '50%', objectFit: 'cover', border: active ? '2.5px solid #e396bf' : '2.5px solid #f3f4f6', boxShadow: active ? '0 6px 16px rgba(227,150,191,0.35)' : '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.2s', display: 'block' }} />
+                      <img src={c.iconUrl} alt={c.name} style={{ width: 58, height: 58, borderRadius: '50%', objectFit: 'cover', border: active ? '2.5px solid #3b82f6' : '2.5px solid #f3f4f6', boxShadow: active ? '0 6px 16px rgba(59,130,246,0.35)' : '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.2s', display: 'block' }} />
                     ) : (
-                      <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 900, color: active ? '#fff' : '#c0547a', background: active ? 'linear-gradient(135deg,#e396bf,#c0547a)' : '#fdf2f8', border: active ? '2.5px solid #e396bf' : '2.5px solid #fbcfe8', transition: 'all 0.2s' }}>{(c.name || 'C').charAt(0).toUpperCase()}</span>
+                      <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 900, color: active ? '#fff' : '#2563eb', background: active ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#eff6ff', border: active ? '2.5px solid #3b82f6' : '2.5px solid #dbeafe', transition: 'all 0.2s' }}>{(c.name || 'C').charAt(0).toUpperCase()}</span>
                     )}
-                    <span style={{ position: 'absolute', top: -3, right: -5, background: active ? '#c0547a' : '#c0547a', color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: '2px 6px', border: '2px solid #fff', lineHeight: 1.2 }}>{count}</span>
+                    <span style={{ position: 'absolute', top: -3, right: -5, background: active ? '#2563eb' : '#2563eb', color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: '2px 6px', border: '2px solid #fff', lineHeight: 1.2 }}>{count}</span>
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: active ? 800 : 600, color: active ? '#c0547a' : '#6b7280', whiteSpace: 'nowrap' }}>{c.name}</span>
+                  <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600, color: active ? '#2563eb' : '#6b7280', textAlign: 'center', maxWidth: 78, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>{c.name}</span>
                 </button>
               );
             })}
@@ -601,25 +601,25 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         {selectedCat && subcategories.length > 0 && (
           <div className={`pk-subcatband-wrap${!subcatExpanded ? ' pk-subcatband-collapsed' : ''}`}>
           <div className="pk-subcatband pk-h-scroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '4px 2px 12px', marginBottom: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-            <button onClick={() => setSelectedSubcat('')} className="pk-subcatband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 60, fontFamily: 'inherit', padding: 0 }}>
+            <button onClick={() => setSelectedSubcat('')} className="pk-subcatband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 68, maxWidth: 74, width: 68, fontFamily: 'inherit', padding: 0, flexShrink: 0 }}>
               <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: !selectedSubcat ? '#fff' : '#0284c7', background: !selectedSubcat ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: !selectedSubcat ? '2px solid #38bdf8' : '2px solid #bae6fd', transition: 'all 0.2s' }}>✦</span>
-              <span style={{ fontSize: 10, fontWeight: !selectedSubcat ? 800 : 600, color: !selectedSubcat ? '#0284c7' : '#6b7280', whiteSpace: 'nowrap' }}>Todas</span>
+              <span style={{ fontSize: 10, fontWeight: !selectedSubcat ? 800 : 600, color: !selectedSubcat ? '#0284c7' : '#6b7280', textAlign: 'center', maxWidth: 68, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>Todas</span>
             </button>
             {subcategories.map(sc => {
               const scCount = subCountMap[sc.$id] || 0;
               if (scCount === 0) return null;
               const subActive = selectedSubcat === sc.$id;
               return (
-                <button key={sc.$id} onClick={() => setSelectedSubcat(sc.$id)} className="pk-subcatband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 60, fontFamily: 'inherit', padding: 0 }}>
+                <button key={sc.$id} onClick={() => setSelectedSubcat(sc.$id)} className="pk-subcatband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 68, maxWidth: 74, width: 68, fontFamily: 'inherit', padding: 0, flexShrink: 0 }}>
                   <span style={{ position: 'relative', width: 48, height: 48, display: 'block' }}>
                     {sc.ICON_URL ? (
-                      <img src={sc.ICON_URL} alt={sc.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: subActive ? '2px solid #38bdf8' : '2px solid #e0f2fe', boxShadow: subActive ? '0 4px 12px rgba(56,189,248,0.3)' : '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s', display: 'block' }} />
+                      <img src={sc.ICON_URL} alt={sc.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: subActive ? '2.5px solid #38bdf8' : '2.5px solid #e0f2fe', boxShadow: subActive ? '0 4px 12px rgba(56,189,248,0.3)' : '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s', display: 'block' }} />
                     ) : (
-                      <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, color: subActive ? '#fff' : '#0284c7', background: subActive ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: subActive ? '2px solid #38bdf8' : '2px solid #bae6fd', transition: 'all 0.2s' }}>{(sc.name || 'S').charAt(0).toUpperCase()}</span>
+                      <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, color: subActive ? '#fff' : '#0284c7', background: subActive ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: subActive ? '2.5px solid #38bdf8' : '2.5px solid #bae6fd', transition: 'all 0.2s' }}>{(sc.name || 'S').charAt(0).toUpperCase()}</span>
                     )}
                     <span style={{ position: 'absolute', top: -2, right: -4, background: '#0284c7', color: '#fff', fontSize: 8.5, fontWeight: 800, borderRadius: 999, padding: '1px 5px', border: '1.5px solid #fff', lineHeight: 1.2 }}>{scCount}</span>
                   </span>
-                  <span style={{ fontSize: 10, fontWeight: subActive ? 800 : 600, color: subActive ? '#0284c7' : '#6b7280', whiteSpace: 'nowrap' }}>{sc.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: subActive ? 800 : 600, color: subActive ? '#0284c7' : '#6b7280', textAlign: 'center', maxWidth: 68, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>{sc.name}</span>
                 </button>
               );
             })}
@@ -704,20 +704,20 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
         {/* Carousel de ofertas del día (solo retail) */}
         {!isPaquetes && !isEmbalajes && offersDayProducts.length > 0 && (
-          <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg,#fff5f8 0%,#fdf2f8 100%)', border: '1px solid #fce7f3', boxShadow: `0 8px 32px ${shadowColor}` }}>
+          <div style={{ marginBottom: 28, position: 'relative', borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg,#f0f9ff 0%,#eff6ff 100%)', border: '1px solid #e0e7ff', boxShadow: `0 8px 32px ${shadowColor}` }}>
             <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg,#e396bf,#c0547a)', color: '#fff', padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 800, marginBottom: 8, letterSpacing: '0.04em' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg,#3b82f6,#2563eb)', color: '#fff', padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 800, marginBottom: 8, letterSpacing: '0.04em' }}>
                   🔥 OFERTAS DEL DÍA
                 </div>
                 <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em', fontFamily: FF }}>Productos en promoción</h2>
                 <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0', fontWeight: 500 }}>Precios especiales por tiempo limitado</p>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: -268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #fce7f3', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
+                <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: -268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #e0e7ff', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
                   <ChevronLeft size={18} />
                 </button>
-                <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: 268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #fce7f3', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
+                <button onClick={() => { const el = offerCarouselRef.current; if (el) el.scrollBy({ left: 268, behavior: 'smooth' }); }} style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid #e0e7ff', background: '#fff', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 2px 8px ${shadowColorLight}`, flexShrink: 0 }}>
                   <ChevronRight size={18} />
                 </button>
               </div>
@@ -733,15 +733,15 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                 const expiresAtMs = p.UNIT_OFFER_EXPIRES_AT || 0;
                 const minQty = (p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 1) ? p.WHOLESALEMINQUANTITY : 1;
                 return (
-                  <div key={p.$id} style={{ minWidth: 204, maxWidth: 224, flex: '0 0 auto', background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', overflow: 'hidden', boxShadow: `0 4px 14px ${shadowColorLight}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                  <div key={p.$id} style={{ minWidth: 204, maxWidth: 224, flex: '0 0 auto', background: '#fff', borderRadius: 18, border: '1px solid #e0e7ff', overflow: 'hidden', boxShadow: `0 4px 14px ${shadowColorLight}`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
                     {discPct > 0 && (
-                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: '#e396bf', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 900, padding: '3px 9px' }}>-{discPct}%</div>
+                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: '#3b82f6', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 900, padding: '3px 9px' }}>-{discPct}%</div>
                     )}
                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
                       {getProductImageUrl(p) ? (
                         <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>🛍️</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#e0e7ff' }}>🛍️</div>
                       )}
                     </div>
                     <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -750,11 +750,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
                       </Link>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
-                        <span style={{ fontSize: 19, fontWeight: 900, color: '#e396bf', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(offerPrice)}</span>
+                        <span style={{ fontSize: 19, fontWeight: 900, color: '#3b82f6', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(offerPrice)}</span>
                         {discPct > 0 && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(origPrice)}</span>}
                       </div>
                       {minQty > 1 && (
-                        <div style={{ fontSize: 10.5, fontWeight: 700, color: '#db2777' }}>Desde {minQty} unidades</div>
+                        <div style={{ fontSize: 10.5, fontWeight: 700, color: '#1d4ed8' }}>Desde {minQty} unidades</div>
                       )}
                       {expiresAtMs > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}>
@@ -765,7 +765,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       <button
                         onClick={() => (p.STOCK || 0) > 0 && addItem(p, minQty)}
                         disabled={(p.STOCK || 0) <= 0}
-                        style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: (p.STOCK || 0) <= 0 ? '#f3f4f6' : 'linear-gradient(135deg,#fdf2f8,#fce7f3)', color: (p.STOCK || 0) <= 0 ? '#9ca3af' : '#c0547a', fontSize: 12, fontWeight: 700, cursor: (p.STOCK || 0) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF }}
+                        style={{ marginTop: 'auto', padding: '9px 12px', borderRadius: 12, border: 'none', background: (p.STOCK || 0) <= 0 ? '#f3f4f6' : 'linear-gradient(135deg,#eff6ff,#e0e7ff)', color: (p.STOCK || 0) <= 0 ? '#9ca3af' : '#2563eb', fontSize: 12, fontWeight: 700, cursor: (p.STOCK || 0) <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: FF }}
                       >
                         <ShoppingCart size={13} /> {(p.STOCK || 0) <= 0 ? 'Sin stock' : (minQty > 1 ? `Agregar ${minQty}` : 'Agregar')}
                       </button>
@@ -789,10 +789,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
               style={{ width: '100%', padding: '12px 38px 12px 44px', borderRadius: 999, border: '1.5px solid #eee', background: '#faf9fa', fontSize: 14, color: '#111', outline: 'none', fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
               onFocus={e => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.background = '#fff'; setSearchFocused(true); }}
               onBlur={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.background = '#faf9fa'; setSearchFocused(false); }} />
-            {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#fdf2f8', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#c0547a' }}><X size={14} /></button>}
+            {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#eff6ff', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#2563eb' }}><X size={14} /></button>}
           </div>
 
-          <div className="pk-sort-wrap" style={{ position: 'relative', zIndex: sortDropdownOpen ? 1050 : 1, flexShrink: 0, overflow: 'hidden', transition: 'opacity 0.25s ease, max-width 0.25s ease, margin 0.25s ease', ...(searchFocused ? { opacity: 0, maxWidth: 0, marginLeft: 0, marginRight: 0, pointerEvents: 'none' } : { opacity: 1, maxWidth: 200 }) }}>
+          <div className="pk-sort-wrap" style={{ position: 'relative', zIndex: sortDropdownOpen ? 1050 : 1, flexShrink: 0, overflow: sortDropdownOpen ? 'visible' : (searchFocused ? 'hidden' : 'visible'), transition: 'opacity 0.25s ease, max-width 0.25s ease, margin 0.25s ease', ...(searchFocused ? { opacity: 0, maxWidth: 0, marginLeft: 0, marginRight: 0, pointerEvents: 'none' } : { opacity: 1, maxWidth: 200 }) }}>
             <button onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
               className="pk-sort-btn" style={{ padding: '12px 14px', borderRadius: 999, border: '1.5px solid #eee', background: '#fff', fontSize: 12.5, color: '#374151', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
               <span className="pk-sort-label">{sortBy === 'newest' ? 'Más recientes' : sortBy === 'price_asc' ? '↑ Precio' : '↓ Precio'}</span>
@@ -800,15 +800,15 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             </button>
             {sortDropdownOpen && (
               <>
-                <div onClick={() => setSortDropdownOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 200, background: '#fff', borderRadius: 16, border: '1.5px solid #eee', boxShadow: '0 12px 34px rgba(17,24,39,0.1)', zIndex: 100, overflow: 'hidden' }}>
-                  <button onClick={() => { setSortBy('newest'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'newest' ? '#fdf2f8' : 'transparent', color: sortBy === 'newest' ? '#c0547a' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'newest' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                <div onClick={() => setSortDropdownOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 210, background: '#fff', borderRadius: 16, border: '1.5px solid #eee', boxShadow: '0 12px 34px rgba(17,24,39,0.15)', zIndex: 1000, overflow: 'hidden' }}>
+                  <button onClick={() => { setSortBy('newest'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'newest' ? '#eff6ff' : 'transparent', color: sortBy === 'newest' ? '#2563eb' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'newest' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
                     Más recientes
                   </button>
-                  <button onClick={() => { setSortBy('price_asc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'price_asc' ? '#fdf2f8' : 'transparent', color: sortBy === 'price_asc' ? '#c0547a' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_asc' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                  <button onClick={() => { setSortBy('price_asc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'price_asc' ? '#eff6ff' : 'transparent', color: sortBy === 'price_asc' ? '#2563eb' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_asc' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
                     ↑ Precio: menor a mayor
                   </button>
-                  <button onClick={() => { setSortBy('price_desc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'price_desc' ? '#fdf2f8' : 'transparent', color: sortBy === 'price_desc' ? '#c0547a' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_desc' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                  <button onClick={() => { setSortBy('price_desc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '11px 15px', background: sortBy === 'price_desc' ? '#eff6ff' : 'transparent', color: sortBy === 'price_desc' ? '#2563eb' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_desc' ? 800 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
                     ↓ Precio: mayor a menor
                   </button>
                 </div>
@@ -818,10 +818,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
           <div style={{ overflow: 'hidden', transition: 'opacity 0.25s ease, max-width 0.25s ease, margin 0.25s ease', ...(searchFocused ? { opacity: 0, maxWidth: 0, marginLeft: 0, marginRight: 0, pointerEvents: 'none' } : { opacity: 1, maxWidth: 200 }) }}>
           <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn"
-            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 999, border: 'none', background: 'linear-gradient(135deg,#e396bf,#c0547a)', fontSize: 12.5, fontWeight: 800, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 4px 14px rgba(227,150,191,0.3)' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 999, border: 'none', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', fontSize: 12.5, fontWeight: 800, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 4px 14px rgba(59,130,246,0.3)' }}>
             <SlidersHorizontal size={15} /> Filtros
             {activeFiltersCount > 0 && (
-              <span style={{ background: '#fff', color: '#c0547a', borderRadius: 999, fontSize: 10.5, fontWeight: 900, minWidth: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{activeFiltersCount}</span>
+              <span style={{ background: '#fff', color: '#2563eb', borderRadius: 999, fontSize: 10.5, fontWeight: 900, minWidth: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{activeFiltersCount}</span>
             )}
           </button>
           </div>
@@ -911,33 +911,33 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
                   const pBrand = p.BRAND || extractBrand(p.NAME) || HOUSE_BRAND;
                   const isSadoer = pBrand.toLowerCase() === 'sadoer';
-                  const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
-                  const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
+                  const badgeBg = isSadoer ? '#e0f2fe' : '#f3f4f6';
+                  const badgeColor = isSadoer ? '#1e40af' : '#4b5563';
                   const effectiveStock = isPackModeCard ? packStockAvailable(p) : (p.STOCK || 0);
                   const outOfStock = effectiveStock <= 0;
                   const limitedStock = !outOfStock && effectiveStock < 99999;
                   const lowStock = limitedStock && effectiveStock <= 10;
                   const added = !!justAdded[p.$id];
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: 'linear-gradient(180deg,#fff8fb 0%,#fdeef5 100%)', borderRadius: 18, overflow: 'hidden', border: '1px solid #f7d3e3', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 12px rgba(192,84,122,0.07)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: 'linear-gradient(180deg,#f0f9ff 0%,#e0f2fe 100%)', borderRadius: 18, overflow: 'hidden', border: '1px solid #bae6fd', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 12px rgba(37,99,235,0.07)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: 'linear-gradient(135deg,#fdeef5,#ffffff)', overflow: 'hidden' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: 'linear-gradient(135deg,#e0f2fe,#ffffff)', overflow: 'hidden' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
                           {p.PACKQTY && p.PACKQTY > 1 && (
-                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#b4537a', background: 'rgba(255,255,255,0.95)', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>{p.PACKQTY} un/paquete</span>
+                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#1e40af', background: 'rgba(255,255,255,0.95)', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>{p.PACKQTY} un/paquete</span>
                           )}
                           <button
                             type="button"
                             className="pk-card-fav"
                             aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                             onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
-                            style={{ position: 'absolute', top: 8, right: 8, zIndex: 4, width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', color: primaryColor, boxShadow: '0 2px 8px rgba(192,84,122,0.15)' }}
+                            style={{ position: 'absolute', top: 8, right: 8, zIndex: 4, width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', color: primaryColor, boxShadow: '0 2px 8px rgba(37,99,235,0.15)' }}
                           >
                             <AnimHeart filled={fav} size={18} />
                           </button>
                           {outOfStock && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                              <span style={{ padding: '6px 14px', background: '#fff', color: '#c0547a', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fbcfe8' }}>Sin stock</span>
+                              <span style={{ padding: '6px 14px', background: '#fff', color: '#2563eb', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #dbeafe' }}>Sin stock</span>
                             </div>
                           )}
                         </div>
@@ -949,7 +949,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                               {pBrand}
                             </span>
                           )}
-                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 9.5, fontWeight: 800, color: '#fff', background: '#e396bf', padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
+                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 9.5, fontWeight: 800, color: '#fff', background: '#3b82f6', padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
                           {cardSku && <span className="pk-card-sku" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>SKU {cardSku}</span>}
                           <ProductBadges product={p} />
                         </div>
@@ -975,8 +975,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         {volTiers.length > 0 && (
                           <div className="pk-vol-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {volTiers.map(t => (
-                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#9d5878', background: '#ffffff', border: '1px solid #f7d3e3', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
-                                {t.minQty}+ un&nbsp;<span style={{ color: '#c0547a', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
+                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#6366f1', background: '#ffffff', border: '1px solid #bae6fd', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
+                                {t.minQty}+ un&nbsp;<span style={{ color: '#2563eb', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
                               </span>
                             ))}
                           </div>
@@ -988,7 +988,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           addItem(p, qtyToAdd, undefined, undefined, overridePrice, isPackModeCard);
                           flashAdded(p.$id);
                         }} disabled={outOfStock} className="pk-add-btn"
-                          style={{ marginTop: 4, padding: '11px 12px', minHeight: 42, borderRadius: 12, border: 'none', background: outOfStock ? '#f3f4f6' : (added ? '#059669' : gradientColor), color: outOfStock ? '#9ca3af' : buttonTextColor, fontSize: 12.5, fontWeight: 800, cursor: outOfStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: outOfStock ? 'none' : '0 4px 14px rgba(227,150,191,0.3)', transition: 'filter 0.2s ease, transform 0.1s ease', fontFamily: 'inherit' }}>
+                          style={{ marginTop: 4, padding: '11px 12px', minHeight: 42, borderRadius: 12, border: 'none', background: outOfStock ? '#f3f4f6' : (added ? '#059669' : gradientColor), color: outOfStock ? '#9ca3af' : buttonTextColor, fontSize: 12.5, fontWeight: 800, cursor: outOfStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: outOfStock ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'filter 0.2s ease, transform 0.1s ease', fontFamily: 'inherit' }}>
                           <ShoppingCart size={14} /> {outOfStock ? 'Sin stock' : added ? '✓ Añadido' : (isPackModeCard ? 'Comprar paquete' : 'Agregar')}
                         </button>
                       </div>
@@ -1040,8 +1040,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
                   const pBrand = p.BRAND || extractBrand(p.NAME) || HOUSE_BRAND;
                   const isSadoer = pBrand.toLowerCase() === 'sadoer';
-                  const badgeBg = isSadoer ? '#ffeef2' : '#f3f4f6';
-                  const badgeColor = isSadoer ? '#b36b7c' : '#4b5563';
+                  const badgeBg = isSadoer ? '#e0f2fe' : '#f3f4f6';
+                  const badgeColor = isSadoer ? '#1e40af' : '#4b5563';
                   const effectiveStockL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? packStockAvailable(p) : (p.STOCK || 0);
                   const outOfStockL = effectiveStockL <= 0;
                   return (
@@ -1049,7 +1049,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 14, overflow: 'hidden', background: '#f7f7f8', flexShrink: 0 }}>
                         <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} sizes="110px" compact />
                         {p.PACKQTY && p.PACKQTY > 1 && (
-                          <span style={{ position: 'absolute', top: 6, left: 6, zIndex: 4, fontSize: 9, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '2px 7px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paq</span>
+                          <span style={{ position: 'absolute', top: 6, left: 6, zIndex: 4, fontSize: 9, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '2px 7px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paq</span>
                         )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1060,7 +1060,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                               {pBrand}
                             </span>
                           )}
-                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: '#e396bf', padding: '1px 6px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
+                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: '#3b82f6', padding: '1px 6px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
@@ -1070,7 +1070,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b4537a', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>{(catalogMode === 'paquetes' || catalogMode === 'embalajes') ? 'por paquete' : 'al detalle'}</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>{(catalogMode === 'paquetes' || catalogMode === 'embalajes') ? 'por paquete' : 'al detalle'}</span>
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
@@ -1079,8 +1079,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         {(catalogMode !== 'paquetes' && catalogMode !== 'embalajes') && getVolumeTiers(p).length > 1 ? (
                           <div className="pk-vol-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
                             {getVolumeTiers(p).slice(1, 3).map(t => (
-                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#9d5878', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
-                                {t.minQty}+ un&nbsp;<span style={{ color: '#c9628f', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
+                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#6366f1', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
+                                {t.minQty}+ un&nbsp;<span style={{ color: '#4f46e5', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
                               </span>
                             ))}
                           </div>
@@ -1102,7 +1102,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           addItem(p, qtyToAddL, undefined, undefined, overridePriceL, (catalogMode === 'paquetes' || catalogMode === 'embalajes'));
                           flashAdded(p.$id);
                         }} disabled={outOfStockL} title={outOfStockL ? "Sin stock" : ((catalogMode === 'paquetes' || catalogMode === 'embalajes') ? "Comprar paquete" : "Agregar al carrito")}
-                          style={{ width: 42, height: 42, borderRadius: '50%', background: outOfStockL ? '#e5e7eb' : (justAdded[p.$id] ? '#059669' : gradientColor), border: 'none', color: outOfStockL ? '#9ca3af' : '#fff', cursor: outOfStockL ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: outOfStockL ? 'none' : '0 3px 10px rgba(227,150,191,0.3)', transition: 'filter 0.2s ease' }}>
+                          style={{ width: 42, height: 42, borderRadius: '50%', background: outOfStockL ? '#e5e7eb' : (justAdded[p.$id] ? '#059669' : gradientColor), border: 'none', color: outOfStockL ? '#9ca3af' : '#fff', cursor: outOfStockL ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: outOfStockL ? 'none' : '0 3px 10px rgba(59,130,246,0.3)', transition: 'filter 0.2s ease' }}>
                           <ShoppingCart size={16} />
                         </button>
                       </div>
@@ -1187,8 +1187,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   padding: '14px 18px',
                   borderRadius: 14,
                   border: selectedCat === '' ? `1.5px solid ${primaryColor}` : '1.5px solid rgba(229, 231, 235, 0.8)',
-                  background: selectedCat === '' ? (isPaquetes ? 'rgba(198, 139, 89, 0.06)' : 'rgba(227, 150, 191, 0.06)') : '#fff',
-                  color: selectedCat === '' ? (isPaquetes ? '#5c3d24' : '#c0547a') : '#374151',
+                  background: selectedCat === '' ? (isPaquetes ? 'rgba(198, 139, 89, 0.06)' : 'rgba(59,130,246, 0.06)') : '#fff',
+                  color: selectedCat === '' ? (isPaquetes ? '#5c3d24' : '#2563eb') : '#374151',
                   fontSize: 14,
                   fontWeight: selectedCat === '' ? 800 : 600,
                   textAlign: 'left',
@@ -1210,8 +1210,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       padding: '14px 18px',
                       borderRadius: 14,
                       border: isSelected ? `1.5px solid ${primaryColor}` : '1.5px solid rgba(229, 231, 235, 0.8)',
-                      background: isSelected ? (isPaquetes ? 'rgba(198, 139, 89, 0.06)' : 'rgba(227, 150, 191, 0.06)') : '#fff',
-                      color: isSelected ? (isPaquetes ? '#5c3d24' : '#c0547a') : '#374151',
+                      background: isSelected ? (isPaquetes ? 'rgba(198, 139, 89, 0.06)' : 'rgba(59,130,246, 0.06)') : '#fff',
+                      color: isSelected ? (isPaquetes ? '#5c3d24' : '#2563eb') : '#374151',
                       fontSize: 14,
                       fontWeight: isSelected ? 800 : 600,
                       textAlign: 'left',
@@ -1244,14 +1244,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       <style>{`
         :root {
           --pk-primary: ${primaryColor};
-          --pk-primary-dark: ${isPaquetes ? '#5c3d24' : (isEmbalajes ? '#7f1d1d' : '#c0547a')};
+          --pk-primary-dark: ${isPaquetes ? '#5c3d24' : (isEmbalajes ? '#7f1d1d' : '#2563eb')};
           --pk-gradient: ${gradientColor};
           --pk-light-bg: ${lightBgColor};
           --pk-light-border: ${lightBorderColor};
           --pk-shadow: ${shadowColor};
           --pk-shadow-light: ${shadowColorLight};
           --pk-radial: ${radialBgColor};
-          --pk-cosmic-gradient: ${isPaquetes ? 'linear-gradient(-45deg, #f0f7ff, #e0f2fe, #f8fafc, #bae6fd, #ffffff)' : (isEmbalajes ? 'linear-gradient(-45deg, #fff5f5, #ffe3e3, #fff8f8, #ffc9c9, #ffffff)' : 'linear-gradient(-45deg, #fff2f6, #ffe5ee, #fff6f9, #fce7f3, #ffffff)')};
+          --pk-cosmic-gradient: ${isPaquetes ? 'linear-gradient(-45deg, #f0f7ff, #e0f2fe, #f8fafc, #bae6fd, #ffffff)' : (isEmbalajes ? 'linear-gradient(-45deg, #fff5f5, #ffe3e3, #fff8f8, #ffc9c9, #ffffff)' : 'linear-gradient(-45deg, #eff6ff, #dbeafe, #f0f9ff, #bfdbfe, #ffffff)')};
         }
 
         .pk-hero-home-btn {
@@ -1261,7 +1261,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           padding: 10px 20px;
           border-radius: 16px;
           background: var(--pk-radial) !important;
-          border: 1px solid rgba(${isPaquetes ? '123, 179, 232' : (isEmbalajes ? '220, 38, 38' : '227, 150, 191')}, 0.25) !important;
+          border: 1px solid rgba(${isPaquetes ? '123, 179, 232' : (isEmbalajes ? '220, 38, 38' : '59, 130, 246')}, 0.25) !important;
           font-size: 13px;
           font-weight: 800;
           color: var(--pk-primary-dark) !important;
@@ -1271,9 +1271,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           -webkit-backdrop-filter: blur(8px);
         }
         .pk-hero-home-btn:hover {
-          background: rgba(${isPaquetes ? '198, 139, 89' : (isEmbalajes ? '220, 38, 38' : '227, 150, 191')}, 0.18) !important;
+          background: rgba(${isPaquetes ? '198, 139, 89' : (isEmbalajes ? '220, 38, 38' : '59, 130, 246')}, 0.18) !important;
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(${isPaquetes ? '198, 139, 89' : (isEmbalajes ? '220, 38, 38' : '227, 150, 191')}, 0.15);
+          box-shadow: 0 4px 12px rgba(${isPaquetes ? '198, 139, 89' : (isEmbalajes ? '220, 38, 38' : '59, 130, 246')}, 0.15);
         }
         .pk-hero-home-btn:active {
           transform: translateY(0) scale(0.98);
@@ -1375,8 +1375,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         }
         .pk-bubble {
           position: absolute; border-radius: 50%;
-          background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.4) 20%, rgba(227,150,191,0.08) 50%, rgba(192,84,122,0.12) 80%, rgba(227,150,191,0.2) 100%);
-          box-shadow: inset 0 -4px 8px rgba(227,150,191,0.12), inset 2px 2px 6px rgba(255,255,255,0.5), 0 0 8px rgba(227,150,191,0.08);
+          background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.4) 20%, rgba(59,130,246,0.08) 50%, rgba(37,99,235,0.12) 80%, rgba(59,130,246,0.2) 100%);
+          box-shadow: inset 0 -4px 8px rgba(59,130,246,0.12), inset 2px 2px 6px rgba(255,255,255,0.5), 0 0 8px rgba(59,130,246,0.08);
           border: 1px solid rgba(255,255,255,0.35);
           pointer-events: none; z-index: 3;
         }
@@ -1408,7 +1408,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           top: 86px !important;
           z-index: 999 !important;
           background-color: rgba(255, 255, 255, 0.95) !important;
-          box-shadow: 0 10px 30px rgba(227,150,191,0.18) !important;
+          box-shadow: 0 10px 30px rgba(59,130,246,0.18) !important;
           border-radius: 18px !important;
           padding: 8px 12px !important;
         }
@@ -1468,14 +1468,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         .pk-filters-btn {
           border: none !important;
           border-radius: 999px !important;
-          background: linear-gradient(135deg, #e396bf, #c0547a) !important;
+          background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
           color: #ffffff !important;
           font-weight: 800 !important;
           display: inline-flex !important;
           align-items: center !important;
           gap: 7px !important;
           cursor: pointer !important;
-          box-shadow: 0 4px 14px rgba(227, 150, 191, 0.3) !important;
+          box-shadow: 0 4px 14px rgba(59,130,246, 0.3) !important;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
         .pk-filters-btn:active {
@@ -1646,7 +1646,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         }
 
         .pk-hero-fallback-bg {
-          background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : (isEmbalajes ? 'linear-gradient(135deg, #fff5f5 0%, #ffc9c9 50%, #fff8f8 100%)' : 'linear-gradient(135deg, #fff5f9 0%, #fce7f3 50%, #ffffff 100%)')} !important;
+          background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : (isEmbalajes ? 'linear-gradient(135deg, #fff5f5 0%, #ffc9c9 50%, #fff8f8 100%)' : 'linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 50%, #ffffff 100%)')} !important;
           position: relative;
           overflow: hidden;
         }
@@ -1657,7 +1657,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           left: -10%;
           width: 60%;
           height: 140%;
-          background: radial-gradient(circle, ${isPaquetes ? 'rgba(198, 139, 89, 0.4)' : (isEmbalajes ? 'rgba(220, 38, 38, 0.4)' : 'rgba(227, 150, 191, 0.28)')} 0%, transparent 70%);
+          background: radial-gradient(circle, ${isPaquetes ? 'rgba(198, 139, 89, 0.4)' : (isEmbalajes ? 'rgba(220, 38, 38, 0.4)' : 'rgba(59,130,246, 0.28)')} 0%, transparent 70%);
           filter: blur(40px);
           animation: pulseGlow 8s ease-in-out infinite alternate;
         }
@@ -1668,7 +1668,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           right: -10%;
           width: 50%;
           height: 130%;
-          background: radial-gradient(circle, ${isPaquetes ? 'rgba(92, 61, 36, 0.3)' : (isEmbalajes ? 'rgba(127, 29, 29, 0.3)' : 'rgba(192, 84, 122, 0.15)')} 0%, transparent 70%);
+          background: radial-gradient(circle, ${isPaquetes ? 'rgba(92, 61, 36, 0.3)' : (isEmbalajes ? 'rgba(127, 29, 29, 0.3)' : 'rgba(37, 99, 235, 0.15)')} 0%, transparent 70%);
           filter: blur(40px);
           animation: pulseGlow 12s ease-in-out infinite alternate-reverse;
         }
@@ -1683,11 +1683,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
           /* 🎀 Hover: lift + glow rosa pastel de marca */
           .pk-card:hover {
-            box-shadow: 0 18px 42px rgba(192,84,122,0.16) !important;
+            box-shadow: 0 18px 42px rgba(37,99,235,0.16) !important;
             transform: translateY(-3px);
-            border-color: #f2b4d0 !important;
+            border-color: #dbeafe !important;
           }
-          .pk-card:hover .pk-price { color: #c0547a !important; }
+          .pk-card:hover .pk-price { color: #2563eb !important; }
           .pk-add-btn:hover:not(:disabled) { filter: brightness(0.94); }
           .pk-add-btn:active:not(:disabled) { transform: scale(0.97); }
         }
@@ -1745,7 +1745,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           }
 
           .pk-hero-fallback-bg {
-            background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : 'linear-gradient(135deg, #fff5f9 0%, #fce7f3 50%, #ffffff 100%)'} !important;
+            background: ${isPaquetes ? 'linear-gradient(135deg, #faf0e6 0%, #eed9c4 50%, #fff8f0 100%)' : 'linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 50%, #ffffff 100%)'} !important;
             opacity: 1 !important;
           }
           
@@ -1753,7 +1753,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to bottom, ${isPaquetes ? 'rgba(250, 240, 230, 0.05) 0%, rgba(198, 139, 89, 0.25)' : 'rgba(255, 240, 245, 0.05) 0%, rgba(227, 150, 191, 0.25)'} 100%) !important;
+            background: linear-gradient(to bottom, ${isPaquetes ? 'rgba(250, 240, 230, 0.05) 0%, rgba(198, 139, 89, 0.25)' : 'rgba(255, 240, 245, 0.05) 0%, rgba(59,130,246, 0.25)'} 100%) !important;
             z-index: 3;
           }
           
@@ -1874,7 +1874,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             font-weight: 950 !important;
             display: block !important;
             line-height: 1.1 !important;
-            text-shadow: 0 1px 3px rgba(192, 84, 122, 0.25) !important;
+            text-shadow: 0 1px 3px rgba(37, 99, 235, 0.25) !important;
           }
           
           .pk-hero-stat-label {
@@ -1926,7 +1926,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             font-size: 12px !important;
             font-weight: 800 !important;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
-            text-shadow: 0 1px 3px rgba(192, 84, 122, 0.25) !important;
+            text-shadow: 0 1px 3px rgba(37, 99, 235, 0.25) !important;
             margin-top: 6px !important;
           }
           .pk-hero-home-btn:hover, .pk-hero-home-btn:active {
@@ -1992,9 +1992,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
             border-radius: 16px !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            background: linear-gradient(180deg,#fff8fb 0%,#fdeef5 100%) !important;
-            box-shadow: 0 3px 12px rgba(192,84,122,0.07) !important;
-            border: 1px solid #f7d3e3 !important;
+            background: linear-gradient(180deg,#f0f9ff 0%,#e0f2fe 100%) !important;
+            box-shadow: 0 3px 12px rgba(37,99,235,0.07) !important;
+            border: 1px solid #bae6fd !important;
             transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
           }
           /* 📱 Comodidad táctil: buscador sin zoom iOS, botones de 42px+, chips legibles */

@@ -202,9 +202,9 @@ export const ADMIN_CHAT_COLLECTION                = 'admin_chat'; // Admin-user 
 // ============================================
 // STORAGE — Un solo bucket con prefijos
 // ============================================
-export const MEDIA_BUCKET_ID = '6a15f9a5001070a3c408';
+export const MEDIA_BUCKET_ID = 'media';
 // Bucket dedicado a las fotos de las cajas de pedidos antes de despachar
-export const ORDER_BOX_PHOTOS_BUCKET_ID = '6a349e3f000d44477aa2';
+export const ORDER_BOX_PHOTOS_BUCKET_ID = 'order_box_photos';
 
 // Prefijos para organizar archivos en el bucket único
 export const MEDIA_PREFIXES = {

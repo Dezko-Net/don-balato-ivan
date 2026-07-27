@@ -75,28 +75,28 @@ export default function SubcategoriesPage() {
 
   const save = async () => {
     if (!modal) return;
-    const d = modal.data;
-    if (!d.name?.trim()) { alert('El nombre es requerido'); return; }
+    const d = modal.data as any;
+    const nameVal = (d.name || d.NAME || '').trim();
+    if (!nameVal) { alert('El nombre es requerido'); return; }
     if (!d.categoryId) { alert('Selecciona una categoría padre'); return; }
     setIsSaving(true);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const payload: any = { 
-        name: d.name, 
+      const payload: Record<string, any> = { 
+        name: nameVal, 
         categoryId: d.categoryId, 
         parentSubcategoryId: d.parentSubcategoryId || null,
       };
       if (d.ICON_URL) payload.ICON_URL = d.ICON_URL;
       if (d.BACKGROUND_IMAGE_URL) payload.BACKGROUND_IMAGE_URL = d.BACKGROUND_IMAGE_URL;
-      if (d.description) payload.description = d.description;
       
       if (modal.mode === 'add') {
         const doc = await databases.createDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, ID.unique(), payload);
         setSubcategories(prev => [...prev, doc as unknown as Subcategory]);
       } else {
-        const doc = await databases.updateDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, (d as Subcategory).$id, payload);
-        setSubcategories(prev => prev.map(s => s.$id === (d as Subcategory).$id ? doc as unknown as Subcategory : s));
+        const doc = await databases.updateDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, d.$id, payload);
+        setSubcategories(prev => prev.map(s => s.$id === d.$id ? doc as unknown as Subcategory : s));
       }
       setModal(null);
     } catch (e: any) { alert('Error: ' + e.message); }

@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 interface Props {
   title: string;
@@ -26,7 +26,7 @@ export default function CuentaPageShell({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      style={{ minHeight: '100vh', fontFamily: FF, background: 'linear-gradient(180deg, #fdf2f8 0%, #fafafa 220px)' }}
+      style={{ minHeight: '100vh', fontFamily: FF, background: 'linear-gradient(180deg, #eff6ff 0%, #fafafa 220px)' }}
     >
       <div
         style={{
@@ -35,7 +35,7 @@ export default function CuentaPageShell({
           zIndex: 50,
           background: 'rgba(255,255,255,0.92)',
           backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid #fce7f3',
+          borderBottom: '1px solid #dbeafe',
           padding: '14px 16px',
         }}
       >
@@ -46,8 +46,8 @@ export default function CuentaPageShell({
               width: 40,
               height: 40,
               borderRadius: 12,
-              background: '#fdf2f8',
-              border: '1px solid #fce7f3',
+              background: '#eff6ff',
+              border: '1px solid #dbeafe',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

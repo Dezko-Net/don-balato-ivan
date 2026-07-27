@@ -461,16 +461,16 @@ export default function DireccionesPage() {
   }
 
   if (authLoading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#fdf2f8 0%,#fff 280px)' }}>
-      <Loader2 size={32} color="#e396bf" style={{ animation: 'spin 1s linear infinite' }} />
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#eff6ff 0%,#fff 280px)' }}>
+      <Loader2 size={32} color="#3b82f6" style={{ animation: 'spin 1s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
-  const PINK = '#e396bf';
-  const PINK_LIGHT = '#fdf2f8';
-  const PINK_BG = '#fce7f3';
-  const inp: React.CSSProperties = { width: '100%', padding: '12px 14px', border: '1.5px solid #fce7f3', borderRadius: 12, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff', fontFamily: FF, transition: 'border-color .2s, box-shadow .2s' };
+  const PINK = '#3b82f6';
+  const PINK_LIGHT = '#eff6ff';
+  const PINK_BG = '#dbeafe';
+  const inp: React.CSSProperties = { width: '100%', padding: '12px 14px', border: '1.5px solid #dbeafe', borderRadius: 12, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff', fontFamily: FF, transition: 'border-color .2s, box-shadow .2s' };
   const lbl: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: '#9ca3af', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.05em' };
 
   return (
@@ -479,27 +479,27 @@ export default function DireccionesPage() {
       title="Mis Ubicaciones"
       subtitle={`${addresses.length} dirección${addresses.length !== 1 ? 'es' : ''} guardada${addresses.length !== 1 ? 's' : ''}`}
       headerRight={
-        <button onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'linear-gradient(135deg,#e396bf,#c0547a)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 700, fontSize: 12, boxShadow: '0 4px 14px rgba(227,150,191,0.3)', flexShrink: 0 }}>
+        <button onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 700, fontSize: 12, boxShadow: '0 4px 14px rgba(59,130,246,0.3)', flexShrink: 0 }}>
           <Plus size={14} /> Nueva
         </button>
       }
     >
       <div style={{ fontFamily: FF }}>
         {addresses.length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: 80, background: '#fff', borderRadius: 20, border: '1px solid #fce7f3', padding: '60px 20px' }}>
+          <div style={{ textAlign: 'center', paddingTop: 80, background: '#fff', borderRadius: 20, border: '1px solid #dbeafe', padding: '60px 20px' }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', background: PINK_LIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <MapPin size={32} color={PINK} />
             </div>
             <p style={{ color: '#111827', fontSize: 17, fontWeight: 800, margin: '0 0 6px' }}>Sin ubicaciones guardadas</p>
             <p style={{ color: '#6b7280', fontSize: 13, margin: '0 0 20px' }}>Agregá una dirección para agilizar tus compras</p>
-            <button onClick={openNew} style={{ padding: '12px 28px', background: 'linear-gradient(135deg,#e396bf,#c0547a)', color: '#fff', borderRadius: 999, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)' }}>
+            <button onClick={openNew} style={{ padding: '12px 28px', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', borderRadius: 999, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: '0 6px 20px rgba(59,130,246,0.25)' }}>
               Agregar dirección
             </button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {addresses.map((a, i) => (
-              <div key={a.id} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #fce7f3', boxShadow: '0 2px 8px rgba(227,150,191,0.06)', transition: 'all .25s cubic-bezier(.16,1,.3,1)' }}>
+              <div key={a.id} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #dbeafe', boxShadow: '0 2px 8px rgba(59,130,246,0.06)', transition: 'all .25s cubic-bezier(.16,1,.3,1)' }}>
                 {/* Street View thumbnail */}
                 {a.lat && a.lng && (
                   <div style={{ position: 'relative', height: 140, background: PINK_LIGHT }}>
@@ -507,7 +507,7 @@ export default function DireccionesPage() {
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, rgba(255,255,255,0.8) 100%)' }} />
-                    {i === 0 && <span style={{ position: 'absolute', top: 10, left: 10, background: 'linear-gradient(135deg,#e396bf,#c0547a)', color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 999, boxShadow: '0 2px 8px rgba(227,150,191,0.3)' }}>Principal</span>}
+                    {i === 0 && <span style={{ position: 'absolute', top: 10, left: 10, background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 999, boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>Principal</span>}
                   </div>
                 )}
                 <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -524,7 +524,7 @@ export default function DireccionesPage() {
                     {a.phone && <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>{a.phone}</p>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => openEdit(a)} style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #fce7f3', background: PINK_LIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .2s' }}>
+                    <button onClick={() => openEdit(a)} style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #dbeafe', background: PINK_LIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .2s' }}>
                       <Pencil size={14} color={PINK} />
                     </button>
                     <button onClick={() => handleDelete(a.id)} style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #fee2e2', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .2s' }}>
@@ -546,10 +546,10 @@ export default function DireccionesPage() {
             
             {/* DESKTOP: Side panel (left) */}
             <div className="map-side-panel">
-              <div style={{ padding: '20px 24px', borderBottom: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111827' }}>{editing ? 'Editar ubicación' : 'Nueva ubicación'}</h2>
                 <button onClick={() => { setShowMap(false); setEditing(null); }}
-                  style={{ width: 36, height: 36, borderRadius: 10, background: PINK_LIGHT, border: '1px solid #fce7f3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s' }}>
+                  style={{ width: 36, height: 36, borderRadius: 10, background: PINK_LIGHT, border: '1px solid #dbeafe', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s' }}>
                   <X size={18} color={PINK} />
                 </button>
               </div>
@@ -558,7 +558,7 @@ export default function DireccionesPage() {
                 {/* Address display */}
                 <div style={{ marginBottom: 20 }}>
                   <label style={{ ...lbl, marginBottom: 8 }}>Dirección detectada</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', background: PINK_LIGHT, borderRadius: 12, minHeight: 48, border: '1px solid #fce7f3' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', background: PINK_LIGHT, borderRadius: 12, minHeight: 48, border: '1px solid #dbeafe' }}>
                     {geocoding
                       ? <><Loader2 size={16} color={PINK} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} /><span style={{ fontSize: 13, color: '#9ca3af' }}>Obteniendo dirección...</span></>
                       : <><MapPin size={16} color={PINK} style={{ flexShrink: 0 }} /><span style={{ fontSize: 13, color: '#111827', fontWeight: 600, lineHeight: 1.4 }}>{form.fullAddress || 'Mueve el mapa para seleccionar'}{form.commune ? `, ${form.commune}` : ''}{form.region ? `, ${form.region}` : ''}</span></>
@@ -572,7 +572,7 @@ export default function DireccionesPage() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     {ALIAS_OPTIONS.map(o => (
                       <button key={o.key} onClick={() => setForm(f => ({ ...f, alias: o.key }))}
-                        style={{ flex: 1, padding: '10px 8px', border: `1.5px solid ${form.alias === o.key ? PINK : '#fce7f3'}`, borderRadius: 12, background: form.alias === o.key ? PINK_LIGHT : '#fff', color: form.alias === o.key ? PINK : '#6b7280', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, transition: 'all .2s' }}>
+                        style={{ flex: 1, padding: '10px 8px', border: `1.5px solid ${form.alias === o.key ? PINK : '#dbeafe'}`, borderRadius: 12, background: form.alias === o.key ? PINK_LIGHT : '#fff', color: form.alias === o.key ? PINK : '#6b7280', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, transition: 'all .2s' }}>
                         <span style={{ fontSize: 20 }}>{o.icon}</span>
                         <span>{o.key}</span>
                       </button>
@@ -581,7 +581,7 @@ export default function DireccionesPage() {
                 </div>
 
                 <button onClick={handleSave} disabled={!form.fullAddress || geocoding}
-                  style={{ width: '100%', padding: '14px 0', background: !form.fullAddress || geocoding ? '#fce7f3' : 'linear-gradient(135deg,#e396bf,#c0547a)', color: !form.fullAddress || geocoding ? '#f5a8cf' : '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: !form.fullAddress || geocoding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: !form.fullAddress || geocoding ? 'none' : '0 6px 20px rgba(227,150,191,0.25)', transition: 'all .2s' }}>
+                  style={{ width: '100%', padding: '14px 0', background: !form.fullAddress || geocoding ? '#dbeafe' : 'linear-gradient(135deg,#3b82f6,#2563eb)', color: !form.fullAddress || geocoding ? '#60a5fa' : '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: !form.fullAddress || geocoding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: !form.fullAddress || geocoding ? 'none' : '0 6px 20px rgba(59,130,246,0.25)', transition: 'all .2s' }}>
                   <Check size={18} /> {editing ? 'Guardar cambios' : 'Confirmar ubicación'}
                 </button>
               </div>
@@ -592,7 +592,7 @@ export default function DireccionesPage() {
               {/* Map toolbar (mobile only) */}
               <div className="map-toolbar-mobile">
                 <button onClick={() => { setShowMap(false); setEditing(null); }}
-                  style={{ width: 40, height: 40, borderRadius: 12, background: PINK_LIGHT, border: '1px solid #fce7f3', boxShadow: '0 2px 8px rgba(227,150,191,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  style={{ width: 40, height: 40, borderRadius: 12, background: PINK_LIGHT, border: '1px solid #dbeafe', boxShadow: '0 2px 8px rgba(59,130,246,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={20} color={PINK} />
                 </button>
 
@@ -604,7 +604,7 @@ export default function DireccionesPage() {
                 </div>
 
                 <button onClick={() => setShowAgencies(v => !v)}
-                  style={{ height: 40, padding: '0 14px', borderRadius: 12, background: showAgencies ? PINK : '#fff', border: showAgencies ? 'none' : '1px solid #fce7f3', boxShadow: '0 2px 8px rgba(227,150,191,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, fontSize: 13, color: showAgencies ? '#fff' : PINK, whiteSpace: 'nowrap' }}>
+                  style={{ height: 40, padding: '0 14px', borderRadius: 12, background: showAgencies ? PINK : '#fff', border: showAgencies ? 'none' : '1px solid #dbeafe', boxShadow: '0 2px 8px rgba(59,130,246,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, fontSize: 13, color: showAgencies ? '#fff' : PINK, whiteSpace: 'nowrap' }}>
                   {agencyLoading ? <Loader2 size={15} color={showAgencies ? '#fff' : PINK} style={{ animation: 'spin 1s linear infinite' }} /> : <Truck size={15} color={showAgencies ? '#fff' : PINK} />} {agencyLoading ? '...' : 'Agencias'}
                 </button>
               </div>
@@ -615,16 +615,16 @@ export default function DireccionesPage() {
                   <Search size={16} color="#aaa" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 1 }} />
                   <input ref={searchInputRef} value={searchVal} onChange={e => setSearchVal(e.target.value)}
                     placeholder="Buscar dirección en el mapa..."
-                    style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1.5px solid #fce7f3', boxShadow: '0 2px 6px rgba(227,150,191,0.06)', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: FF, background: '#fff' }} />
+                    style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1.5px solid #dbeafe', boxShadow: '0 2px 6px rgba(59,130,246,0.06)', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: FF, background: '#fff' }} />
                 </div>
 
                 <button onClick={() => setShowAgencies(v => !v)}
-                  style={{ height: 44, padding: '0 18px', borderRadius: 12, background: showAgencies ? PINK : '#fff', border: showAgencies ? 'none' : '1.5px solid #fce7f3', boxShadow: '0 2px 6px rgba(227,150,191,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: showAgencies ? '#fff' : PINK }}>
+                  style={{ height: 44, padding: '0 18px', borderRadius: 12, background: showAgencies ? PINK : '#fff', border: showAgencies ? 'none' : '1.5px solid #dbeafe', boxShadow: '0 2px 6px rgba(59,130,246,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: showAgencies ? '#fff' : PINK }}>
                   {agencyLoading ? <Loader2 size={16} color={showAgencies ? '#fff' : PINK} style={{ animation: 'spin 1s linear infinite' }} /> : <Truck size={16} color={showAgencies ? '#fff' : PINK} />} {agencyLoading ? 'Buscando...' : 'Agencias cercanas'}
                 </button>
 
                 <button onClick={getCurrentLocation} disabled={locating}
-                  style={{ height: 44, padding: '0 18px', borderRadius: 12, background: '#fff', border: '1.5px solid #fce7f3', boxShadow: '0 2px 6px rgba(227,150,191,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: PINK }}>
+                  style={{ height: 44, padding: '0 18px', borderRadius: 12, background: '#fff', border: '1.5px solid #dbeafe', boxShadow: '0 2px 6px rgba(59,130,246,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: PINK }}>
                   {locating ? <Loader2 size={16} color={PINK} style={{ animation: 'spin 1s linear infinite' }} /> : <Navigation size={16} color={PINK} />}
                   Mi ubicación
                 </button>
@@ -636,10 +636,10 @@ export default function DireccionesPage() {
               {/* Center pin */}
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -100%)', zIndex: 15, pointerEvents: 'none' }}>
                 <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ width: 40, height: 40, background: PINK, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', boxShadow: '0 4px 12px rgba(227,150,191,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 40, height: 40, background: PINK, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', boxShadow: '0 4px 12px rgba(59,130,246,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <MapPin size={20} color="#fff" style={{ transform: 'rotate(45deg)' }} />
                   </div>
-                  <div style={{ width: 10, height: 10, background: 'rgba(227,150,191,.25)', borderRadius: '50%', marginTop: 3 }} />
+                  <div style={{ width: 10, height: 10, background: 'rgba(59,130,246,.25)', borderRadius: '50%', marginTop: 3 }} />
                 </div>
               </div>
 
@@ -661,14 +661,14 @@ export default function DireccionesPage() {
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                   {ALIAS_OPTIONS.map(o => (
                     <button key={o.key} onClick={() => setForm(f => ({ ...f, alias: o.key }))}
-                      style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${form.alias === o.key ? PINK : '#fce7f3'}`, borderRadius: 10, background: form.alias === o.key ? PINK_LIGHT : '#fff', color: form.alias === o.key ? PINK : '#6b7280', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                      style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${form.alias === o.key ? PINK : '#dbeafe'}`, borderRadius: 10, background: form.alias === o.key ? PINK_LIGHT : '#fff', color: form.alias === o.key ? PINK : '#6b7280', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                       {o.icon} {o.key}
                     </button>
                   ))}
                 </div>
 
                 <button onClick={handleSave} disabled={!form.fullAddress || geocoding}
-                  style={{ width: '100%', padding: '13px 0', background: !form.fullAddress || geocoding ? '#fce7f3' : 'linear-gradient(135deg,#e396bf,#c0547a)', color: !form.fullAddress || geocoding ? '#f5a8cf' : '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: !form.fullAddress || geocoding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: !form.fullAddress || geocoding ? 'none' : '0 6px 20px rgba(227,150,191,0.25)' }}>
+                  style={{ width: '100%', padding: '13px 0', background: !form.fullAddress || geocoding ? '#dbeafe' : 'linear-gradient(135deg,#3b82f6,#2563eb)', color: !form.fullAddress || geocoding ? '#60a5fa' : '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: !form.fullAddress || geocoding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: !form.fullAddress || geocoding ? 'none' : '0 6px 20px rgba(59,130,246,0.25)' }}>
                   <Check size={18} /> {editing ? 'Guardar cambios' : 'Confirmar ubicación'}
                 </button>
               </div>
@@ -682,9 +682,9 @@ export default function DireccionesPage() {
         @keyframes spin { to { transform: rotate(360deg) } }
         
         /* Google Places Autocomplete */
-        .pac-container { z-index: 2000 !important; font-family: ${FF}; border-radius: 12px; border: none; box-shadow: 0 4px 16px rgba(227,150,191,.15); }
+        .pac-container { z-index: 2000 !important; font-family: ${FF}; border-radius: 12px; border: none; box-shadow: 0 4px 16px rgba(59,130,246,.15); }
         .pac-item { padding: 8px 14px; font-size: 13px; cursor: pointer; }
-        .pac-item:hover { background: #fdf2f8; }
+        .pac-item:hover { background: #eff6ff; }
 
         /* ═══ MOBILE FIRST (default) ═══ */
         .map-modal-overlay {
@@ -769,7 +769,7 @@ export default function DireccionesPage() {
             flex-direction: column;
             width: 400px;
             background: #fff;
-            border-right: 1px solid #fce7f3;
+            border-right: 1px solid #dbeafe;
             flex-shrink: 0;
           }
 

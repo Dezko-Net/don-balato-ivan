@@ -8,10 +8,19 @@ import Navbar4 from '@/templates/plantilla4/Navbar';
 import Navbar100 from '@/templates/plantilla100/Navbar';
 import Navbar101 from '@/templates/plantilla101/Navbar';
 import Navbar23 from '@/components/Navbar23';
+import NavbarConceptReal from '@/components/NavbarConceptReal';
 
 export default function DynamicNavbar() {
   const pathname = usePathname();
-  const { isLoading, getSectionTemplate } = useTemplate();
+  const { isLoading, template, getSectionTemplate } = useTemplate();
+
+  // 🖤 Plantilla 25 (tema Shopify "Concept"): usamos el header REAL del tema.
+  // En el HOME lo inyecta la propia plantilla25/HomePage (devolvemos null aquí
+  // para no duplicar navbar); en el RESTO de páginas lo monta NavbarConceptReal
+  // (mismo header + su CSS scopeado + lógica del DB), reemplazando al nb23.
+  if (template === 25) {
+    return pathname === '/' ? null : <NavbarConceptReal />;
+  }
 
   // 🎀 Navbar unificado (jul 2026): en el HOME la plantilla 23 inyecta su propio
   // navbar; en TODAS las demás páginas (product detail, catálogo, carrito, cuenta…)

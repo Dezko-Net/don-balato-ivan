@@ -196,7 +196,7 @@ export default function HomePage5() {
     // Configurar el botón "¿Necesitas ayuda?" para WhatsApp si existe
     const helpBtn = root.querySelector('.help-desk-link');
     if (helpBtn) {
-      helpBtn.setAttribute('href', 'https://wa.me/56999149712');
+      helpBtn.setAttribute('href', 'https://wa.me/56962293893');
       helpBtn.setAttribute('target', '_blank');
       helpBtn.setAttribute('rel', 'noopener noreferrer');
       helpBtn.innerHTML = `
@@ -484,7 +484,7 @@ export default function HomePage5() {
 
       {/* Floating WhatsApp Button */}
       <a
-        href="https://wa.me/56999149712"
+        href="https://wa.me/56962293893"
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-floating-btn"

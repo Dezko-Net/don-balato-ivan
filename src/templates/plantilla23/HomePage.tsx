@@ -4944,7 +4944,7 @@ export default function HomePage23() {
         // ═══ Logo Instant Load Reveal & Override ═══
         const logo = document.querySelector('.header img.logo') as HTMLImageElement;
         if (logo) {
-          logo.src = "https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784401902773-pegada-1784401898779.png";
+          logo.src = "https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png";
           if (logo.complete) {
             logo.classList.add('is-loaded');
           } else {
@@ -5570,7 +5570,7 @@ export default function HomePage23() {
   /* ── Anular enlaces de WhatsApp de Kenia si está desactivada ── */
   useEffect(() => {
     if (!keniaEnabled) {
-      const keniaLinks = document.querySelectorAll('a[href*="56936599658"]');
+      const keniaLinks = document.querySelectorAll('a[href*="56962293893"]');
       keniaLinks.forEach((link) => {
         link.removeAttribute('href');
         link.addEventListener('click', (e) => e.preventDefault());
@@ -6187,7 +6187,7 @@ export default function HomePage23() {
 
       {/* Floating WhatsApp Button */}
       <a
-        href="https://wa.me/56999149712"
+        href="https://wa.me/56962293893"
         target="_blank"
         rel="noopener noreferrer"
         className={`whatsapp-floating-btn ${!showWaFloating ? 'hidden-wa' : ''}`}

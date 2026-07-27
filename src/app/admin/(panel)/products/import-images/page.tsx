@@ -224,7 +224,7 @@ export default function ImportImagesPage() {
       if (r.imageUrl) payload.IMAGEURL = r.imageUrl;
       if (r.imageUrl2) payload.IMAGEURL2 = r.imageUrl2;
       if (r.imageUrl3) payload.IMAGEURL3 = r.imageUrl3;
-      if (r.imageUrl4) payload.IMAGEURL4 = r.imageUrl4;
+      // IMAGEURL4 no existe en el schema — no enviarlo
 
       let success = false;
       let retries = 0;

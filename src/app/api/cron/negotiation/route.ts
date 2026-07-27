@@ -5,7 +5,7 @@ import { sendWhatsAppMessage, sendWhatsAppTemplate, formatWhatsAppPhone, addToHi
 
 const CRON_SECRET = process.env.CRON_SECRET || 'negotiation_secret_key_2026';
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://donbalatoivan.cl';
 
 export async function GET(req: NextRequest) {
   try {
@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
       // 3. Compose WhatsApp message (Greeting only, wait for response)
       const customerName = order.CUSTOMERNAME || 'Amiga';
       const firstName = customerName.split(' ')[0];
-      const messageText = `¡Hola linda, *${firstName}*! ✨ ¿Cómo estás? Te escribimos de *Kevin&Coco* por tu pedidito *#${orderCode}* 🛍️.`;
+      const messageText = `¡Hola linda, *${firstName}*! ✨ ¿Cómo estás? Te escribimos de *Don Balato Iván* por tu pedidito *#${orderCode}* 🛍️.`;
 
       // 4. Send message to WhatsApp
       const rawPhone = (order.CUSTOMERPHONE as string) || '';
@@ -193,7 +193,7 @@ export async function GET(req: NextRequest) {
           try {
             const historyMsg = sendError
               ? messageText
-              : `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Kevin&Coco. ¿Cómo estás?`;
+              : `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Don Balato Iván. ¿Cómo estás?`;
             await addToHistory(formattedPhone, 'assistant', historyMsg);
 
             if (targetOrderId) {

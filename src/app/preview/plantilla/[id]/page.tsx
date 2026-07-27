@@ -26,6 +26,7 @@ const TEMPLATE_COMPONENTS: Record<number, any> = {
   101: dynamic(() => import('@/templates/plantilla101/HomePage'), { ssr: false }),
   26: dynamic(() => import('@/templates/plantilla26/HomePage'), { ssr: false }),
   99: dynamic(() => import('@/templates/plantilla99/HomePage'), { ssr: false }),
+  666: dynamic(() => import('@/templates/plantilla666/HomePage'), { ssr: false }),
 };
 
 const TEMPLATE_NAMES: Record<number, string> = {
@@ -46,6 +47,7 @@ const TEMPLATE_NAMES: Record<number, string> = {
   25: 'Concept Theme Tech',
   100: 'Plantilla 100',
   101: 'Wonder Theme Fashion',
+  666: 'Concept Theme Original',
 };
 
 

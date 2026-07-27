@@ -11,7 +11,7 @@ import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
 import { useCuentaBg } from '../CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 const COUPON_IMG = 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png';
 
@@ -182,7 +182,7 @@ export default function CuponesPage() {
             animate={{ opacity: 1 }}
             style={{ textAlign: 'center', padding: '40px 20px', background: '#fff', borderRadius: 20, border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07)' }}
           >
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(227,150,191,0.15)' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(59,130,246,0.15)' }}>
               <Ticket size={28} color={PINK} />
             </div>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>No tenés cupones disponibles</p>
@@ -213,7 +213,7 @@ export default function CuponesPage() {
                     <div style={{
                       minWidth: isMobile ? 80 : 100,
                       padding: isMobile ? '16px 12px' : '20px 16px',
-                      background: status === 'active' ? 'linear-gradient(135deg, #fdf2f8, #fce7f3)' : '#f3f4f6',
+                      background: status === 'active' ? 'linear-gradient(135deg, #eff6ff, #dbeafe)' : '#f3f4f6',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',

@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { MessageCircle, Send, X } from 'lucide-react';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 export default function ChatPage() {
   const { user, isLoggedIn } = useAuth();
@@ -85,7 +85,7 @@ export default function ChatPage() {
       <div style={{ background: '#fff', borderRadius: 18, border: '1.5px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <MessageCircle size={18} style={{ color: PINK }} />
           </div>
           <div>

@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { Query } from 'appwrite';
 import { useState, useEffect } from 'react';
 
-const PINK = '#e396bf';
+const BLUE = '#2563eb';
 const FF = '"DM Sans",system-ui,sans-serif';
 
 function CarritoPageContent() {
@@ -161,7 +161,7 @@ function CarritoPageContent() {
       <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: FF }}>
         <div className="cart-page-wrap" style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', padding: '24px 5%', minHeight: '100vh' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginBottom: 20 }}>
-            <Link href="/" style={{ color: PINK, textDecoration: 'none', fontWeight: 500 }}>Inicio</Link>
+            <Link href="/" style={{ color: BLUE, textDecoration: 'none', fontWeight: 500 }}>Inicio</Link>
             <ChevronRight size={12} color="#9ca3af" />
             <span style={{ color: '#6b7280' }}>Carrito de compras</span>
           </div>
@@ -174,9 +174,9 @@ function CarritoPageContent() {
               <div>
                 <p style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>Tu carrito está vacío</p>
                 <p style={{ margin: '0 0 20px', fontSize: 15, color: '#6b7280', lineHeight: 1.55 }}>Agrega productos y consigue envío gratis en tu primera compra.</p>
-                <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 16px rgba(227,150,191,0.3)', transition: 'transform .2s, box-shadow .2s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(227,150,191,0.4)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(227,150,191,0.3)'; }}>
+                <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', background: `linear-gradient(135deg,${BLUE},#1d4ed8)`, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 16px rgba(37,99,235,0.3)', transition: 'transform .2s, box-shadow .2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37,99,235,0.4)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(37,99,235,0.3)'; }}>
                   <ShoppingCart size={16} /> Explorar productos
                 </Link>
               </div>
@@ -235,11 +235,11 @@ function CarritoPageContent() {
         }
         @keyframes cartShimmer { 0% { left: -40%; } 100% { left: 110%; } }
         @keyframes cartPulse {
-          0%, 100% { box-shadow: 0 6px 20px rgba(227,150,191,0.35), inset 0 0 12px rgba(255,255,255,0.1); }
-          50% { box-shadow: 0 6px 20px rgba(227,150,191,0.55), inset 0 0 20px rgba(255,255,255,0.2); }
+          0%, 100% { box-shadow: 0 6px 20px rgba(37,99,235,0.35), inset 0 0 12px rgba(255,255,255,0.1); }
+          50% { box-shadow: 0 6px 20px rgba(37,99,235,0.55), inset 0 0 20px rgba(255,255,255,0.2); }
         }
         .cart-checkout-btn { animation: cartPulse 2s ease-in-out infinite; position: relative; overflow: hidden; }
-        .cart-checkout-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(227,150,191,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
+        .cart-checkout-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(37,99,235,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
         .cart-orb {
           position: absolute; border-radius: 50%;
           background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1));
@@ -275,7 +275,7 @@ function CarritoPageContent() {
         <div className="cart-page-wrap" style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', padding: '24px 5%' }}>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginBottom: 16 }}>
-            <Link href="/" style={{ color: PINK, textDecoration: 'none', fontWeight: 500 }}>Inicio</Link>
+            <Link href="/" style={{ color: BLUE, textDecoration: 'none', fontWeight: 500 }}>Inicio</Link>
             <ChevronRight size={12} color="#9ca3af" />
             <span style={{ color: '#6b7280' }}>Carrito de compras</span>
           </div>
@@ -286,8 +286,8 @@ function CarritoPageContent() {
             <div className="cart-items-col" style={{ flex: 1, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               <div className="cart-shipping-banner" style={{ background: '#fff', borderRadius: 14, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={15} color={PINK} />
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Truck size={15} color={BLUE} />
                 </div>
                 <span style={{ fontSize: 14, color: '#1a1a1a', fontWeight: 500 }}>Envío disponible a todo Chile</span>
               </div>
@@ -295,8 +295,8 @@ function CarritoPageContent() {
               <div className="cart-items-box" style={{ background: '#fff', borderRadius: 18, padding: '0 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <div style={{ padding: '16px 0 12px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
-                    <ShoppingCart size={18} color={PINK} />
-                    {items.length === 1 ? '1 producto' : `${items.length} productos`}{totalItems !== items.length ? ` · ${totalItems} unidades` : ''}`
+                    <ShoppingCart size={18} color={BLUE} />
+                    {items.length === 1 ? '1 producto' : `${items.length} productos`}{totalItems !== items.length ? ` · ${totalItems} unidades` : ''}
                   </h1>
                 </div>
 
@@ -326,7 +326,7 @@ function CarritoPageContent() {
 
                 <div style={{ borderTop: '2px solid #f3f4f6', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>Total</span>
-                  <span style={{ fontSize: 26, fontWeight: 800, color: PINK, letterSpacing: '-0.02em' }}>{formatPrice(subtotal)}</span>
+                  <span style={{ fontSize: 26, fontWeight: 800, color: BLUE, letterSpacing: '-0.02em' }}>{formatPrice(subtotal)}</span>
                 </div>
 
                 {belowMinimum && (
@@ -339,7 +339,7 @@ function CarritoPageContent() {
                 {pendingOrders.length > 0 && (
                   <div style={{ borderTop: '1px dashed #f3f4f6', paddingTop: 14, marginBottom: 14 }}>
                     <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 800, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Package size={14} color={PINK} /> ¿Añadir a un pedido pendiente?
+                      <Package size={14} color={BLUE} /> ¿Añadir a un pedido pendiente?
                     </p>
                     <p style={{ margin: '0 0 10px', fontSize: 10, color: '#6b7280', lineHeight: 1.4 }}>
                       Tienes pedidos pendientes. Puedes consolidar esta compra añadiendo estos productos a uno de ellos:
@@ -357,7 +357,7 @@ function CarritoPageContent() {
                             justifyContent: 'space-between',
                             padding: '8px 10px',
                             background: '#fff',
-                            border: '1px solid #fce7f3',
+                            border: '1px solid #dbeafe',
                             borderRadius: 10,
                             textAlign: 'left',
                             fontSize: 11,
@@ -365,8 +365,8 @@ function CarritoPageContent() {
                             transition: 'all 0.2s',
                             boxSizing: 'border-box'
                           }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.background = '#fdf2f8'; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.background = '#fff'; }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = BLUE; e.currentTarget.style.background = '#eff6ff'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#dbeafe'; e.currentTarget.style.background = '#fff'; }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <strong style={{ color: '#111827' }}>#{order.ORDERCODE}</strong>
@@ -374,7 +374,7 @@ function CarritoPageContent() {
                               Total actual: {formatPrice(order.TOTAL)}
                             </span>
                           </div>
-                          <span style={{ fontSize: 9, fontWeight: 800, color: PINK, background: '#fdf2f8', padding: '3px 8px', borderRadius: 6, marginLeft: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: BLUE, background: '#eff6ff', padding: '3px 8px', borderRadius: 6, marginLeft: 6 }}>
                             {addingToOrder === order.$id ? '...' : '+ Añadir'}
                           </span>
                         </button>
@@ -392,7 +392,7 @@ function CarritoPageContent() {
                 ) : (
                   <Link href="/checkout"
                     className="cart-checkout-btn"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(227,150,191,0.35)', transition: 'all 0.2s' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: `linear-gradient(135deg,${BLUE},#1d4ed8)`, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(37,99,235,0.35)', transition: 'all 0.2s' }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
                   >
@@ -406,15 +406,15 @@ function CarritoPageContent() {
                 )}
 
                 <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '10px 12px', borderRadius: 10 }}>
-                  <Shield size={14} color={PINK} style={{ flexShrink: 0 }} />
+                  <Shield size={14} color={BLUE} style={{ flexShrink: 0 }} />
                   <span style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>
-                    <strong style={{ color: PINK }}>Compra Protegida</strong> — recibe el producto o te devolvemos el dinero.
+                    <strong style={{ color: BLUE }}>Compra Protegida</strong> — recibe el producto o te devolvemos el dinero.
                   </span>
                 </div>
               </div>
 
 
-              <Link href="/productos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: PINK, textDecoration: 'none', padding: '8px 0', fontWeight: 600 }}>
+              <Link href="/productos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: BLUE, textDecoration: 'none', padding: '8px 0', fontWeight: 600 }}>
                 <ArrowLeft size={14} /> Seguir comprando
               </Link>
             </div>

@@ -73,24 +73,31 @@ export default function CategoriesPage() {
     return () => window.removeEventListener('yaxsel-data-change', handler);
   }, [load]);
 
-  const openAdd = () => setModal({ mode: 'add', data: { name: '', iconUrl: '', color: '', order: categories.length } });
-  const openEdit = (c: Category) => setModal({ mode: 'edit', data: { ...c } });
+  const openAdd = () => setModal({ mode: 'add', data: { name: '', iconUrl: '', color: '', order: categories.length, BACKGROUND_IMAGE_URL: '' } });
+  const openEdit = (c: Category) => setModal({ mode: 'edit', data: { ...c, name: c.name || (c as any).NAME || '' } });
 
   const save = async () => {
     if (!modal) return;
-    const d = modal.data;
-    if (!d.name?.trim()) { alert('El nombre es requerido'); return; }
+    const d = modal.data as any;
+    const nameVal = (d.name || d.NAME || '').trim();
+    if (!nameVal) { alert('El nombre es requerido'); return; }
     setIsSaving(true);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const payload: any = { name: d.name, iconUrl: d.iconUrl || '', order: Number(d.order) || 0, BACKGROUND_IMAGE_URL: (d as any).BACKGROUND_IMAGE_URL || '' };
+      const payload: Record<string, any> = {
+        name: nameVal,
+        iconUrl: d.iconUrl || '',
+        color: d.color || '',
+        order: Number(d.order) || 0,
+        BACKGROUND_IMAGE_URL: d.BACKGROUND_IMAGE_URL || '',
+      };
       if (modal.mode === 'add') {
         const doc = await databases.createDocument(databaseId, CATEGORIES_COLLECTION_ID, ID.unique(), payload);
         setCategories(prev => [...prev, doc as unknown as Category]);
       } else {
-        const doc = await databases.updateDocument(databaseId, CATEGORIES_COLLECTION_ID, (d as Category).$id, payload);
-        setCategories(prev => prev.map(c => c.$id === (d as Category).$id ? doc as unknown as Category : c));
+        const doc = await databases.updateDocument(databaseId, CATEGORIES_COLLECTION_ID, d.$id, payload);
+        setCategories(prev => prev.map(c => c.$id === d.$id ? doc as unknown as Category : c));
       }
       setModal(null);
       invalidateCategoryCache();

@@ -10,7 +10,7 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 import { useCartItemPrice } from '@/hooks/useCartItemPrice';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
-const PINK = '#e396bf';
+const BLUE = '#2563eb';
 
 type Props = {
   item: CartItem;
@@ -82,12 +82,12 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
             {pricing.hasDiscount && pricing.originalPrice != null && (
               <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>
             )}
-            <span style={{ fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? PINK : '#1a1a1a' }}>{formatPrice(unitPrice)}</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? BLUE : '#1a1a1a' }}>{formatPrice(unitPrice)}</span>
             {pricing.hasDiscount && !pricing.fromApertura && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', padding: '1px 5px', borderRadius: 5 }}>{pricing.discountPercent}% OFF</span>
             )}
             {pricing.fromApertura && (
-              <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '1px 5px', borderRadius: 5 }}>Promo</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', padding: '1px 5px', borderRadius: 5 }}>Promo</span>
             )}
           </div>
 
@@ -126,9 +126,9 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
                   fontSize: 11,
                   padding: '4px 6px',
                   borderRadius: 6,
-                  border: '1px solid #fbcfe8',
-                  background: incrementMode === 'pack' ? '#fdf2f8' : '#fff',
-                  color: incrementMode === 'pack' ? '#be185d' : '#6b7280',
+                  border: '1px solid #bfdbfe',
+                  background: incrementMode === 'pack' ? '#eff6ff' : '#fff',
+                  color: incrementMode === 'pack' ? '#1d4ed8' : '#6b7280',
                   fontWeight: 600,
                   outline: 'none',
                   cursor: 'pointer'
@@ -178,9 +178,9 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
               onClick={() => setZoomSrc(null)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                width: '100%', padding: '14px 24px', background: `linear-gradient(135deg, ${PINK}, #c0547a)`,
+                width: '100%', padding: '14px 24px', background: `linear-gradient(135deg, ${BLUE}, #1d4ed8)`,
                 color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700,
-                textDecoration: 'none', boxShadow: '0 4px 16px rgba(227,150,191,0.4)',
+                textDecoration: 'none', boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
               }}
             >
               Ver detalle

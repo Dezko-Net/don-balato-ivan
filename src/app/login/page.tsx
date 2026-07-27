@@ -27,7 +27,8 @@ function LoginInner() {
   const [claimedCode, setClaimedCode] = useState('');
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string>('');
-  const [storeName, setStoreName] = useState<string>('Kevin & Coco');
+  const [storeName, setStoreName] = useState<string>('Don Balato Iván');
+  const FALLBACK_LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png';
 
   // Cargar logo del theme editor
   useEffect(() => {
@@ -45,7 +46,7 @@ function LoginInner() {
       if (footerSec?.settings) {
         const fs = footerSec.settings as Record<string, any>;
         if (!logoUrl && fs.logoUrl) setLogoUrl(fs.logoUrl);
-        if (fs.companyName && storeName === 'Kevin & Coco') setStoreName(fs.companyName);
+        if (fs.companyName && storeName === 'Don Balato Iván') setStoreName(fs.companyName);
       }
     }).catch(() => {});
   }, []);
@@ -89,7 +90,7 @@ function LoginInner() {
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#e396bf', '#f43f5e', '#ffffff']
+        colors: ['#3b82f6', '#60a5fa', '#ffffff']
       });
       setShowWelcomeModal(true);
     }
@@ -121,15 +122,15 @@ function LoginInner() {
     <div className="min-h-screen font-['DM_Sans'] flex flex-col relative overflow-hidden bg-slate-50">
       {/* Premium Background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-pink-300 mix-blend-multiply filter blur-[100px] opacity-30 animate-pulse" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-fuchsia-300 mix-blend-multiply filter blur-[120px] opacity-30" style={{ animation: 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
-        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-rose-200 mix-blend-multiply filter blur-[80px] opacity-40" />
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-300 mix-blend-multiply filter blur-[100px] opacity-30 animate-pulse" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400 mix-blend-multiply filter blur-[120px] opacity-30" style={{ animation: 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-blue-200 mix-blend-multiply filter blur-[80px] opacity-40" />
       </div>
 
       {/* Top Navbar */}
-      <nav className="relative z-10 w-full px-6 py-4 flex items-center justify-between">
+      <nav className="relative z-10 w-full px-6 pt-6 pb-4 sm:py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center group">
-          {logoUrl ? <img src={logoUrl} alt={storeName} className="h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105" /> : <span className="text-2xl font-extrabold tracking-tight text-slate-900">{storeName}</span>}
+          <img src={logoUrl || FALLBACK_LOGO} alt={storeName} className="h-6 sm:h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105" />
         </Link>
         <Link href="/" className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">
           <ArrowLeft size={16} />
@@ -146,11 +147,11 @@ function LoginInner() {
             initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}
             className="hidden lg:flex flex-col max-w-md"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 border border-pink-100 text-pink-600 text-xs font-bold tracking-wide uppercase mb-6 w-fit">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold tracking-wide uppercase mb-6 w-fit">
               <SparklesIcon /> Exclusivo
             </div>
             <h1 className="text-5xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
-              Desbloquea el acceso a <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-500">ofertas premium</span>.
+              Desbloquea el acceso a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-600">ofertas premium</span>.
             </h1>
             <p className="text-lg text-slate-500 mb-8 leading-relaxed">
               Únete a nuestra comunidad para disfrutar de envíos rápidos, beneficios del programa de lealtad y atención personalizada.
@@ -164,7 +165,7 @@ function LoginInner() {
               ].map((b, i) => (
                 <div key={i} className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 text-slate-900 font-bold">
-                    <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">✓</div>
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">✓</div>
                     {b.label}
                   </div>
                   <span className="text-sm text-slate-500 pl-7">{b.desc}</span>
@@ -210,7 +211,7 @@ function LoginInner() {
                   {error && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                      className="flex items-start gap-3 p-4 mb-6 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-sm font-medium"
+                      className="flex items-start gap-3 p-4 mb-6 bg-blue-50 border border-blue-100 rounded-2xl text-blue-600 text-sm font-medium"
                     >
                       <AlertCircle size={18} className="shrink-0 mt-0.5" />
                       <span>{error}</span>
@@ -234,19 +235,19 @@ function LoginInner() {
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-center">
                             <label className="text-sm font-bold text-slate-700">Contraseña</label>
-                            <button type="button" className="text-xs font-bold text-pink-600 hover:text-pink-700 transition-colors">
+                            <button type="button" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
                               ¿Olvidaste tu contraseña?
                             </button>
                           </div>
                           <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-pink-500 transition-colors pointer-events-none">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
                               <Lock size={18} />
                             </div>
                             <input 
                               type={showPass ? 'text' : 'password'} value={loginForm.password}
                               onChange={(e: any) => setLoginForm(f => ({ ...f, password: e.target.value }))}
                               placeholder="••••••••"
-                              className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all outline-none"
+                              className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
                             />
                             <button 
                               type="button" onClick={() => setShowPass(!showPass)}
@@ -289,7 +290,7 @@ function LoginInner() {
                             <select
                               value={regForm.birthMonth}
                               onChange={(e: any) => setRegForm(f => ({ ...f, birthMonth: e.target.value }))}
-                              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all outline-none appearance-none"
+                              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none appearance-none"
                             >
                               <option value="">Seleccionar mes</option>
                               <option value="01">Enero</option>
@@ -311,7 +312,7 @@ function LoginInner() {
                             <select
                               value={regForm.birthDay}
                               onChange={(e: any) => setRegForm(f => ({ ...f, birthDay: e.target.value }))}
-                              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all outline-none appearance-none"
+                              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none appearance-none"
                             >
                               <option value="">Seleccionar día</option>
                               {Array.from({ length: 31 }, (_, i) => (
@@ -337,14 +338,14 @@ function LoginInner() {
                         <div className="flex flex-col gap-2">
                           <label className="text-sm font-bold text-slate-700">Contraseña *</label>
                           <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-pink-500 transition-colors pointer-events-none">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
                               <Lock size={18} />
                             </div>
                             <input 
                               type={showPass ? 'text' : 'password'} value={regForm.password}
                               onChange={(e: any) => setRegForm(f => ({ ...f, password: e.target.value }))}
                               placeholder="Mínimo 8 caracteres"
-                              className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all outline-none"
+                              className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
                             />
                             <button 
                               type="button" onClick={() => setShowPass(!showPass)}
@@ -358,7 +359,7 @@ function LoginInner() {
                         <div className="flex flex-col gap-2">
                           <label className="text-sm font-bold text-slate-700">Confirmar contraseña *</label>
                           <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-pink-500 transition-colors pointer-events-none">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
                               <Lock size={18} />
                             </div>
                             <input 
@@ -366,7 +367,7 @@ function LoginInner() {
                               onChange={(e: any) => setRegForm(f => ({ ...f, confirm: e.target.value }))}
                               placeholder="Repite tu contraseña"
                               className={`w-full pl-11 pr-4 py-3.5 bg-slate-50 border rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:ring-4 transition-all outline-none
-                                ${regForm.confirm && regForm.confirm !== regForm.password ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-pink-500 focus:ring-pink-500/10'}`}
+                                ${regForm.confirm && regForm.confirm !== regForm.password ? 'border-blue-400 focus:border-blue-500 focus:ring-blue-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}
                             />
                           </div>
                         </div>
@@ -390,9 +391,9 @@ function LoginInner() {
 
             <p className="text-center text-xs text-slate-400 mt-8 font-medium">
               Al continuar, aceptas nuestros{' '}
-              <a href="#" className="text-slate-600 hover:text-pink-600 underline decoration-slate-300 hover:decoration-pink-500 transition-colors">Términos y condiciones</a>
+              <a href="#" className="text-slate-600 hover:text-blue-600 underline decoration-slate-300 hover:decoration-blue-500 transition-colors">Términos y condiciones</a>
               {' '}y{' '}
-              <a href="#" className="text-slate-600 hover:text-pink-600 underline decoration-slate-300 hover:decoration-pink-500 transition-colors">Política de privacidad</a>.
+              <a href="#" className="text-slate-600 hover:text-blue-600 underline decoration-slate-300 hover:decoration-blue-500 transition-colors">Política de privacidad</a>.
             </p>
           </motion.div>
         </div>
@@ -411,13 +412,13 @@ function LoginInner() {
               className="w-full max-w-lg bg-white rounded-[32px] overflow-hidden shadow-2xl relative"
             >
               {/* Header */}
-              <div className="relative h-32 bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center">
+              <div className="relative h-32 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
                 <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }} />
                 <motion.div 
                   initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
                   className="bg-white p-4 rounded-2xl shadow-xl"
                 >
-                  <Gift size={32} className="text-pink-500" />
+                  <Gift size={32} className="text-blue-500" />
                 </motion.div>
               </div>
 
@@ -430,10 +431,10 @@ function LoginInner() {
                     <button 
                       disabled={claimingGift}
                       onClick={() => handleClaimGift('order_2')}
-                      className="group p-6 rounded-2xl border-2 border-slate-100 hover:border-pink-500 hover:bg-pink-50 transition-all text-left relative overflow-hidden"
+                      className="group p-6 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left relative overflow-hidden"
                     >
                       <div className="relative z-10">
-                        <div className="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 mb-4 group-hover:scale-110 transition-transform">
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
                           <Zap size={20} />
                         </div>
                         <div className="font-black text-2xl text-slate-900 mb-1">2% OFF</div>
@@ -447,10 +448,10 @@ function LoginInner() {
                     <button 
                       disabled={claimingGift}
                       onClick={() => handleClaimGift('product_5')}
-                      className="group p-6 rounded-2xl border-2 border-slate-100 hover:border-rose-500 hover:bg-rose-50 transition-all text-left relative overflow-hidden"
+                      className="group p-6 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left relative overflow-hidden"
                     >
                       <div className="relative z-10">
-                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 mb-4 group-hover:scale-110 transition-transform">
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
                           <Sparkles size={20} />
                         </div>
                         <div className="font-black text-2xl text-slate-900 mb-1">5% OFF</div>
@@ -477,7 +478,7 @@ function LoginInner() {
                 )}
 
                 {claimingGift && (
-                  <div className="mt-6 flex items-center justify-center gap-2 text-pink-500 font-bold text-sm">
+                  <div className="mt-6 flex items-center justify-center gap-2 text-blue-500 font-bold text-sm">
                     <Loader2 size={16} className="animate-spin" />
                     Generando tu regalo...
                   </div>
@@ -496,12 +497,12 @@ function InputField({ label, icon, ...props }: any) {
     <div className="flex flex-col gap-2">
       <label className="text-sm font-bold text-slate-700">{label}</label>
       <div className="relative group">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-pink-500 transition-colors pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
           {icon}
         </div>
         <input 
           {...props}
-          className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all outline-none"
+          className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
         />
       </div>
     </div>

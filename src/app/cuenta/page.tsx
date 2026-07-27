@@ -19,7 +19,7 @@ import { useCuentaBg } from './CuentaBgContext';
 import { LoyaltyService } from '@/services/loyaltyService';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 interface MenuItem { icon: any; label: string; href: string; desc?: string; badge?: number | string; badgeColor?: string; }
 
@@ -49,8 +49,8 @@ const ALL_CARDS: MenuItem[] = [...MIS_COMPRAS_ITEMS, ...CUENTA_ITEMS, ...CONFIG_
 /* Quick shortcuts — these are the most important for the customer */
 const QUICK_SHORTCUTS = [
   { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',     color: '#6366f1', bg: '#eef2ff' },
-  { icon: PackageSearch,label: 'Consultas',  href: '/cuenta/consultas',   color: '#c0547a', bg: '#fdf2f8' },
-  { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',     color: '#e396bf', bg: '#fdf2f8' },
+  { icon: PackageSearch,label: 'Consultas',  href: '/cuenta/consultas',   color: '#2563eb', bg: '#eff6ff' },
+  { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',     color: '#3b82f6', bg: '#eff6ff' },
   { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   color: '#f59e0b', bg: '#fffbeb' },
   { icon: MapPin,       label: 'Direcciones', href: '/cuenta/direcciones', color: '#10b981', bg: '#ecfdf5' },
 ];
@@ -110,8 +110,8 @@ export default function CuentaPage() {
         const prefs = (acc as any).prefs || {};
         if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(prefs.avatarFileId));
         if (prefs.coverFileId) setCoverUrl(getFilePreviewUrl(prefs.coverFileId));
-        // Check if user has available gifts (only if not claimed yet)
-        setHasGifts(!prefs.welcomeGiftClaimed);
+        // Check if user has available gifts (disabled 20% gift reward while retaining underlying logic)
+        setHasGifts(false);
         
         // Load loyalty data
         if (user?.id) {
@@ -152,14 +152,14 @@ export default function CuentaPage() {
       <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: FF, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
         <div style={{ width: '100%', maxWidth: 440, background: '#fff', borderRadius: 20, boxShadow: '0 8px 32px rgba(0,0,0,0.06)', border: '1px solid #f0f0f0', overflow: 'hidden' }}>
           <div style={{ padding: '40px 28px 24px', textAlign: 'center' }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
               <User size={32} color={PINK} strokeWidth={1.8} />
             </div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>Iniciar sesión</h1>
             <p style={{ fontSize: 14, color: '#6b7280', margin: '8px 0 0' }}>Accedé a tu cuenta para continuar</p>
           </div>
           <div style={{ padding: '0 28px 28px' }}>
-            <Link href="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 0', background: PINK, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15, boxShadow: '0 6px 20px rgba(227,150,191,0.25)', marginBottom: 10 }}>
+            <Link href="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 0', background: PINK, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15, boxShadow: '0 6px 20px rgba(59,130,246,0.25)', marginBottom: 10 }}>
               Iniciar sesión
             </Link>
             <Link href="/login?tab=register" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 0', background: '#fff', color: '#1a1a1a', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15, border: '1.5px solid #e5e7eb' }}>
@@ -191,9 +191,9 @@ export default function CuentaPage() {
           --shadow-sm:   0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.04);
           --shadow-md:   0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.05);
           --shadow-lg:   0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07);
-          --shadow-pink: 0 4px 16px rgba(227,150,191,0.12), 0 2px 6px rgba(227,150,191,0.08);
+          --shadow-pink: 0 4px 16px rgba(59,130,246,0.12), 0 2px 6px rgba(59,130,246,0.08);
           --border-soft: 1px solid rgba(0,0,0,0.07);
-          --border-pink: 1px solid rgba(227,150,191,0.15);
+          --border-pink: 1px solid rgba(59,130,246,0.15);
           --inset-top:   inset 0 1px 0 rgba(255,255,255,0.9);
         }
 
@@ -223,7 +223,7 @@ export default function CuentaPage() {
         .dcard:hover {
           transform: translateY(-3px) scale(1.01);
           box-shadow: var(--shadow-lg);
-          border-color: rgba(227,150,191,0.2);
+          border-color: rgba(59,130,246,0.2);
         }
         .dcard:hover .dcard-icon-wrap {
           background: ${PINK};
@@ -232,8 +232,8 @@ export default function CuentaPage() {
         .dcard:hover .dcard-icon-wrap svg { stroke: #fff; }
         .dcard-icon-wrap {
           width: 52px; height: 52px; border-radius: 14px;
-          background: #fdf2f8;
-          border: 1px solid rgba(227,150,191,0.1);
+          background: #eff6ff;
+          border: 1px solid rgba(59,130,246,0.1);
           display: flex; align-items: center; justify-content: center;
           margin-right: 18px; flex-shrink: 0;
           transition: background 0.2s, box-shadow 0.2s;
@@ -292,14 +292,14 @@ export default function CuentaPage() {
         .hero-cover {
           position: relative;
           overflow: hidden;
-          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #5b21b6 50%, #9d174d 75%, #be185d 100%);
+          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #5b21b6 50%, #1e3a8a 75%, #1d4ed8 100%);
         }
         .hero-cover::before {
           content: '';
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(ellipse 60% 80% at 20% 30%, rgba(227,150,191,0.25) 0%, transparent 50%),
+            radial-gradient(ellipse 60% 80% at 20% 30%, rgba(59,130,246,0.25) 0%, transparent 50%),
             radial-gradient(ellipse 50% 60% at 80% 70%, rgba(129,140,248,0.2) 0%, transparent 50%),
             radial-gradient(ellipse 40% 50% at 50% 50%, rgba(168,85,247,0.15) 0%, transparent 60%);
           z-index: 1;
@@ -328,7 +328,7 @@ export default function CuentaPage() {
           transition: all 0.2s; border-bottom: 2.5px solid transparent;
         }
         .section-tab:hover { color: #1a1a1a; }
-        .section-tab.active { color: #1a1a1a; border-bottom-color: #e396bf; }
+        .section-tab.active { color: #1a1a1a; border-bottom-color: #3b82f6; }
         .section-tab .tab-icon {
           width: 28px; height: 28px; border-radius: 9px;
           display: flex; align-items: center; justify-content: center;
@@ -384,7 +384,7 @@ export default function CuentaPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
             <div style={{ position: 'relative' }}>
-              <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 0 0 3px rgba(227,150,191,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.15)' }}>
+              <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 0 0 3px rgba(59,130,246,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.15)' }}>
                 {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
               </div>
               {!medalError ? (
@@ -438,7 +438,7 @@ export default function CuentaPage() {
               </div>
               <p style={{ margin: '5px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
-            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, boxShadow: '0 4px 14px rgba(227,150,191,0.25)' }}>
+            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, boxShadow: '0 4px 14px rgba(59,130,246,0.25)' }}>
               <Trophy size={15} /> Tienda de puntos
             </Link>
           </div>
@@ -447,7 +447,7 @@ export default function CuentaPage() {
         {/* Quick Actions Icons (PC) */}
         <style>{`
           @keyframes qa-float-desk { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-          @keyframes qa-glow-desk { 0%,100% { filter: drop-shadow(0 0 3px rgba(227,150,191,0.2)); } 50% { filter: drop-shadow(0 0 10px rgba(227,150,191,0.35)); } }
+          @keyframes qa-glow-desk { 0%,100% { filter: drop-shadow(0 0 3px rgba(59,130,246,0.2)); } 50% { filter: drop-shadow(0 0 10px rgba(59,130,246,0.35)); } }
           .cuenta-desktop-qa .qa-desk-float { animation: qa-float-desk 3s ease-in-out infinite; }
           .cuenta-desktop-qa .qa-desk-float:nth-child(1) { animation-delay: 0s; }
           .cuenta-desktop-qa .qa-desk-float:nth-child(2) { animation-delay: 0.4s; }
@@ -458,7 +458,7 @@ export default function CuentaPage() {
         <div className="cuenta-desktop-qa" style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
           {[
             { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
-            { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#e396bf,#f472b6)', shadow: 'rgba(227,150,191,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
+            { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#3b82f6,#f472b6)', shadow: 'rgba(59,130,246,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
             { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778909156669-pegada-1778909150770.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=fD%2Fi%2B6jEPBTW2nenPdkRcfsEbOJa60HYpbbu4i1Aexl10q7aclo9oDq7sQ6EJek6knoKaM9sp8mnOz5%2Fvgdk2ZjBHMrovT%2Bah08BiVFYAgb5kLEpQbxcYTHgX8dxk0ZruQnyx%2FGctf4bmqxWks1hxpLl3skIUFINOqFeU%2FDQ1%2FVoOdnJAMoRQ0L3%2BNtCmzLjkQBZV5JrzJTszeUSHSFl80uB3Os1qsXvgZhvnHkfsqq4mZ8ret4548aMV1TH0EDbO96mv8DWVFNqSuK9gyF2gWcM82KKG2nXP57Fj6B8JVvkjC3jevkIMaNrm8Hn4r4Nm2bsdK3mGk7QKHS53wHZ1Q%3D%3D' },
             { icon: MapPin,       label: 'Dirección',  href: '/cuenta/direcciones',g: 'linear-gradient(135deg,#10b981,#34d399)', shadow: 'rgba(16,185,129,0.35)', image: 'https://esmartyelevadores.com.br/assets/images/icon-endereo.webp' },
           ].map((sc, idx) => {
@@ -509,7 +509,7 @@ export default function CuentaPage() {
                           right: -6,
                           width: 20,
                           height: 20,
-                          background: '#e396bf',
+                          background: '#3b82f6',
                           color: '#fff',
                           borderRadius: '50%',
                           fontSize: 12,
@@ -569,11 +569,11 @@ export default function CuentaPage() {
           .pm-pill:active { transform: scale(0.93); opacity: 0.85; }
           .pm-pill { transition: transform 0.18s cubic-bezier(.34,1.56,.64,1); }
           .pm-row { transition: background 0.12s; }
-          .pm-row:active { background: rgba(227,150,191,0.04) !important; }
+          .pm-row:active { background: rgba(59,130,246,0.04) !important; }
           .pm-logout:active { background: #fee2e2 !important; transform: scale(0.98); }
           .pm-logout { transition: all 0.15s; }
           @keyframes qa-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-          @keyframes qa-glow-pulse { 0%,100% { filter: drop-shadow(0 0 3px rgba(227,150,191,0.2)); } 50% { filter: drop-shadow(0 0 8px rgba(227,150,191,0.25)); } }
+          @keyframes qa-glow-pulse { 0%,100% { filter: drop-shadow(0 0 3px rgba(59,130,246,0.2)); } 50% { filter: drop-shadow(0 0 8px rgba(59,130,246,0.25)); } }
           @keyframes qa-wiggle { 0% { transform: rotate(0deg); } 15% { transform: rotate(-8deg); } 30% { transform: rotate(6deg); } 45% { transform: rotate(-4deg); } 60% { transform: rotate(2deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
           .qa-icon-float { animation: qa-float 3s ease-in-out infinite; }
           .qa-icon-float:nth-child(1) { animation-delay: 0s; }
@@ -696,7 +696,7 @@ export default function CuentaPage() {
               </p>
             </div>
 
-            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, padding: '10px 24px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 20, textDecoration: 'none', boxShadow: '0 6px 16px rgba(227,150,191,0.3)', transition: 'transform 0.2s' }}>
+            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, padding: '10px 24px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 20, textDecoration: 'none', boxShadow: '0 6px 16px rgba(59,130,246,0.3)', transition: 'transform 0.2s' }}>
               <Trophy size={15} /> Tienda de puntos
             </Link>
           </div>
@@ -707,7 +707,7 @@ export default function CuentaPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
             {[
               { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
-              { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#e396bf,#f472b6)', shadow: 'rgba(227,150,191,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
+              { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#3b82f6,#f472b6)', shadow: 'rgba(59,130,246,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
               { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778909156669-pegada-1778909150770.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=fD%2Fi%2B6jEPBTW2nenPdkRcfsEbOJa60HYpbbu4i1Aexl10q7aclo9oDq7sQ6EJek6knoKaM9sp8mnOz5%2Fvgdk2ZjBHMrovT%2Bah08BiVFYAgb5kLEpQbxcYTHgX8dxk0ZruQnyx%2FGctf4bmqxWks1hxpLl3skIUFINOqFeU%2FDQ1%2FVoOdnJAMoRQ0L3%2BNtCmzLjkQBZV5JrzJTszeUSHSFl80uB3Os1qsXvgZhvnHkfsqq4mZ8ret4548aMV1TH0EDbO96mv8DWVFNqSuK9gyF2gWcM82KKG2nXP57Fj6B8JVvkjC3jevkIMaNrm8Hn4r4Nm2bsdK3mGk7QKHS53wHZ1Q%3D%3D' },
               { icon: MapPin,       label: 'Dirección',  href: '/cuenta/direcciones',g: 'linear-gradient(135deg,#10b981,#34d399)', shadow: 'rgba(16,185,129,0.35)', image: 'https://esmartyelevadores.com.br/assets/images/icon-endereo.webp' },
             ].map((sc, idx) => {
@@ -754,7 +754,7 @@ export default function CuentaPage() {
                           right: -4,
                           width: 18,
                           height: 18,
-                          background: '#e396bf',
+                          background: '#3b82f6',
                           color: '#fff',
                           borderRadius: '50%',
                           fontSize: 11,
@@ -847,7 +847,7 @@ function DesktopCard({ item }: { item: MenuItem }) {
 
 const CARD_GRADIENTS = [
   'linear-gradient(135deg,#6366f1,#8b5cf6)',
-  'linear-gradient(135deg,#e396bf,#f472b6)',
+  'linear-gradient(135deg,#3b82f6,#f472b6)',
   'linear-gradient(135deg,#f59e0b,#fbbf24)',
   'linear-gradient(135deg,#10b981,#34d399)',
   'linear-gradient(135deg,#3b82f6,#60a5fa)',
@@ -855,10 +855,10 @@ const CARD_GRADIENTS = [
   'linear-gradient(135deg,#8b5cf6,#a78bfa)',
   'linear-gradient(135deg,#0ea5e9,#38bdf8)',
   'linear-gradient(135deg,#64748b,#94a3b8)',
-  'linear-gradient(135deg,#c0547a,#f97316)',
+  'linear-gradient(135deg,#2563eb,#f97316)',
 ];
 
-const CARD_TINTS = ['#6366f1', '#e396bf', '#f59e0b', '#10b981', '#3b82f6', '#06b6d4', '#8b5cf6', '#0ea5e9', '#64748b', '#c0547a'];
+const CARD_TINTS = ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#3b82f6', '#06b6d4', '#8b5cf6', '#0ea5e9', '#64748b', '#2563eb'];
 
 function ColoredCard({ item, index }: { item: MenuItem; index: number }) {
   const Icon = item.icon;
@@ -950,7 +950,7 @@ function PmRow({ icon: Icon, label, desc, href, g, last, badge }: { icon: any; l
             right: -4,
             width: 18,
             height: 18,
-            background: '#e396bf',
+            background: '#3b82f6',
             color: '#fff',
             borderRadius: '50%',
             fontSize: 11,
@@ -1008,7 +1008,7 @@ function MobileMenuItem({ icon: Icon, label, href, desc }: { icon: any; label: s
       }}
     >
       <div style={{
-        width: 36, height: 36, borderRadius: 10, background: '#fdf2f8',
+        width: 36, height: 36, borderRadius: 10, background: '#eff6ff',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
         <Icon size={17} color={PINK} strokeWidth={2} />

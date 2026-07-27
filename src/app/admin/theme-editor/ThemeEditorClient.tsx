@@ -1751,11 +1751,11 @@ function DesignFields({ baseId, section, onUpdate }: {
     case 'cm_navbar': {
       type CmNavPreset = { id: string; label: string; desc: string; bg: string; sBg: string; sR: number; lH: number; slH: number; lC: string; aC: string; slC: string; bBg: string; bR: number; bT: string; bL: string; sS: boolean; lP: 'left'|'center'; sh: string; fS: number; bB: boolean; bCol: string };
       const CM_NAV: CmNavPreset[] = [
-        { id: 'default',   label: 'Original',       desc: 'Pill blanca al hacer scroll',          bg: 'transparent',           sBg: 'rgba(255,255,255,0.95)', sR: 16, lH: 110, slH: 60, lC: '#fff',    aC: '#F97316', slC: '#374151', bBg: '#F97316', bR: 8,  bT: 'WhatsApp', bL: 'https://wa.me/56982342539', sS: false, lP: 'left',   sh: 'md', fS: 14, bB: false, bCol: 'transparent' },
+        { id: 'default',   label: 'Original',       desc: 'Pill blanca al hacer scroll',          bg: 'transparent',           sBg: 'rgba(255,255,255,0.95)', sR: 16, lH: 110, slH: 60, lC: '#fff',    aC: '#F97316', slC: '#374151', bBg: '#F97316', bR: 8,  bT: 'WhatsApp', bL: 'https://wa.me/56962293893', sS: false, lP: 'left',   sh: 'md', fS: 14, bB: false, bCol: 'transparent' },
         { id: 'squared',   label: 'Cuadrada',       desc: 'Barra recta sin bordes redondeados',   bg: 'transparent',           sBg: 'rgba(255,255,255,0.98)', sR: 0,  lH: 90,  slH: 50, lC: '#fff',    aC: '#ef4444', slC: '#1f2937', bBg: '#ef4444', bR: 0,  bT: 'Contactar', bL: '#contacto', sS: false, lP: 'left',   sh: 'sm', fS: 13, bB: true, bCol: '#e5e7eb' },
-        { id: 'pill',      label: 'Píldora',        desc: 'Redondeada extrema tipo cápsula',       bg: 'transparent',           sBg: 'rgba(255,255,255,0.98)', sR: 50, lH: 80,  slH: 46, lC: '#fff',    aC: '#F97316', slC: '#374151', bBg: '#F97316', bR: 50, bT: 'WhatsApp', bL: 'https://wa.me/56982342539', sS: true, lP: 'left',   sh: 'lg', fS: 12, bB: false, bCol: 'transparent' },
-        { id: 'dark',      label: 'Oscura',         desc: 'Barra negra sólida, links blancos',    bg: 'transparent',           sBg: 'rgba(17,17,17,0.97)',    sR: 12, lH: 100, slH: 55, lC: '#fff',    aC: '#F97316', slC: '#e5e7eb', bBg: '#F97316', bR: 8,  bT: 'WhatsApp', bL: 'https://wa.me/56982342539', sS: false, lP: 'left',   sh: 'lg', fS: 14, bB: false, bCol: 'transparent' },
-        { id: 'centered',  label: 'Logo Centro',    desc: 'Logo centrado, links a los lados',     bg: 'transparent',           sBg: 'rgba(255,255,255,0.95)', sR: 16, lH: 120, slH: 65, lC: '#fff',    aC: '#F97316', slC: '#374151', bBg: '#F97316', bR: 8,  bT: 'WhatsApp', bL: 'https://wa.me/56982342539', sS: false, lP: 'center', sh: 'md', fS: 13, bB: false, bCol: 'transparent' },
+        { id: 'pill',      label: 'Píldora',        desc: 'Redondeada extrema tipo cápsula',       bg: 'transparent',           sBg: 'rgba(255,255,255,0.98)', sR: 50, lH: 80,  slH: 46, lC: '#fff',    aC: '#F97316', slC: '#374151', bBg: '#F97316', bR: 50, bT: 'WhatsApp', bL: 'https://wa.me/56962293893', sS: true, lP: 'left',   sh: 'lg', fS: 12, bB: false, bCol: 'transparent' },
+        { id: 'dark',      label: 'Oscura',         desc: 'Barra negra sólida, links blancos',    bg: 'transparent',           sBg: 'rgba(17,17,17,0.97)',    sR: 12, lH: 100, slH: 55, lC: '#fff',    aC: '#F97316', slC: '#e5e7eb', bBg: '#F97316', bR: 8,  bT: 'WhatsApp', bL: 'https://wa.me/56962293893', sS: false, lP: 'left',   sh: 'lg', fS: 14, bB: false, bCol: 'transparent' },
+        { id: 'centered',  label: 'Logo Centro',    desc: 'Logo centrado, links a los lados',     bg: 'transparent',           sBg: 'rgba(255,255,255,0.95)', sR: 16, lH: 120, slH: 65, lC: '#fff',    aC: '#F97316', slC: '#374151', bBg: '#F97316', bR: 8,  bT: 'WhatsApp', bL: 'https://wa.me/56962293893', sS: false, lP: 'center', sh: 'md', fS: 13, bB: false, bCol: 'transparent' },
         { id: 'glass',     label: 'Cristal',        desc: 'Glass blur desde inicio',               bg: 'rgba(255,255,255,0.15)', sBg: 'rgba(255,255,255,0.6)',   sR: 20, lH: 95,  slH: 52, lC: '#fff',    aC: '#fbbf24', slC: '#1f2937', bBg: '#fbbf24', bR: 12, bT: 'Escríbenos', bL: '#contacto', sS: true, lP: 'left',   sh: 'md', fS: 13, bB: false, bCol: 'transparent' },
         { id: 'gradient',  label: 'Degradado',      desc: 'Fondo degradado naranja-rojo',         bg: 'transparent',           sBg: 'linear-gradient(135deg,#F97316,#ef4444)', sR: 14, lH: 100, slH: 55, lC: '#fff', aC: '#fef3c7', slC: '#fff', bBg: '#fff', bR: 8, bT: 'Contacto', bL: '#contacto', sS: false, lP: 'left', sh: 'lg', fS: 14, bB: false, bCol: 'transparent' },
         { id: 'minimal',   label: 'Minimal',        desc: 'Ultra limpia, sin sombra, delgada',    bg: 'transparent',           sBg: 'rgba(255,255,255,0.98)', sR: 6,  lH: 70,  slH: 40, lC: '#fff',    aC: '#F97316', slC: '#6b7280', bBg: '#F97316', bR: 6,  bT: 'Contacto', bL: '#contacto', sS: false, lP: 'left', sh: 'none', fS: 12, bB: true, bCol: '#f0f0f0' },
@@ -1834,7 +1834,7 @@ function DesignFields({ baseId, section, onUpdate }: {
 
         <SH>Botón CTA</SH>
         <Field icon={<Type size={13} />} label="Texto" value={s.cmNavBtnText || 'WhatsApp'} onChange={v => onUpdate({ cmNavBtnText: v })} placeholder="WhatsApp" />
-        <Field icon={<Link size={13} />} label="Link" value={s.cmNavBtnLink || 'https://wa.me/56982342539'} onChange={v => onUpdate({ cmNavBtnLink: v })} placeholder="https://wa.me/..." />
+        <Field icon={<Link size={13} />} label="Link" value={s.cmNavBtnLink || 'https://wa.me/56962293893'} onChange={v => onUpdate({ cmNavBtnLink: v })} placeholder="https://wa.me/..." />
         <ColorField label="Color fondo botón" value={s.cmNavBtnBg || '#F97316'} onChange={v => onUpdate({ cmNavBtnBg: v })} />
         <RangeField label="Redondez botón" value={s.cmNavBtnRadius ?? 8} onChange={v => onUpdate({ cmNavBtnRadius: v })} min={0} max={50} unit="px" />
 
@@ -3187,7 +3187,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <ImageUploadField label="Imagen del logo" value={s.logoUrl || ''} onChange={v => onUpdate({ logoUrl: v })} />
         <SH>Enlace del botón CTA</SH>
         <Field icon={<Type size={13} />} label="Texto botón" value={s.cmNavBtnText || 'WhatsApp'} onChange={v => onUpdate({ cmNavBtnText: v })} placeholder="WhatsApp" />
-        <Field icon={<Link size={13} />} label="URL botón" value={s.cmNavBtnLink || 'https://wa.me/56982342539'} onChange={v => onUpdate({ cmNavBtnLink: v })} placeholder="https://wa.me/..." />
+        <Field icon={<Link size={13} />} label="URL botón" value={s.cmNavBtnLink || 'https://wa.me/56962293893'} onChange={v => onUpdate({ cmNavBtnLink: v })} placeholder="https://wa.me/..." />
       </div>);
 
     case 'cm_hero':
@@ -3207,7 +3207,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <ImageUploadField label="Logo del footer" value={s.logoUrl || ''} onChange={v => onUpdate({ logoUrl: v })} />
         <Field icon={<Monitor size={13} />} label="Ancho logo (px)" value={String(s.footerLogoWidth ?? 170)} onChange={v => onUpdate({ footerLogoWidth: Number(v) || 170 })} placeholder="170" />
         <SH>Empresa</SH>
-        <Field icon={<Type size={13} />} label="Nombre" value={s.companyName || 'Kevin & Coco Chile'} onChange={v => onUpdate({ companyName: v })} placeholder="Kevin & Coco Chile" />
+        <Field icon={<Type size={13} />} label="Nombre" value={s.companyName || 'Don Balato Iván Chile'} onChange={v => onUpdate({ companyName: v })} placeholder="Don Balato Iván Chile" />
         <Field icon={<Type size={13} />} label="Descripción" value={s.companyDescription || 'Tu tienda de maquillaje y artículos de beauty favoritos'} onChange={v => onUpdate({ companyDescription: v })} placeholder="Tu tienda de maquillaje..." />
         <SH>Columnas</SH>
         <Field icon={<Type size={13} />} label="Título columna 1" value={s.footerCol1Title || 'Comprar'} onChange={v => onUpdate({ footerCol1Title: v })} placeholder="Comprar" />
@@ -3233,12 +3233,12 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
             return { title: title?.trim() || '', url: url?.trim() || '' };
           });
           onUpdate({ footerCol3Links: lines });
-        }} placeholder="WhatsApp|https://wa.me/56912345678&#10;Instagram|https://instagram.com/kevincocochile" />
+        }} placeholder="WhatsApp|https://wa.me/56912345678&#10;Instagram|https://instagram.com/donbalatoivan" />
         <Field icon={<Type size={13} />} label="Título columna 4 / Newsletter" value={s.footerCol4Title || 'Suscríbete'} onChange={v => onUpdate({ footerCol4Title: v })} placeholder="Suscríbete" />
         <SH>Contacto</SH>
         <Field icon={<Type size={13} />} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Calle, Ciudad, País" />
         <Field icon={<Type size={13} />} label="Teléfono" value={s.phone || ''} onChange={v => onUpdate({ phone: v })} placeholder="+56 9 1234 5678" />
-        <Field icon={<Type size={13} />} label="Email" value={s.email || 'kevincocochile2026@gmail.com'} onChange={v => onUpdate({ email: v })} placeholder="kevincocochile2026@gmail.com" />
+        <Field icon={<Type size={13} />} label="Email" value={s.email || 'contacto@donbalatoivan.cl'} onChange={v => onUpdate({ email: v })} placeholder="contacto@donbalatoivan.cl" />
         <SH>Redes sociales</SH>
         <Field icon={<Type size={13} />} label="Instagram" value={s.instagram || ''} onChange={v => onUpdate({ instagram: v })} placeholder="@usuario" />
         <Field icon={<Type size={13} />} label="Facebook" value={s.facebook || ''} onChange={v => onUpdate({ facebook: v })} placeholder="pagina" />
@@ -3831,7 +3831,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <Field icon={<span>📍</span>} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Dirección de la empresa" />
         <Field icon={<span>📞</span>} label="Teléfono" value={s.phone || ''} onChange={v => onUpdate({ phone: v })} placeholder="+56 9 1234 5678" />
         <Field icon={<span>📧</span>} label="Email" value={s.email || ''} onChange={v => onUpdate({ email: v })} placeholder="info@yaxsell.com" />
-        <Field icon={<span>💬</span>} label="WhatsApp" value={s.whatsapp || ''} onChange={v => onUpdate({ whatsapp: v })} placeholder="+56982342539" />
+        <Field icon={<span>💬</span>} label="WhatsApp" value={s.whatsapp || ''} onChange={v => onUpdate({ whatsapp: v })} placeholder="+56962293893" />
         
         <SH>Redes Sociales</SH>
         <Field icon={<span>📸</span>} label="Instagram" value={s.instagram || ''} onChange={v => onUpdate({ instagram: v })} placeholder="@yaxsell" />

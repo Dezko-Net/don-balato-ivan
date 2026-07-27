@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
 import { Bell, CheckCircle, XCircle, Clock, Package, ArrowLeft } from 'lucide-react';
 
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 const BG_CONSULTAS = 'https://images.unsplash.com/photo-1556742049-0cfed4f6351a?w=800&q=80';
 
@@ -121,9 +121,9 @@ export default function ConsultasPage() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 24 }}>
-        <div style={{ background: '#fdf2f8', borderRadius: 12, padding: 14, textAlign: 'center', border: '1px solid #fbcfe8' }}>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#c0547a' }}>{pending.length}</div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#c0547a', textTransform: 'uppercase', letterSpacing: '.5px' }}>Pendientes</div>
+        <div style={{ background: '#eff6ff', borderRadius: 12, padding: 14, textAlign: 'center', border: '1px solid #dbeafe' }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#2563eb' }}>{pending.length}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.5px' }}>Pendientes</div>
         </div>
         <div style={{ background: '#f0fdf4', borderRadius: 12, padding: 14, textAlign: 'center', border: '1px solid #bbf7d0' }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#16a34a' }}>{available.length}</div>
@@ -153,7 +153,7 @@ export default function ConsultasPage() {
             <Link key={a.$id} href={a.status === 'available' ? `/producto/${a.productId}` : '#'} style={{ textDecoration: 'none' }}>
               <div style={{
                 background: a.status === 'pending' ? '#fffbf5' : a.status === 'available' ? '#f0fdf4' : '#fef2f2',
-                border: `1px solid ${a.status === 'pending' ? '#fbcfe8' : a.status === 'available' ? '#bbf7d0' : '#fecaca'}`,
+                border: `1px solid ${a.status === 'pending' ? '#dbeafe' : a.status === 'available' ? '#bbf7d0' : '#fecaca'}`,
                 borderRadius: 14, padding: 14, display: 'flex', gap: 12, alignItems: 'center',
                 transition: 'transform .15s, box-shadow .15s',
               }}
@@ -171,7 +171,7 @@ export default function ConsultasPage() {
                   <p style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.productName}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                     {a.status === 'pending' && (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#c0547a', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#2563eb', display: 'flex', alignItems: 'center', gap: 3 }}>
                         <Clock size={11} /> En revisión
                       </span>
                     )}

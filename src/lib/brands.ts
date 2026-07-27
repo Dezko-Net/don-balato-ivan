@@ -19,10 +19,8 @@ export const extractBrand = (name?: string): string => {
   return '';
 };
 
-// Marca de la casa: la tienda ES Kevin & Coco, así que un producto sin BRAND y
-// sin marca reconocible en el nombre cuenta como Kevin & Coco (misma convención
-// que usa plantilla 23 al mostrar el vendor: BRAND vacío ⇒ 'Kevin & Coco').
-export const HOUSE_BRAND = 'Kevin & Coco';
+// Marca de la casa: la tienda ES Don Balato Iván
+export const HOUSE_BRAND = 'Don Balato Iván';
 
 export const productMatchesBrand = (
   p: { BRAND?: string; NAME?: string },

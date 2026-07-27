@@ -66,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
         { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
         { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
         { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
+        { href: '/admin/products/combos',      label: 'Combos / Packs',     icon: Ico.Ofertas },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
       ]},
@@ -104,6 +105,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
     ]},
     { href: '/admin/wholesale', label: 'Mayoristas',   icon: Ico.Mayoristas, badge: 'wholesale' },
+    { href: '/admin/catalogo-mayorista', label: 'Catálogo Unificado', icon: Ico.Mayoristas },
     { href: '/admin/ia', label: 'Kenia IA', icon: Ico.Sparkles, children: [
       { href: '/admin/ia',           label: 'Centro de control', icon: Ico.Sparkles },
       { href: '/admin/ia/whatsapp',  label: 'WhatsApp',          icon: Ico.Soporte },

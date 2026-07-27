@@ -5,7 +5,7 @@ import { getGeminiAuthHeaders, buildGeminiUrl } from '@/lib/google-auth';
 
 import { GEMINI_TEXT_MODELS as MODELS } from '@/lib/gemini-models';
 
-const SYSTEM_PROMPT = `Eres Kenia, el asistente de IA del panel de administración de Kevin&Coco, una plataforma de e-commerce.
+const SYSTEM_PROMPT = `Eres Kenia, el asistente de IA del panel de administración de Don Balato Iván, una plataforma de e-commerce.
 Tu nombre es Kenia y eres experta en comercio electrónico. Habla siempre en español, sé concisa, amigable y profesional.
 
 ## ⚡ MODO AUTÓNOMO

@@ -14,28 +14,31 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import ScrollToTop from '@/components/ScrollToTop';
 import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import ClientFetchCache from '@/components/ClientFetchCache';
+import GlobalMobileNav from '@/components/GlobalMobileNav';
+import CartDrawerHost from '@/components/CartDrawerHost';
+import ClientSideWidgets from '@/components/ClientSideWidgets';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.kevincocochile.cl'),
+  metadataBase: new URL('https://www.donbalatoivan.cl'),
   title: {
-    default: 'Kevin & Coco | Cosmética y Belleza en Chile',
-    template: '%s | Kevin & Coco',
+    default: 'Don Balato Iván | Cosmética y Belleza en Chile',
+    template: '%s | Don Balato Iván',
   },
   description:
     'Tienda de cosmética, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen: mientras más llevas, menos pagas. Envíos a todo Chile.',
-  alternates: { canonical: 'https://www.kevincocochile.cl/' },
+  alternates: { canonical: 'https://www.donbalatoivan.cl/' },
   keywords: [
     'cosmética Chile', 'maquillaje por mayor', 'skincare Chile',
-    'cosmética por mayor', 'Kevin & Coco', 'belleza Chile',
+    'cosmética por mayor', 'Don Balato Iván', 'belleza Chile',
   ],
   openGraph: {
     type: 'website',
     locale: 'es_CL',
-    siteName: 'Kevin & Coco',
-    title: 'Kevin & Coco | Cosmética y Belleza en Chile',
+    siteName: 'Don Balato Iván',
+    title: 'Don Balato Iván | Cosmética y Belleza en Chile',
     description:
       'Cosmética, maquillaje y skincare al detalle y por mayor. Precios por volumen y envíos a todo Chile.',
-    url: 'https://www.kevincocochile.cl/',
+    url: 'https://www.donbalatoivan.cl/',
   },
   robots: {
     index: true,
@@ -106,7 +109,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <CartProvider>
                   <TemplateProvider>
                     <StoreShell>{children}</StoreShell>
+                    <GlobalMobileNav />
+                    <CartDrawerHost />
                     <HomeOnlyWidgets />
+                    <ClientSideWidgets />
                     <BackToTop />
                     <ScrollToTop />
                   </TemplateProvider>

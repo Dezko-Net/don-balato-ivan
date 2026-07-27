@@ -50,9 +50,11 @@ export function resolveProductDisplayPrice(
   liveLogic?: LiveLogicConfig | null,
 ): ResolvedProductPrice {
   const base = product.PRICE || 0;
+  const catalog = (product as any).CATALOGPRICE && (product as any).CATALOGPRICE > 0 ? (product as any).CATALOGPRICE : null;
   const wholesale = product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0 ? product.WHOLESALEPRICE : null;
-  // If PRICE is 0 but WHOLESALEPRICE exists, use wholesale as base
-  const effectiveBase = base > 0 ? base : (wholesale ?? 0);
+  const fallbackPrice = catalog || wholesale || 0;
+  // Si no hay precio normal (PRICE <= 0), usamos CATALOGPRICE o WHOLESALEPRICE como precio oficial
+  const effectiveBase = base > 0 ? base : fallbackPrice;
 
   // If a product has a wholesale price from 1 unit or less, that is its final display price.
   if (wholesale && wholesale > 0 && product.WHOLESALEMINQUANTITY != null && product.WHOLESALEMINQUANTITY <= 1) {

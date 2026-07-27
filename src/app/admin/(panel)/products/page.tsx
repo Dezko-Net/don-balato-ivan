@@ -18,6 +18,7 @@ type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string; _
 
 import { MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import { invalidateProductCache, cached, TTL } from '@/lib/cache';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 
 const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
@@ -483,18 +484,6 @@ export default function ProductsPage() {
   const [globalStats, setGlobalStats] = useState<{ total: number; inStock: number; outOfStock: number } | null>(null);
 
   useEffect(() => {
-    const cachedStats = localStorage.getItem('admin_products_global_stats');
-    if (cachedStats) {
-      try {
-        const parsed = JSON.parse(cachedStats);
-        const age = Date.now() - parsed.timestamp;
-        if (age < 24 * 60 * 60 * 1000) {
-          setGlobalStats(parsed.stats);
-          return;
-        }
-      } catch {}
-    }
-    
     (async () => {
       try {
         const { databases } = getServices();
@@ -867,6 +856,7 @@ export default function ProductsPage() {
         COST: Math.round(Number(d.COST)) || 0,
         CURRENTPRICE: d.CURRENTPRICE ? Math.round(Number(d.CURRENTPRICE)) : null,
         WHOLESALEPRICE: Math.round(Number(d.WHOLESALEPRICE)) || 0,
+        CATALOGPRICE: Math.round(Number(d.CATALOGPRICE || d.WHOLESALEPRICE)) || 0,
         WHOLESALEMINQUANTITY: Math.round(Number(d.WHOLESALEMINQUANTITY)) || 0,
         PACKQTY: Math.round(Number(d.PACKQTY)) || 0,
         BOXPRICE: Math.round(Number(d.BOXPRICE)) || 0,
@@ -1038,7 +1028,7 @@ export default function ProductsPage() {
       if (imageDrawer.img1 !== imageDrawer.origImg1) payload.IMAGEURL = imageDrawer.img1;
       if (imageDrawer.img2 !== imageDrawer.origImg2) payload.IMAGEURL2 = imageDrawer.img2;
       if (imageDrawer.img3 !== imageDrawer.origImg3) payload.IMAGEURL3 = imageDrawer.img3;
-      if (imageDrawer.img4 !== imageDrawer.origImg4) payload.IMAGEURL4 = imageDrawer.img4;
+      // IMAGEURL4/5 no existen en el schema — no enviarlos
       if (imageDrawer.description !== imageDrawer.origDescription) payload.DESCRIPTION = imageDrawer.description;
       if (imageDrawer.features !== imageDrawer.origFeatures) {
         const feats = imageDrawer.features.split('\n').map((s: string) => s.trim()).filter(Boolean);
@@ -1155,7 +1145,7 @@ export default function ProductsPage() {
         const handle = slugify(parent.NAME);
         const title = isVariant ? '' : parent.NAME;
         const desc = isVariant ? '' : (parent.DESCRIPTION || '');
-        const vendor = isVariant ? '' : 'Kevin & Coco';
+        const vendor = isVariant ? '' : 'Don Balato Iván';
         const category = isVariant ? '' : '';
         const type = isVariant ? '' : catName(parent.CATEGORYID);
         const tags = isVariant ? '' : (parent.TAGS || '');
@@ -1726,9 +1716,17 @@ export default function ProductsPage() {
                     {/* Precio Mayor (obligatorio) */}
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Precio Paquete / Mayor (CLP) <span className="text-red-500">*</span></label>
-                      <input type="number" value={modal.data.WHOLESALEPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value) } } : m)}
+                      <input type="number" value={modal.data.WHOLESALEPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value), CATALOGPRICE: m.data.CATALOGPRICE ?? Number(e.target.value) } } : m)}
                         className={`w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 ${!modal.data.WHOLESALEPRICE ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
                       <p className="text-[10px] text-gray-500 mt-1">Aplica desde {modal.data.PACKQTY || 0} un. · Obligatorio</p>
+                    </div>
+                    {/* Precio Catálogo (Especial) */}
+                    <div>
+                      <label className="block text-xs font-medium text-amber-700 font-bold mb-1">Precio Catálogo (CLP) ✨</label>
+                      <input type="number" value={modal.data.CATALOGPRICE ?? modal.data.WHOLESALEPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATALOGPRICE: Number(e.target.value) } } : m)}
+                        placeholder="Mismo de mayorista o especial"
+                        className="w-full px-3 py-2 border border-amber-300 bg-amber-50/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold" />
+                      <p className="text-[10px] text-amber-600 mt-1 font-medium">Aplica para compras en el Catálogo Mayorista (/catalogo)</p>
                     </div>
                     {/* Precio Detalle (calculado = mayor × 1.5) */}
                     <div>
@@ -2417,7 +2415,7 @@ export default function ProductsPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0">
                               {group.original.imageurl ? (
-                                <img src={group.original.imageurl} alt={group.original.name} className="w-full h-full object-cover" />
+                                <img src={resolveStorageImageUrl(group.original.imageurl)} alt={group.original.name} className="w-full h-full object-cover" />
                               ) : (
                                 <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />
                               )}
@@ -2460,7 +2458,7 @@ export default function ProductsPage() {
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden shrink-0">
                                 {dup.imageurl ? (
-                                  <img src={dup.imageurl} alt={dup.name} className="w-full h-full object-cover" />
+                                  <img src={resolveStorageImageUrl(dup.imageurl)} alt={dup.name} className="w-full h-full object-cover" />
                                 ) : (
                                   <Package className="w-4 h-4 text-gray-400 m-auto mt-2" />
                                 )}
@@ -2575,7 +2573,7 @@ export default function ProductsPage() {
                         >
                           <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
                             {p.IMAGEURL ? (
-                              <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
+                              <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} className="w-full h-full object-cover" />
                             ) : (
                               <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />
                             )}
@@ -2960,7 +2958,7 @@ export default function ProductsPage() {
                         </div>
                         {url ? (
                           <div className="relative w-full h-28 rounded-lg overflow-hidden bg-gray-100 mb-2">
-                            <img src={url} alt={slot.label} className="w-full h-full object-cover" />
+                            <img src={resolveStorageImageUrl(url)} alt={slot.label} className="w-full h-full object-cover" />
                           </div>
                         ) : (
                           <button

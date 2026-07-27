@@ -11,7 +11,7 @@ import { PointsStoreService, type PointsStoreItem } from '@/services/pointsStore
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { getLevelMeta } from '@/lib/loyalty-levels';
 
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 const FF = '"DM Sans",system-ui,sans-serif';
 
 const TYPE_ICONS: Record<string, typeof Gift> = {
@@ -140,9 +140,9 @@ export default function PuntosPage() {
           borderRadius: 24,
           padding: '28px 24px',
           marginBottom: 24,
-          background: `linear-gradient(135deg, ${level.color}22, #fdf2f8 40%, #fff)`,
-          border: '1px solid rgba(227,150,191,0.2)',
-          boxShadow: '0 12px 40px rgba(227,150,191,0.12)',
+          background: `linear-gradient(135deg, ${level.color}22, #eff6ff 40%, #fff)`,
+          border: '1px solid rgba(59,130,246,0.2)',
+          boxShadow: '0 12px 40px rgba(59,130,246,0.12)',
         }}
       >
         <div style={{ position: 'absolute', top: -30, right: -20, opacity: 0.15 }}>
@@ -150,7 +150,7 @@ export default function PuntosPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, position: 'relative' }}>
           <div>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: 1 }}>Puntos disponibles</p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#1e3a8a', textTransform: 'uppercase', letterSpacing: 1 }}>Puntos disponibles</p>
             <p style={{ margin: '8px 0 0', fontSize: 42, fontWeight: 900, color: '#111', letterSpacing: -1, lineHeight: 1 }}>
               {balance.available.toLocaleString()}
             </p>
@@ -162,7 +162,7 @@ export default function PuntosPage() {
             <img src={level.badge} alt={level.name} style={{ width: 56, height: 56, objectFit: 'contain' }} />
           )}
         </div>
-        <p style={{ margin: '16px 0 0', fontSize: 12, color: '#be185d', fontWeight: 600 }}>
+        <p style={{ margin: '16px 0 0', fontSize: 12, color: '#1d4ed8', fontWeight: 600 }}>
           Nivel {level.name} · multiplicador {level.pointsMultiplier}x en compras
         </p>
       </motion.div>
@@ -187,21 +187,21 @@ export default function PuntosPage() {
                 style={{
                   background: '#fff',
                   borderRadius: 20,
-                  border: '1px solid #fce7f3',
+                  border: '1px solid #dbeafe',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  boxShadow: canAfford ? '0 8px 24px rgba(227,150,191,0.1)' : '0 2px 8px rgba(0,0,0,0.04)',
+                  boxShadow: canAfford ? '0 8px 24px rgba(59,130,246,0.1)' : '0 2px 8px rgba(0,0,0,0.04)',
                   opacity: canAfford ? 1 : 0.85,
                 }}
               >
-                <div style={{ height: 120, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <div style={{ height: 120, background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   {item.IMAGEURL ? (
                     <img src={resolveStorageImageUrl(item.IMAGEURL)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <Icon size={48} color={PINK} strokeWidth={1.5} />
                   )}
-                  <span style={{ position: 'absolute', top: 10, left: 10, fontSize: 9, fontWeight: 800, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.9)', color: '#9d174d' }}>
+                  <span style={{ position: 'absolute', top: 10, left: 10, fontSize: 9, fontWeight: 800, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.9)', color: '#1e3a8a' }}>
                     {item.TYPE}
                   </span>
                 </div>
@@ -218,7 +218,7 @@ export default function PuntosPage() {
                         padding: '10px 16px',
                         borderRadius: 999,
                         border: 'none',
-                        background: canAfford ? `linear-gradient(135deg, ${PINK}, #c0547a)` : '#e5e7eb',
+                        background: canAfford ? `linear-gradient(135deg, ${PINK}, #2563eb)` : '#e5e7eb',
                         color: canAfford ? '#fff' : '#9ca3af',
                         fontSize: 12,
                         fontWeight: 800,

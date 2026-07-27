@@ -48,7 +48,7 @@ function getBankDetails(): Record<string, string> {
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   pending:            { label: 'Pendiente',                 color: '#b45309', bg: '#fffbeb' },
   pending_stock:      { label: 'Verificando stock',         color: '#b45309', bg: '#fffbeb' },
-  confirming_stock:   { label: 'Confirmando stock',         color: '#be185d', bg: '#fdf2f8' },
+  confirming_stock:   { label: 'Confirmando stock',         color: '#2563eb', bg: '#eff6ff' },
   stock_confirmed:    { label: 'Stock confirmado',          color: '#166534', bg: '#f0fdf4' },
   partial_stock:      { label: 'Stock parcial',             color: '#e65c00', bg: '#fff3e0' },
   waiting_payment:    { label: 'Esperando pago',            color: '#1558b0', bg: '#e8f0fe' },
@@ -56,7 +56,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
   assembling:         { label: 'Embalando pedido',          color: '#7b1fa2', bg: '#f3e5f5' },
   packing:            { label: 'Embalando pedido',          color: '#d97706', bg: '#fffbeb' },
-  negotiation:        { label: 'Negociación',               color: '#be185d', bg: '#fdf2f8' },
+  negotiation:        { label: 'Negociación',               color: '#2563eb', bg: '#eff6ff' },
   preparing_shipping: { label: 'Etiqueta lista',            color: '#5d4037', bg: '#efebe9' },
   ready_to_ship:      { label: 'Listo para enviar',         color: '#00838f', bg: '#e0f7fa' },
   shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
@@ -430,7 +430,7 @@ export default function PedidoPage() {
           await fetch('/api/admin/whatsapp-send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: '56936599658', message: adminMsg })
+            body: JSON.stringify({ phone: '56962293893', message: adminMsg })
           });
         }
       } catch (errNotify) {
@@ -942,12 +942,12 @@ export default function PedidoPage() {
     if (!isLoggedIn || user?.id !== order.USERID) {
       return (
         <div style={{ background: '#ebebeb', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20, textAlign: 'center' }}>
-          <Shield size={48} color="#e396bf" />
+          <Shield size={48} color="#2563eb" />
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#333', margin: 0 }}>Acceso Denegado</h2>
           <p style={{ color: '#666', fontSize: 14, maxWidth: 400 }}>
             Este pedido pertenece a una cuenta registrada. Para proteger la privacidad, debes iniciar sesión con la cuenta dueña de este pedido para verlo.
           </p>
-          <Link href="/login" style={{ display: 'inline-block', marginTop: 10, padding: '12px 24px', background: '#e396bf', color: '#fff', textDecoration: 'none', borderRadius: 8, fontWeight: 700 }}>
+          <Link href="/login" style={{ display: 'inline-block', marginTop: 10, padding: '12px 24px', background: '#2563eb', color: '#fff', textDecoration: 'none', borderRadius: 8, fontWeight: 700 }}>
             Iniciar Sesión
           </Link>
         </div>
@@ -971,23 +971,23 @@ export default function PedidoPage() {
   const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);
 
   return (
-    <div className="bg-gradient-to-br from-pink-50 via-white to-indigo-50/50 min-h-screen py-8 px-4 sm:px-6 lg:px-8 pb-24">
+    <div className="bg-gradient-to-br from-blue-50/80 via-white to-sky-50/50 min-h-screen py-8 px-4 sm:px-6 lg:px-8 pb-24">
       <div className="max-w-2xl mx-auto space-y-6">
 
         {/* ── Header success banner ── */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-pink-100/40 text-center relative overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-pink-400 via-pink-500 to-indigo-500" />
-          <div className="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-4 border border-pink-100/50 shadow-inner">
+        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-blue-100/40 text-center relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600" />
+          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4 border border-blue-100/50 shadow-inner">
             {isSuccess
-              ? <CheckCircle size={32} className="text-pink-500" />
-              : <Clock size={32} className="text-pink-500" />}
+              ? <CheckCircle size={32} className="text-blue-600" />
+              : <Clock size={32} className="text-blue-600" />}
           </div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">
             {isSuccess ? '¡Pedido confirmado!' : '¡Pedido recibido!'}
           </h1>
           <p className="text-sm text-gray-500 mt-1">Código: <strong className="text-gray-900 font-bold">{order.ORDERCODE}</strong></p>
           <div className="mt-3">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-pink-50 text-pink-600 border border-pink-100/30">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100/30">
               {status.label}
             </span>
           </div>
@@ -1091,17 +1091,17 @@ export default function PedidoPage() {
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (
-            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40">
               {/* Desktop horizontal timeline */}
               <div className="hidden md:flex items-start justify-between relative">
                 <div className="absolute top-4 left-6 right-6 h-0.5 bg-gray-100 z-0" />
-                <div className="absolute top-4 left-6 h-0.5 bg-gradient-to-r from-pink-400 to-pink-500 z-1 transition-all duration-500" style={{ width: currentIdx >= 0 ? `${Math.min(100, (currentIdx / (steps.length - 1)) * 100)}%` : '0%' }} />
+                <div className="absolute top-4 left-6 h-0.5 bg-gradient-to-r from-blue-500 to-blue-600 z-1 transition-all duration-500" style={{ width: currentIdx >= 0 ? `${Math.min(100, (currentIdx / (steps.length - 1)) * 100)}%` : '0%' }} />
                 {steps.map((step, i) => {
                   const done = i <= currentIdx;
                   const active = i === currentIdx;
                   return (
                     <div key={step.key} className="flex flex-col items-center relative z-10 flex-1">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${done ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-200 text-gray-400'} ${active ? 'ring-4 ring-pink-100 scale-110' : ''}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${done ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-400'} ${active ? 'ring-4 ring-blue-100 scale-110' : ''}`}>
                         {step.icon}
                       </div>
                       <span className={`mt-2 text-[10px] text-center leading-tight max-w-[90px] ${active ? 'font-extrabold text-gray-900' : done ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>
@@ -1130,7 +1130,7 @@ export default function PedidoPage() {
                     pending_stock:      { bg: '#f59e0b', border: '#f59e0b', text: '#fff', ring: '#fef3c7', line: '#fbbf24', cardBg: '#fffbeb', cardBorder: '#fde68a' },
                     waiting_payment:    { bg: '#3b82f6', border: '#3b82f6', text: '#fff', ring: '#dbeafe', line: '#60a5fa', cardBg: '#eff6ff', cardBorder: '#bfdbfe' },
                     partial_stock:      { bg: '#f97316', border: '#f97316', text: '#fff', ring: '#ffedd5', line: '#fb923c', cardBg: '#fff7ed', cardBorder: '#fed7aa' },
-                    negotiation:        { bg: '#ec4899', border: '#ec4899', text: '#fff', ring: '#fce7f3', line: '#f472b6', cardBg: '#fdf2f8', cardBorder: '#fbcfe8' },
+                    negotiation:        { bg: '#2563eb', border: '#2563eb', text: '#fff', ring: '#dbeafe', line: '#60a5fa', cardBg: '#eff6ff', cardBorder: '#bfdbfe' },
                   };
                   const doneColor = { bg: '#9ca3af', border: '#9ca3af', text: '#fff', line: '#d1d5db' };
                   return steps.map((step, i) => {
@@ -1211,29 +1211,29 @@ export default function PedidoPage() {
 
         {/* ── Bank details ── */}
         {isPending && !uploaded && (
-          <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+          <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-extrabold text-gray-900">Datos de transferencia</h2>
-              <button onClick={copyAll} className="flex items-center gap-1 px-3 py-1.5 bg-pink-50 border border-pink-100/30 rounded-xl text-xs font-bold text-pink-600 hover:bg-pink-100 transition">
+              <button onClick={copyAll} className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 border border-blue-100/30 rounded-xl text-xs font-bold text-blue-600 hover:bg-blue-100 transition">
                 {copied === 'all' ? <><Check size={12} className="text-green-500" /> Copiado</> : <><Copy size={12} /> Copiar todo</>}
               </button>
             </div>
             <div className="grid grid-cols-1 gap-2">
               {Object.entries(BANK).map(([key, val]) => (
                 <button key={key} onClick={() => copyField(key, val)}
-                  className={`flex items-center justify-between p-3 rounded-2xl border text-left transition ${copied === key ? 'bg-green-50/50 border-green-200' : 'bg-pink-50/10 border-pink-100/20 hover:bg-pink-50/30'}`}>
+                  className={`flex items-center justify-between p-3 rounded-2xl border text-left transition ${copied === key ? 'bg-green-50/50 border-green-200' : 'bg-blue-50/20 border-blue-100/30 hover:bg-blue-50/50'}`}>
                   <div>
                     <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{key}</p>
                     <p className="text-sm font-bold text-gray-800 mt-0.5">{val}</p>
                   </div>
-                  <span className={`text-xs font-semibold flex items-center gap-1 ${copied === key ? 'text-green-600' : 'text-gray-400 group-hover:text-pink-500'}`}>
+                  <span className={`text-xs font-semibold flex items-center gap-1 ${copied === key ? 'text-green-600' : 'text-gray-400 group-hover:text-blue-600'}`}>
                     {copied === key ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
                   </span>
                 </button>
               ))}
             </div>
-            <div className="mt-4 p-4 bg-pink-50/30 border border-pink-100/40 rounded-2xl">
-              <p className="text-xs text-pink-800 leading-relaxed">
+            <div className="mt-4 p-4 bg-blue-50/40 border border-blue-100/60 rounded-2xl">
+              <p className="text-xs text-blue-900 leading-relaxed">
                 ⚠️ Transfiere exactamente <strong className="text-sm font-extrabold">{formatPrice(order.TOTAL)}</strong> y sube el comprobante abajo para confirmar tu pedido.
               </p>
             </div>
@@ -1242,9 +1242,9 @@ export default function PedidoPage() {
 
         {/* ── Comprobante de pago ── */}
         {(isPending || order.STATUS === 'processing' || order.PAYMENTPROOFURL) && (
-          <div className={`bg-white rounded-3xl p-5 md:p-6 shadow-sm border transition-all ${order.PAYMENTPROOFURL ? 'border-green-200 bg-green-50/10' : 'border-pink-100/40'}`}>
+          <div className={`bg-white rounded-3xl p-5 md:p-6 shadow-sm border transition-all ${order.PAYMENTPROOFURL ? 'border-green-200 bg-green-50/10' : 'border-blue-100/40'}`}>
             <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
-              <Upload size={18} className={order.PAYMENTPROOFURL ? 'text-green-600' : 'text-pink-500'} />
+              <Upload size={18} className={order.PAYMENTPROOFURL ? 'text-green-600' : 'text-blue-600'} />
               Comprobante de pago
             </h2>
             
@@ -1272,7 +1272,7 @@ export default function PedidoPage() {
                   
                   {/* Permitir re-subir comprobante si aún no ha sido verificado como pagado */}
                   {(isPending || order.STATUS === 'processing') && (
-                    <label className={`flex-1 py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-150 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <label className={`flex-1 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-150 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
                       <RefreshCw size={14} className={uploading ? 'animate-spin' : ''} />
                       <span>{uploading ? 'Subiendo...' : 'Cambiar comprobante'}</span>
@@ -1285,13 +1285,13 @@ export default function PedidoPage() {
                 <p className="text-xs text-gray-500 mb-3">Por favor, sube una captura o archivo PDF de tu transferencia.</p>
                 <label className={`block ${uploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                   <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
-                  <div className="border-2 border-dashed border-pink-100 hover:border-pink-300 rounded-2xl p-6 text-center bg-pink-50/5 transition">
+                  <div className="border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-2xl p-6 text-center bg-blue-50/10 transition">
                     {uploading ? (
-                      <p className="text-sm font-semibold text-pink-500 animate-pulse">Subiendo comprobante...</p>
+                      <p className="text-sm font-semibold text-blue-600 animate-pulse">Subiendo comprobante...</p>
                     ) : (
                       <>
-                        <Upload size={32} className="text-pink-300 mx-auto mb-2" />
-                        <p className="text-sm font-bold text-pink-700">Haz click para subir comprobante</p>
+                        <Upload size={32} className="text-blue-400 mx-auto mb-2" />
+                        <p className="text-sm font-bold text-blue-700">Haz click para subir comprobante</p>
                         <p className="text-xs text-gray-400 mt-0.5">Formatos: JPG, PNG, PDF</p>
                       </>
                     )}
@@ -1303,7 +1303,7 @@ export default function PedidoPage() {
         )}
 
         {/* ── WhatsApp Link Section (hidden) ──
-        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40 mb-4">
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40 mb-4">
           <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-2">
             <MessageSquare size={18} className="text-[#25D366]" /> Recibir notificaciones
           </h2>
@@ -1311,7 +1311,7 @@ export default function PedidoPage() {
             Conecta tu pedido a nuestro WhatsApp para recibir actualizaciones automáticas. Si escribiste mal tu número en el carrito, haz click aquí para corregirlo.
           </p>
           <a
-            href={`https://wa.me/56936599658?text=vincular_pedido%20${order.$id}`}
+            href={`https://wa.me/56962293893?text=vincular_pedido%20${order.$id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-2xl font-bold text-sm transition shadow-sm"
@@ -1322,11 +1322,11 @@ export default function PedidoPage() {
         */}
 
         {/* ── Order items ── */}
-        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40">
           <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
-            <Package size={18} className="text-pink-500" /> Detalle del pedido
+            <Package size={18} className="text-blue-600" /> Detalle del pedido
           </h2>
-          <div className="divide-y divide-pink-50/40 space-y-3 pb-4">
+          <div className="divide-y divide-blue-50/40 space-y-3 pb-4">
             {items.map((item, i) => {
               const isMissing = !!(item as any).missing;
               const isReplaced = !!(item as any).replaced;
@@ -1342,7 +1342,7 @@ export default function PedidoPage() {
                 <div key={i} className={`pt-3 first:pt-0 ${isMissing ? 'bg-red-50/30 p-3 rounded-2xl border border-red-100' : ''}`}>
                   <div className="flex gap-3 items-start">
                     {/* Imagen de Producto */}
-                    <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-pink-100/30 overflow-hidden shrink-0 flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-blue-100/30 overflow-hidden shrink-0 flex items-center justify-center">
                       {item.img ? (
                         <img src={resolveStorageImageUrl(item.img)} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
@@ -1433,15 +1433,15 @@ export default function PedidoPage() {
           </div>
 
           {order.STATUS === 'negotiation' && items.some(x => x.missing) && (
-            <div className="mt-4 bg-gradient-to-br from-pink-50 via-fuchsia-50 to-purple-50 border border-pink-200 rounded-2xl p-5 space-y-4">
+            <div className="mt-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 border border-blue-200 rounded-2xl p-5 space-y-4">
               {/* Kenia AI message */}
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center text-white text-lg shrink-0 shadow-md">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-lg shrink-0 shadow-md">
                   🤖
                 </div>
                 <div className="flex-1">
-                  <p className="font-black text-pink-900 text-sm">¡Hola! Soy Kenia, tu asistente de compras 💕</p>
-                  <p className="text-pink-700 text-xs mt-1 leading-relaxed">
+                  <p className="font-black text-blue-900 text-sm">¡Hola! Soy Kenia, tu asistente de compras 🌸</p>
+                  <p className="text-blue-700 text-xs mt-1 leading-relaxed">
                     Veo que algunos productos de tu pedido no están disponibles. Pero no te preocupes, ¡yo te ayudo! Tienes <span className="font-bold">2 opciones</span>:
                   </p>
                 </div>
@@ -1459,15 +1459,15 @@ export default function PedidoPage() {
               </div>
 
               {/* Option 2: Canje */}
-              <div className="bg-white/80 rounded-xl p-3.5 border border-fuchsia-100">
-                <p className="text-xs font-bold text-fuchsia-900 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-fuchsia-100 text-fuchsia-700 flex items-center justify-center text-[10px] font-black">2</span>
+              <div className="bg-white/80 rounded-xl p-3.5 border border-indigo-100">
+                <p className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-black">2</span>
                   Canjear tu saldo a favor
                 </p>
-                <p className="text-fuchsia-600 text-[11px] mt-1 ml-6 leading-relaxed">
+                <p className="text-indigo-600 text-[11px] mt-1 ml-6 leading-relaxed">
                   Usa tu crédito para elegir otros productos de la tienda con un <span className="font-bold">20% de descuento extra</span>. Y si no gastas todo, el sobrante se descontará automáticamente en tu próximo pedido. 🎁
                 </p>
-                <a href="/canje" className="mt-2.5 ml-6 inline-flex px-4 py-2 bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white font-black text-xs rounded-xl shadow-lg hover:brightness-105 active:scale-95 transition-all whitespace-nowrap">
+                <a href="/canje" className="mt-2.5 ml-6 inline-flex px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-xs rounded-xl shadow-lg hover:brightness-105 active:scale-95 transition-all whitespace-nowrap">
                   Ir a canjear →
                 </a>
               </div>
@@ -1528,7 +1528,7 @@ export default function PedidoPage() {
             {canCustomerModify && !editOpen && (
               <div className="flex flex-col sm:flex-row gap-3">
                 <button onClick={openEditor}
-                  className="flex-1 py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-100 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition duration-300">
+                  className="flex-1 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition duration-300">
                   <Pencil size={14} /> Modificar productos
                 </button>
                 <button onClick={handleCancelOrder} disabled={cancelling}
@@ -1602,10 +1602,10 @@ export default function PedidoPage() {
                   </p>
                   <div className="flex gap-2">
                     <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar producto..."
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-pink-300"
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-blue-300"
                     />
                     <button onClick={searchProducts} disabled={searchingProducts}
-                      className="px-4 py-2 bg-pink-500 text-white rounded-xl font-bold text-xs hover:bg-pink-600 transition disabled:opacity-50 flex items-center gap-1">
+                      className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-1">
                       <Search size={13} /> Buscar
                     </button>
                   </div>
@@ -1637,7 +1637,7 @@ export default function PedidoPage() {
                             </div>
                             <div className="shrink-0 flex items-center gap-2">
                               <span className="text-xs font-extrabold text-gray-900">{formatPrice((p.CURRENTPRICE ?? p.PRICE ?? 0) as number)}</span>
-                              <span className="text-[10px] font-bold text-pink-600">+ Agregar</span>
+                              <span className="text-[10px] font-bold text-blue-600">+ Agregar</span>
                             </div>
                           </button>
                         );
@@ -1653,7 +1653,7 @@ export default function PedidoPage() {
                     <span>{formatPrice(computeSubtotal(draftItems))}</span>
                   </div>
                   <button onClick={handleSaveEdits} disabled={savingEdit}
-                    className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-2xl font-bold text-sm transition duration-300 disabled:opacity-50">
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm transition duration-300 disabled:opacity-50">
                     {savingEdit ? 'Guardando...' : 'Confirmar cambios en pedido'}
                   </button>
                 </div>
@@ -1697,7 +1697,7 @@ export default function PedidoPage() {
 
                 {loadingSuggestions ? (
                   <div className="flex justify-center py-8">
-                    <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : suggestions.length === 0 ? (
                   <p className="text-center text-gray-400 text-xs py-8">No hay alternativas sugeridas en stock.</p>
@@ -1734,13 +1734,13 @@ export default function PedidoPage() {
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-gray-800 truncate">{p.NAME}</p>
                               <p className="text-[10px] text-gray-500 mt-0.5">
-                                Precio: <span className="font-semibold text-gray-800">{formatPrice(price)}</span> · <span className="font-medium text-pink-600">{diffText}</span>
+                                Precio: <span className="font-semibold text-gray-800">{formatPrice(price)}</span> · <span className="font-medium text-blue-600">{diffText}</span>
                               </p>
                             </div>
                           </div>
                           <button
                             onClick={() => handleCustomerReplace(p)}
-                            className="px-3 py-1.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-xs font-bold shrink-0 transition"
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shrink-0 transition"
                           >
                             Elegir
                           </button>
@@ -1769,7 +1769,7 @@ export default function PedidoPage() {
                 <div className="px-4 py-3 border-b border-gray-150 flex items-center justify-between bg-gray-50">
                   <p className="text-xs font-bold text-gray-700 truncate pr-4">{imageModal.name}</p>
                   <div className="flex gap-2">
-                    <a href={imageModal.src} target="_blank" rel="noreferrer" className="px-3 py-1 rounded-xl bg-pink-50 border border-pink-100 hover:bg-pink-100 text-pink-700 transition flex items-center gap-1 text-xs font-bold no-underline">
+                    <a href={imageModal.src} target="_blank" rel="noreferrer" className="px-3 py-1 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 text-blue-700 transition flex items-center gap-1 text-xs font-bold no-underline">
                       <ExternalLink size={14} /> Abrir archivo
                     </a>
                     <button onClick={() => setImageModal(null)} className="p-1 px-3 rounded-xl bg-white border border-gray-250 hover:bg-gray-100 text-gray-600 transition flex items-center gap-1 text-xs font-bold">
@@ -1780,9 +1780,9 @@ export default function PedidoPage() {
                 <div className="bg-black/95 flex items-center justify-center min-h-[40vh] max-h-[80vh] overflow-hidden p-6 text-white">
                   {isPdf ? (
                     <div className="flex flex-col items-center justify-center gap-4 py-12">
-                      <FileText size={64} className="text-pink-500 animate-pulse" />
+                      <FileText size={64} className="text-blue-600 animate-pulse" />
                       <p className="text-sm font-semibold text-gray-300">Este archivo es un comprobante en formato PDF</p>
-                      <a href={imageModal.src} target="_blank" rel="noreferrer" className="px-6 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl transition font-bold text-xs flex items-center gap-2 no-underline">
+                      <a href={imageModal.src} target="_blank" rel="noreferrer" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition font-bold text-xs flex items-center gap-2 no-underline">
                         <ExternalLink size={14} /> Abrir y ver PDF en nueva pestaña
                       </a>
                     </div>
@@ -1797,20 +1797,20 @@ export default function PedidoPage() {
         })()}
 
         {/* ── Shipping info ── */}
-        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40">
           <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
-            <MapPin size={18} className="text-pink-500" /> Datos de envío
+            <MapPin size={18} className="text-blue-600" /> Datos de envío
           </h2>
           <div className="flex flex-col gap-1.5 text-sm text-gray-600">
             <p className="font-bold text-gray-900 text-base">{order.CUSTOMERNAME}</p>
             <p>{order.CUSTOMERPHONE}{order.CUSTOMEREMAIL ? ` · ${order.CUSTOMEREMAIL}` : ''}</p>
             <p>{order.ADDRESS}</p>
             <p>{order.COMUNA}, {order.REGION}</p>
-            <div className="flex items-center gap-2 mt-2 font-semibold text-pink-600 text-xs">
+            <div className="flex items-center gap-2 mt-2 font-semibold text-blue-600 text-xs">
               <Truck size={14} />
               <span>{order.SHIPPINGAGENCY}</span>
               {order.AGENCYCHANGED && (
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-pink-50 text-pink-700 rounded-md border border-pink-100">Modificada</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md border border-blue-100">Modificada</span>
               )}
             </div>
 
@@ -1838,10 +1838,10 @@ export default function PedidoPage() {
             {/* Agency change option */}
             {isPending && !order.AGENCYCHANGED && (
               showAgencyChange ? (
-                <div className="mt-4 p-4 bg-pink-50/20 border border-pink-100 rounded-2xl">
-                  <p className="text-xs font-bold text-pink-800 mb-2">Selecciona nueva agencia de envío</p>
+                <div className="mt-4 p-4 bg-blue-50/20 border border-blue-100 rounded-2xl">
+                  <p className="text-xs font-bold text-blue-900 mb-2">Selecciona nueva agencia de envío</p>
                   <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)}
-                    className="w-full px-3 py-2 border border-pink-200 rounded-xl text-xs font-bold text-pink-700 bg-white mb-3 outline-none focus:ring-2 focus:ring-pink-300">
+                    className="w-full px-3 py-2 border border-blue-200 rounded-xl text-xs font-bold text-blue-700 bg-white mb-3 outline-none focus:ring-2 focus:ring-blue-300">
                     <option value="">Seleccionar agencia</option>
                     {agencies.map(a => (
                       <option key={a.name} value={a.name}>{a.name}</option>
@@ -1849,20 +1849,20 @@ export default function PedidoPage() {
                   </select>
                   <div className="flex gap-2">
                     <button onClick={handleChangeAgency} disabled={!selectedAgency || savingAgency}
-                      className="flex-1 py-2 bg-pink-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-pink-600 disabled:opacity-50 transition">
+                      className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-blue-700 disabled:opacity-50 transition">
                       <RefreshCw size={13} />
                       {savingAgency ? 'Guardando...' : 'Confirmar'}
                     </button>
                     <button onClick={() => setShowAgencyChange(false)}
-                      className="px-4 py-2 bg-white border border-pink-100 text-pink-600 rounded-xl text-xs font-bold hover:bg-pink-50/50 transition">
+                      className="px-4 py-2 bg-white border border-blue-100 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-50/50 transition">
                       Cancelar
                     </button>
                   </div>
-                  <p className="text-[10px] text-pink-400 mt-2">⚠ Solo puedes cambiar la agencia 1 vez.</p>
+                  <p className="text-[10px] text-blue-400 mt-2">⚠ Solo puedes cambiar la agencia 1 vez.</p>
                 </div>
               ) : (
                 <button onClick={() => { setShowAgencyChange(true); setSelectedAgency(order.SHIPPINGAGENCY || ''); }}
-                  className="mt-3.5 px-3 py-1.5 bg-pink-50/50 text-pink-600 border border-pink-100 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-pink-100/50 transition self-start">
+                  className="mt-3.5 px-3 py-1.5 bg-blue-50/50 text-blue-600 border border-blue-100 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-100/50 transition self-start">
                   <RefreshCw size={12} /> Cambiar agencia de despacho
                 </button>
               )
@@ -1874,14 +1874,14 @@ export default function PedidoPage() {
               return (
                 <div className="mt-5 pt-5 border-t border-gray-100">
                   <p className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
-                    <Truck className="w-4 h-4 text-pink-600" /> Comprobante de envío
+                    <Truck className="w-4 h-4 text-blue-600" /> Comprobante de envío
                   </p>
                   {isPdf ? (
                     <div className="space-y-2">
                       <p className="text-xs text-gray-500 font-medium">El comprobante de despacho se encuentra disponible en formato PDF:</p>
                       <button 
                         onClick={() => window.open(url, '_blank')}
-                        className="w-full py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-100 rounded-2xl transition duration-300 font-semibold flex items-center justify-center gap-2 text-xs"
+                        className="w-full py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 rounded-2xl transition duration-300 font-semibold flex items-center justify-center gap-2 text-xs"
                       >
                         <FileText size={15} /> Ver comprobante de despacho (PDF)
                       </button>
@@ -1950,10 +1950,10 @@ export default function PedidoPage() {
           </button>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/productos" className="flex-1 py-3 bg-pink-500 hover:bg-pink-600 text-white text-center rounded-2xl font-bold text-xs transition no-underline block">
+            <Link href="/productos" className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white text-center rounded-2xl font-bold text-xs transition no-underline block">
               Seguir comprando
             </Link>
-            <Link href="/cuenta/pedidos" className="flex-1 py-3 bg-white hover:bg-gray-50 text-pink-600 text-center rounded-2xl font-bold text-xs transition border border-pink-100 no-underline block">
+            <Link href="/cuenta/pedidos" className="flex-1 py-3 bg-white hover:bg-gray-50 text-blue-600 text-center rounded-2xl font-bold text-xs transition border border-blue-100 no-underline block">
               Ver mis pedidos
             </Link>
           </div>

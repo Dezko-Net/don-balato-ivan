@@ -75,7 +75,7 @@ import { unstable_cache } from 'next/cache';
 
 const getCachedTemplates = unstable_cache(
   async () => {
-    const global = await readKey(TEMPLATE_KEY) || 1;
+    const global = await readKey(TEMPLATE_KEY) || 25;
     const sections = ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] as const;
     
     // Fetch all section templates in parallel (7 reads → 1 round-trip batch)
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(templates, { headers: noStoreHeaders });
   } catch (error: any) {
     console.error('[API template] Exception:', error);
-    return NextResponse.json({ template: 1, sections: { landing: 1, collections: 1, catalog: 1, productDetail: 1, cart: 1, checkout: 1 }, error: error.message }, { status: 200 });
+    return NextResponse.json({ template: 25, sections: { landing: 25, collections: 25, catalog: 25, productDetail: 5, cart: 25, checkout: 25 }, error: error.message }, { status: 200 });
   }
 }
 

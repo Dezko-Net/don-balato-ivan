@@ -12,12 +12,12 @@ import { Query } from 'appwrite';
 import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#e396bf';
+const PINK = '#3b82f6';
 
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
   pending:            { label: 'Pendiente',                 bg: '#fff8e1', color: '#f57f17' },
   pending_stock:      { label: 'Verificando stock',        bg: '#fff8e1', color: '#f57f17' },
-  confirming_stock:   { label: 'Confirmando stock',       bg: '#fdf2f8', color: '#be185d' },
+  confirming_stock:   { label: 'Confirmando stock',       bg: '#eff6ff', color: '#1d4ed8' },
   stock_confirmed:    { label: 'Stock confirmado',        bg: '#e8f5e9', color: '#2e7d32' },
   partial_stock:      { label: 'Stock parcial',           bg: '#fff3e0', color: '#e65c00' },
   waiting_payment:    { label: 'Esperando pago',          bg: '#e3f2fd', color: '#1565c0' },
@@ -25,10 +25,10 @@ const STATUS: Record<string, { label: string; bg: string; color: string }> = {
   paid:               { label: 'Pago verificado',         bg: '#e8f5e9', color: '#2e7d32' },
   assembling:         { label: 'Embalando pedido',        bg: '#f3e5f5', color: '#7b1fa2' },
   packing:            { label: 'Embalando pedido',        bg: '#fff8e1', color: '#d97706' },
-  negotiation:        { label: 'Negociación',             bg: '#fdf2f8', color: '#be185d' },
+  negotiation:        { label: 'Negociación',             bg: '#eff6ff', color: '#1d4ed8' },
   preparing_shipping: { label: 'Etiqueta lista',          bg: '#efebe9', color: '#5d4037' },
   ready_to_ship:      { label: 'Listo para enviar',       bg: '#e0f7fa', color: '#00838f' },
-  shipped:            { label: 'Enviado',                 bg: '#fdf2f8', color: '#e396bf' },
+  shipped:            { label: 'Enviado',                 bg: '#eff6ff', color: '#3b82f6' },
   delivered:          { label: 'Entregado',               bg: '#e8f5e9', color: '#1b5e20' },
   cancelled:          { label: 'Cancelado',               bg: '#ffebee', color: '#c62828' },
 };
@@ -85,7 +85,7 @@ export default function MisPedidosPage() {
   }, [isLoggedIn, user]);
 
   if (authLoading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#fdf2f8 0%,#fff 280px)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#eff6ff 0%,#fff 280px)' }}>
       <Loader2 size={32} color={PINK} style={{ animation: 'spin 1s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -93,21 +93,21 @@ export default function MisPedidosPage() {
 
   if (!isLoggedIn || !user) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#fdf2f8 0%,#fff 280px)', fontFamily: FF }}>
-        <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #fce7f3', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#eff6ff 0%,#fff 280px)', fontFamily: FF }}>
+        <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #dbeafe', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, zIndex: 10 }}>
           <Link href="/cuenta" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <ArrowLeft size={22} color={PINK} />
           </Link>
           <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>Mis Pedidos</span>
         </div>
         <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 12px' }}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: '50px 24px', textAlign: 'center', border: '1px solid #fce7f3' }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: '50px 24px', textAlign: 'center', border: '1px solid #dbeafe' }}>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Receipt size={32} color={PINK} />
             </div>
             <h2 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: '#111827' }}>Iniciar sesión para ver tus pedidos</h2>
             <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280' }}>Necesitás una cuenta para acceder a tu historial de compras</p>
-            <Link href="/login" style={{ display: 'inline-block', padding: '12px 32px', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', borderRadius: 999, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 6px 20px rgba(227,150,191,0.25)' }}>
+            <Link href="/login" style={{ display: 'inline-block', padding: '12px 32px', background: `linear-gradient(135deg,${PINK},#2563eb)`, color: '#fff', borderRadius: 999, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 6px 20px rgba(59,130,246,0.25)' }}>
               Iniciar sesión
             </Link>
           </div>
@@ -163,7 +163,7 @@ export default function MisPedidosPage() {
           <Search size={16} color="#9ca3af" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por código o nombre..."
-            style={{ width: '100%', padding: '12px 14px 12px 40px', border: '1.5px solid #fce7f3', borderRadius: 12, fontSize: 14, outline: 'none', background: '#fff', boxSizing: 'border-box', fontFamily: FF }} />
+            style={{ width: '100%', padding: '12px 14px 12px 40px', border: '1.5px solid #dbeafe', borderRadius: 12, fontSize: 14, outline: 'none', background: '#fff', boxSizing: 'border-box', fontFamily: FF }} />
         </div>
 
         {/* Status filter tabs */}
@@ -174,10 +174,10 @@ export default function MisPedidosPage() {
               <button key={tab.key} onClick={() => setStatusFilter(tab.key)}
                 style={{
                   padding: '8px 16px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  background: statusFilter === tab.key ? `linear-gradient(135deg,${PINK},#c0547a)` : '#fff',
+                  background: statusFilter === tab.key ? `linear-gradient(135deg,${PINK},#2563eb)` : '#fff',
                   color: statusFilter === tab.key ? '#fff' : '#6b7280',
-                  border: `1.5px solid ${statusFilter === tab.key ? 'transparent' : '#fce7f3'}`,
-                  whiteSpace: 'nowrap', flexShrink: 0, boxShadow: statusFilter === tab.key ? '0 4px 12px rgba(227,150,191,0.25)' : 'none', transition: 'all .2s', scrollSnapAlign: 'start',
+                  border: `1.5px solid ${statusFilter === tab.key ? 'transparent' : '#dbeafe'}`,
+                  whiteSpace: 'nowrap', flexShrink: 0, boxShadow: statusFilter === tab.key ? '0 4px 12px rgba(59,130,246,0.25)' : 'none', transition: 'all .2s', scrollSnapAlign: 'start',
                 }}>
                 {tab.label} {count > 0 && `(${count})`}
               </button>
@@ -190,8 +190,8 @@ export default function MisPedidosPage() {
             <Loader2 size={28} color={PINK} style={{ animation: 'spin 1s linear infinite' }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', background: '#fff', borderRadius: 20, border: '1px solid #fce7f3', padding: '50px 20px' }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div style={{ textAlign: 'center', background: '#fff', borderRadius: 20, border: '1px solid #dbeafe', padding: '50px 20px' }}>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Receipt size={32} color={PINK} />
             </div>
             <p style={{ color: '#111827', fontSize: 17, fontWeight: 800, margin: '0 0 6px' }}>Sin pedidos aún</p>
@@ -199,7 +199,7 @@ export default function MisPedidosPage() {
               {search ? 'No encontramos resultados' : 'Aquí aparecerán tus compras'}
             </p>
             {!search && (
-              <Link href="/productos" style={{ display: 'inline-block', padding: '12px 28px', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', borderRadius: 999, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 6px 20px rgba(227,150,191,0.25)' }}>
+              <Link href="/productos" style={{ display: 'inline-block', padding: '12px 28px', background: `linear-gradient(135deg,${PINK},#2563eb)`, color: '#fff', borderRadius: 999, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 6px 20px rgba(59,130,246,0.25)' }}>
                 Ver productos
               </Link>
             )}
@@ -218,10 +218,10 @@ export default function MisPedidosPage() {
               const date = new Date(order.CREATEDAT || order.$createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
               return (
                 <Link key={order.$id} href={`/pedido/${order.$id}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#fff', borderRadius: 16, padding: '16px 18px', textDecoration: 'none', border: '1px solid #fce7f3', boxShadow: '0 2px 8px rgba(227,150,191,0.06)', transition: 'all .25s cubic-bezier(.16,1,.3,1)' }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(227,150,191,0.3)'; el.style.boxShadow = '0 4px 16px rgba(227,150,191,0.12)'; }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#fce7f3'; el.style.boxShadow = '0 2px 8px rgba(227,150,191,0.06)'; }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#fff', borderRadius: 16, padding: '16px 18px', textDecoration: 'none', border: '1px solid #dbeafe', boxShadow: '0 2px 8px rgba(59,130,246,0.06)', transition: 'all .25s cubic-bezier(.16,1,.3,1)' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(59,130,246,0.3)'; el.style.boxShadow = '0 4px 16px rgba(59,130,246,0.12)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#dbeafe'; el.style.boxShadow = '0 2px 8px rgba(59,130,246,0.06)'; }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Package size={22} color={PINK} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -236,7 +236,7 @@ export default function MisPedidosPage() {
                     {(order.STATUS === 'delivered' || order.STATUS === 'cancelled') && (
                       <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); reorder(order); }}
                         title="Volver a pedir"
-                        style={{ padding: '5px 10px', background: '#fdf2f8', border: '1px solid #fce7f3', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: PINK, fontWeight: 700, transition: 'all .2s' }}>
+                        style={{ padding: '5px 10px', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: PINK, fontWeight: 700, transition: 'all .2s' }}>
                         <RefreshCw size={11} /> Recomprar
                       </button>
                     )}

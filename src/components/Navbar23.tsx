@@ -17,7 +17,7 @@ import { Search, ShoppingBag, User, Heart, Menu, X, Home, ChevronDown } from 'lu
 import { useCart } from '@/context/CartContext';
 import type { Category, Subcategory } from '@/types';
 
-const LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784401902773-pegada-1784401898779.png';
+const LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png';
 
 const EMOJI: Record<string, string> = {
   'Skincare': '🧴', 'Skincare Facial': '🧴', 'Maquillaje': '💄', 'Capilar': '💇‍♀️',

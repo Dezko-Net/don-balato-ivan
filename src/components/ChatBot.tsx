@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useKeniaStatus } from '@/hooks/useKeniaStatus';
 
 // Numero y datos de Kenia
-const KENIA_PHONE = '56936599658'; // +56 9 3659 9658
+const KENIA_PHONE = '56962293893'; // +56 9 6229 3893
 const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('Hola Kenia! 👋 Te escribo desde la tienda, quiero hacer una consulta 🌸')}`;
 
 export default function ChatBot() {

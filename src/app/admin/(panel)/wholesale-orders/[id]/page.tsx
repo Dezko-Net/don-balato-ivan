@@ -357,7 +357,7 @@ export default function WholesaleOrderDetailPage() {
     const currentItemNames = new Set(currentItems.map(it => it.name));
     const unavailable = originalItems.filter(it => !currentItemNames.has(it.name));
 
-    let msg = `Hola ${order.CUSTOMERNAME || ''}, \nte escribimos de Kevin&Coco Chile por tu pedido mayorista #${order.REQCODE || order.$id.slice(-6)}.\n\n`;
+    let msg = `Hola ${order.CUSTOMERNAME || ''}, \nte escribimos de Don Balato Iván Chile por tu pedido mayorista #${order.REQCODE || order.$id.slice(-6)}.\n\n`;
     msg += `Hemos revisado tu pedido en bodega y esto es lo que tenemos disponible para ti:\n\n`;
     msg += `✅ LO QUE SÍ HAY:\n\n`;
     currentItems.forEach(it => {
@@ -1212,7 +1212,7 @@ export default function WholesaleOrderDetailPage() {
                     
                     <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                       <div>
-                        <h2 className="text-lg font-black text-gray-900 tracking-tight">Kevin&Coco Chile</h2>
+                        <h2 className="text-lg font-black text-gray-900 tracking-tight">Don Balato Iván Chile</h2>
                         <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Revisión de Stock</p>
                       </div>
                       <div className="text-right">
