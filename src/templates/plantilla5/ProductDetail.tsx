@@ -471,7 +471,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         let variantsHtml = `<div style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
             <span style="font-size: 13px; font-weight: 700; color: #111827; text-transform: uppercase; letter-spacing: 0.05em;">Modelo:</span>
-            <span id="yaxsell-variant-label" style="font-size: 13px; font-weight: 600; color: #db2777; background: #fdf2f8; padding: 4px 12px; border-radius: 20px; border: 1px solid #fbcfe8; display: none;"></span>
+            <span id="yaxsell-variant-label" style="font-size: 13px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 4px 12px; border-radius: 20px; border: 1px solid #bfdbfe; display: none;"></span>
           </div>
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">`;
           
@@ -589,7 +589,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               overflow: hidden !important;
               cursor: pointer !important;
               flex-shrink: 0 !important;
-              border: 2.5px solid ${idx === 0 ? '#db2777' : 'rgba(255,255,255,0.9)'} !important;
+              border: 2.5px solid ${idx === 0 ? '#2563eb' : 'rgba(255,255,255,0.9)'} !important;
               box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
               transition: all 0.2s ease !important;
               opacity: ${idx === 0 ? '1' : '0.75'} !important;
@@ -628,7 +628,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                 if (tIdx === idx) {
                   t.style.setProperty('opacity', '1', 'important');
                   t.style.setProperty('transform', 'scale(1.12)', 'important');
-                  t.style.setProperty('border-color', '#db2777', 'important');
+                  t.style.setProperty('border-color', '#2563eb', 'important');
                 } else {
                   t.style.setProperty('opacity', '0.75', 'important');
                   t.style.setProperty('transform', 'scale(1)', 'important');
@@ -680,7 +680,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                 
                 <div style="display: flex; flex-direction: column; gap: 4px; color: #4b5563; font-size: 13px; line-height: 1.4;">
                   <div style="display: flex; align-items: center; gap: 6px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #2563eb;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                     <span style="text-decoration: underline; font-weight: 500; font-family: 'Bricolage Grotesque', sans-serif;">Conoce el punto de retiro en nuestra tienda</span>
                   </div>
                   
@@ -746,7 +746,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     // CERO descuentos: sin tachados, sin badges de -X%, sin porcentajes.
     if (mainPriceContainer) {
       const tierChip = volumeTiers.length > 1 ? `
-          <span class="yaxsell-tier-chip" style="display: inline-flex !important; align-items: center !important; gap: 5px !important; padding: 5px 12px !important; border-radius: 999px !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; color: #db2777 !important; background: #fdf2f8 !important; border: 1.5px solid #fbcfe8 !important; line-height: 1 !important;">
+          <span class="yaxsell-tier-chip" style="display: inline-flex !important; align-items: center !important; gap: 5px !important; padding: 5px 12px !important; border-radius: 999px !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; color: #2563eb !important; background: #eff6ff !important; border: 1.5px solid #bfdbfe !important; line-height: 1 !important;">
             Precio ${activeTier.label}
           </span>` : '';
       const totalLine = qty > 1 ? `
@@ -798,13 +798,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               padding: 14px 6px 10px; border-radius: 14px; cursor: pointer; position: relative;
               font-family: 'Bricolage Grotesque', sans-serif; text-align: center; width: 100%;
               transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-              background: ${isActive ? 'linear-gradient(160deg, #fdf2f8, #ffffff)' : '#ffffff'};
-              border: ${isActive ? '2px solid #db2777' : '1.5px solid #e5e7eb'};
+              background: ${isActive ? 'linear-gradient(160deg, #eff6ff, #ffffff)' : '#ffffff'};
+              border: ${isActive ? '2px solid #2563eb' : '1.5px solid #e5e7eb'};
               box-shadow: ${isActive ? '0 8px 18px rgba(219,39,119,0.14)' : '0 1px 3px rgba(0,0,0,0.04)'};
               transform: ${isActive ? 'translateY(-3px)' : 'none'};
             ">
-              ${isActive ? `<span style="position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: #db2777; color: #fff; font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; padding: 2.5px 8px; border-radius: 999px; text-transform: uppercase; white-space: nowrap;">Tu precio</span>` : ''}
-              <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: ${isActive ? '#db2777' : '#9ca3af'};">${t.label}</span>
+              ${isActive ? `<span style="position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: #2563eb; color: #fff; font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; padding: 2.5px 8px; border-radius: 999px; text-transform: uppercase; white-space: nowrap;">Tu precio</span>` : ''}
+              <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: ${isActive ? '#2563eb' : '#9ca3af'};">${t.label}</span>
               <span style="font-size: ${isActive ? '17px' : '15px'}; font-weight: 800; color: ${isActive ? '#111827' : '#374151'}; line-height: 1.1;">${formatPrice(t.unitPrice)}</span>
               <span style="font-size: 10px; font-weight: 600; color: #9ca3af;">c/u · ${rangeLabel(t)}</span>
             </button>`;
@@ -820,12 +820,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             <div style="margin-top: 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
                 <span style="font-size: 12px; font-weight: 700; color: #374151; font-family: 'Bricolage Grotesque', sans-serif;">
-                  🎯 Lleva ${needed} más y paga <span style="color: #db2777; font-weight: 900;">${formatPrice(nextTier.unitPrice)} c/u</span>
+                  🎯 Lleva ${needed} más y paga <span style="color: #2563eb; font-weight: 900;">${formatPrice(nextTier.unitPrice)} c/u</span>
                 </span>
                 <span style="font-size: 11px; font-weight: 800; color: #9ca3af; white-space: nowrap;">${qty} / ${nextTier.minQty} un.</span>
               </div>
               <div style="width: 100%; height: 5px; background: #f3f4f6; border-radius: 99px; overflow: hidden;">
-                <div style="width: ${progress}%; height: 100%; background: linear-gradient(90deg, #f472b6, #db2777); border-radius: 99px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                <div style="width: ${progress}%; height: 100%; background: linear-gradient(90deg, #60a5fa, #2563eb); border-radius: 99px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
               </div>
             </div>`;
         } else {
@@ -884,7 +884,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const isPreview = typeof window !== 'undefined' && window.location.pathname.includes('/preview/');
     if (isPreview && !techDetails && !usageInstructions && !ingredientsList) {
       techDetails = '• Tipo de Producto: Espuma de Limpieza Facial\n• Ingrediente Principal: Extracto de Fresa Silvestre & Aminoácidos\n• Beneficio: Limpia profundamente los poros, controla el exceso de grasa.';
-      usageInstructions = '1. Humedecer la piel con agua tibia.\n2. Presionar el dosificador 1-2 veces para liberar la espuma de aminoácidos.\n3. Masajear suavemente sobre el rostro con movimientos circulares durante 30 a 60 segundos.\n4. Enjuagar completamente con agua y secar con toalla limpia.';
+      usageInstructions = '1. 1. Desempacar cuidadosamente el producto.\n2. Leer el manual de instrucciones adjunto antes de usar.\n3. Ensamblar o ubicar en el lugar deseado.\n4. Disfrutar de un hogar más organizado y armonioso.';
       ingredientsList = 'Aqua, Strawberry Fruit Extract, Amino Acids (Sodium Lauroyl Glutamate, Glycine), Glycerin, Sodium Hyaluronate, Lauric Acid, Potassium Hydroxide, Parfum.';
     }
 
@@ -915,7 +915,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           }
           const contentEl = row1.querySelector('.accordion__content .rte') || row1.querySelector('.accordion__content') || row1.querySelector('[ref="content[]"]');
           if (contentEl) {
-            contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">En Kevin&Coco Chile nos esmeramos por entregarte la mejor experiencia de compra. Todos nuestros productos cuentan con garantía de calidad y soporte post-venta personalizado.</div>`;
+            contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">En Don Balato nos esmeramos por entregarte la mejor experiencia de compra. Todos nuestros productos cuentan con garantía de calidad y soporte post-venta personalizado.</div>`;
           }
         }
 
@@ -1260,9 +1260,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           display: ${isSoldOut ? 'none' : 'block'};
           width: auto;
           max-width: 300px;
-          background: #e396bf;
+          background: #2563eb;
           color: #ffffff;
-          border: 1.5px solid #e396bf;
+          border: 1.5px solid #2563eb;
           box-shadow: none;
           cursor: pointer;
           transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
@@ -1429,7 +1429,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     if (feelGoodSection) feelGoodSection.remove();
 
 
-    // Helper: traducir badges de inglés a español de maquillaje
+    // Helper: traducir badges de inglés a español de hogar
     const translateBadges = (section: Element) => {
       const badgeMap: Record<string, string> = {
         'Wow': 'Wow',
@@ -1475,57 +1475,57 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     if (product?.SKU === 'PROMO1' && imgBadgeSection) {
       const megaPackHtml = `
 <div class="promo1-mega-pack" style="padding: 40px 16px; background: #fff; text-align: center;">
-  <h2 style="font-size: 26px; font-weight: 900; color: #db2777; margin-bottom: 30px; line-height: 1.2;">🎁 Mega Pack Favoritos<br><span style="font-size: 16px; font-weight: 600; color: #666;">Incluye estos 10 productos en tu pedido</span></h2>
+  <h2 style="font-size: 26px; font-weight: 900; color: #2563eb; margin-bottom: 30px; line-height: 1.2;">🎁 Mega Pack Favoritos<br><span style="font-size: 16px; font-weight: 600; color: #666;">Incluye estos 10 productos en tu pedido</span></h2>
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; max-width: 1200px; margin: 0 auto;">
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1307.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Base Raspberry Tart</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $2.760</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $2.760</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1636.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
-      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Iluminador Kevin&Coco</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $1.620</p>
+      <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Iluminador Don Balato</h4>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $1.620</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/B10123A.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Polvo Suelto</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $1.620</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $1.620</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1328.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Paleta 4 Rubores</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $3.000</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $3.000</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1068.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Corrector e Iluminador</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $3.420</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $3.420</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1817.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Paleta Ghost Music</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $4.308</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $4.308</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC12823.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Toallitas Desmaquillantes</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $1.068</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $1.068</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/285850.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Set Brocha + Atomizador</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Precio Orig. $2.160</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $2.160</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
-      <div style="width:100%; aspect-ratio:1; background: #ffe4e6; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">✨</div>
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <div style="width:100%; aspect-ratio:1; background: #dbeafe; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">✨</div>
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Brillos Labial 6 Colores x3</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Incluido</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Incluido</p>
     </div>
-    <div style="background: #fdf2f8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
-      <div style="width:100%; aspect-ratio:1; background: #ffe4e6; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">💖</div>
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+      <div style="width:100%; aspect-ratio:1; background: #dbeafe; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">💖</div>
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Brillos Love Color x4</h4>
-      <p style="font-size: 13px; font-weight: 800; color: #db2777; margin: 0;">Incluido</p>
+      <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Incluido</p>
     </div>
   </div>
 </div>
@@ -1558,7 +1558,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       const learnMoreBtn = imgBadgeSection.querySelector('.image-card__button a.btn, a.btn, a.button') as HTMLAnchorElement | null;
       setupScrollToTopButton(learnMoreBtn, 'Comprar ahora');
 
-      // Traducir badges a español de maquillaje
+      // Traducir badges a español de hogar
       translateBadges(imgBadgeSection);
 
     } else if (imgBadgeSection) {
@@ -1573,7 +1573,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         // Reemplazar imagen con la segunda del producto
         const badgeImg2 = imgBadgeSection2.querySelector('img[data-srcset*="image-with-badge"], img.no-js-hidden, img[data-mode="js"]') as HTMLImageElement | null;
         if (badgeImg2) forceImgLoad(badgeImg2, pImages[1], pName);
-        // Traducir badges a español de maquillaje
+        // Traducir badges a español de hogar
         translateBadges(imgBadgeSection2);
         // Actualizar textos laterales
         const textBlocks2 = imgBadgeSection2.querySelectorAll('motion-component p, .text-block p');
@@ -1590,7 +1590,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       }
     }
 
-    // 13d. Sección FAQ (custom_section_FXkPhr) → reemplazar imagen, traducir textos a español Kevin&Coco Chile
+    // 13d. Sección FAQ (custom_section_FXkPhr) → reemplazar imagen, traducir textos a español Don Balato
     const faqSection = root.querySelector('#shopify-section-template--20816638607498__custom_section_FXkPhr');
     if (faqSection) {
       // 1. Reemplazar imagen del banner FAQ
@@ -1605,7 +1605,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         faqBannerSource.setAttribute('data-srcset', faqImgUrl);
       }
 
-      // 2. Traducir textos del FAQ a español con brand Kevin&Coco Chile
+      // 2. Traducir textos del FAQ a español con brand Don Balato
       const faqTranslations: Record<string, string> = {
         'Still Need Help?': '¿Tienes más preguntas?',
         'Shoot our team an email': 'Escríbenos y te respondemos',
@@ -1629,8 +1629,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         'What is your return policy?': '¿Cuál es la política de devoluciones?',
         'We accept returns within 30 days of purchase. Items must be unworn, unwashed, and in original condition with tags attached for a full refund.': 'Aceptamos devoluciones dentro de los 10 primeros días si el producto está dañado o roto. Podemos realizar una negociación o el cliente puede devolver el producto para realizarle el reembolso correspondiente.',
         'What are your sizing options?': '¿Tienen retiro en tienda?',
-        'We offer a full range of sizes from XS to XL. Refer to our detailed size chart for accurate measurements to find your perfect fit.': 'Sí, contamos con retiro en tienda en nuestro local Kevin&amp;Coco Chile.<br><br><strong>Retiro disponible (Generalmente listo en 24 horas)</strong><br><strong>Dirección:</strong> Toesca 2537, 8370287 Santiago, Región Metropolitana<br><strong>Teléfono:</strong> 9 9914 9712<br><br><strong>Horarios de Atención:</strong><br>Lunes a Viernes: 10:00 – 19:00<br>Sábado: 10:00 – 17:00<br>Domingo: Cerrado',
-        'Manejamos tallas desde XS hasta XL. Consulta nuestra guía de tallas para encontrar tu medida perfecta.': 'Sí, contamos con retiro en tienda en nuestro local Kevin&amp;Coco Chile.<br><br><strong>Retiro disponible (Generalmente listo en 24 horas)</strong><br><strong>Dirección:</strong> Toesca 2537, 8370287 Santiago, Región Metropolitana<br><strong>Teléfono:</strong> 9 9914 9712<br><br><strong>Horarios de Atención:</strong><br>Lunes a Viernes: 10:00 – 19:00<br>Sábado: 10:00 – 17:00<br>Domingo: Cerrado',
+        'We offer a full range of sizes from XS to XL. Refer to our detailed size chart for accurate measurements to find your perfect fit.': 'Sí, contamos con retiro en tienda en nuestro local Don Balato.<br><br><strong>Retiro disponible (Generalmente listo en 24 horas)</strong><br><strong>Dirección:</strong> Toesca 2537, 8370287 Santiago, Región Metropolitana<br><strong>Teléfono:</strong> 9 9914 9712<br><br><strong>Horarios de Atención:</strong><br>Lunes a Viernes: 10:00 – 19:00<br>Sábado: 10:00 – 17:00<br>Domingo: Cerrado',
+        'Manejamos tallas desde XS hasta XL. Consulta nuestra guía de tallas para encontrar tu medida perfecta.': 'Sí, contamos con retiro en tienda en nuestro local Don Balato.<br><br><strong>Retiro disponible (Generalmente listo en 24 horas)</strong><br><strong>Dirección:</strong> Toesca 2537, 8370287 Santiago, Región Metropolitana<br><strong>Teléfono:</strong> 9 9914 9712<br><br><strong>Horarios de Atención:</strong><br>Lunes a Viernes: 10:00 – 19:00<br>Sábado: 10:00 – 17:00<br>Domingo: Cerrado',
       };
 
       // Reemplazar textos iterando sobre todos los nodos de texto
@@ -1712,18 +1712,18 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       testimonialsSection.remove();
     }
 
-    // 15. Marquee (custom_section_4XBchF) → textos KEVIN&COCO belleza + fondo rosa pastel + letra blanca
+    // 15. Marquee (custom_section_4XBchF) → textos DON BALATO belleza + fondo rosa pastel + letra blanca
     const marqueeSection = root.querySelector('#shopify-section-template--20816638607498__custom_section_4XBchF');
     if (marqueeSection) {
       // Cambiar fondo a rosa pastel
       const marqueeWrapper = marqueeSection.querySelector('.marquee, .marquee__wrapper, [class*="marquee"]') as HTMLElement | null;
       if (marqueeWrapper) {
-        marqueeWrapper.style.setProperty('background', '#f8bbd9', 'important');
-        marqueeWrapper.style.setProperty('background-color', '#f8bbd9', 'important');
+        marqueeWrapper.style.setProperty('background', '#bfdbfe', 'important');
+        marqueeWrapper.style.setProperty('background-color', '#bfdbfe', 'important');
       }
       // Aplicar estilos a la sección completa
-      (marqueeSection as HTMLElement).style.setProperty('background', '#f8bbd9', 'important');
-      (marqueeSection as HTMLElement).style.setProperty('background-color', '#f8bbd9', 'important');
+      (marqueeSection as HTMLElement).style.setProperty('background', '#bfdbfe', 'important');
+      (marqueeSection as HTMLElement).style.setProperty('background-color', '#bfdbfe', 'important');
 
       // Inyectar CSS para sobreescribir el color de fondo del marquee
       const marqueeStyle = root.querySelector('#yx-marquee-style') || document.createElement('style');
@@ -1733,8 +1733,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         #shopify-section-template--20816638607498__custom_section_4XBchF .section,
         #shopify-section-template--20816638607498__custom_section_4XBchF .marquee,
         #shopify-section-template--20816638607498__custom_section_4XBchF .marquee__wrapper {
-          background: #f8bbd9 !important;
-          background-color: #f8bbd9 !important;
+          background: #bfdbfe !important;
+          background-color: #bfdbfe !important;
           color: #fff !important;
         }
         #shopify-section-template--20816638607498__custom_section_4XBchF p,
@@ -1754,10 +1754,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       `;
       (root.querySelector('head') || document.head || root).appendChild(marqueeStyle);
 
-      // Reemplazar textos del marquee con contenido KEVIN&COCO belleza (usando módulo para asegurar reemplazo en elementos clonados)
+      // Reemplazar textos del marquee con contenido DON BALATO belleza (usando módulo para asegurar reemplazo en elementos clonados)
       const marqueeTexts = [
-        'KEVIN & COCO', 'Tu belleza primero', 'KEVIN & COCO', 'Brilla siempre',
-        'KEVIN & COCO', 'Confiá en ti', 'KEVIN & COCO', 'Cuida tu piel',
+        'DON BALATO', 'Tu hogar primero', 'DON BALATO', 'Armonía en tu hogar',
+        'DON BALATO', 'Organiza tu espacio', 'DON BALATO', 'Cuida tu hogar',
       ];
       const marqueeParas = Array.from(marqueeSection.querySelectorAll('.marquee__items p, .marquee p, [class*="marquee"] p'));
       marqueeParas.forEach((p: any, idx: number) => {
@@ -1859,8 +1859,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       processedHtml = processedHtml.replaceAll('Share on X (Twitter)', 'Compartir en X (Twitter)');
       processedHtml = processedHtml.replaceAll('Need help ?', '¿Necesitas ayuda?');
       processedHtml = processedHtml.replaceAll('Need help?', '¿Necesitas ayuda?');
-      processedHtml = processedHtml.replaceAll('Outfit Inspiration', '✨ Élígete Bella');
-      processedHtml = processedHtml.replaceAll('Ideas to refresh your everyday wardrobe', 'Porque cuidarte es quererte. Brilla siempre.');
+      processedHtml = processedHtml.replaceAll('Outfit Inspiration', '✨ Hogar Perfecto');
+      processedHtml = processedHtml.replaceAll('Ideas to refresh your everyday wardrobe', 'Porque tu hogar merece lo mejor. Descúbrelo.');
       processedHtml = processedHtml.replaceAll('Over 500 Happy Reviews', 'Más de 500 opiniones felices');
       
       // Traducciones globales de botones y FAQ
@@ -2311,8 +2311,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
   if (isLoading || !bodyHtml) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyItems: 'center', alignItems: 'center', padding: 80, fontFamily: 'system-ui, sans-serif', color: '#e396bf', background: '#fffcfd', minHeight: '100vh' }}>
-        <div style={{ border: '4px solid #fce7f3', borderTop: '4px solid #e396bf', borderRadius: '50%', width: 50, height: 50, animation: 'spin 1s linear infinite', marginBottom: 20 }} />
+      <div style={{ display: 'flex', flexDirection: 'column', justifyItems: 'center', alignItems: 'center', padding: 80, fontFamily: 'system-ui, sans-serif', color: '#2563eb', background: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ border: '4px solid #dbeafe', borderTop: '4px solid #2563eb', borderRadius: '50%', width: 50, height: 50, animation: 'spin 1s linear infinite', marginBottom: 20 }} />
         <span style={{ fontSize: 16, fontWeight: 500 }}>Cargando detalles del producto...</span>
         <style>{`
           @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -2430,7 +2430,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         }
         .tpl5-page-wrapper quantity-selector-component:focus-within,
         .tpl5-page-wrapper .quantity-selector:focus-within {
-          border-color: #db2777 !important;
+          border-color: #2563eb !important;
           box-shadow: 0 0 0 3px rgba(219,39,119,0.1) !important;
         }
         
@@ -2457,8 +2457,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .tpl5-page-wrapper .quantity-minus:hover,
         .tpl5-page-wrapper .quantity-plus:hover,
         .tpl5-page-wrapper .quantity-button:hover {
-          color: #db2777 !important;
-          background: #fdf2f8 !important;
+          color: #2563eb !important;
+          background: #eff6ff !important;
         }
         .tpl5-page-wrapper .quantity-minus svg,
         .tpl5-page-wrapper .quantity-plus svg,
@@ -2602,7 +2602,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide-active,
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail.is-active,
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail:hover {
-            border-color: #db2777 !important;
+            border-color: #2563eb !important;
             transform: scale(1.1) !important;
             opacity: 1 !important;
             box-shadow: 0 4px 12px rgba(219, 39, 119, 0.35) !important;
@@ -2728,7 +2728,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .quantity-selector button:hover,
         quantity-selector-component .quantity-button:hover,
         .quantity-selector .quantity-button:hover {
-          color: #db2777 !important; /* Cambia a rosa Yaxsell al pasar el cursor */
+          color: #2563eb !important; /* Cambia a rosa Yaxsell al pasar el cursor */
           background-color: transparent !important;
           border: none !important;
           transform: scale(1.15) !important;
@@ -2825,7 +2825,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           margin: 0 !important;
           border: 1.5px solid #f2c6da !important;
           border-radius: 50% !important;
-          background: #fdf2f8 !important;
+          background: #eff6ff !important;
           color: #c0547a !important;
           cursor: pointer !important;
           box-shadow: none !important;
@@ -2884,10 +2884,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           max-width: 300px !important;
           padding-left: 34px !important;
           padding-right: 34px !important;
-          background: #e396bf !important;
-          background-color: #e396bf !important;
+          background: #2563eb !important;
+          background-color: #2563eb !important;
           color: #ffffff !important;
-          border: 1.5px solid #e396bf !important;
+          border: 1.5px solid #2563eb !important;
           box-shadow: none !important;
           transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
         }
@@ -2901,7 +2901,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .tpl5-page-wrapper .add-to-cart-component button.add-to-cart-button:hover {
           background: #ffffff !important;
           background-color: #ffffff !important;
-          border-color: #e396bf !important;
+          border-color: #2563eb !important;
           color: #111827 !important;
         }
         .tpl5-page-wrapper add-to-cart-component button.add-to-cart-button:hover *,
@@ -2912,10 +2912,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         /* Override theme styles for the real add-to-cart button, matching Comprar Ahora */
         button.add-to-cart-button.btn.btn--secondary,
         add-to-cart-component > button.add-to-cart-button {
-          background: #e396bf !important;
-          background-color: #e396bf !important;
+          background: #2563eb !important;
+          background-color: #2563eb !important;
           color: #ffffff !important;
-          border: 1.5px solid #e396bf !important;
+          border: 1.5px solid #2563eb !important;
           transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
         }
         button.add-to-cart-button.btn.btn--secondary:hover,
@@ -2923,7 +2923,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           background: #ffffff !important;
           background-color: #ffffff !important;
           color: #111827 !important;
-          border-color: #e396bf !important;
+          border-color: #2563eb !important;
         }
         button.add-to-cart-button.btn.btn--secondary:hover *,
         add-to-cart-component > button.add-to-cart-button:hover * {
@@ -2935,10 +2935,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         button.yaxsell-custom-buy-button,
         .tpl5-page-wrapper button.yaxsell-custom-buy-button,
         button.shopify-payment-button__button--unbranded.yaxsell-custom-buy-button {
-          background-color: #e396bf !important;
-          background: #e396bf !important;
+          background-color: #2563eb !important;
+          background: #2563eb !important;
           color: #ffffff !important;
-          border: 1.5px solid #e396bf !important;
+          border: 1.5px solid #2563eb !important;
           transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
           width: 100% !important;
           cursor: pointer !important;
@@ -2951,7 +2951,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           background-color: #ffffff !important;
           background: #ffffff !important;
           color: #111827 !important;
-          border: 1.5px solid #e396bf !important;
+          border: 1.5px solid #2563eb !important;
         }
         button.yaxsell-custom-buy-button:hover *,
         .tpl5-page-wrapper button.yaxsell-custom-buy-button:hover * {
@@ -2960,10 +2960,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
         /* Añadir al carrito: misma lógica visual que Comprar Ahora */
         button.yaxsell-custom-add-to-cart {
-          background-color: #e396bf !important;
-          background: #e396bf !important;
+          background-color: #2563eb !important;
+          background: #2563eb !important;
           color: #ffffff !important;
-          border: 1.5px solid #e396bf !important;
+          border: 1.5px solid #2563eb !important;
           transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
           cursor: pointer !important;
           box-shadow: none !important;
@@ -2972,7 +2972,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           background-color: #ffffff !important;
           background: #ffffff !important;
           color: #111827 !important;
-          border: 1.5px solid #e396bf !important;
+          border: 1.5px solid #2563eb !important;
         }
 
         /* Bloquear hover gris del tema Shopify en el dialog de retiro local */
@@ -3208,7 +3208,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .tpl5-page-wrapper .media-gallery__grid-thumbnails button.is-active,
         .tpl5-page-wrapper .media-gallery__grid-thumbnails .media-gallery__item:hover,
         .tpl5-page-wrapper .media-gallery__grid-thumbnails button:hover {
-          border-color: #db2777 !important;
+          border-color: #2563eb !important;
         }
 
         .tpl5-page-wrapper .media-gallery__grid-thumbnails img {
@@ -3396,17 +3396,17 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       {product && (
         reviewsTarget ? createPortal(
           <>
-            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid #dbeafe', margin: '40px 0' }} />
             <ReviewSection productId={product.$id} rating={product.RATING ?? 0} numReviews={product.NUMREVIEWS ?? 0} />
-            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid #dbeafe', margin: '40px 0' }} />
             <ProductQuestions productId={product.$id} />
           </>,
           reviewsTarget
         ) : (
           <div style={{ maxWidth: 1200, margin: '60px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
-            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid #dbeafe', margin: '40px 0' }} />
             <ReviewSection productId={product.$id} rating={product.RATING ?? 0} numReviews={product.NUMREVIEWS ?? 0} />
-            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid #dbeafe', margin: '40px 0' }} />
             <ProductQuestions productId={product.$id} />
           </div>
         )
@@ -3494,7 +3494,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                 <div className="pickup-availabilities__dialog-content">
                   <div className="pickup-location__wrapper flex flex-col gap-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <p className="h5" style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0, fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                      Kevin&Coco Chile
+                      Don Balato
                     </p>
                     <div className="pickup-location__address-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <span className="pickup-location__availability-wrapper" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#166534', fontSize: '13px', fontWeight: 600 }}>
