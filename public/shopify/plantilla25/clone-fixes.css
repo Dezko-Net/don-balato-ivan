@@ -1502,7 +1502,115 @@ input, textarea {
   animation: heroSoftFadeIn 0.35s ease-out forwards !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   MOBILE FIXES: navbar, imágenes, botón hover, overflow horizontal
+   ══════════════════════════════════════════════════════════════════ */
 
+/* ── 1. NAVBAR DEMASIADO BAJA EN MÓVIL ── */
+@media screen and (max-width: 767px) {
+  #shopify-section-sections--27201777467673__header,
+  .header-section .shopify-section-group-header-group {
+    --section-padding-top: 0px !important;
+    --section-padding-bottom: 0px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .header-section .header {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    min-height: auto !important;
+  }
+
+  .header-section,
+  .shopify-section-group-header-group {
+    top: 0 !important;
+    position: sticky !important;
+    position: -webkit-sticky !important;
+  }
+}
+
+/* ── 2. IMÁGENES QUE NO CUBREN TODO EL ANCHO EN MÓVIL ── */
+@media screen and (max-width: 767px) {
+  .banner__image,
+  .banner picture img,
+  .video-hero img,
+  .banner__media img,
+  .banner__media picture img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    max-width: 100vw !important;
+  }
+
+  .banner__media,
+  .video-hero .media,
+  .banner .media,
+  .banner picture.media {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+  }
+
+  .banner,
+  .video-hero,
+  .video-hero.banner {
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* ── 3. BOTÓN "VER PRODUCTOS": texto blanco al hover ── */
+.button--primary:hover .btn-text,
+.button--primary:hover .btn-text *,
+.button--primary:hover .btn-text svg,
+.button--primary:focus .btn-text,
+.button--primary:focus .btn-text * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.button.icon-with-text:hover .btn-text,
+.button.icon-with-text:hover .btn-text * {
+  color: #ffffff !important;
+}
+
+/* ── 4. ESPACIO/PADDING HORIZONTAL A LA DERECHA EN MÓVIL ── */
+@media screen and (max-width: 767px) {
+  html,
+  body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page-width {
+    max-width: 100vw !important;
+    width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .shopify-section,
+  .section {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .banner__content,
+  .banner__box {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
 
 
 
