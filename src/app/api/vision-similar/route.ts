@@ -1,18 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
+
+let _cachedToken: { token: string; expiry: number } | null = null;
+
+async function getAccessTokenFromSA(): Promise<string> {
+  if (_cachedToken && Date.now() < _cachedToken.expiry - 60000) {
+    return _cachedToken.token;
+  }
+
+  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  if (!credentialsJson) {
+    throw new Error('Falta GOOGLE_APPLICATION_CREDENTIALS_JSON');
+  }
+
+  let credentials: any;
+  try {
+    const cleaned = credentialsJson.trim().replace(/\\n/g, '\n');
+    credentials = JSON.parse(cleaned);
+  } catch (e: any) {
+    throw new Error('GOOGLE_APPLICATION_CREDENTIALS_JSON no es JSON válido: ' + e.message);
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const expiry = now + 3600;
+
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: credentials.client_email,
+    scope: 'https://www.googleapis.com/auth/cloud-platform',
+    aud: credentials.token_uri,
+    exp: expiry,
+    iat: now,
+  };
+
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signInput = `${encodedHeader}.${encodedPayload}`;
+
+  const privateKeyPem = credentials.private_key.replace(/\\n/g, '\n');
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(signInput);
+  sign.end();
+  const signature = sign.sign(privateKeyPem, 'base64url');
+
+  const jwt = `${signInput}.${signature}`;
+
+  const tokenRes = await fetch(credentials.token_uri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+
+  if (!tokenRes.ok) {
+    const errText = await tokenRes.text();
+    throw new Error(`Token exchange failed: ${tokenRes.status} ${errText}`);
+  }
+
+  const tokenData = await tokenRes.json();
+  const token = tokenData.access_token;
+  if (!token) {
+    throw new Error('No access_token in response');
+  }
+
+  _cachedToken = { token, expiry: Date.now() + 55 * 60 * 1000 };
+  return token;
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { imageUrl } = await req.json();
     if (!imageUrl) {
       return NextResponse.json({ error: 'imageUrl es requerido' }, { status: 400 });
-    }
-
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-    if (!GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'Falta GEMINI_API_KEY en variables de entorno' }, { status: 500 });
     }
 
     // Descargar la imagen y convertirla a base64
@@ -22,70 +83,77 @@ export async function POST(req: NextRequest) {
     }
     const imgBuffer = await imgRes.arrayBuffer();
     const base64 = Buffer.from(imgBuffer).toString('base64');
-    const mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
 
-    // Usar Gemini con API key (no requiere OAuth)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // Obtener token OAuth2 desde el service account JSON
+    let token: string;
+    try {
+      token = await getAccessTokenFromSA();
+    } catch (e: any) {
+      console.error('Auth error:', e.message);
+      return NextResponse.json({
+        error: 'No se pudo autenticar con Google Cloud: ' + e.message,
+      }, { status: 500 });
+    }
+
+    const GCP_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID || '';
+    const visionUrl = 'https://vision.googleapis.com/v1/images:annotate';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+    if (GCP_PROJECT_ID) {
+      headers['x-goog-user-project'] = GCP_PROJECT_ID;
+    }
 
     const body = {
-      contents: [{
-        parts: [
-          { text: 'Analiza esta imagen de producto y responde SOLO con un JSON válido (sin markdown) con esta estructura: {"bestGuess": ["etiqueta1", "etiqueta2"], "searchTerms": ["termino de busqueda 1", "termino 2"]}. Las etiquetas deben describir el producto (tipo, marca, color, material). Los terminos de busqueda deben ser consultas que alguien usaria para encontrar este producto en Google Images.' },
-          { inline_data: { mime_type: mimeType, data: base64 } }
-        ]
+      requests: [{
+        image: { content: base64 },
+        features: [{ type: 'WEB_DETECTION', maxResults: 20 }],
       }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 500 }
     };
 
-    const response = await fetch(geminiUrl, {
+    const response = await fetch(visionUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('Gemini API error:', errText);
-      return NextResponse.json({ error: `Gemini API error: ${response.status}`, detail: errText }, { status: 500 });
+      console.error('Vision API error:', errText);
+      return NextResponse.json({ error: `Vision API error: ${response.status}`, detail: errText }, { status: 500 });
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const webDetection = data.responses?.[0]?.webDetection;
 
-    let bestGuess: string[] = [];
-    let searchTerms: string[] = [];
-
-    try {
-      const cleaned = text.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(cleaned);
-      bestGuess = parsed.bestGuess || [];
-      searchTerms = parsed.searchTerms || [];
-    } catch {
-      bestGuess = [text.substring(0, 100)].filter(Boolean);
+    if (!webDetection) {
+      return NextResponse.json({ images: [], message: 'No se encontraron imágenes similares' });
     }
 
-    // Buscar imágenes en Google usando los términos generados
-    const query = (searchTerms[0] || bestGuess[0] || '').trim();
-    let images: { url: string; score?: number }[] = [];
+    const similarImages: { url: string; score?: number }[] = (webDetection.visuallySimilarImages || [])
+      .map((img: any) => ({ url: img.url, score: img.score }))
+      .filter((img: any) => img.url);
 
-    if (query) {
-      // Usar Google Custom Search API si está disponible, sino devolver los términos
-      const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
-      if (GOOGLE_CSE_ID) {
-        const cseUrl = `https://www.googleapis.com/customsearch/v1?key=${GEMINI_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&searchType=image&num=10`;
-        const cseRes = await fetch(cseUrl);
-        if (cseRes.ok) {
-          const cseData = await cseRes.json();
-          images = (cseData.items || []).map((item: any) => ({ url: item.link, score: undefined }));
-        }
-      }
-    }
+    const fullMatches: { url: string; score?: number }[] = (webDetection.fullMatchingImages || [])
+      .map((img: any) => ({ url: img.url, score: img.score }))
+      .filter((img: any) => img.url);
+
+    const allImages = [...similarImages, ...fullMatches];
+    const seen = new Set<string>();
+    const unique = allImages.filter(img => {
+      if (seen.has(img.url)) return false;
+      seen.add(img.url);
+      return true;
+    });
+
+    const bestGuessLabels: string[] = (webDetection.bestGuessLabels || [])
+      .map((l: any) => l.label)
+      .filter(Boolean);
 
     return NextResponse.json({
-      images,
-      bestGuess,
-      searchTerms,
-      message: images.length === 0 ? 'Se generaron términos de búsqueda pero no se encontraron imágenes. Usa los términos para buscar manualmente.' : undefined,
+      images: unique.slice(0, 20),
+      bestGuess: bestGuessLabels,
     });
   } catch (e: any) {
     console.error('vision-similar error:', e);

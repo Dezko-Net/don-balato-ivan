@@ -1767,47 +1767,10 @@ input, textarea {
   .mobile\:header--center .list-menu { justify-content: center !important; }
 }
 
-/* ── 7.2 Adiós "mini scroll interno" del Arma tu combo ──────────────
-   En móvil el tema convertía el panel "Tu paquete" en una bottom-sheet
-   sticky (margin -60vh + position:sticky + max-height:100svh) cuyo body
-   tenía overflow-y:auto con scroll-snap → al scrollear entre secciones
-   el dedo caía en ese área y scrolleaba DENTRO del panel en vez de la
-   página. Aquí la sección vuelve a fluir normal: grid de productos y
-   debajo el panel "Tu paquete" siempre expandido, sin scroll propio. */
-@media screen and (max-width: 1023px) {
-  .product-bundle-wrapper > .lg\:grow {
-    margin-block-end: 0 !important;
-  }
-
-  .product-bundle-wrapper > .lg\:grow-0 {
-    position: static !important;   /* el JS de sticky-element se auto-desactiva
-                                      (solo actúa si computed position == sticky) */
-    padding-block-start: var(--sp-5, 20px) !important;
-  }
-
-  .product-bundle__sidebar {
-    max-height: none !important;
-    width: auto !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-
-  /* Panel siempre visible: ya no depende del botón de colapsar */
-  .product-bundle:not(.active) .product-bundle__body {
-    display: flex !important;
-  }
-  .product-bundle__toggle { pointer-events: none !important; }
-  .product-bundle__toggle > .icon { display: none !important; }
-
-  /* El body del panel fluye con la página: sin scroll propio ni snap */
-  .product-bundle__body {
-    overflow: visible !important;
-    scroll-snap-type: none !important;
-    scroll-behavior: auto !important;
-    padding-inline-end: 0 !important;
-    margin-inline-end: 0 !important;
-  }
-}
+/* ── 7.2 REVERTIDO: se restauró la cortina animada original del "Arma tu combo".
+   El comportamiento sticky/expandible ya funciona bien porque la causa raíz
+   (secciones convertidas en scroll containers por overflow-x:hidden → clip)
+   y el jank (41 animaciones preloading infinitas) ya fueron corregidos. */
 
 /* ── 7.3 SCROLL JANK: apagar shimmer "preloading" infinito (solo móvil/tablet) ──
    El clon nunca quita la clase .loading de los <img is="lazy-image"> ni remueve
