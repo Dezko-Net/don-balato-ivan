@@ -16,6 +16,7 @@
    ══════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import {
   enhanceConceptHeader,
