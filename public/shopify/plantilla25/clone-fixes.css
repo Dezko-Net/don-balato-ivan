@@ -1648,8 +1648,8 @@ input, textarea {
   }
 }
 
-/* ── 6. SCROLL VERTICAL TOCANDO IMÁGENES EN MÓVIL ── */
-/* Solo touch-action pan-y en el contenedor del slideshow, NO en imágenes generales */
+/* ── 6. SCROLL VERTICAL TOCANDO IMÁGENES Y SLIDERS EN MÓVIL ── */
+/* touch-action pan-y en contenedores de sliders para permitir scroll vertical */
 @media screen and (max-width: 767px) {
   .slideshow-element,
   .slideshow {
@@ -1657,6 +1657,16 @@ input, textarea {
   }
 
   .video-hero {
+    touch-action: pan-y !important;
+  }
+
+  slider-element,
+  .slider,
+  .slider-element,
+  .card-grid,
+  .media-card,
+  .media-card__link,
+  .media-card .media {
     touch-action: pan-y !important;
   }
 }
