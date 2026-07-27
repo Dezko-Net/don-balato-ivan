@@ -8,22 +8,32 @@
 
   if (!window.matchMedia('(max-width: 767px)').matches) return;
 
+  var patched = false;
+
   function patchFlickity() {
+    if (patched) return;
     if (typeof window.Flickity === 'undefined') return;
 
     var proto = window.Flickity.prototype;
     if (!proto || proto._touchFixed) return;
     proto._touchFixed = true;
+    patched = true;
 
     var originalHandleDragMove = proto.handleDragMove;
     if (!originalHandleDragMove) return;
 
     proto.handleDragMove = function (event, pointer, moveVector) {
       if (!this.isDraggable) return;
+      if (!moveVector) return originalHandleDragMove.call(this, event, pointer, moveVector);
 
-      var angle = Math.atan2(Math.abs(moveVector.y), Math.abs(moveVector.x)) * 180 / Math.PI;
+      var dx = Math.abs(moveVector.x);
+      var dy = Math.abs(moveVector.y);
 
-      if (angle > 45) {
+      if (dy > dx) {
+        if (this.isDragging) {
+          this.isDragging = false;
+          if (this.slider) this.slider.style.pointerEvents = '';
+        }
         return;
       }
 
@@ -33,12 +43,20 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(patchFlickity, 100);
+      setTimeout(patchFlickity, 50);
+      setTimeout(patchFlickity, 300);
+      setTimeout(patchFlickity, 1000);
+      setTimeout(patchFlickity, 2000);
     });
   } else {
-    setTimeout(patchFlickity, 100);
+    setTimeout(patchFlickity, 50);
+    setTimeout(patchFlickity, 300);
+    setTimeout(patchFlickity, 1000);
+    setTimeout(patchFlickity, 2000);
   }
 
-  setTimeout(patchFlickity, 500);
-  setTimeout(patchFlickity, 1500);
+  document.addEventListener('page:loaded', function () {
+    setTimeout(patchFlickity, 50);
+    setTimeout(patchFlickity, 300);
+  });
 })();
