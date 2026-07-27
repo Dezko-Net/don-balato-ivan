@@ -21,7 +21,7 @@ import ClientSideWidgets from '@/components/ClientSideWidgets';
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.donbalatoivan.cl'),
   title: {
-    default: 'Don Balato Iván | Cosmética y Belleza en Chile',
+    default: 'Don Balato Iván',
     template: '%s | Don Balato Iván',
   },
   description:
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_CL',
     siteName: 'Don Balato Iván',
-    title: 'Don Balato Iván | Cosmética y Belleza en Chile',
+    title: 'Don Balato Iván',
     description:
       'Cosmética, maquillaje y skincare al detalle y por mayor. Precios por volumen y envíos a todo Chile.',
     url: 'https://www.donbalatoivan.cl/',
