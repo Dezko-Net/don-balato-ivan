@@ -680,9 +680,9 @@ export default function MobileProductEditor({
                   }}
                   className="w-20 px-2 py-1 border border-amber-300 rounded-lg text-[11px] bg-white font-semibold text-amber-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
-                {d.PRICE && d.CATALOGPRICE && (
+                {d.COST && d.CATALOGPRICE && (
                   <span className="text-[10px] text-amber-500 font-medium">
-                    → ${d.CATALOGPRICE.toLocaleString('es-CL')}
+                    Ganancia: ${(Number(d.CATALOGPRICE) - Number(d.COST)).toLocaleString('es-CL')}
                   </span>
                 )}
               </div>
