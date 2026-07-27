@@ -136,9 +136,10 @@ function ConfirmadoInner() {
     setUploading(true);
     try {
       const { storage, databases } = getServices();
-      const { bucketId, databaseId } = getAppwriteConfig();
+      const { bucketId, databaseId, endpoint, projectId } = getAppwriteConfig();
       const created = await storage.createFile(bucketId || MEDIA_BUCKET_ID, ID.unique(), file);
-      const proofUrl = `${MEDIA_PREFIXES.PREVIEW}/${created.$id}/preview?project=${getAppwriteConfig().projectId}`;
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const proofUrl = `${endpoint}/storage/buckets/${bucketId || MEDIA_BUCKET_ID}/files/${created.$id}/view?project=${projectId}&ext=${ext}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, order.$id, {
         PROOFURL: proofUrl,
         STATUS: 'processing',
