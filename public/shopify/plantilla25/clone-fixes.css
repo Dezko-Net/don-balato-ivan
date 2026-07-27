@@ -1717,3 +1717,115 @@ input, textarea {
 
 
 
+
+/* ════════════════════════════════════════════════════════════════════
+   7. FIX RESPONSIVE MÓVIL (solo < 1024px)
+   7.1 Clases variante "mobile:*" que el tema generaba con Tailwind JIT
+       y se perdieron en la captura → la home no era responsive en móvil.
+   7.2 Eliminación del "mini scroll interno" de la sección Arma tu combo.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── 7.1 Variantes mobile:* faltantes ─────────────────────────────── */
+@media screen and (max-width: 767px) {
+  /* Hero/banners: el tema escala las alturas fijas ×0.65 en móvil
+     (.media--500px base = 500px → 325px; .media--750px = 487.5px).
+     Sin esta regla los banners "media--750px mobile:media--500px"
+     quedaban con 487.5px fijos en vez de 325px. */
+  .mobile\:media--500px { height: 325px !important; }
+  .mobile\:media--300px { height: 195px !important; }
+
+  /* Altura automática (sin !important para no pisar el fix del banner
+     'CALIDAD. PARA TU HOGAR' de más arriba, que usa !important) */
+  .mobile\:media--auto { height: auto; }
+
+  /* Banner con altura adaptada al ratio de la imagen */
+  .mobile\:media--adapt {
+    height: 0 !important;
+    padding-block-end: var(--ratio-percent) !important;
+  }
+
+  /* Grids de 1 columna en móvil (sin !important: en el product-bundle
+     el propio tema fuerza 2 columnas con un selector más específico
+     y respetamos ese diseño original) */
+  .mobile\:card-grid--1 { --card-grid-per-row: 1; }
+
+  /* Aspect ratio según primera imagen (contextos no cubiertos por theme.css) */
+  .mobile\:media--adapt_first > :is(img, svg, video-media),
+  .mobile\:aspect-adapt_first { aspect-ratio: var(--aspect-ratio); }
+
+  /* Título mediano de producto */
+  .mobile\:product-title-md {
+    font-size: clamp(var(--sp-10), 2.526vw, var(--sp-12)) !important;
+  }
+
+  /* Header centrado */
+  .mobile\:header--center .list-menu { justify-content: center !important; }
+}
+
+/* ── 7.2 Adiós "mini scroll interno" del Arma tu combo ──────────────
+   En móvil el tema convertía el panel "Tu paquete" en una bottom-sheet
+   sticky (margin -60vh + position:sticky + max-height:100svh) cuyo body
+   tenía overflow-y:auto con scroll-snap → al scrollear entre secciones
+   el dedo caía en ese área y scrolleaba DENTRO del panel en vez de la
+   página. Aquí la sección vuelve a fluir normal: grid de productos y
+   debajo el panel "Tu paquete" siempre expandido, sin scroll propio. */
+@media screen and (max-width: 1023px) {
+  .product-bundle-wrapper > .lg\:grow {
+    margin-block-end: 0 !important;
+  }
+
+  .product-bundle-wrapper > .lg\:grow-0 {
+    position: static !important;   /* el JS de sticky-element se auto-desactiva
+                                      (solo actúa si computed position == sticky) */
+    padding-block-start: var(--sp-5, 20px) !important;
+  }
+
+  .product-bundle__sidebar {
+    max-height: none !important;
+    width: auto !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Panel siempre visible: ya no depende del botón de colapsar */
+  .product-bundle:not(.active) .product-bundle__body {
+    display: flex !important;
+  }
+  .product-bundle__toggle { pointer-events: none !important; }
+  .product-bundle__toggle > .icon { display: none !important; }
+
+  /* El body del panel fluye con la página: sin scroll propio ni snap */
+  .product-bundle__body {
+    overflow: visible !important;
+    scroll-snap-type: none !important;
+    scroll-behavior: auto !important;
+    padding-inline-end: 0 !important;
+    margin-inline-end: 0 !important;
+  }
+}
+
+/* ── 7.3 SCROLL JANK: apagar shimmer "preloading" infinito (solo móvil/tablet) ──
+   El clon nunca quita la clase .loading de los <img is="lazy-image"> ni remueve
+   la .loading-bar fija a pantalla completa → 41 animaciones CSS infinitas
+   (transform + transform-origin → repaint constante del main thread) que hacían
+   que el scroll táctil/wheel se "trabe" y se sienta por secciones. */
+@media screen and (max-width: 1023px) {
+  /* Barra de carga fija a pantalla completa que nunca se removió */
+  .loading-bar { display: none !important; }
+
+  /* Shimmer infinito sobre TODAS las imágenes "loading" */
+  .media.loading:after,
+  [data-lazy-image] .media.loading:after,
+  .scrolling-text__item:after,
+  .scrolling-text__item .media:after {
+    content: none !important;
+    animation: none !important;
+  }
+
+  /* Por si algún elemento (no pseudo) quedó con la animación */
+  .media.loading,
+  .scrolling-text__item,
+  .preloading {
+    animation: none !important;
+  }
+}

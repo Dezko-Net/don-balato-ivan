@@ -15,9 +15,17 @@ async function getAuth() {
     const { GoogleAuth } = await import(/* webpackIgnore: true */ 'google-auth-library');
     const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     if (credentialsJson) {
-      const credentials = JSON.parse(credentialsJson);
-      _auth = new GoogleAuth({ scopes: [GEMINI_SCOPE], credentials });
+      try {
+        // Vercel a veces dobla el JSON o usa \\n — limpiar y parsear
+        const cleaned = credentialsJson.trim().replace(/\\n/g, '\n');
+        const credentials = JSON.parse(cleaned);
+        _auth = new GoogleAuth({ scopes: [GEMINI_SCOPE], credentials });
+      } catch (parseErr) {
+        console.error('[google-auth] Error parsing GOOGLE_APPLICATION_CREDENTIALS_JSON:', parseErr);
+        throw new Error('GOOGLE_APPLICATION_CREDENTIALS_JSON no es un JSON válido. Revisa el formato en Vercel.');
+      }
     } else {
+      // Sin credenciales — intentar ADC (solo funciona local con gcloud auth)
       _auth = new GoogleAuth({ scopes: [GEMINI_SCOPE] });
     }
   }

@@ -667,11 +667,7 @@ export default function ProductsPage() {
         databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(100)]),
       ]);
       
-      if (isLoadMore) {
-        setProducts(prev => [...prev, ...docs]);
-      } else {
-        setProducts(docs);
-      }
+      setProducts(docs);
 
       if (docs.length === PAGE_SIZE) {
         setLastCursor((docs[docs.length - 1] as any).$id);
@@ -679,7 +675,7 @@ export default function ProductsPage() {
       } else {
         setLastCursor(null);
       }
-      setTotalCount(prev => isLoadMore ? prev + docs.length : docs.length);
+      setTotalCount(prev => isLoadMore ? prev : docs.length);
       
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);

@@ -61,7 +61,7 @@ export default function MobileProductList({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Productos</h1>
-          <p className="text-xs text-gray-500">{products.length} visibles</p>
+          <p className="text-xs text-gray-500">{allProducts.length} en total · página {currentPage}</p>
         </div>
         <button onClick={onRefresh} disabled={isLoading}
           className="p-2.5 rounded-full bg-white border border-gray-200 text-gray-600 shadow-sm active:scale-95 transition">
