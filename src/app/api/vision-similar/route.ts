@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGeminiAccessToken } from '@/lib/google-auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -11,6 +10,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'imageUrl es requerido' }, { status: 400 });
     }
 
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+    if (!GEMINI_API_KEY) {
+      return NextResponse.json({ error: 'Falta GEMINI_API_KEY en variables de entorno' }, { status: 500 });
+    }
+
     // Descargar la imagen y convertirla a base64
     const imgRes = await fetch(imageUrl);
     if (!imgRes.ok) {
@@ -18,90 +22,70 @@ export async function POST(req: NextRequest) {
     }
     const imgBuffer = await imgRes.arrayBuffer();
     const base64 = Buffer.from(imgBuffer).toString('base64');
+    const mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
 
-    // Vision API requiere OAuth2 (no acepta API keys)
-    const GCP_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID || '';
-
-    let token: string;
-    try {
-      token = await getGeminiAccessToken(true); // forceOAuth = true
-    } catch (e: any) {
-      return NextResponse.json({
-        error: 'No se pudo autenticar con Google Cloud. Necesitas configurar GOOGLE_APPLICATION_CREDENTIALS_JSON o tener ADC configurado.',
-        detail: e.message,
-      }, { status: 500 });
-    }
-
-    if (!token) {
-      return NextResponse.json({
-        error: 'No hay token OAuth. Configura GOOGLE_APPLICATION_CREDENTIALS_JSON en Vercel con el JSON del service account.',
-      }, { status: 500 });
-    }
-
-    const visionUrl = 'https://vision.googleapis.com/v1/images:annotate';
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    };
-    if (GCP_PROJECT_ID) {
-      headers['x-goog-user-project'] = GCP_PROJECT_ID;
-    }
+    // Usar Gemini con API key (no requiere OAuth)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     const body = {
-      requests: [
-        {
-          image: { content: base64 },
-          features: [{ type: 'WEB_DETECTION', maxResults: 20 }],
-        },
-      ],
+      contents: [{
+        parts: [
+          { text: 'Analiza esta imagen de producto y responde SOLO con un JSON válido (sin markdown) con esta estructura: {"bestGuess": ["etiqueta1", "etiqueta2"], "searchTerms": ["termino de busqueda 1", "termino 2"]}. Las etiquetas deben describir el producto (tipo, marca, color, material). Los terminos de busqueda deben ser consultas que alguien usaria para encontrar este producto en Google Images.' },
+          { inline_data: { mime_type: mimeType, data: base64 } }
+        ]
+      }],
+      generationConfig: { temperature: 0.4, maxOutputTokens: 500 }
     };
 
-    const response = await fetch(visionUrl, {
+    const response = await fetch(geminiUrl, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('Vision API error:', errText);
-      return NextResponse.json({ error: `Vision API error: ${response.status}`, detail: errText }, { status: 500 });
+      console.error('Gemini API error:', errText);
+      return NextResponse.json({ error: `Gemini API error: ${response.status}`, detail: errText }, { status: 500 });
     }
 
     const data = await response.json();
-    const webDetection = data.responses?.[0]?.webDetection;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    if (!webDetection) {
-      return NextResponse.json({ images: [], message: 'No se encontraron imágenes similares' });
+    let bestGuess: string[] = [];
+    let searchTerms: string[] = [];
+
+    try {
+      const cleaned = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      bestGuess = parsed.bestGuess || [];
+      searchTerms = parsed.searchTerms || [];
+    } catch {
+      bestGuess = [text.substring(0, 100)].filter(Boolean);
     }
 
-    // Extraer URLs de imágenes visualmente similares
-    const similarImages: { url: string; score?: number }[] = (webDetection.visuallySimilarImages || [])
-      .map((img: any) => ({ url: img.url, score: img.score }))
-      .filter((img: any) => img.url);
+    // Buscar imágenes en Google usando los términos generados
+    const query = (searchTerms[0] || bestGuess[0] || '').trim();
+    let images: { url: string; score?: number }[] = [];
 
-    // También incluir fullMatchingImages si hay
-    const fullMatches: { url: string; score?: number }[] = (webDetection.fullMatchingImages || [])
-      .map((img: any) => ({ url: img.url, score: img.score }))
-      .filter((img: any) => img.url);
-
-    // Combinar y deduplicar
-    const allImages = [...similarImages, ...fullMatches];
-    const seen = new Set<string>();
-    const unique = allImages.filter(img => {
-      if (seen.has(img.url)) return false;
-      seen.add(img.url);
-      return true;
-    });
-
-    // Best guess labels (para contexto)
-    const bestGuessLabels: string[] = (webDetection.bestGuessLabels || [])
-      .map((l: any) => l.label)
-      .filter(Boolean);
+    if (query) {
+      // Usar Google Custom Search API si está disponible, sino devolver los términos
+      const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
+      if (GOOGLE_CSE_ID) {
+        const cseUrl = `https://www.googleapis.com/customsearch/v1?key=${GEMINI_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&searchType=image&num=10`;
+        const cseRes = await fetch(cseUrl);
+        if (cseRes.ok) {
+          const cseData = await cseRes.json();
+          images = (cseData.items || []).map((item: any) => ({ url: item.link, score: undefined }));
+        }
+      }
+    }
 
     return NextResponse.json({
-      images: unique.slice(0, 20),
-      bestGuess: bestGuessLabels,
+      images,
+      bestGuess,
+      searchTerms,
+      message: images.length === 0 ? 'Se generaron términos de búsqueda pero no se encontraron imágenes. Usa los términos para buscar manualmente.' : undefined,
     });
   } catch (e: any) {
     console.error('vision-similar error:', e);

@@ -1609,7 +1609,12 @@ input, textarea {
   .shopify-section,
   .section {
     max-width: 100vw !important;
-    overflow-x: hidden !important;
+    /* ⚠️ NUNCA usar overflow-x:hidden aquí: al combinarse con overflow-y:visible
+       el y computa a 'auto' → CADA SECCIÓN se vuelve un scroll container propio
+       y los gestos táctiles mueren dentro de la sección (el "mini scroll interno").
+       'clip' evita el desborde horizontal SIN crear scroll container. */
+    overflow-x: clip !important;
+    overflow-y: visible !important;
     box-sizing: border-box !important;
   }
 
