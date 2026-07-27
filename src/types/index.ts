@@ -181,6 +181,7 @@ export interface Order {
   AUTOCANCELENABLED?: boolean;
   PAYMENTPROOFURL?: string;
   SHIPPINGPROOFURL?: string;
+  PROOFURL?: string;
   ORDERTYPE?: string;
   EXTENSIONCOUNT?: number;
   DISCOUNT?: number;
