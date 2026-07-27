@@ -320,24 +320,10 @@ export default function HomePage25() {
         style.textContent = `
           @media (max-width: 1023px) {
             .product-bundle__sidebar {
-              position: fixed !important;
-              bottom: 0 !important;
-              left: 0 !important;
-              right: 0 !important;
-              z-index: 50 !important;
-              background: #ffffff !important;
-              padding: 16px !important;
-              box-shadow: 0 -4px 16px rgba(0,0,0,0.15) !important;
-              border-top-left-radius: 16px !important;
-              border-top-right-radius: 16px !important;
-              max-height: 85vh !important;
-              overflow-y: auto !important;
-              transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease !important;
-              transform: translateY(0) !important;
-              opacity: 1 !important;
+              transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out !important;
             }
             .product-bundle__sidebar.yaxsell-mobile-hidden {
-              transform: translateY(120%) !important;
+              transform: translateY(150%) !important;
               opacity: 0 !important;
               pointer-events: none !important;
             }
@@ -568,10 +554,10 @@ export default function HomePage25() {
           }
         }
 
-        // ── SLIDER-ELEMENT TOUCH FIX: Remove pan-y lock to allow horizontal swiping ──
+        // ── SLIDER-ELEMENT TOUCH FIX: permitir scroll vertical en slider de categorías ──
         if (window.matchMedia('(max-width: 767px)').matches) {
           document.querySelectorAll<HTMLElement>('slider-element, .slider, .card-grid, .media-card, .media-card__link, .media-card .media').forEach(el => {
-            el.style.touchAction = 'pan-x pan-y';
+            el.style.touchAction = 'pan-y';
           });
         }
 
