@@ -31,7 +31,7 @@ const FALLBACK_ADMINS = '56962293893,56936599658,56992139185,56935623858,5696711
 const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_MODELS   = GEMINI_TEXT_MODELS;
-const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl';
+const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.donbalatomayorista.cl';
 
 // ── In-memory caches to reduce Appwrite calls ──────────────────────────────
 let _catCache: { data: any[]; ts: number } | null = null;
@@ -761,7 +761,7 @@ export async function POST(req: NextRequest) {
         interceptReply = '🔄 *¿Falta algo? ¡Ni te estreses!*\n\nSi justo se nos agotó ese labial que querías, te voy a escribir rapidísimo para mostrarte otras opciones súper bellas para que elijas. ¡Te prometo que no te quedas sin tus regalitos! 💅💕';
       } else if (interactiveId === 'func_humano') {
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
-        const alertMsg = `🚨 *ASISTENCIA REQUERIDA*\n\nEl cliente +${fromPhone} presionó el botón de "Hablar con persona".\n🔗 ${process.env.NEXT_PUBLIC_SITE_URL || 'https://kevincocochile.cl'}/admin/ia/whatsapp`;
+        const alertMsg = `🚨 *ASISTENCIA REQUERIDA*\n\nEl cliente +${fromPhone} presionó el botón de "Hablar con persona".\n🔗 ${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.donbalatomayorista.cl'}/admin/ia/whatsapp`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
         
         await setKeniaBlocked(fromPhone, true, 'admin_takeover');

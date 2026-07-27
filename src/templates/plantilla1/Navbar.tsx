@@ -36,6 +36,9 @@ function getFilePreviewUrl(fileId: string): string {
 
 export default function Navbar1() {
   const pathname = usePathname();
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario')) {
+    return null;
+  }
   const router = useRouter();
   const isHome = pathname === '/';
   const { user, isLoggedIn, logout } = useAuth();
@@ -1116,8 +1119,8 @@ export default function Navbar1() {
       {/* FAB overlay */}
       {fabOpen && <div className="tpl1-fab-overlay open" onClick={() => setFabOpen(false)} />}
 
-      {/* Bottom mobile nav — hidden on /inventario */}
-      <nav className={`tpl1-bottom-nav${pathname?.startsWith('/inventario') ? ' !hidden' : ''}`}>
+      {/* Bottom mobile nav — hidden on /inventario and /admin */}
+      <nav className={`tpl1-bottom-nav${pathname?.startsWith('/inventario') || pathname?.startsWith('/admin') ? ' !hidden' : ''}`}>
         <div className="tpl1-bottom-nav-inner">
           <a href="/" className={`tpl1-bottom-nav-item ${!fabOpen && pathname === '/' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>
             <Home />

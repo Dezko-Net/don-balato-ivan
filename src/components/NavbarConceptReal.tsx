@@ -64,6 +64,10 @@ function ensureThemeStubs() {
 }
 
 export default function NavbarConceptReal() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario')) {
+    return null;
+  }
   const { totalItems } = useCart();
   const containerRef = useRef<HTMLDivElement>(null);
   const [headerHtml, setHeaderHtml] = useState<string | null>(null);

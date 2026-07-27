@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, Store, ShoppingBag, User, Heart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
@@ -13,7 +14,12 @@ const items = [
 ];
 
 export default function GlobalMobileNav() {
+  const pathname = usePathname();
   const { totalItems } = useCart();
+
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario') || pathname?.startsWith('/checkout')) {
+    return null;
+  }
 
   return (
     <nav className="global-mobile-nav" aria-label="Navegación móvil">

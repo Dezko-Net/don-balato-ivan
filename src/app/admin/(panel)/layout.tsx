@@ -607,7 +607,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Botón Ver mi página - arriba de la navegación */}
       <div style={{ padding: '12px 8px 8px' }}>
         <a 
-          href="https://kevincocochile.cl/" 
+          href="https://www.donbalatomayorista.cl/" 
           target="_blank" 
           rel="noopener noreferrer"
           style={{

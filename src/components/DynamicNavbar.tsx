@@ -12,6 +12,9 @@ import NavbarConceptReal from '@/components/NavbarConceptReal';
 
 export default function DynamicNavbar() {
   const pathname = usePathname();
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario')) {
+    return null;
+  }
   const { isLoading, template, getSectionTemplate } = useTemplate();
 
   // 🖤 Plantilla 25 (tema Shopify "Concept"): usamos el header REAL del tema.

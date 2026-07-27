@@ -6956,6 +6956,9 @@ export default function HomePage1() {
               allowTouchMove: true,
               simulateTouch: true,
               followFinger: true,
+              touchStartPreventDefault: false,
+              touchAngle: 35,
+              passiveListeners: true,
               touchEventsTarget: 'wrapper',
               watchOverflow: !hasMultiple,
               navigation: {
@@ -7476,8 +7479,8 @@ export default function HomePage1() {
                 const slider = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement & { swiper?: { allowTouchMove: boolean; autoplay?: { start?: () => void }; enable?: () => void; touchRatio?: number } };
                 const sw = slider?.swiper || (heroEl.querySelector('.swiper') as HTMLElement & { swiper?: typeof slider.swiper })?.swiper || (slider as any)?.slider;
                 if (sw) {
-                  sw.allowTouchMove = true;
-                  sw.touchRatio = 1;
+                  sw.allowTouchMove = !isMobile;
+                  sw.touchRatio = isMobile ? 0 : 1;
                   try { sw.enable?.(); } catch { /* ignore */ }
                   const shouldAutoplay = hs.heroAutoplay !== false;
                   if (shouldAutoplay && slides.length > 1) {

@@ -54,7 +54,7 @@ const JS_FILES: JsFile[] = [
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/announcement-bar.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/header.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/menu-drawer.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/slideshow.js` },
+  // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/slideshow.js` }, // REMOVED to prevent mobile touch scroll hijacking
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/block-video.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/collection-list.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/multimedia-collage.js` },
@@ -89,12 +89,12 @@ const JS_FILES: JsFile[] = [
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-popup.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-bottom-sheet.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/button-to-top.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gsap.min.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/ScrollMagic.min.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/animation.gsap.min.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/MorphSVGPlugin.min.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/morph-svg.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/split-hero.js` }
+  // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gsap.min.js` },
+  // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/ScrollMagic.min.js` },
+  // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/animation.gsap.min.js` },
+  // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/MorphSVGPlugin.min.js` },
+  // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/morph-svg.js` },
+  // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/split-hero.js` } // REMOVED to prevent mobile touch scroll hijacking
 ];
 
 /* ── Font faces ── */
@@ -6007,6 +6007,43 @@ export default function HomePage23() {
 
         /* ── GLOBAL MOBILE OVERRIDES for tpl23 ── */
         @media (max-width: 767px) {
+          /* FIX HERO BANNER MOBILE TOUCH SCROLL:
+             All hero slideshow containers, custom elements and images must pass touch events 100% directly to page scroll */
+          .tpl23-shopify-root .slideshow,
+          .tpl23-shopify-root custom-slideshow,
+          .tpl23-shopify-root parallax-element-section,
+          .tpl23-shopify-root #shopify-section-template--27304712470809__slideshow_FBfKC8,
+          .tpl23-shopify-root .slideshow__slide,
+          .tpl23-shopify-root .slideshow__background,
+          .tpl23-shopify-root .hero-no-swiper-container,
+          .tpl23-shopify-root .hero-no-swiper-wrapper {
+            touch-action: pan-y pinch-zoom !important;
+          }
+
+          .tpl23-shopify-root .slideshow img,
+          .tpl23-shopify-root .slideshow video,
+          .tpl23-shopify-root .slideshow__background img,
+          .tpl23-shopify-root .slideshow__background video,
+          .tpl23-shopify-root #hero1-image-desktop,
+          .tpl23-shopify-root #hero1-image-mobile,
+          .tpl23-shopify-root #hero1-video-desktop,
+          .tpl23-shopify-root #hero1-video-mobile,
+          .tpl23-shopify-root .dummy-desk,
+          .tpl23-shopify-root .dummy-mob {
+            pointer-events: none !important;
+            touch-action: pan-y pinch-zoom !important;
+            -webkit-user-drag: none !important;
+            -webkit-touch-callout: none !important;
+          }
+
+          /* Mantener botones interactivos si el usuario hace clic */
+          .tpl23-shopify-root .slideshow a,
+          .tpl23-shopify-root .slideshow button,
+          .tpl23-shopify-root .hero2-price-badge,
+          .tpl23-shopify-root .custom-button {
+            pointer-events: auto !important;
+          }
+
           /* Ensure template root doesn't overflow horizontally */
           .tpl23-shopify-root {
             max-width: 100vw !important;

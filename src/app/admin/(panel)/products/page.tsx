@@ -10,6 +10,8 @@ import { Product, Category, Subcategory } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload, FileSpreadsheet, FileText, ShoppingBag, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import ImageUploadField from '@/components/admin/ImageUploadField';
+import MobileProductList from '@/components/admin/mobile/MobileProductList';
+import MobileProductEditor from '@/components/admin/mobile/MobileProductEditor';
 import { generateProductTitle, generateProductDescription, generateProductAiPack } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures, getDisableDiscountsFromFeatures, setDisableDiscountsInFeatures } from '@/lib/product-features';
 // Lottie imports removed to prevent React 19 crashes
@@ -1562,7 +1564,7 @@ export default function ProductsPage() {
           FULL-PAGE PRODUCT EDITOR (replaces table when modal is active)
          ═══════════════════════════════════════════════════════════════ */}
       {modal && (
-        <div className="min-h-[calc(100vh-140px)]">
+        <div className="hidden md:block min-h-[calc(100vh-140px)]">
           {/* Header bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -2077,11 +2079,31 @@ export default function ProductsPage() {
         </div>
       )}
 
+      {/* ═══ MOBILE PRODUCT EDITOR (wizard, solo < md) ═══ */}
+      {modal && (
+        <MobileProductEditor
+          key={(modal.data as Product).$id || 'nuevo'}
+          modal={modal}
+          setModal={setModal}
+          onClose={() => { setModal(null); setKeniaOpen(false); setKeniaMessages([]); }}
+          onSave={save}
+          isSaving={isSaving}
+          categories={categories}
+          subcategories={subcategories}
+          aiLoading={aiLoading}
+          setAiLoading={setAiLoading}
+          aiTitles={aiTitles}
+          setAiTitles={setAiTitles}
+          onGenerateAll={generateAllProductContent}
+          onGenerateTabs={generateTechnicalTabsOnly}
+        />
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════
           PRODUCT LIST (shown when modal is NOT active)
          ═══════════════════════════════════════════════════════════════ */}
       {!modal && (
-        <>
+        <div className="hidden md:block space-y-5">
       {/* Header compacto con stats en línea */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
@@ -3350,7 +3372,32 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-      </>
+        </div>
+      )}
+
+      {/* ═══ MOBILE PRODUCT LIST (tarjetas, solo < md) ═══ */}
+      {!modal && (
+        <MobileProductList
+          products={filtered}
+          allProducts={products}
+          isLoading={isLoading}
+          search={search}
+          onSearchChange={setSearch}
+          onSearchSubmit={() => load(false, null, search, catFilter, subCatFilter, stockFilter)}
+          onSearchClear={() => { setSearch(''); load(false, null, '', catFilter, subCatFilter, stockFilter); }}
+          categories={categories}
+          catFilter={catFilter}
+          onCatChange={(v) => { setCatFilter(v); setSubCatFilter(''); }}
+          stockFilter={stockFilter}
+          onStockFilterChange={setStockFilter}
+          onEdit={openEdit}
+          onAdd={openAdd}
+          onRefresh={() => load(false)}
+          currentPage={currentPage}
+          hasMore={!!lastCursor}
+          onNextPage={() => { if (lastCursor) { setCurrentPage(currentPage + 1); load(true, lastCursor, search, catFilter, subCatFilter, stockFilter); } }}
+          onPrevPage={() => { if (currentPage > 1) { setCurrentPage(1); pageCursorsRef.current = new Map([[1, null]]); load(false, null, search, catFilter, subCatFilter, stockFilter); } }}
+        />
       )}
     </div>
   );

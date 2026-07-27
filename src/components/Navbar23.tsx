@@ -26,8 +26,11 @@ const EMOJI: Record<string, string> = {
 };
 
 export default function Navbar23() {
-  const { totalItems } = useCart();
   const pathname = usePathname();
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario')) {
+    return null;
+  }
+  const { totalItems } = useCart();
   const [cats, setCats] = useState<Category[]>([]);
   const [subs, setSubs] = useState<Subcategory[]>([]);
   const [catCounts, setCatCounts] = useState<Record<string, number>>({});

@@ -59,7 +59,8 @@ const JS_FILES: JsFile[] = [
   { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/mobile-dock.js` },
   { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/pickup-availability.js` },
   { src: `/shopify/plantilla25/assets/js/concept-theme-tech.myshopify.com/cdn/shop/t/191/assets/instant-page.js`, module: true },
-  { src: `/shopify/plantilla25/assets/js/cdn.shopify.com/storefront/standard-actions.js`, module: true }
+  { src: `/shopify/plantilla25/assets/js/cdn.shopify.com/storefront/standard-actions.js`, module: true },
+  { src: `/shopify/plantilla25/assets/js/flickity-touch-fix.js` }
 ];
 
 /* ── Font faces ── */
@@ -477,6 +478,52 @@ export default function HomePage25() {
       // Forzar .in-view después de un breve delay para que los scripts se ejecuten
       setTimeout(() => {
         forceInView();
+
+        // ── FLICKITY TOUCH FIX: parchar Flickity para permitir scroll vertical en móvil ──
+        if (window.matchMedia('(max-width: 767px)').matches && (window as any).Flickity) {
+          const proto = (window as any).Flickity.prototype;
+          if (proto && !proto._touchFixedInline) {
+            proto._touchFixedInline = true;
+            // Cambiar touchActionValue de 'none' a 'pan-y'
+            proto.touchActionValue = 'pan-y';
+            // Parchar bindHandles para usar pan-y
+            if (proto.bindHandles) {
+              const origBind = proto.bindHandles;
+              proto.bindHandles = function() {
+                this.touchActionValue = 'pan-y';
+                return origBind.call(this);
+              };
+            }
+            // Parchar handleDragMove para ignorar movimientos verticales
+            if (proto.handleDragMove) {
+              const origDrag = proto.handleDragMove;
+              proto.handleDragMove = function(event: any, pointer: any, moveVector: any) {
+                if (!this.isDraggable) return;
+                if (!moveVector) return origDrag.call(this, event, pointer, moveVector);
+                const dx = Math.abs(moveVector.x);
+                const dy = Math.abs(moveVector.y);
+                if (dy > dx) {
+                  if (this.isDragging) this.isDragging = false;
+                  return;
+                }
+                return origDrag.call(this, event, pointer, moveVector);
+              };
+            }
+            // Re-aplicar touch-action a todas las instancias existentes
+            document.querySelectorAll('slideshow-element, .slideshow, .flickity-slider').forEach((el: any) => {
+              el.style.touchAction = 'pan-y';
+              el.style.webkitOverflowScrolling = 'auto';
+            });
+          }
+        }
+
+        // ── SLIDER-ELEMENT TOUCH FIX: permitir scroll vertical en slider de categorías ──
+        if (window.matchMedia('(max-width: 767px)').matches) {
+          document.querySelectorAll<HTMLElement>('slider-element, .slider, .card-grid, .media-card, .media-card__link, .media-card .media').forEach(el => {
+            el.style.touchAction = 'pan-y';
+          });
+        }
+
         try {
           document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true, cancelable: false }));
           window.dispatchEvent(new Event('load'));

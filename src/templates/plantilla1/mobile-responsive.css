@@ -815,6 +815,29 @@
     touch-action: pan-y pinch-zoom !important;
     overflow: hidden !important;
   }
+
+  /* HERO BANNER MOBILE: passthrough touch gestures directly to window scroll */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4,
+  [data-template="1"] .musk-main-banner,
+  [data-template="1"] fuzion-hero-banner-slider,
+  [data-template="1"] .product_hero_banner_wrapp {
+    touch-action: pan-y pinch-zoom !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 img,
+  [data-template="1"] .musk-main-banner img,
+  [data-template="1"] .slide-image,
+  [data-template="1"] .product_hero_banner_wrapp img {
+    pointer-events: none !important;
+    touch-action: pan-y pinch-zoom !important;
+    -webkit-user-drag: none !important;
+    -webkit-touch-callout: none !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 a,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 button,
+  [data-template="1"] .musk-main-banner a,
+  [data-template="1"] .musk-main-banner button {
+    pointer-events: auto !important;
+  }
 }
 
 @media screen and (max-width: 480px) {

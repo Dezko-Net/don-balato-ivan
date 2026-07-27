@@ -1652,11 +1652,23 @@ input, textarea {
 /* touch-action pan-y en contenedores de sliders para permitir scroll vertical */
 @media screen and (max-width: 767px) {
   .slideshow-element,
-  .slideshow {
+  .slideshow,
+  .slideshow .banner,
+  .slideshow .banner__media,
+  .slideshow .media-element,
+  .slideshow animate-element,
+  .slideshow .media,
+  .slideshow picture,
+  .slideshow .banner__image,
+  .slideshow img {
     touch-action: pan-y !important;
   }
 
-  .video-hero {
+  .video-hero,
+  .video-hero .banner__media,
+  .video-hero .media,
+  .video-hero picture,
+  .video-hero img {
     touch-action: pan-y !important;
   }
 
@@ -1666,7 +1678,13 @@ input, textarea {
   .card-grid,
   .media-card,
   .media-card__link,
-  .media-card .media {
+  .media-card .media,
+  .collage,
+  .collage-small,
+  .rich-text,
+  .title-wrapper,
+  .banner__box,
+  .banner__content {
     touch-action: pan-y !important;
   }
 }

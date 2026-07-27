@@ -547,19 +547,62 @@ main, .page-transition-container, .pk-products-container, .pk-page, .pk-content-
     padding-bottom: 25px !important;
   }
 
-  /* Permitir scroll vertical natural sobre imágenes de productos sin atrapamiento táctil horizontal */
+  /* Permitir scroll vertical natural continuo sobre cualquier sección o imagen en móviles */
+  html, body {
+    touch-action: pan-y pinch-zoom !important;
+  }
+
+  img, picture, svg, video {
+    -webkit-user-drag: none !important;
+    -webkit-touch-callout: none !important;
+    touch-action: pan-y pinch-zoom !important;
+  }
+
+  .fusion-product-item,
   .fusion-product-item img,
   .product-img,
   .product-img img,
   .pk-card-image,
   .pk-card-image img,
+  .product-item,
   .product-item img,
+  .grid_item,
   .grid_item img,
+  .product-card,
   .product-card img,
-  .pd-gallery-main img {
+  .pd-gallery-main img,
+  .musk-category-slider,
+  .categories-list,
+  [class*="hero"],
+  [class*="slider"],
+  [class*="carousel"],
+  [class*="banner"],
+  [class*="section"] {
     touch-action: pan-y pinch-zoom !important;
-    overflow: hidden !important;
+  }
+
+  /* HERO BANNER MOBILE: passthrough touch gestures directly to window scroll */
+  .musk-main-banner img,
+  .product_hero_banner_wrapp img,
+  fuzion-hero-banner-slider img,
+  [class*="hero_banner"] img,
+  [class*="hero-banner"] img,
+  .slide-image {
+    pointer-events: none !important;
+    touch-action: pan-y pinch-zoom !important;
+    -webkit-user-drag: none !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  .musk-main-banner a,
+  .musk-main-banner button,
+  .product_hero_banner_wrapp a,
+  .product_hero_banner_wrapp button,
+  [class*="hero_banner"] a,
+  [class*="hero_banner"] button {
+    pointer-events: auto !important;
   }
 }
+
 
 
