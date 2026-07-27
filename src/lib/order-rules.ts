@@ -1,5 +1,5 @@
 /** Monto mínimo de compra (se evalúa sobre el total a pagar, con descuentos). */
-export const MINIMUM_ORDER_CLP = 20_000;
+export const MINIMUM_ORDER_CLP = 50_000;
 
 /** Retorna true si el total a pagar está por debajo del mínimo. */
 export function isBelowMinimumOrder(totalAfterDiscounts: number): boolean {

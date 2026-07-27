@@ -69,6 +69,34 @@ export default function ProductsPage() {
   const [sort, setSort] = useState<{ key: 'NAME' | 'PRICE' | 'STOCK' | 'SOLDQUANTITY' | 'MARGIN' | 'CREATED'; dir: 'asc' | 'desc' }>({ key: 'CREATED', dir: 'desc' });
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; data: ProductModalData } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Restaurar modal en progreso desde localStorage (modo add)
+  useEffect(() => {
+    const restore = () => {
+      try {
+        const saved = localStorage.getItem('mobile-editor-state');
+        if (saved) {
+          const state = JSON.parse(saved);
+          if (state.modalData && !state.saved) {
+            setModal({ mode: 'add', data: state.modalData as ProductModalData });
+          }
+        }
+      } catch {}
+    };
+    restore();
+    // Restaurar al volver a la página (back/forward + bfcache + visibility)
+    const onPageshow = (e: PageTransitionEvent) => { setTimeout(restore, 50); };
+    const onPopstate = () => setTimeout(restore, 50);
+    const onVisibility = () => { if (document.visibilityState === 'visible') setTimeout(restore, 50); };
+    window.addEventListener('pageshow', onPageshow);
+    window.addEventListener('popstate', onPopstate);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pageshow', onPageshow);
+      window.removeEventListener('popstate', onPopstate);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [priceModal, setPriceModal] = useState(false);
   const [priceAdj, setPriceAdj] = useState<{ type: 'percent' | 'fixed'; value: string }>({ type: 'percent', value: '' });
@@ -951,11 +979,15 @@ export default function ProductsPage() {
       };
 
       // Loop to dynamically remove unknown attributes if rejected by Appwrite
+      // Quitar atributos que no existen en la colección de una vez
+      const unknownAttrs = ['BOXPRICE', 'BOXQTY', 'SUBSUBCATEGORYID', 'barcode', 'sku', 'DISABLE_DISCOUNTS'];
       let currentPayload = { ...payload, ...optionalFields };
+      unknownAttrs.forEach(attr => { delete currentPayload[attr]; });
+
       let success = false;
       let attempts = 0;
 
-      while (!success && attempts < 8) {
+      while (!success && attempts < 4) {
         try {
           await doSave(currentPayload);
           success = true;
@@ -1001,6 +1033,7 @@ export default function ProductsPage() {
         }
       }
       
+      localStorage.removeItem('mobile-editor-state');
       setModal(null);
       invalidateProductCache();
     } catch (e: any) { alert('Error: ' + e.message); }
@@ -1749,19 +1782,42 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Precio (CLP) <span className="text-red-500">*</span></label>
-                    <input type="number" value={modal.data.PRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value), WHOLESALEPRICE: Number(e.target.value) } } : m)}
+                    <input type="number" value={modal.data.PRICE || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value) || 0, WHOLESALEPRICE: Number(e.target.value) || 0 } } : m)}
                       className={`w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 ${!modal.data.PRICE ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-amber-700 font-bold mb-1">Precio Catálogo (CLP) ✨</label>
-                    <input type="number" value={modal.data.CATALOGPRICE ?? modal.data.PRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATALOGPRICE: Number(e.target.value) } } : m)}
-                      placeholder="Mismo precio o especial"
+                    <input type="number" value={modal.data.CATALOGPRICE || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATALOGPRICE: Number(e.target.value) || 0 } } : m)}
+                      placeholder="Auto o manual"
                       className="w-full px-3 py-2 border border-amber-300 bg-amber-50/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold" />
-                    <p className="text-[10px] text-amber-600 mt-1 font-medium">Catálogo Mayorista (/catalogo)</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-[10px] text-amber-600 font-medium">% sobre precio:</span>
+                      <select
+                        onChange={e => {
+                          const pct = Number(e.target.value);
+                          const basePrice = Number(modal.data.PRICE) || 0;
+                          if (pct > 0 && basePrice > 0) {
+                            const catPrice = Math.round(basePrice * (1 + pct / 100));
+                            setModal(m => m ? { ...m, data: { ...m.data, CATALOGPRICE: catPrice } } : m);
+                          }
+                        }}
+                        defaultValue=""
+                        className="text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white"
+                      >
+                        <option value="">Manual</option>
+                        <option value="2">+2%</option>
+                        <option value="5">+5%</option>
+                        <option value="10">+10%</option>
+                        <option value="15">+15%</option>
+                        <option value="20">+20%</option>
+                        <option value="-5">-5%</option>
+                        <option value="-10">-10%</option>
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Costo</label>
-                    <input type="number" value={modal.data.COST ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, COST: Number(e.target.value) } } : m)}
+                    <input type="number" value={modal.data.COST || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, COST: Number(e.target.value) || 0 } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                     {(() => {
                       const price = Number(modal.data.PRICE) || 0;
@@ -1787,7 +1843,7 @@ export default function ProductsPage() {
                         Poner Ilimitado (99999)
                       </button>
                     </label>
-                    <input type="number" value={modal.data.STOCK ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, STOCK: Number(e.target.value) } } : m)}
+                    <input type="number" value={modal.data.STOCK || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, STOCK: Number(e.target.value) || 0 } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                     {Number(modal.data.STOCK) === 99999 && (
                       <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">✓ Stock Ilimitado (vender sin stock)</p>
@@ -1859,12 +1915,6 @@ export default function ProductsPage() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                   </div>
                   <div className="flex items-end">
-                    <label className="flex items-center gap-2 cursor-pointer select-none pb-2">
-                      <input type="checkbox" checked={!!modal.data.DISABLE_DISCOUNTS}
-                        onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DISABLE_DISCOUNTS: e.target.checked } } : m)}
-                        className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-800" />
-                      <span className="text-xs font-medium text-gray-700">Bloquear descuentos</span>
-                    </label>
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">

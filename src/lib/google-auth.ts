@@ -24,8 +24,8 @@ async function getAuth() {
   return _auth;
 }
 
-export async function getGeminiAccessToken() {
-  if (GEMINI_API_KEY) return ''; // Bypassed by API key
+export async function getGeminiAccessToken(forceOAuth = false) {
+  if (GEMINI_API_KEY && !forceOAuth) return ''; // Bypassed by API key
   
   if (_cachedToken && Date.now() < _cachedToken.expiry - TOKEN_REFRESH_BUFFER_MS) {
     return _cachedToken.token;
