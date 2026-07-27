@@ -156,20 +156,16 @@ export default function MobileProductEditor({
   /* Validación ligera por paso antes de avanzar */
   const goNext = () => {
     if (step === 1 && !d.NAME?.trim()) { alert('Escribe el nombre del producto para continuar'); return; }
-    if (step === 2 && (!d.WHOLESALEPRICE || Number(d.WHOLESALEPRICE) <= 0)) {
-      alert('Ingresa el Precio Paquete / Mayor para continuar'); return;
+    if (step === 2 && (!d.PRICE || Number(d.PRICE) <= 0)) {
+      alert('Ingresa el Precio para continuar'); return;
     }
     setStep(s => Math.min(s + 1, STEPS.length - 1));
     window.scrollTo({ top: 0 });
   };
   const goBack = () => { setStep(s => Math.max(s - 1, 0)); window.scrollTo({ top: 0 }); };
 
-  const detalleAuto = (() => {
-    const mayor = Number(d.WHOLESALEPRICE) || 0;
-    return mayor > 0 ? Math.round(mayor * 1.5) : 0;
-  })();
-  const margin = d.COST && d.WHOLESALEPRICE
-    ? Math.round(((Number(d.WHOLESALEPRICE) - Number(d.COST)) / Number(d.WHOLESALEPRICE)) * 100)
+  const margin = d.COST && d.PRICE
+    ? Math.round(((Number(d.PRICE) - Number(d.COST)) / Number(d.PRICE)) * 100)
     : null;
 
   return (
@@ -219,6 +215,10 @@ export default function MobileProductEditor({
       {/* ── PASO 2: INFORMACIÓN ── */}
       {step === 1 && (
         <div className="space-y-5">
+          <button type="button" onClick={onGenerateAll} disabled={aiLoading === 'all'}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-gray-900 to-gray-700 text-white text-sm font-bold shadow-lg active:scale-[0.98] transition disabled:opacity-50">
+            <Sparkles className="w-4 h-4" /> {aiLoading === 'all' ? 'Generando todo con IA...' : '✨ Generar todo con IA'}
+          </button>
           <div>
             <label className={labelCls}>Nombre del producto <span className="text-red-500">*</span></label>
             <input
@@ -271,40 +271,23 @@ export default function MobileProductEditor({
         <div className="space-y-5">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
             <div>
-              <label className={labelCls}>Precio Paquete / Mayor (CLP) <span className="text-red-500">*</span></label>
+              <label className={labelCls}>Precio (CLP) <span className="text-red-500">*</span></label>
               <input
                 type="number" inputMode="numeric"
-                value={d.WHOLESALEPRICE ?? ''}
-                onChange={e => update({ WHOLESALEPRICE: Number(e.target.value), CATALOGPRICE: d.CATALOGPRICE ?? Number(e.target.value) })}
+                value={d.PRICE ?? ''}
+                onChange={e => update({ PRICE: Number(e.target.value), WHOLESALEPRICE: Number(e.target.value) })}
                 placeholder="Ej: 2990"
-                className={`${inputCls} text-lg font-bold ${!d.WHOLESALEPRICE ? 'border-red-300 bg-red-50' : ''}`}
+                className={`${inputCls} text-lg font-bold ${!d.PRICE ? 'border-red-300 bg-red-50' : ''}`}
               />
-              <p className="text-[11px] text-gray-500 mt-1">Precio principal de venta · Obligatorio</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-amber-700 mb-1.5">Precio Catálogo ✨</label>
-                <input
-                  type="number" inputMode="numeric"
-                  value={d.CATALOGPRICE ?? d.WHOLESALEPRICE ?? ''}
-                  onChange={e => update({ CATALOGPRICE: Number(e.target.value) })}
-                  className="w-full px-3 py-3 border border-amber-300 bg-amber-50/50 rounded-2xl text-base font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Detalle (auto)</label>
-                <div className="w-full px-3 py-3 border border-gray-200 rounded-2xl text-base bg-gray-100 text-gray-600 font-semibold">
-                  ${detalleAuto.toLocaleString('es-CL')}
-                </div>
-              </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Precio Embalaje / Caja <span className="text-gray-400 font-normal">(opcional)</span></label>
+              <label className="block text-xs font-semibold text-amber-700 mb-1.5">Precio Catálogo ✨</label>
               <input
                 type="number" inputMode="numeric"
-                value={d.BOXPRICE ?? ''}
-                onChange={e => update({ BOXPRICE: Number(e.target.value) })}
-                className={inputCls}
+                value={d.CATALOGPRICE ?? d.PRICE ?? ''}
+                onChange={e => update({ CATALOGPRICE: Number(e.target.value) })}
+                placeholder="Mismo precio o especial"
+                className="w-full px-3 py-3 border border-amber-300 bg-amber-50/50 rounded-2xl text-base font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
@@ -324,15 +307,6 @@ export default function MobileProductEditor({
                     Margen: {margin}%
                   </p>
                 )}
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Unid. por paquete</label>
-                <input
-                  type="number" inputMode="numeric"
-                  value={d.PACKQTY ?? ''}
-                  onChange={e => update({ PACKQTY: Number(e.target.value) })}
-                  className={inputCls}
-                />
               </div>
             </div>
             <div>
@@ -365,19 +339,13 @@ export default function MobileProductEditor({
             {([
               {
                 label: 'Categoría', value: d.CATEGORYID || '', disabled: false,
-                onChange: (v: string) => update({ CATEGORYID: v, SUBCATEGORYID: '', SUBSUBCATEGORYID: '' }),
+                onChange: (v: string) => update({ CATEGORYID: v, SUBCATEGORYID: '' }),
                 options: categories.map(c => ({ id: c.$id, name: c.name })), empty: 'Sin categoría',
               },
               {
                 label: 'Subcategoría (opcional)', value: d.SUBCATEGORYID || '', disabled: !d.CATEGORYID,
-                onChange: (v: string) => update({ SUBCATEGORYID: v, SUBSUBCATEGORYID: '' }),
+                onChange: (v: string) => update({ SUBCATEGORYID: v }),
                 options: subcategories.filter(s => s.categoryId === d.CATEGORYID && !s.parentSubcategoryId).map(s => ({ id: s.$id, name: s.name })),
-                empty: 'Ninguna',
-              },
-              {
-                label: 'Sub-subcategoría (opcional)', value: d.SUBSUBCATEGORYID || '', disabled: !d.SUBCATEGORYID,
-                onChange: (v: string) => update({ SUBSUBCATEGORYID: v }),
-                options: subcategories.filter(s => s.parentSubcategoryId === d.SUBCATEGORYID).map(s => ({ id: s.$id, name: s.name })),
                 empty: 'Ninguna',
               },
             ] as const).map((sel, i) => (

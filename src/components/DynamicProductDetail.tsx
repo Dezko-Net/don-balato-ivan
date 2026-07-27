@@ -17,10 +17,6 @@ export default function DynamicProductDetail({ productId }: { productId?: string
     );
   }
 
-  const template = getSectionTemplate('productDetail');
-
-  if (template === 100) return <ProductDetailPlantilla100 previewProductId={productId} />;
-  if (template === 5 || template === 23) return <ProductDetailPlantilla5 previewProductId={productId} />;
-  if (template === 1) return <ProductDetailPlantilla1 previewProductId={productId} />;
-  return <ProductDetailPlantilla2 previewProductId={productId} />;
+  // Forzar siempre plantilla 100 para detalles de producto según instrucción
+  return <ProductDetailPlantilla100 previewProductId={productId} />;
 }

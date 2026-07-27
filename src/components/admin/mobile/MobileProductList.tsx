@@ -161,7 +161,7 @@ export default function MobileProductList({
                   {p.NAME}
                 </p>
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                  <span className="text-sm font-bold text-gray-900">{fmt(p.WHOLESALEPRICE || p.PRICE || 0)}</span>
+                  <span className="text-sm font-bold text-gray-900">{fmt(p.PRICE || p.WHOLESALEPRICE || 0)}</span>
                   <StockBadge stock={p.STOCK ?? 0} />
                 </div>
               </div>

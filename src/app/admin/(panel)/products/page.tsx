@@ -104,6 +104,7 @@ export default function ProductsPage() {
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [pdfExportProgress, setPdfExportProgress] = useState({ current: 0, total: 0 });
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
 
   const getModalImageUrls = useCallback((data?: Partial<ProductModalData> | null) => {
     return [data?.IMAGEURL, data?.IMAGEURL2, data?.IMAGEURL3, (data as any)?.IMAGEURL4]
@@ -118,13 +119,38 @@ export default function ProductsPage() {
     setAiTitles([]);
     try {
       const categoryName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+      const catNames = categories.map(c => c.name);
+      const subGroups = categories.map(c => ({
+        category: c.name,
+        subs: subcategories.filter(s => s.categoryId === c.$id && !s.parentSubcategoryId).map(s => s.name),
+      }));
       const result = await generateProductAiPack({
         name: modal.data.NAME || '',
         description: modal.data.DESCRIPTION || '',
         category: categoryName,
         imageUrls: getModalImageUrls(modal.data),
+        availableCategories: catNames,
+        availableSubcategories: subGroups,
       });
       setAiTitles(result.titles);
+
+      // Match suggested category to real category ID
+      let matchedCatId = modal.data.CATEGORYID;
+      if (result.suggestedCategory) {
+        const matched = categories.find(c => c.name.toLowerCase() === result.suggestedCategory.toLowerCase());
+        if (matched) matchedCatId = matched.$id;
+      }
+      // Match suggested subcategory to real subcategory ID
+      let matchedSubId = '';
+      if (result.suggestedSubcategory && matchedCatId) {
+        const matchedSub = subcategories.find(s =>
+          s.categoryId === matchedCatId &&
+          !s.parentSubcategoryId &&
+          s.name.toLowerCase() === result.suggestedSubcategory.toLowerCase()
+        );
+        if (matchedSub) matchedSubId = matchedSub.$id;
+      }
+
       setModal(m => m ? {
         ...m,
         data: {
@@ -134,6 +160,10 @@ export default function ProductsPage() {
           _details: result.details || m.data._details || '',
           _usage: result.usage || m.data._usage || '',
           _ingredients: result.ingredients || m.data._ingredients || '',
+          TAGS: result.tags.join(', '),
+          CATEGORYID: matchedCatId || m.data.CATEGORYID,
+          SUBCATEGORYID: matchedSubId || '',
+          SUBSUBCATEGORYID: '',
         },
       } : m);
     } catch (e: any) {
@@ -141,18 +171,25 @@ export default function ProductsPage() {
     } finally {
       setAiLoading(null);
     }
-  }, [categories, getModalImageUrls, modal]);
+  }, [categories, subcategories, getModalImageUrls, modal]);
 
   const generateTechnicalTabsOnly = useCallback(async () => {
     if (!modal) return;
     setAiLoading('tabs');
     try {
       const categoryName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+      const catNames = categories.map(c => c.name);
+      const subGroups = categories.map(c => ({
+        category: c.name,
+        subs: subcategories.filter(s => s.categoryId === c.$id && !s.parentSubcategoryId).map(s => s.name),
+      }));
       const result = await generateProductAiPack({
         name: modal.data.NAME || '',
         description: modal.data.DESCRIPTION || '',
         category: categoryName,
         imageUrls: getModalImageUrls(modal.data),
+        availableCategories: catNames,
+        availableSubcategories: subGroups,
       });
       setModal(m => m ? {
         ...m,
@@ -171,7 +208,6 @@ export default function ProductsPage() {
   }, [categories, getModalImageUrls, modal]);
 
   // AI Categorization states
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [aiCategorizeModal, setAiCategorizeModal] = useState(false);
   const [aiCategorizeMode, setAiCategorizeMode] = useState<'uncategorized' | 'all'>('uncategorized');
   const [aiCategorizing, setAiCategorizing] = useState(false);
@@ -1791,18 +1827,6 @@ export default function ProductsPage() {
                         className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 disabled:opacity-50 disabled:bg-gray-100">
                         <option value="">Ninguna</option>
                         {subcategories.filter(s => s.categoryId === modal.data.CATEGORYID && !s.parentSubcategoryId).map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Sub-subcategoría (Nivel 3)</label>
-                    <div className="relative">
-                      <select value={modal.data.SUBSUBCATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, SUBSUBCATEGORYID: e.target.value } } : m)}
-                        disabled={!modal.data.SUBCATEGORYID}
-                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 disabled:opacity-50 disabled:bg-gray-100">
-                        <option value="">Ninguna</option>
-                        {subcategories.filter(s => s.parentSubcategoryId === modal.data.SUBCATEGORYID).map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
                       </select>
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>

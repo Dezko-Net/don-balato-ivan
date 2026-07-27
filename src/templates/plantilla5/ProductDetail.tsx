@@ -415,17 +415,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       setReviewsTarget(placeholder);
     }
 
-    // 0. Move the thumbnails container inside carousel-slider only on mobile, so it sits under the main image.
-    // On desktop the grid-thumbnails already provide the vertical thumbnail column.
+    // 0. Move the thumbnails container outside carousel-slider to prevent Swiper from breaking it or clipping it on mobile
     const thumbs = root.querySelector('.media-gallery__carousel-thumbnails');
-    if (window.innerWidth < 768) {
-      const galleryCarousel = root.querySelector('.media-gallery__carousel') || root.querySelector('.media-gallery__carousel-container');
-      if (thumbs && galleryCarousel && thumbs.parentNode !== galleryCarousel) {
-        galleryCarousel.appendChild(thumbs);
-      }
-    } else if (thumbs) {
-      // On desktop make sure mobile thumbnails are hidden and not interfering with layout
-      (thumbs as HTMLElement).style.setProperty('display', 'none', 'important');
+    // Mover thumbs dentro del carrusel de imagen, para que el absolute quede SOBRE la imagen en la parte inferior
+    const galleryCarousel = root.querySelector('.media-gallery__carousel') || root.querySelector('.media-gallery__carousel-container');
+    if (thumbs && galleryCarousel && thumbs.parentNode !== galleryCarousel) {
+      galleryCarousel.appendChild(thumbs);
     }
 
     // 🔑 Fix huge blank gap: Shopify reserves space via padding-bottom/aspect-ratio before images load.
@@ -884,7 +879,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const isPreview = typeof window !== 'undefined' && window.location.pathname.includes('/preview/');
     if (isPreview && !techDetails && !usageInstructions && !ingredientsList) {
       techDetails = '• Tipo de Producto: Espuma de Limpieza Facial\n• Ingrediente Principal: Extracto de Fresa Silvestre & Aminoácidos\n• Beneficio: Limpia profundamente los poros, controla el exceso de grasa.';
-      usageInstructions = '1. 1. Desempacar cuidadosamente el producto.\n2. Leer el manual de instrucciones adjunto antes de usar.\n3. Ensamblar o ubicar en el lugar deseado.\n4. Disfrutar de un hogar más organizado y armonioso.';
+      usageInstructions = '1. Desempacar cuidadosamente el producto.\n2. Leer el manual de instrucciones adjunto antes de usar.\n3. Ensamblar o ubicar en el lugar deseado.\n4. Disfrutar de un hogar más organizado y armonioso.';
       ingredientsList = 'Aqua, Strawberry Fruit Extract, Amino Acids (Sodium Lauroyl Glutamate, Glycine), Glycerin, Sodium Hyaluronate, Lauric Acid, Potassium Hydroxide, Parfum.';
     }
 
@@ -1596,13 +1591,23 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       // 1. Reemplazar imagen del banner FAQ
       const faqBannerImg = faqSection.querySelector('img[data-srcset*="FAQ-banner"], img[data-srcset*="faq-banner"], picture img') as HTMLImageElement | null;
       const faqBannerSource = faqSection.querySelector('picture source') as HTMLSourceElement | null;
-      const faqImgUrl = 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781499936436-pegada-1781499934553.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=E7usYNVhdHKHMBTkbk41zENmNoMQpM25RB14tPh6y%2BmuTbknH%2FVy8O9LSzGrFU1J4J1s3nA%2BMyKJRDWCCFlLdinGQxgAZ1S81zIMgczSGFe%2F3xkfsDUBhu8X55HoSRl5q1tdNQnmmWEzUS0n0d4rRz9OGGZDvFVIwHaOS1TfLzCxIiXQ0aIE4rCbBzzTLbjh%2ByDMQlJXqP1hpQWb3zle0HndPSYibbtf6IS%2Fh9HV78dqxPMLi6igrl61kziwpOFepceXXfUNDg3hWBIwyle9QRa4tyk5ZY7LWNDgaEyHZ3og8d6TemM9y2%2FVJyImhT0BLBVaGOsy74i8cRhNl1Lm%2FA%3D%3D';
+      const faqImgPcUrl = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784932038771-pegada-1784932036366.png';
+      const faqImgMobileUrl = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931626518-pegada-1784931599359.png';
+      
+      // Inject picture element for responsive support
       if (faqBannerImg) {
-        forceImgLoad(faqBannerImg, faqImgUrl, 'Kevin & Coco Chile');
-      }
-      if (faqBannerSource) {
-        faqBannerSource.srcset = faqImgUrl;
-        faqBannerSource.setAttribute('data-srcset', faqImgUrl);
+        const pic = faqBannerImg.closest('picture');
+        if (pic) {
+          pic.innerHTML = `
+            <source media="(max-width: 767px)" srcset="${faqImgMobileUrl}">
+            <source media="(min-width: 768px)" srcset="${faqImgPcUrl}">
+          `;
+          pic.appendChild(faqBannerImg);
+        }
+        forceImgLoad(faqBannerImg, window.innerWidth < 768 ? faqImgMobileUrl : faqImgPcUrl, 'Don Balato');
+      } else if (faqBannerSource) {
+        faqBannerSource.srcset = window.innerWidth < 768 ? faqImgMobileUrl : faqImgPcUrl;
+        faqBannerSource.setAttribute('data-srcset', faqBannerSource.srcset);
       }
 
       // 2. Traducir textos del FAQ a español con brand Don Balato
@@ -1663,9 +1668,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
       // Volver a aplicar la imagen después de reemplazar innerHTML (se pierde el src)
       const faqBannerImg2 = faqSection.querySelector('img[data-srcset*="FAQ-banner"], img[data-srcset*="faq-banner"], picture img') as HTMLImageElement | null;
-      if (faqBannerImg2) forceImgLoad(faqBannerImg2, faqImgUrl, 'Kevin & Coco Chile');
+      if (faqBannerImg2) forceImgLoad(faqBannerImg2, window.innerWidth < 768 ? faqImgMobileUrl : faqImgPcUrl, 'Don Balato');
       const faqBannerSource2 = faqSection.querySelector('picture source') as HTMLSourceElement | null;
-      if (faqBannerSource2) { faqBannerSource2.srcset = faqImgUrl; faqBannerSource2.setAttribute('data-srcset', faqImgUrl); }
+      if (faqBannerSource2) { 
+        faqBannerSource2.srcset = window.innerWidth < 768 ? faqImgMobileUrl : faqImgPcUrl; 
+        faqBannerSource2.setAttribute('data-srcset', window.innerWidth < 768 ? faqImgMobileUrl : faqImgPcUrl); 
+      }
 
       // Configurar botón para scroll to top (excluyendo el wrapper de imagen)
       const faqBtn = faqSection.querySelector('.image-card__button a.btn, a.btn, a.button') as HTMLAnchorElement | null;
@@ -1689,7 +1697,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     // 13f. Configurar el botón "¿Necesitas ayuda?" para WhatsApp
     const helpBtn = root.querySelector('.help-desk-link');
     if (helpBtn) {
-      helpBtn.setAttribute('href', 'https://wa.me/56962293893');
+      helpBtn.setAttribute('href', 'https://wa.me/56999149712');
       helpBtn.setAttribute('target', '_blank');
       helpBtn.setAttribute('rel', 'noopener noreferrer');
       helpBtn.innerHTML = `
@@ -3093,284 +3101,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             width: 48px !important;
             height: 48px !important;
             left: 16px !important;
+<<<<<<< HEAD
           }
           .help-desk-link img {
             transform: scale(1.4) !important;
             margin-right: 12px !important;
-          }
-        }
-
-        /* ════════════════════════════════════════════════════════════════════
-           YAXSELL — RESTAURACIÓN DE LAYOUT DE PRODUCTO (PLANTILLA 5)
-           Forzar el grid original: galería a la izquierda, info a la derecha
-           en desktop; imagen principal + thumbnails circulares en mobile.
-           ════════════════════════════════════════════════════════════════════ */
-
-        /* Contenedor principal del producto */
-        .tpl5-page-wrapper .product-information,
-        .tpl5-page-wrapper .product-information--main {
-          width: 100% !important;
-          max-width: 100% !important;
-          overflow: visible !important;
-        }
-
-        .tpl5-page-wrapper .product-information__grid,
-        .tpl5-page-wrapper .product-information__grid--media-left {
-          display: grid !important;
-          grid-template-columns: 1fr 1fr !important;
-          gap: 3rem !important;
-          align-items: start !important;
-          width: 100% !important;
-          max-width: 1400px !important;
-          margin: 0 auto !important;
-          padding: 0 2rem !important;
-          box-sizing: border-box !important;
-        }
-
-        .tpl5-page-wrapper .product-information__media {
-          width: 100% !important;
-          min-width: 0 !important;
-          position: relative !important;
-        }
-
-        .tpl5-page-wrapper .product-information__details {
-          width: 100% !important;
-          min-width: 0 !important;
-        }
-
-        /* Galería: grid de 2 columnas en desktop (thumbnails | main) */
-        .tpl5-page-wrapper .media-gallery,
-        .tpl5-page-wrapper media-gallery.media-gallery--main {
-          display: grid !important;
-          grid-template-columns: 90px 1fr !important;
-          grid-template-rows: 1fr auto !important;
-          gap: 1rem !important;
-          width: 100% !important;
-          position: relative !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__carousel {
-          grid-column: 2 !important;
-          grid-row: 1 / 3 !important;
-          width: 100% !important;
-          position: relative !important;
-          overflow: hidden !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__carousel-container {
-          width: 100% !important;
-          height: 100% !important;
-          position: relative !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__carousel-wrapper {
-          display: flex !important;
-          width: 100% !important;
-          height: 100% !important;
-        }
-
-        /* Thumbnails verticales de desktop */
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails {
-          grid-column: 1 !important;
-          grid-row: 1 !important;
-          display: flex !important;
-          flex-direction: column !important;
-          gap: 1rem !important;
-          width: 90px !important;
-          min-width: 90px !important;
-          max-height: 650px !important;
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          scrollbar-width: none !important;
-        }
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails::-webkit-scrollbar {
-          display: none !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails .media-gallery__item,
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails button {
-          width: 90px !important;
-          height: 90px !important;
-          border-radius: 12px !important;
-          overflow: hidden !important;
-          border: 2px solid #e5e7eb !important;
-          background: #ffffff !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          cursor: pointer !important;
-          flex-shrink: 0 !important;
-          transition: border-color 0.2s ease !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails .media-gallery__item.is-active,
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails button.is-active,
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails .media-gallery__item:hover,
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails button:hover {
-          border-color: #2563eb !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__grid-thumbnails img {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: contain !important;
-          display: block !important;
-          background: #ffffff !important;
-        }
-
-        /* Ocultar thumbnails de carrusel (mobile) en desktop */
-        .tpl5-page-wrapper .media-gallery__carousel-thumbnails,
-        .tpl5-page-wrapper .media-gallery__carousel-thumbnails--inside {
-          display: none !important;
-        }
-
-        /* Imágenes principales */
-        .tpl5-page-wrapper .media-gallery__carousel-wrapper .swiper-slide {
-          width: 100% !important;
-          height: auto !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          background: #f8f8f8 !important;
-          border-radius: 20px !important;
-          overflow: hidden !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__carousel-wrapper .product-media,
-        .tpl5-page-wrapper .media-gallery__carousel-wrapper .media-gallery__item {
-          width: 100% !important;
-          height: auto !important;
-          aspect-ratio: 1 / 1 !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          position: relative !important;
-          overflow: hidden !important;
-          border-radius: 20px !important;
-        }
-
-        .tpl5-page-wrapper .media-gallery__carousel-wrapper .product-media img,
-        .tpl5-page-wrapper .media-gallery__carousel-wrapper .media-gallery__item img {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: contain !important;
-          display: block !important;
-          position: relative !important;
-          top: auto !important;
-          left: auto !important;
-          transform: none !important;
-        }
-
-        /* Badge FEATURED PRODUCT circular */
-        .tpl5-page-wrapper .badge-block--shape-circle,
-        .tpl5-page-wrapper badge-float,
-        .tpl5-page-wrapper .badge-float {
-          position: absolute !important;
-          top: 2rem !important;
-          left: 50% !important;
-          transform: translateX(-50%) !important;
-          z-index: 10 !important;
-        }
-
-        /* Zoom button */
-        .tpl5-page-wrapper .media-gallery__zoom-dialog-button {
-          position: absolute !important;
-          top: 1.5rem !important;
-          right: 1.5rem !important;
-          z-index: 5 !important;
-        }
-
-        /* MOBILE */
-        @media (max-width: 767.98px) {
-          .tpl5-page-wrapper .product-information__grid,
-          .tpl5-page-wrapper .product-information__grid--media-left {
-            grid-template-columns: 1fr !important;
-            gap: 2rem !important;
-            padding: 0 1rem !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery,
-          .tpl5-page-wrapper media-gallery.media-gallery--main {
-            grid-template-columns: 1fr !important;
-            grid-template-rows: auto auto !important;
-            gap: 0 !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel {
-            grid-column: 1 !important;
-            grid-row: 1 !important;
-            position: relative !important;
-            border-radius: 16px !important;
-            overflow: hidden !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel-wrapper .swiper-slide {
-            border-radius: 16px !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel-wrapper .product-media,
-          .tpl5-page-wrapper .media-gallery__carousel-wrapper .media-gallery__item {
-            aspect-ratio: 1 / 1 !important;
-            border-radius: 16px !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__grid-thumbnails {
-            display: none !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails,
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails--inside {
-            grid-column: 1 !important;
-            grid-row: 2 !important;
-            display: flex !important;
-            position: relative !important;
-            bottom: auto !important;
-            left: auto !important;
-            transform: none !important;
-            justify-content: center !important;
-            margin-top: 12px !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            background: transparent !important;
-            backdrop-filter: none !important;
-            padding: 0 !important;
-            overflow-x: auto !important;
-            scrollbar-width: none !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails::-webkit-scrollbar {
-            display: none !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-wrapper {
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: center !important;
-            gap: 10px !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail,
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide {
-            width: 48px !important;
-            height: 48px !important;
-            border-radius: 50% !important;
-            border: 2px solid #e5e7eb !important;
-            flex-shrink: 0 !important;
-          }
-
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail img,
-          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide img {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain !important;
-            border-radius: 50% !important;
-            background: #ffffff !important;
-          }
-
-          .tpl5-page-wrapper .badge-block--shape-circle,
-          .tpl5-page-wrapper badge-float,
-          .tpl5-page-wrapper .badge-float {
-            top: 1rem !important;
+=======
+>>>>>>> d5d633e215e4f0eb3d586cbd61bd24406b75482d
           }
         }
       `}</style>
@@ -3381,7 +3118,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
       {/* Floating WhatsApp Button */}
       <a
-        href="https://wa.me/56962293893"
+        href="https://wa.me/56999149712"
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-floating-btn"
