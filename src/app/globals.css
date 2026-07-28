@@ -581,6 +581,20 @@ main, .page-transition-container, .pk-products-container, .pk-page, .pk-content-
     touch-action: pan-y pinch-zoom !important;
   }
 
+  /* ─────────────────────────────────────────────────────────────
+     EXCEPCIÓN: carriles horizontales.
+     Las reglas de arriba fijan `pan-y` en TODA <img>, así que el
+     dedo apoyado sobre una imagen no podía arrastrar en X: los
+     carruseles de categorías sólo se movían tocando el texto.
+     Dentro de un carril horizontal habilitamos ambos ejes (el
+     navegador sigue haciendo scroll vertical con normalidad).
+     ───────────────────────────────────────────────────────────── */
+  .pk-h-scroll, .pk-h-scroll *,
+  .pk-catband, .pk-catband *,
+  slider-element, slider-element * {
+    touch-action: pan-x pan-y pinch-zoom !important;
+  }
+
   /* HERO BANNER MOBILE: passthrough touch gestures directly to window scroll */
   .musk-main-banner img,
   .product_hero_banner_wrapp img,

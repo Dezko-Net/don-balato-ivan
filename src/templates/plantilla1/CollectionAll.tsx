@@ -950,6 +950,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           {(p.PACKQTY ?? 0) > 1 && (
                             <span className="pk-pack-pill">{p.PACKQTY} un/paquete</span>
                           )}
+                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span className="pk-cat-chip">{cat.name}</span> : null; })()}
                           <button
                             type="button"
                             className="pk-card-fav"
@@ -964,11 +965,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         </div>
                       </div>
                       <div className="pk-card-body">
-                        {/* Fila de señal: categoría + distintivos. La letra chica
-                            (marca y SKU) baja bajo el título para que el nombre
-                            del producto gane la jerarquía. */}
+                        {/* La categoría vive sobre la imagen; aquí quedan sólo los
+                            distintivos, y el nombre gana la jerarquía. */}
                         <div className="pk-card-meta">
-                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span className="pk-cat-pill">{cat.name}</span> : null; })()}
                           <ProductBadges product={p} />
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
@@ -1317,48 +1316,133 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
            táctil la tarjeta queda plana para que el tap no deje
            estados "pegados".
            ══════════════════════════════════════════════════════════ */
+        /* Ángulo registrado: sin @property un conic-gradient NO se puede
+           animar (el navegador no sabe interpolar el ángulo). */
+        @property --pk-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+
+        /* La tarjeta es un MARCO: el padding deja ver el gradiente cónico
+           del fondo como un aro de luz, y ::before pinta la superficie
+           interior. El producto queda sobre una teja blanca para que la
+           foto no pierda claridad (la nitidez del producto manda). */
         .pk-card {
           --pk-accent: #3b82f6;
           position: relative;
           display: flex;
           flex-direction: column;
-          border-radius: 18px;
-          overflow: hidden;
+          border-radius: 24px;
+          padding: 4px;
           isolation: isolate;
-          background: linear-gradient(180deg, #fff 0%, #fdfcfb 45%, #f9f7f4 100%);
-          border: 1px solid rgba(17,24,39,.07);
-          box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 6px 14px -10px rgba(16,24,40,.14);
-          transition: transform .34s cubic-bezier(.2,.7,.3,1), box-shadow .34s cubic-bezier(.2,.7,.3,1), border-color .34s ease;
+          border: none;
+          background: conic-gradient(from var(--pk-angle),
+            rgba(59,130,246,.90) 0%,
+            rgba(56,189,248,.85) 22%,
+            rgba(168,85,247,.72) 45%,
+            rgba(236,72,153,.60) 62%,
+            rgba(56,189,248,.85) 80%,
+            rgba(59,130,246,.90) 100%);
+          box-shadow:
+            0 2px 6px rgba(15,23,42,.16),
+            0 16px 34px -18px rgba(30,58,138,.55);
+          transition: transform .34s cubic-bezier(.2,.7,.3,1), box-shadow .34s cubic-bezier(.2,.7,.3,1);
         }
-        /* Rail de marca: firma visual que se despliega al enfocar */
+        /* Superficie interior: se retrae exactamente el ancho del padding
+           para que ese canto quede como aro de luz visible. */
         .pk-card::before {
           content: '';
-          position: absolute; top: 0; left: 0; right: 0; height: 3px;
-          background: linear-gradient(90deg, var(--pk-accent), #60a5fa 55%, #38bdf8);
-          transform: scaleX(0); transform-origin: left;
-          transition: transform .45s cubic-bezier(.2,.7,.3,1);
-          z-index: 5; pointer-events: none;
+          position: absolute; inset: 4px;
+          border-radius: 20px;
+          background: linear-gradient(168deg, #fff 0%, #fdfcfb 54%, #f7f5f1 100%);
+          z-index: 0; pointer-events: none;
+        }
+        /* Aurora: halo de color que sube desde la base, tenue sobre blanco */
+        .pk-card::after {
+          content: '';
+          position: absolute; z-index: 0; pointer-events: none;
+          left: -15%; right: -15%; bottom: -22%; height: 58%;
+          background: radial-gradient(58% 62% at 50% 100%, rgba(56,189,248,.16), rgba(59,130,246,.07) 45%, transparent 72%);
+          filter: blur(16px);
+        }
+        .pk-card > * { position: relative; z-index: 1; }
+
+        /* El aro gira con el scroll: sin coste en reposo, a diferencia de
+           una animación por tiempo repintando 134 tarjetas. */
+        @supports (animation-timeline: view()) {
+          @media (prefers-reduced-motion: no-preference) {
+            .pk-card {
+              animation: pkRing linear both;
+              animation-timeline: view();
+              animation-range: cover 0% cover 100%;
+            }
+          }
+        }
+        @keyframes pkRing { to { --pk-angle: 360deg; } }
+        @keyframes pkRise {
+          from { opacity: 0; transform: translateY(30px) scale(.94); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* ── Media ── */
+        /* ── Media: teja blanca flotante dentro del marco oscuro ── */
         .pk-card-image {
-          position: relative; overflow: hidden; background: #fff;
-          border-bottom: 1px solid rgba(17,24,39,.05);
+          position: relative; overflow: hidden;
+          border-radius: 19px;
+          background: radial-gradient(115% 78% at 50% 0%, #fff 0%, #fbfaf9 62%, #f1eeea 100%);
+          box-shadow: 0 6px 16px -8px rgba(2,6,23,.55);
         }
-        /* viñeta inferior: asienta el producto sobre la superficie */
+        /* viñeta inferior: asienta el producto sobre la teja */
         .pk-card-image::after {
-          content: ''; position: absolute; inset: auto 0 0 0; height: 34%;
-          background: linear-gradient(180deg, rgba(255,255,255,0), rgba(17,24,39,.05));
+          content: ''; position: absolute; inset: auto 0 0 0; height: 40%;
+          background: linear-gradient(180deg, rgba(255,255,255,0), rgba(17,24,39,.07));
           pointer-events: none; z-index: 3;
         }
         .pk-card-image img { transition: transform .6s cubic-bezier(.2,.7,.3,1); }
         /* las miniaturas no participan del zoom */
         .pk-card-image button img { transform: none !important; }
-        /* miniaturas alineadas al color de la tienda (el componente trae amarillo) */
-        .pk-card-image [role="group"] button { border-color: #e8eaed !important; transition: all .2s ease !important; }
+
+        /* Chip de categoría en vidrio, sobre la foto */
+        .pk-cat-chip {
+          position: absolute; top: 9px; left: 9px; z-index: 4;
+          max-width: calc(100% - 58px);
+          font-size: 9.5px; font-weight: 800; letter-spacing: .01em;
+          color: #0f172a; background: rgba(255,255,255,.82);
+          backdrop-filter: blur(10px) saturate(1.5);
+          -webkit-backdrop-filter: blur(10px) saturate(1.5);
+          border: 1px solid rgba(255,255,255,.8);
+          border-radius: 999px; padding: 4px 9px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          box-shadow: 0 3px 10px rgba(16,24,40,.14);
+        }
+        /* si hay píldora de paquete, la categoría baja para no solaparse */
+        .pk-pack-pill + .pk-cat-chip { top: 39px; }
+
+        /* Miniaturas: tira flotante de vidrio sobre la imagen.
+           Antes ocupaban una fila propia bajo la foto y alargaban la
+           tarjeta; ahora flotan y liberan esa altura. */
+        .pk-card-image [role="group"] {
+          position: absolute !important; z-index: 4;
+          left: 50%; bottom: 9px; transform: translateX(-50%);
+          background: rgba(255,255,255,.74) !important;
+          backdrop-filter: blur(12px) saturate(1.5);
+          -webkit-backdrop-filter: blur(12px) saturate(1.5);
+          border: 1px solid rgba(255,255,255,.8);
+          border-radius: 999px;
+          padding: 4px 6px !important; gap: 5px !important;
+          box-shadow: 0 4px 16px rgba(16,24,40,.18);
+        }
+        /* con una sola imagen la tira no aporta nada */
+        .pk-card-image [role="group"]:not(:has(button:nth-child(2))) { display: none !important; }
+        .pk-card-image [role="group"] button {
+          width: 22px !important; height: 22px !important; padding: 1.5px !important;
+          border: 1.5px solid transparent !important;
+          box-shadow: none !important; opacity: .82 !important;
+          transition: all .2s ease !important;
+        }
         .pk-card-image [role="group"] button[aria-pressed="true"] {
-          border-color: var(--pk-accent) !important;
-          box-shadow: 0 0 0 2.5px rgba(59,130,246,.16) !important;
+          border-color: var(--pk-accent) !important; opacity: 1 !important;
+          box-shadow: 0 0 0 2px rgba(59,130,246,.20) !important;
         }
 
         .pk-pack-pill {
@@ -1396,19 +1480,23 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         }
         .pk-card.is-oos .pk-card-image img { filter: saturate(.35); }
 
-        /* ── Cuerpo ── */
+        /* ── Cuerpo (sobre superficie oscura) ── */
         .pk-card-body {
-          padding: 13px 13px 15px; display: flex; flex-direction: column;
+          padding: 12px 11px 12px; display: flex; flex-direction: column;
           flex: 1; gap: 7px; position: relative; z-index: 2;
         }
         .pk-card-meta {
           display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
           min-width: 0; font-size: 10px; font-weight: 700; color: #9ca3af;
         }
+        /* La marca llega con colores claros del tema: sobre el fondo
+           oscuro se reinterpreta como cristal tintado. */
         .pk-brand-pill {
           font-size: 9.5px; font-weight: 800; padding: 2.5px 8px;
           border-radius: 999px; white-space: nowrap;
-          border: 1px solid rgba(17,24,39,.05);
+          background: #f3f4f6 !important;
+          color: #4b5563 !important;
+          border: 1px solid rgba(17,24,39,.06);
         }
         .pk-cat-pill {
           font-size: 9.5px; font-weight: 800; color: #fff; white-space: nowrap;
@@ -1422,14 +1510,15 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         }
         .pk-card-sku {
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-          letter-spacing: .02em; color: #a3a8b0;
+          letter-spacing: .02em; color: #9ca3af;
           font-size: 10px; font-weight: 700;
         }
         .pk-card-title {
-          font-size: 13.5px; font-weight: 650; color: #1f2937; margin: 0;
+          font-size: 14.5px; font-weight: 700; color: #1f2937; margin: 0;
           display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-          overflow: hidden; min-height: 38px; line-height: 1.4;
-          letter-spacing: -.005em; transition: color .22s ease;
+          overflow: hidden; min-height: 40px; line-height: 1.38;
+          letter-spacing: -.014em; transition: color .22s ease;
+          text-wrap: balance;
         }
         .pk-card-stock {
           display: flex; align-items: center; gap: 5px;
@@ -1439,19 +1528,22 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           width: 6px; height: 6px; border-radius: 50%;
           background: currentColor; flex-shrink: 0;
         }
+        /* El punto de stock emite luz propia: legible sobre el fondo oscuro */
         .pk-card-stock.is-ok { color: #059669; }
         .pk-card-stock.is-ok .pk-stock-dot { box-shadow: 0 0 0 3px rgba(5,150,105,.14); }
         .pk-card-stock.is-low { color: #d97706; }
         .pk-card-stock.is-low .pk-stock-dot { box-shadow: 0 0 0 3px rgba(217,119,6,.15); }
         .pk-card-stock.is-out { color: #9ca3af; }
 
+        /* Separador: corta el bloque comercial del descriptivo */
         .pk-card-price-row {
           display: flex; align-items: baseline; gap: 6px;
-          margin-top: auto; flex-wrap: wrap; padding-top: 2px;
+          margin-top: auto; flex-wrap: wrap;
+          padding-top: 9px; border-top: 1px solid rgba(17,24,39,.08);
         }
         .pk-price {
-          font-size: 20px; font-weight: 900; color: #0f172a;
-          letter-spacing: -.025em; font-variant-numeric: tabular-nums;
+          font-size: 22px; font-weight: 900; color: #0f172a;
+          letter-spacing: -.03em; font-variant-numeric: tabular-nums;
         }
         .pk-price-unit { font-size: 11px; color: #9ca3af; font-weight: 600; }
         .pk-price-ask { font-size: 12px; color: #9ca3af; font-weight: 500; }
@@ -1460,8 +1552,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         .pk-vol-chips span {
           display: inline-flex; align-items: center; gap: 4px;
           font-size: 10px; font-weight: 700; color: #6366f1;
-          background: linear-gradient(180deg,#f8f7ff,#f2f0fe);
-          border: 1px solid #e4e2fb; border-radius: 999px;
+          background: #f5f3ff;
+          border: 1px solid #e0e7ff; border-radius: 999px;
           padding: 3px 8px; line-height: 1.1;
         }
         .pk-vol-chips strong { color: #4f46e5; font-weight: 900; }
@@ -1477,7 +1569,14 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           box-shadow: 0 4px 14px rgba(37,99,235,.20), inset 0 1px 0 rgba(255,255,255,.22);
           transition: transform .16s cubic-bezier(.2,.7,.3,1), box-shadow .24s ease, filter .2s ease;
         }
-        .pk-add-btn__label { display: inline-flex; align-items: center; gap: 6px; position: relative; z-index: 2; }
+        .pk-add-btn__label { display: inline-flex; align-items: center; gap: 7px; position: relative; z-index: 2; }
+        /* el icono viaja en su propia cápsula translúcida */
+        .pk-add-btn__label svg {
+          box-sizing: border-box; width: 22px; height: 22px; padding: 4px;
+          border-radius: 50%; background: rgba(255,255,255,.22);
+          flex-shrink: 0;
+        }
+        .pk-add-btn:disabled .pk-add-btn__label svg { background: rgba(17,24,39,.06); }
         /* barrido de luz al pasar el cursor */
         .pk-add-btn::after {
           content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%;
@@ -1494,14 +1593,13 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         /* ── Interacciones: sólo punteros finos (desktop) ── */
         @media (hover: hover) and (pointer: fine) {
           .pk-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(59,130,246,.22);
-            box-shadow: 0 2px 4px rgba(16,24,40,.04), 0 18px 34px -18px rgba(37,99,235,.34), 0 8px 18px -12px rgba(16,24,40,.16);
+            transform: translateY(-5px);
+            box-shadow: 0 4px 10px rgba(15,23,42,.20), 0 26px 46px -22px rgba(56,189,248,.55);
           }
-          .pk-card:hover::before { transform: scaleX(1); }
           .pk-card:hover .pk-card-image img { transform: scale(1.055); }
           .pk-card:hover .pk-card-image button img { transform: none !important; }
-          .pk-card:hover .pk-card-title { color: var(--pk-accent); }
+          /* sobre superficie oscura el acento debe aclararse, no oscurecerse */
+          .pk-card:hover .pk-card-title { color: #2563eb; }
           .pk-card-fav:hover { transform: scale(1.1); background: #fff; box-shadow: 0 4px 14px rgba(16,24,40,.16); }
           .pk-add-btn:hover:not(:disabled) {
             transform: translateY(-1px);
@@ -1514,9 +1612,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         /* ── Táctil: sin estados pegados tras el tap ── */
         @media (hover: none), (pointer: coarse) {
           .pk-card:hover, .pk-card-list:hover { transform: none; }
-          .pk-card:hover::before { transform: scaleX(0); }
           .pk-card:hover .pk-card-image img { transform: none; }
           .pk-card:hover .pk-card-title { color: #1f2937; }
+          /* Respuesta al tap: la tarjeta "cede" bajo el dedo */
+          .pk-card:active { transform: scale(.985); transition: transform .12s ease; }
         }
 
         .pk-card, .pk-card *, .pk-card-list, .pk-card-list * {
@@ -1736,7 +1835,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         .pk-mobile-only { display: none; }
         /* (el botón Filtros ahora vive en la toolbar en TODOS los breakpoints) */
 
-        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
+        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
         .pk-h-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
         .pk-filters-drawer {
@@ -1897,7 +1996,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
           /* El lift, la sombra y el borde los define el bloque de la tarjeta
              (elevación azul de marca); aquí sólo el matiz del precio. */
-          .pk-card:hover .pk-price { color: #2563eb; }
+          .pk-card:hover .pk-price { color: #bae6fd; }
         }
 
         @media (max-width: 1024px) {
@@ -2196,17 +2295,27 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
           .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
           .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
-          /* 📱 Misma identidad que en desktop, con radios y sombras
-             calibrados para dos columnas: la profundidad se nota sin
-             comerse el poco ancho disponible. */
+          /* 📱 Marco calibrado para dos columnas: aro más fino y radios
+             menores, manteniendo la misma identidad que en desktop. */
           .pk-card {
-            border-radius: 15px !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 5px 12px -9px rgba(16,24,40,.16) !important;
-            border: 1px solid rgba(17,24,39,.07) !important;
+            border-radius: 19px !important;
+            padding: 3px !important;
+            border: none !important;
+            box-shadow: 0 2px 5px rgba(15,23,42,.16), 0 12px 24px -14px rgba(30,58,138,.55) !important;
           }
-          .pk-card::before { height: 2.5px; }
+          .pk-card::before { inset: 3px !important; border-radius: 16px !important; }
+          .pk-card-image { border-radius: 15px !important; }
+          /* Entrada scroll-driven: cada tarjeta se eleva al entrar en
+             cuadro. Sólo en táctil, para no pisar el lift del hover. */
+          @supports (animation-timeline: view()) {
+            @media (prefers-reduced-motion: no-preference) {
+              .pk-card {
+                animation: pkRing linear both, pkRise cubic-bezier(.2,.7,.3,1) both !important;
+                animation-timeline: view(), view() !important;
+                animation-range: cover 0% cover 100%, cover 0% cover 26% !important;
+              }
+            }
+          }
           /* 📱 Comodidad táctil: buscador sin zoom iOS, botones de 42px+, chips legibles */
           .pk-toolbar-search input { font-size: 16px !important; }
           .pk-card-body { padding: 10px 10px 12px !important; gap: 5px !important; }
@@ -2250,9 +2359,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-card-actions--desktop { display: none !important; }
           
           /* 📱 Tarjetas cómodas: nombre legible, precio protagonista, botón táctil 42px+ */
-          .pk-card .pk-card-body { padding: 10px 10px 12px !important; }
-          .pk-card .pk-card-body p { font-size: 12px !important; min-height: 32px !important; line-height: 1.35 !important; margin-bottom: 4px !important; }
-          .pk-card .pk-price { font-size: 17px !important; }
+          .pk-card .pk-card-body { padding: 11px 10px 11px !important; }
+          .pk-card .pk-card-body p { font-size: 13px !important; min-height: 35px !important; line-height: 1.32 !important; margin-bottom: 2px !important; }
+          .pk-card .pk-price { font-size: 19px !important; }
           .pk-card .pk-add-btn { padding: 10px !important; font-size: 11.5px !important; border-radius: 10px !important; margin-top: 6px !important; min-height: 42px !important; }
 
           /* Redesigned horizontal list card on mobile */
