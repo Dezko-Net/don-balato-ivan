@@ -353,6 +353,9 @@ export default function HomePage25() {
     }
     footerFixStyle.textContent = `
       @media (max-width: 1023px) {
+        html {
+          background-color: #FFFFFF !important;
+        }
         body {
           background-color: #171717 !important;
           padding-bottom: 0 !important;
