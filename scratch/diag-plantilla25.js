@@ -33,7 +33,7 @@ const puppeteer = require('puppeteer');
   });
 
   console.log(`[${ts()}] navegando...`);
-  await page.goto('http://localhost:3000/preview/plantilla/25', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto('http://localhost:3100/preview/plantilla/25', { waitUntil: 'domcontentloaded', timeout: 60000 });
   console.log(`[${ts()}] domcontentloaded`);
 
   // Sondeo cada 500ms durante 12s
@@ -69,7 +69,7 @@ const puppeteer = require('puppeteer');
   const clickResult = await page.evaluate(() => {
     const menuBtn = document.querySelector('[aria-controls="MenuDrawer"]');
     if (!menuBtn) return 'no menuBtn';
-    (menuBtn as HTMLElement).click();
+    menuBtn.click();
     return new Promise(res => setTimeout(() => {
       const drawer = document.querySelector('#MenuDrawer');
       res('drawer open=' + (drawer?.hasAttribute('open')) + ' display=' + (drawer ? getComputedStyle(drawer).display : 'n/a'));

@@ -7,6 +7,7 @@ import { Category } from '@/types/admin';
 import { Plus, Pencil, Trash2, X, RefreshCw, AlertTriangle, Tag, ChevronUp, ChevronDown, Search, Download } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { invalidateCategoryCache } from '@/lib/cache';
+import { revalidateTag } from 'next/cache';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 
 const CATEGORIES_BUCKET_ID = MEDIA_BUCKET_ID;
@@ -101,6 +102,8 @@ export default function CategoriesPage() {
       }
       setModal(null);
       invalidateCategoryCache();
+      try { revalidateTag('catalog'); revalidateTag('categories'); } catch {}
+      try { await fetch('/api/revalidate?tag=catalog', { method: 'GET' }); } catch {}
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setIsSaving(false); }
   };
