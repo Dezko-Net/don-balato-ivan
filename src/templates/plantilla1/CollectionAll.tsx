@@ -1418,31 +1418,29 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         /* si hay píldora de paquete, la categoría baja para no solaparse */
         .pk-pack-pill + .pk-cat-chip { top: 39px; }
 
-        /* Miniaturas: tira flotante de vidrio sobre la imagen.
-           Antes ocupaban una fila propia bajo la foto y alargaban la
-           tarjeta; ahora flotan y liberan esa altura. */
+        /* Miniaturas: debajo de la imagen, integradas en el body */
         .pk-card-image [role="group"] {
-          position: absolute !important; z-index: 4;
-          left: 50%; bottom: 9px; transform: translateX(-50%);
-          background: rgba(255,255,255,.74) !important;
-          backdrop-filter: blur(12px) saturate(1.5);
-          -webkit-backdrop-filter: blur(12px) saturate(1.5);
-          border: 1px solid rgba(255,255,255,.8);
-          border-radius: 999px;
-          padding: 4px 6px !important; gap: 5px !important;
-          box-shadow: 0 4px 16px rgba(16,24,40,.18);
+          position: relative !important; z-index: 2;
+          background: transparent !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: none !important;
+          border-radius: 0 !important;
+          padding: 6px 4px 4px !important; gap: 5px !important;
+          box-shadow: none !important;
+          border-top: 1px solid rgba(17,24,39,.06);
         }
         /* con una sola imagen la tira no aporta nada */
         .pk-card-image [role="group"]:not(:has(button:nth-child(2))) { display: none !important; }
         .pk-card-image [role="group"] button {
-          width: 22px !important; height: 22px !important; padding: 1.5px !important;
+          width: 26px !important; height: 26px !important; padding: 2px !important;
           border: 1.5px solid transparent !important;
-          box-shadow: none !important; opacity: .82 !important;
+          box-shadow: none !important; opacity: .7 !important;
           transition: all .2s ease !important;
         }
         .pk-card-image [role="group"] button[aria-pressed="true"] {
           border-color: var(--pk-accent) !important; opacity: 1 !important;
-          box-shadow: 0 0 0 2px rgba(59,130,246,.20) !important;
+          box-shadow: 0 0 0 2px rgba(59,130,246,.16) !important;
         }
 
         .pk-pack-pill {
