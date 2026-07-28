@@ -35,12 +35,12 @@ export default function BackToTop() {
     e.stopPropagation();
     // Cancelar cualquier scroll en curso del theme JS
     try { (window as any).stopScroll?.(); } catch { /* noop */ }
-    // Scroll instantáneo — más confiable que smooth en móviles
-    // donde el theme JS puede interferir con el smooth scroll
-    window.scrollTo(0, 0);
+    // Scroll suave — el cargador secuencial del theme evita bloquearlo en móviles
+    // mientras se inicializan los componentes de la plantilla
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     // Doble seguridad: forzar de nuevo en el siguiente frame
     requestAnimationFrame(() => {
-      if (window.scrollY > 0) window.scrollTo(0, 0);
+      if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   };
 

@@ -1547,6 +1547,8 @@ export interface ComboRealHydrationData {
 }
 
 /* ── DRAWER PERSONALIZADO: Detalle del producto del combo ── */
+let activeProductDetailKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
+
 function openProductDetailDrawer(prod: {
   $id: string;
   NAME: string;
@@ -1565,6 +1567,10 @@ function openProductDetailDrawer(prod: {
   STOCK?: number;
   PACKQTY?: number;
 }): void {
+  if (activeProductDetailKeydownHandler) {
+    document.removeEventListener('keydown', activeProductDetailKeydownHandler);
+    activeProductDetailKeydownHandler = null;
+  }
   document.getElementById('yaxsell-product-detail-drawer')?.remove();
   document.getElementById('yaxsell-product-detail-overlay')?.remove();
 
@@ -1779,9 +1785,17 @@ function openProductDetailDrawer(prod: {
   });
 
   // Cerrar
+  let isClosing = false;
   const close = () => {
+    if (isClosing) return;
+    isClosing = true;
     drawer.style.transform = 'translateY(100%)';
     overlay.style.opacity = '0';
+    overlay.style.pointerEvents = 'none';
+    if (activeProductDetailKeydownHandler) {
+      document.removeEventListener('keydown', activeProductDetailKeydownHandler);
+      activeProductDetailKeydownHandler = null;
+    }
     // Limpiar clases que el theme.js pudo haber añadido al body
     document.body.classList.remove('modal-open', 'drawer-open', 'modal-open-active', 'has-modal-open');
     document.body.style.removeProperty('overflow');
@@ -1789,9 +1803,6 @@ function openProductDetailDrawer(prod: {
     setTimeout(() => {
       drawer.remove();
       overlay.remove();
-      // Doble check: remover cualquier overlay residual huérfano
-      document.getElementById('yaxsell-product-detail-drawer')?.remove();
-      document.getElementById('yaxsell-product-detail-overlay')?.remove();
     }, 400);
   };
 
@@ -1856,14 +1867,15 @@ function openProductDetailDrawer(prod: {
   });
 
   // ESC para cerrar
-  const escHandler = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      close();
-      document.removeEventListener('keydown', escHandler);
-    }
+  activeProductDetailKeydownHandler = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') close();
   };
-  document.addEventListener('keydown', escHandler);
+  document.addEventListener('keydown', activeProductDetailKeydownHandler);
 }
+
+type ComboBundleProduct = NonNullable<ComboRealHydrationData['bundleProducts']>[number];
+const comboProductsBySection = new WeakMap<HTMLElement, Map<string, ComboBundleProduct>>();
+const comboDetailSections = new WeakSet<HTMLElement>();
 
 export function enhanceConceptCombos(
   root: HTMLElement | Document,
@@ -1886,6 +1898,24 @@ export function enhanceConceptCombos(
       return true;
     });
 
+    comboProductsBySection.set(section, new Map(allProducts.map(product => [product.$id, product])));
+    if (!comboDetailSections.has(section)) {
+      comboDetailSections.add(section);
+      section.addEventListener('click', event => {
+        const target = event.target as HTMLElement | null;
+        const button = target?.closest<HTMLElement>('.product-card .product-form__submit');
+        const card = button?.closest<HTMLElement>('.product-card');
+        const productId = card?.dataset.comboProductId;
+        const product = productId ? comboProductsBySection.get(section)?.get(productId) : undefined;
+        if (!button || !product) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        openProductDetailDrawer(product);
+      }, { capture: true });
+    }
+
     // Si no hay productos configurados para el pack (0 productos), ocultar sección completamente
     if (!comboData || allProducts.length === 0) {
       section.style.display = 'none';
@@ -1904,7 +1934,6 @@ export function enhanceConceptCombos(
 
     // 1. Inyectar productos en las tarjetas del grid izquierdo
     const cards = Array.from(section.querySelectorAll<HTMLElement>('.product-card'));
-    const wireFns = new Map<HTMLElement, () => void>();
     
     // Mapa de productos del pack (todos seleccionados, el cliente compra el pack completo)
     const selectedItemsMap = new Map<string, any>();
@@ -1917,6 +1946,7 @@ export function enhanceConceptCombos(
         return;
       }
       card.style.display = '';
+      card.dataset.comboProductId = prod.$id;
 
       const pPrice = prod.CURRENTPRICE || prod.PRICE;
       const formattedPrice = '$' + pPrice.toLocaleString('es-CL');
@@ -1971,53 +2001,12 @@ export function enhanceConceptCombos(
         badgesEl.innerHTML = `<span class="badge rounded-full font-bold text-xs" style="background:#0f172a;color:#fff;padding:4px 10px;">${esc(comboData.badge || 'PACK DESTACADO')}</span>`;
       }
 
-      // Botón "Ver detalle" — reemplazar el form por un div simple para evitar
-      // que el theme.js (ProductBundle custom element) intercepte el submit
-      const wireCardButtons = () => {
-        const form = card.querySelector('form');
-        if (form) {
-          // Crear un div que reemplaza el form
-          const replacement = document.createElement('div');
-          replacement.className = form.className;
-          replacement.innerHTML = form.innerHTML;
-          // Quitar el botón quick-view del reemplazo
-          replacement.querySelectorAll('.quick-view__button').forEach(el => el.remove());
-          // Encontrar el botón de submit y convertirlo en botón simple
-          replacement.querySelectorAll('button').forEach(btn => {
-            if (btn.classList.contains('quick-view__button')) return;
-            btn.type = 'button';
-            (btn as HTMLElement).onclick = (e: MouseEvent) => {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-              openProductDetailDrawer(prod);
-            };
-          });
-          form.parentNode?.replaceChild(replacement, form);
-        } else {
-          // Si no hay form, conectar botones directamente
-          card.querySelectorAll('button').forEach(btn => {
-            if (btn.classList.contains('quick-view__button')) return;
-            (btn as HTMLElement).onclick = (e: MouseEvent) => {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-              openProductDetailDrawer(prod);
-            };
-          });
-        }
-      };
-      wireCardButtons();
-      wireFns.set(card, wireCardButtons);
-    });
-
-    // Re-aplicar handlers después de que el theme.js cargue
-    const rewireCards = () => {
-      cards.forEach(card => {
-        const fn = wireFns.get(card);
-        if (fn) fn();
+      // Botón "Ver detalle" — la sección lo maneja mediante delegación en capture
+      card.querySelectorAll<HTMLButtonElement>('.product-form__submit').forEach(button => {
+        button.type = 'button';
+        button.dataset.action = 'view-combo-detail';
       });
-    };
-    setTimeout(rewireCards, 600);
-    setTimeout(rewireCards, 1200);
+    });
 
     // 2. Función de renderizado de la barra lateral ("Tu paquete")
     const renderSidebar = () => {

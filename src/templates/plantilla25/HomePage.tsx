@@ -550,17 +550,22 @@ export default function HomePage25() {
     //    por el <link rel="preload"> del mount). Antes se cargaban en serie con
     //    await → ~4s hasta que theme.js definía los custom elements y los botones
     //    del theme (menú, drawers, etc.) "despertaban".
-    const inserted: HTMLScriptElement[] = [];
-    JS_FILES.forEach(file => {
-      if (document.querySelector(`script[data-tpl25="${file.src}"]`)) return;
+    const loadOne = (file: JsFile) => new Promise<void>((resolve) => {
+      if (document.querySelector(`script[data-tpl25="${file.src}"]`)) {
+        resolve();
+        return;
+      }
       const s = document.createElement('script');
       s.src = file.src;
       if (file.module) s.type = 'module';
       else s.async = false;
       s.setAttribute('data-tpl25', file.src);
-      s.onerror = () => console.warn('[Plantilla25] Failed to load:', file.src);
+      s.onload = () => resolve();
+      s.onerror = () => {
+        console.warn('[Plantilla25] Failed to load:', file.src);
+        resolve();
+      };
       document.body.appendChild(s);
-      inserted.push(s);
     });
 
     const forceInView = () => {
@@ -649,39 +654,46 @@ export default function HomePage25() {
         // ── BTN-FILL MOBILE: theme.js desactiva HoverButton en táctil.
         //    Disparamos la misma animación nativa (translate3d(0,0,0) al tocar,
         //    translate3d(0,-76%,0) al soltar = valor original del theme). ──
-        document.querySelectorAll<HTMLElement>('.button').forEach(btn => {
-          if (btn.dataset.fillWired) return;
-          btn.dataset.fillWired = '1';
-          const fill = btn.querySelector<HTMLElement>('[data-fill]');
-          if (!fill) return;
+        //    Deferred via requestIdleCallback para no bloquear el main thread
+        const wireBtnFill = () => {
+          document.querySelectorAll<HTMLElement>('.button').forEach(btn => {
+            if (btn.dataset.fillWired) return;
+            btn.dataset.fillWired = '1';
+            const fill = btn.querySelector<HTMLElement>('[data-fill]');
+            if (!fill) return;
 
-          btn.addEventListener('touchstart', () => {
-            fill.style.transition = 'transform 0.3s cubic-bezier(0.165,0.84,0.44,1)';
-            fill.style.transform = 'translate3d(0,0,0)';
-          }, { passive: true });
+            btn.addEventListener('touchstart', () => {
+              fill.style.transition = 'transform 0.3s cubic-bezier(0.165,0.84,0.44,1)';
+              fill.style.transform = 'translate3d(0,0,0)';
+            }, { passive: true });
 
-          btn.addEventListener('touchend', () => {
-            setTimeout(() => {
-              fill.style.transition = 'transform 0.45s cubic-bezier(0.165,0.84,0.44,1)';
+            btn.addEventListener('touchend', () => {
+              setTimeout(() => {
+                fill.style.transition = 'transform 0.45s cubic-bezier(0.165,0.84,0.44,1)';
+                fill.style.transform = 'translate3d(0,-76%,0)';
+              }, 350);
+            }, { passive: true });
+
+            btn.addEventListener('touchcancel', () => {
               fill.style.transform = 'translate3d(0,-76%,0)';
-            }, 350);
-          }, { passive: true });
-
-          btn.addEventListener('touchcancel', () => {
-            fill.style.transform = 'translate3d(0,-76%,0)';
-          }, { passive: true });
-        });
+            }, { passive: true });
+          });
+        };
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(wireBtnFill, { timeout: 2000 });
+        } else {
+          setTimeout(wireBtnFill, 100);
+        }
       }, 500);
     };
 
-    const lastClassic = [...inserted].reverse().find(s => s.type !== 'module');
-    if (lastClassic) {
-      lastClassic.addEventListener('load', runPostInit);
-      lastClassic.addEventListener('error', runPostInit);
-    } else {
-      // Scripts ya existían en el DOM (remount) → ya cargaron antes
+    void (async () => {
+      for (const file of JS_FILES) {
+        await loadOne(file);
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+      }
       runPostInit();
-    }
+    })();
 
     return () => { (window as any).__tpl25ScriptsLoaded = false; };
   }, [bodyHtml]);
@@ -689,14 +701,14 @@ export default function HomePage25() {
   /* ── Fetch categories + product counts from API ── */
   useEffect(() => {
     let active = true;
-    const getJSON = async (url: string, isValid?: (d: any) => boolean, tries = 5): Promise<any | null> => {
+    const getJSON = async (url: string, isValid?: (d: any) => boolean, tries = 3): Promise<any | null> => {
       let last: any = null;
       for (let i = 0; i < tries; i++) {
         try {
           const r = await fetch(url, { cache: 'no-store' });
           if (r.ok) { const d = await r.json(); last = d; if (!isValid || isValid(d)) return d; }
         } catch { /* retry */ }
-        await new Promise(res => setTimeout(res, 600));
+        await new Promise(res => setTimeout(res, 300));
       }
       return last;
     };
@@ -734,33 +746,52 @@ export default function HomePage25() {
           } as any, 1);
         },
       });
-      if (combos.length > 0) {
-        enhanceConceptCombos(r, combos[0], (selectedItems) => {
-          selectedItems.forEach(item => {
-            addItem({
-              $id: item.id,
-              NAME: item.name,
-              PRICE: item.price,
-              IMAGEURL: item.image,
-              STOCK: 99,
-            } as any);
-          });
-        });
-      } else {
-        enhanceConceptCombos(r, null);
-      }
       syncConceptCartCount(r, totalItems);
       fixCloneBehaviour(r);
 
       // Demo content has been replaced — show sections again
       r.classList.remove('yaxsell-pre-enhance');
     };
-    // Ejecutar inmediatamente sin delay
-    run();
-    // Re-aplicar después de que el theme.js cargue (500ms) por si sobrescribió handlers
-    const t = setTimeout(run, 600);
-    return () => clearTimeout(t);
-  }, [bodyHtml, cats, subs, catCounts, subCounts, totalItems, featuredProd, combos, addItem]);
+    // Usar requestIdleCallback para no bloquear el main thread
+    // (enhanceConceptHeader hace reemplzos masivos de innerHTML que pueden
+    // bloquear clicks durante varios segundos si se ejecuta síncrono)
+    const ric = (cb: () => void) => {
+      if ('requestIdleCallback' in window) {
+        return (window as any).requestIdleCallback(cb, { timeout: 1500 });
+      }
+      return setTimeout(cb, 16);
+    };
+    const id = ric(run);
+    return () => {
+      if ('cancelIdleCallback' in window && typeof id === 'number') {
+        (window as any).cancelIdleCallback(id);
+      } else {
+        clearTimeout(id as any);
+      }
+    };
+  }, [bodyHtml, cats, subs, catCounts, subCounts, totalItems, featuredProd, addItem]);
+
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root?.dataset.htmlSet) return;
+
+    if (combos.length === 0) {
+      enhanceConceptCombos(root, null);
+      return;
+    }
+
+    enhanceConceptCombos(root, combos[0], (selectedItems) => {
+      selectedItems.forEach(item => {
+        addItem({
+          $id: item.id,
+          NAME: item.name,
+          PRICE: item.price,
+          IMAGEURL: item.image,
+          STOCK: 99,
+        } as any);
+      });
+    });
+  }, [bodyHtml, combos, addItem]);
 
   /* ── Sync cart badge reactively ── */
   useEffect(() => {
