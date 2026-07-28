@@ -1751,13 +1751,13 @@ function openProductDetailDrawer(prod: {
   `;
 
   drawer.innerHTML = `
-    <div style="position: sticky; top: 0; z-index: 10; background: #fff; border-radius: 20px 20px 0 0; border-bottom: 1px solid #f1f5f9; padding: 16px 20px; display: flex; align-items: center; gap: 12px;">
-      <div style="position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; border-radius: 2px; background: #cbd5e1;"></div>
-      <button id="yaxsell-drawer-close" style="width: 32px; height: 32px; border-radius: 50%; border: none; background: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #ffffff; transition: all 0.2s; flex-shrink: 0;">✕</button>
-      <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Detalle del Pack</h3>
+    <div style="position: sticky; top: 0; z-index: 10; background: #fff; border-radius: 20px 20px 0 0; border-bottom: 1px solid #f1f5f9; padding: 10px 16px; display: flex; align-items: center; gap: 10px;">
+      <div style="position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 36px; height: 3px; border-radius: 2px; background: #cbd5e1;"></div>
+      <button id="yaxsell-drawer-close" style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #ffffff; transition: all 0.2s; flex-shrink: 0;">✕</button>
+      <h3 style="font-size: 13px; font-weight: 600; color: #64748b; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Detalle del Pack</h3>
     </div>
 
-    <div style="padding: 24px 20px 80px;">
+    <div style="padding: 16px 16px 80px;">
       ${hasMultipleImages ? `
         <div style="margin-bottom: 20px;">${imagesColumnHTML}</div>
       ` : ''}
@@ -1896,10 +1896,10 @@ export function enhanceConceptCombos(
 
     // Actualizar título y descripción del sidebar dinámicamente
     section.querySelectorAll<HTMLElement>('.product-bundle__sidebar .split-words').forEach(el => {
-      el.textContent = 'Detalle del Pack Emprendedor';
+      el.textContent = 'Pack Emprendedor';
     });
     section.querySelectorAll<HTMLElement>('.product-bundle__sidebar .rte p').forEach(el => {
-      el.textContent = 'Compra este pack completo y obtén un precio especial. Productos seleccionados para que emprendas tu negocio al mejor costo.';
+      el.textContent = 'Productos seleccionados para que emprendas tu negocio.';
     });
 
     // 1. Inyectar productos en las tarjetas del grid izquierdo
