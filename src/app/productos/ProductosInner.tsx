@@ -846,7 +846,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           )}
                         </div>
                         <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
-                          style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : (added ? '#059669' : 'linear-gradient(135deg,#3b82f6,#2563eb)'), color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12.5, fontWeight: 800, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'filter 0.2s ease, transform 0.1s ease', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(59,130,246,0.18)', fontFamily: 'inherit' }}>
+                          style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#3b82f6,#2563eb)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12.5, fontWeight: 800, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'filter 0.2s ease, transform 0.1s ease', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(59,130,246,0.18)', fontFamily: 'inherit' }}>
                           <ShoppingCart size={13} /> {p.STOCK === 0 ? 'Sin stock' : 'Agregar'}
                         </button>
                       </div>
