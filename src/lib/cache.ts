@@ -215,6 +215,9 @@ export function invalidateProductCache(): void {
 export function invalidateCategoryCache(): void {
   cacheInvalidate('categories:');
   cacheInvalidate('subcategories:');
+  if (isBrowser()) {
+    fetch('/api/admin/revalidate', { method: 'POST' }).catch(() => {});
+  }
 }
 
 export function invalidateBannerCache(): void {

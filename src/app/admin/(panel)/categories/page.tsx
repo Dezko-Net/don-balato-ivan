@@ -101,7 +101,7 @@ export default function CategoriesPage() {
       }
       setModal(null);
       invalidateCategoryCache();
-      try { await fetch('/api/revalidate?tag=catalog', { method: 'GET' }); } catch {}
+      try { await fetch('/api/admin/revalidate', { method: 'POST' }); } catch {}
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setIsSaving(false); }
   };

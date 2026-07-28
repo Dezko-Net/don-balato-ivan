@@ -9,6 +9,8 @@ import { productMatchesBrand } from '@/lib/brands';
 // la usan también el sitemap y el generateMetadata de producto, sin reads extra)
 import { getCachedAllProducts } from '@/lib/catalog-cache';
 
+export const dynamic = 'force-dynamic';
+
 // Module-level in-memory cache fallbacks (safe-guard in case unstable_cache is bypassed or server restarts)
 let memoryCacheActiveOffers: any[] | null = null;
 let memoryCacheActiveOffersTime = 0;
@@ -256,7 +258,7 @@ export async function GET(request: NextRequest) {
       offerCount: totalOfferCount
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
+        'Cache-Control': 'private, no-store, max-age=0'
       }
     });
 

@@ -7,6 +7,8 @@ export async function POST(req: NextRequest) {
     revalidateTag('products');
     revalidateTag('offers');
     revalidateTag('catalog');
+    revalidateTag('categories');
+    revalidateTag('subcategories');
     revalidateTag('home');     // el home cachea productos/categorías propios
     revalidateTag('settings');
     
