@@ -873,12 +873,14 @@ export default function ProductsPage() {
   // Función unificada: toma la primera imagen, busca similares, las selecciona y autocompleta todo
   const aiEnhanceProduct = useCallback(async () => {
     if (!modal) return;
-    const firstImage = getModalImageUrls(modal.data)[0];
-    if (!firstImage) {
+    const rawFirstImage = getModalImageUrls(modal.data)[0];
+    if (!rawFirstImage) {
       // Sin imagen, solo generar contenido
       generateAllProductContent();
       return;
     }
+    // Resolver la URL de la imagen (file ID de Appwrite -> URL completa)
+    const firstImage = resolveStorageImageUrl(rawFirstImage);
     setAiLoading('all');
     try {
       // 1. Buscar imágenes similares
@@ -892,7 +894,8 @@ export default function ProductsPage() {
       const similarUrls: string[] = (searchData.images || []).slice(0, 2).map((img: any) => img.url);
 
       // 2. Importar las imágenes similares (subirlas a Appwrite)
-      const newImageUrls: string[] = [firstImage];
+      // Mantener la imagen original (raw) como primera, y añadir las similares
+      const newImageUrls: string[] = [rawFirstImage];
       for (const url of similarUrls) {
         if (newImageUrls.length >= 3) break;
         try {
