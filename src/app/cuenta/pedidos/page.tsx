@@ -220,33 +220,38 @@ export default function MisPedidosPage() {
               const qty = items.reduce((s: number, i: any) => s + (i.qty || 1), 0);
               const date = new Date(order.CREATEDAT || order.$createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
               const isWaiting = order.STATUS === 'pending' || order.STATUS === 'pending_stock' || order.STATUS === 'processing';
-              const isProcessing = order.STATUS === 'processing' || order.STATUS === 'pending_stock';
-              const cardBorder = isWaiting
-                ? (isProcessing ? '1.5px solid #90caf9' : '1.5px solid #ffcc80')
-                : '1px solid #dbeafe';
-              const cardBg = isWaiting
-                ? (isProcessing ? 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 60%)' : 'linear-gradient(135deg, #fff8e8 0%, #ffffff 60%)')
-                : '#fff';
-              const iconBg = isWaiting
-                ? (isProcessing ? 'linear-gradient(135deg, #e3f2fd, #bbdefb)' : 'linear-gradient(135deg, #fff8e1, #ffe0b2)')
-                : '#eff6ff';
-              const iconColor = isWaiting ? (isProcessing ? '#1565c0' : '#f57f17') : PINK;
-              const pulseAnim = isProcessing ? 'pulseRingBlue 2s infinite' : (order.STATUS === 'pending' || order.STATUS === 'pending_stock' ? 'pulseRing 2s infinite' : 'none');
+
+              // Color scheme per status
+              const CARD_THEME: Record<string, { border: string; bg: string; iconBg: string; iconColor: string; shadow: string; hoverBorder: string; hoverShadow: string; barColor: string }> = {
+                pending:       { border: '1.5px solid #ffcc80', bg: 'linear-gradient(135deg, #fff8e8 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #fff8e1, #ffe0b2)', iconColor: '#f57f17', shadow: 'rgba(245,127,23,0.08)', hoverBorder: '#ffb74d', hoverShadow: 'rgba(245,127,23,0.15)', barColor: '#f57f17' },
+                pending_stock: { border: '1.5px solid #ffcc80', bg: 'linear-gradient(135deg, #fff8e8 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #fff8e1, #ffe0b2)', iconColor: '#f57f17', shadow: 'rgba(245,127,23,0.08)', hoverBorder: '#ffb74d', hoverShadow: 'rgba(245,127,23,0.15)', barColor: '#f57f17' },
+                processing:    { border: '1.5px solid #90caf9', bg: 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e3f2fd, #bbdefb)', iconColor: '#1565c0', shadow: 'rgba(21,101,192,0.08)', hoverBorder: '#64b5f6', hoverShadow: 'rgba(21,101,192,0.15)', barColor: '#1565c0' },
+                paid:          { border: '1.5px solid #a5d6a7', bg: 'linear-gradient(135deg, #f1f8f3 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)', iconColor: '#2e7d32', shadow: 'rgba(46,125,50,0.08)', hoverBorder: '#81c784', hoverShadow: 'rgba(46,125,50,0.15)', barColor: '#2e7d32' },
+                negotiation:   { border: '1.5px solid #b39ddb', bg: 'linear-gradient(135deg, #f5f0ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #ede7f6, #d1c4e9)', iconColor: '#5e35b1', shadow: 'rgba(94,53,177,0.08)', hoverBorder: '#9575cd', hoverShadow: 'rgba(94,53,177,0.15)', barColor: '#5e35b1' },
+                shipped:       { border: '1.5px solid #b3c4ff', bg: 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e8eefc, #c5cdf5)', iconColor: '#3b82f6', shadow: 'rgba(59,130,246,0.08)', hoverBorder: '#93a8f0', hoverShadow: 'rgba(59,130,246,0.15)', barColor: '#3b82f6' },
+                delivered:     { border: '1.5px solid #81c784', bg: 'linear-gradient(135deg, #f0f9f1 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e8f5e9, #a5d6a7)', iconColor: '#1b5e20', shadow: 'rgba(27,94,32,0.08)', hoverBorder: '#66bb6a', hoverShadow: 'rgba(27,94,32,0.15)', barColor: '#1b5e20' },
+                cancelled:     { border: '1.5px solid #ef9a9a', bg: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #ffebee, #ffcdd2)', iconColor: '#c62828', shadow: 'rgba(198,40,40,0.08)', hoverBorder: '#e57373', hoverShadow: 'rgba(198,40,40,0.15)', barColor: '#c62828' },
+              };
+              const theme = isReadyRetiro
+                ? { border: '1.5px solid #e8a3f0', bg: 'linear-gradient(135deg, #fdf4ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #fae8ff, #f3d4f8)', iconColor: '#a21caf', shadow: 'rgba(162,28,175,0.08)', hoverBorder: '#d065e0', hoverShadow: 'rgba(162,28,175,0.15)', barColor: '#a21caf' }
+                : (CARD_THEME[order.STATUS] || { border: '1px solid #e5e7eb', bg: '#fff', iconBg: '#f3f4f6', iconColor: '#6b7280', shadow: 'rgba(0,0,0,0.05)', hoverBorder: '#d1d5db', hoverShadow: 'rgba(0,0,0,0.1)', barColor: '#6b7280' });
+
+              const pulseAnim = isWaiting ? (order.STATUS === 'processing' || order.STATUS === 'pending_stock' ? 'pulseRingBlue 2s infinite' : 'pulseRing 2s infinite') : 'none';
               return (
                 <Link key={order.$id} href={`/pedido/${order.$id}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, background: cardBg, borderRadius: 16, padding: '16px 18px', textDecoration: 'none', border: cardBorder, boxShadow: '0 2px 8px rgba(59,130,246,0.06)', transition: 'all .25s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden' }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = isWaiting ? (isProcessing ? '#64b5f6' : '#ffb74d') : 'rgba(59,130,246,0.3)'; el.style.boxShadow = '0 4px 16px rgba(59,130,246,0.12)'; }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = cardBorder; el.style.boxShadow = '0 2px 8px rgba(59,130,246,0.06)'; }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, background: theme.bg, borderRadius: 16, padding: '16px 18px', textDecoration: 'none', border: theme.border, boxShadow: `0 2px 8px ${theme.shadow}`, transition: 'all .25s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = theme.hoverBorder; el.style.boxShadow = `0 4px 16px ${theme.hoverShadow}`; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = theme.border; el.style.boxShadow = `0 2px 8px ${theme.shadow}`; }}>
                   {isWaiting && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: isProcessing ? 'linear-gradient(90deg, transparent, #1565c0, transparent)' : 'linear-gradient(90deg, transparent, #f57f17, transparent)', backgroundSize: '200% 100%', animation: 'shimmer 2s linear infinite' }} />
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${theme.barColor}, transparent)`, backgroundSize: '200% 100%', animation: 'shimmer 2s linear infinite' }} />
                   )}
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: pulseAnim, position: 'relative' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: theme.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: pulseAnim, position: 'relative' }}>
                     {isWaiting ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <Clock size={20} color={iconColor} strokeWidth={2.5} />
+                        <Clock size={20} color={theme.iconColor} strokeWidth={2.5} />
                       </div>
                     ) : (
-                      <Package size={22} color={iconColor} />
+                      <Package size={22} color={theme.iconColor} />
                     )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
