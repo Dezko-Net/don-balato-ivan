@@ -239,7 +239,14 @@ function MobilePhotoUploader({ imageUrls, onChange }: {
           {/* IA - Google Lens */}
           <button
             type="button"
-            onClick={() => aiInputRef.current?.click()}
+            onClick={() => {
+              if (imageUrls.length > 0) {
+                setAiRefUrl(imageUrls[0]);
+                doSearch(imageUrls[0]);
+              } else {
+                aiInputRef.current?.click();
+              }
+            }}
             disabled={uploading || searching}
             className="h-36 rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/50 flex flex-col items-center justify-center gap-1.5 transition active:scale-[0.98] disabled:opacity-50"
           >

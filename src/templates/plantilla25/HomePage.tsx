@@ -261,24 +261,37 @@ export default function HomePage25() {
     return () => { styleEl.remove(); };
   }, []);
 
-  /* ── Load CSS files dynamically ── */
+  /* ── Load CSS files dynamically (SIN cache-bust: el navegador las cachea) ── */
   useEffect(() => {
     CSS_FILES.forEach(href => {
-      const bust = `${href}?v=${Date.now()}`;
       const existing = document.querySelector(`link[data-tpl25="${href}"]`);
-      if (existing) { existing.setAttribute('href', bust); return; }
+      if (existing) return;
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = bust;
+      link.href = href;
       link.setAttribute('data-tpl25', href);
       document.head.appendChild(link);
+    });
+  }, []);
+
+  /* ── Preload de los JS del theme APENAS monta el componente: así se descargan
+        en paralelo MIENTRAS llega body-clean.html, en vez de esperar al innerHTML ── */
+  useEffect(() => {
+    JS_FILES.forEach(file => {
+      if (document.querySelector(`link[data-tpl25-preload="${file.src}"]`)) return;
+      const l = document.createElement('link');
+      l.rel = 'preload';
+      l.as = 'script';
+      l.href = file.src;
+      l.setAttribute('data-tpl25-preload', file.src);
+      document.head.appendChild(l);
     });
   }, []);
 
   /* ── Fetch the cleaned HTML body content ── */
   useEffect(() => {
     let aborted = false;
-    fetch('/shopify/plantilla25/body-clean.html', { cache: 'no-cache' })
+    fetch('/shopify/plantilla25/body-clean.html')
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
@@ -525,23 +538,29 @@ export default function HomePage25() {
     };
   }, []);
 
-  /* ── Load JS scripts sequentially after HTML is rendered ── */
+  /* ── Load JS scripts (descarga paralela, ejecución ordenada) after HTML is rendered ── */
   useEffect(() => {
     if (!bodyHtml) return;
     if ((window as any).__tpl25ScriptsLoaded) return;
     (window as any).__tpl25ScriptsLoaded = true;
 
-    const loadOne = (file: JsFile) => new Promise<void>((resolve) => {
-      if (document.querySelector(`script[data-tpl25="${file.src}"]`)) { resolve(); return; }
+    // ⚡ Descargar TODOS los scripts EN PARALELO y ejecutarlos EN ORDEN:
+    //    los <script> dinámicos con async=false se ejecutan en orden de inserción,
+    //    pero el navegador los descarga concurrentemente (y ya vienen precargados
+    //    por el <link rel="preload"> del mount). Antes se cargaban en serie con
+    //    await → ~4s hasta que theme.js definía los custom elements y los botones
+    //    del theme (menú, drawers, etc.) "despertaban".
+    const inserted: HTMLScriptElement[] = [];
+    JS_FILES.forEach(file => {
+      if (document.querySelector(`script[data-tpl25="${file.src}"]`)) return;
       const s = document.createElement('script');
       s.src = file.src;
       if (file.module) s.type = 'module';
       else s.async = false;
       s.setAttribute('data-tpl25', file.src);
-      const done = () => resolve();
-      s.onload = done;
-      s.onerror = () => { console.warn('[Plantilla25] Failed to load:', file.src); done(); };
+      s.onerror = () => console.warn('[Plantilla25] Failed to load:', file.src);
       document.body.appendChild(s);
+      inserted.push(s);
     });
 
     const forceInView = () => {
@@ -568,11 +587,9 @@ export default function HomePage25() {
       });
     };
 
-    (async () => {
-      for (const f of JS_FILES) {
-        await loadOne(f);
-      }
-
+    // El post-init corre cuando termine el ÚLTIMO script clásico (flickity-touch-fix.js),
+    // que con async=false garantiza que vendor.js/theme.js ya ejecutaron antes.
+    const runPostInit = () => {
       // Forzar .in-view después de un breve delay para que los scripts se ejecuten
       setTimeout(() => {
         forceInView();
@@ -655,7 +672,16 @@ export default function HomePage25() {
           }, { passive: true });
         });
       }, 500);
-    })();
+    };
+
+    const lastClassic = [...inserted].reverse().find(s => s.type !== 'module');
+    if (lastClassic) {
+      lastClassic.addEventListener('load', runPostInit);
+      lastClassic.addEventListener('error', runPostInit);
+    } else {
+      // Scripts ya existían en el DOM (remount) → ya cargaron antes
+      runPostInit();
+    }
 
     return () => { (window as any).__tpl25ScriptsLoaded = false; };
   }, [bodyHtml]);

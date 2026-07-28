@@ -22,7 +22,6 @@ interface Props {
   onEdit: (p: Product) => void;
   onEnhanceProduct: (p: Product) => void;
   onAdd: () => void;
-  onAddWithAI: () => void;
   aiLoading?: boolean;
   onRefresh: () => void;
   currentPage: number;
@@ -47,7 +46,7 @@ export default function MobileProductList({
   search, onSearchChange, onSearchSubmit, onSearchClear,
   categories, catFilter, onCatChange,
   stockFilter, onStockFilterChange,
-  onEdit, onEnhanceProduct, onAdd, onAddWithAI, aiLoading, onRefresh,
+  onEdit, onEnhanceProduct, onAdd, aiLoading, onRefresh,
   currentPage, hasMore, onNextPage, onPrevPage,
 }: Props) {
   const counts: Record<StockFilter, number> = {
@@ -199,12 +198,8 @@ export default function MobileProductList({
         </div>
       )}
 
-      {/* FAB Agregar + IA */}
-      <div className="fixed bottom-6 right-5 z-40 flex gap-3">
-        <button onClick={onAddWithAI} aria-label="Agregar con IA" disabled={aiLoading}
-          className="w-14 h-14 rounded-full bg-white border-2 border-purple-300 text-purple-700 shadow-xl flex items-center justify-center active:scale-90 transition disabled:opacity-50">
-          {aiLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6 animate-pulse" />}
-        </button>
+      {/* FAB Agregar */}
+      <div className="fixed bottom-6 right-5 z-40">
         <button onClick={onAdd} aria-label="Agregar producto"
           className="w-14 h-14 rounded-full bg-gray-900 text-white shadow-xl shadow-gray-900/30 flex items-center justify-center active:scale-90 transition">
           <Plus className="w-7 h-7" />

@@ -3682,7 +3682,6 @@ export default function ProductsPage() {
           onEdit={openEdit}
           onEnhanceProduct={enhanceProductWithAI}
           onAdd={openAdd}
-          onAddWithAI={() => { setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } }); setAiAutoEnhance(true); }}
           aiLoading={aiLoading !== null}
           onRefresh={() => load(false)}
           currentPage={currentPage}
