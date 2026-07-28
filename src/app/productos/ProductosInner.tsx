@@ -538,8 +538,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
 
           {/* Row 2: Categories Horizontal Scroll on Mobile only */}
           {!lockCategoryId && (
-            <div style={{ ...(searchFocused ? { display: 'none' } : {}) }}>
-            <div className="pk-mobile-only pk-categories-scroll-wrap" style={{ display: 'none', width: '100%', overflowX: 'auto', gap: 10, padding: '4px 0 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', borderTop: '1px solid rgba(229,231,235,0.4)', paddingTop: 10, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', alignItems: 'center' }}>
+            <div style={{ ...(searchFocused ? { display: 'none' } : {}), overflow: 'hidden', minWidth: 0, width: '100%' }}>
+            <div className="pk-mobile-only pk-categories-scroll-wrap" style={{ display: 'none', width: '100%', overflowX: 'auto', gap: 10, padding: '4px 0 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', borderTop: '1px solid rgba(229,231,235,0.4)', paddingTop: 10, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', alignItems: 'center', minWidth: 0 }}>
               <button
                 onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
                 style={{
@@ -1188,6 +1188,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
             overflow-x: auto !important;
             touch-action: pan-x !important;
             -webkit-overflow-scrolling: touch !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
           }
           .pk-categories-scroll-wrap > button {
             flex-shrink: 0 !important;
