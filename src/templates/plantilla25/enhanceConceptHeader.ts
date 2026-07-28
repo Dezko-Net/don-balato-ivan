@@ -1929,7 +1929,8 @@ export function enhanceConceptCombos(
       el.textContent = 'Pack Emprendedor';
     });
     section.querySelectorAll<HTMLElement>('.product-bundle__sidebar .rte p').forEach(el => {
-      el.textContent = 'Productos seleccionados para que emprendas tu negocio.';
+      el.textContent = '';
+      (el as HTMLElement).style.display = 'none';
     });
 
     // 1. Inyectar productos en las tarjetas del grid izquierdo

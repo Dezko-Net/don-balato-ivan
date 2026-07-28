@@ -342,7 +342,8 @@ export default function HomePage25() {
     root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
     root.querySelectorAll('.mobile-dock-section, #shopify-section-sections--27201778909465__mobile-dock, nav.mobile-dock').forEach(el => el.remove());
 
-    // Fix: Remove white space below footer on mobile by setting html background to dark and padding footer
+    // Fix: Remove white space below footer on mobile by setting body background to dark and padding footer
+    // (html stays light so the mobile browser address bar remains white)
     const footerMobileFixId = 'footer-mobile-dock-fix';
     let footerFixStyle = document.getElementById(footerMobileFixId);
     if (!footerFixStyle) {
@@ -352,10 +353,8 @@ export default function HomePage25() {
     }
     footerFixStyle.textContent = `
       @media (max-width: 1023px) {
-        html {
-          background-color: #171717 !important;
-        }
         body {
+          background-color: #171717 !important;
           padding-bottom: 0 !important;
           margin-bottom: 0 !important;
         }
@@ -503,12 +502,18 @@ export default function HomePage25() {
       card.style.setProperty('scroll-snap-align', 'start', 'important');
     });
 
+    const DRAG_DAMPING = 0.65;
+    const ACTIVATE_THRESHOLD = 10;
+    const ACTIVATE_RATIO = 1.3;
+    const CLICK_BLOCK_THRESHOLD = 18;
+
     let pointerId: number | null = null;
     let startX = 0;
     let startY = 0;
     let startScrollLeft = 0;
     let horizontal = false;
     let moved = false;
+    let lastDeltaX = 0;
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType !== 'touch') return;
@@ -518,24 +523,38 @@ export default function HomePage25() {
       startScrollLeft = slider.scrollLeft;
       horizontal = false;
       moved = false;
+      lastDeltaX = 0;
     };
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerId !== pointerId) return;
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
-      if (!horizontal && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+      if (!horizontal && Math.abs(dx) > ACTIVATE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * ACTIVATE_RATIO) {
         horizontal = true;
         slider.setPointerCapture?.(event.pointerId);
       }
       if (!horizontal) return;
       event.preventDefault();
       event.stopPropagation();
-      moved = moved || Math.abs(dx) > 12;
-      slider.scrollLeft = startScrollLeft - dx;
+      moved = moved || Math.abs(dx) > CLICK_BLOCK_THRESHOLD;
+      lastDeltaX = dx;
+      slider.scrollLeft = startScrollLeft - dx * DRAG_DAMPING;
     };
     const onPointerEnd = (event: PointerEvent) => {
       if (event.pointerId !== pointerId) return;
       if (slider.hasPointerCapture?.(event.pointerId)) slider.releasePointerCapture(event.pointerId);
+      // Inertia: continuar el scroll con momentum decreciente
+      if (horizontal && Math.abs(lastDeltaX) > 5) {
+        let velocity = lastDeltaX * DRAG_DAMPING * 0.3;
+        const decel = 0.92;
+        const step = () => {
+          if (Math.abs(velocity) < 0.5) return;
+          slider.scrollLeft -= velocity;
+          velocity *= decel;
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
       pointerId = null;
       horizontal = false;
     };

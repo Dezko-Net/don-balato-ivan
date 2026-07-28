@@ -292,25 +292,6 @@ export default function CuentaPage() {
         .hero-cover {
           position: relative;
           overflow: hidden;
-          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #5b21b6 50%, #1e3a8a 75%, #1d4ed8 100%);
-        }
-        .hero-cover::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background:
-            radial-gradient(ellipse 60% 80% at 20% 30%, rgba(59,130,246,0.25) 0%, transparent 50%),
-            radial-gradient(ellipse 50% 60% at 80% 70%, rgba(129,140,248,0.2) 0%, transparent 50%),
-            radial-gradient(ellipse 40% 50% at 50% 50%, rgba(168,85,247,0.15) 0%, transparent 60%);
-          z-index: 1;
-        }
-        .hero-cover::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.04'%3E%3Ccircle cx='15' cy='15' r='6'/%3E%3Cpath d='M35 10l3 3 3-3z'/%3E%3Ccircle cx='55' cy='20' r='4'/%3E%3Cpath d='M10 40c3 0 5 2 5 5s-2 5-5 5-5-2-5-5 2-5 5-5z'/%3E%3Cpath d='M35 35l4 4 4-4' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='50' r='5'/%3E%3Cpath d='M20 65l3-3 3 3' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
-          background-size: 80px 80px;
-          z-index: 1;
         }
         .hero-cover-overlay {
           position: absolute;
@@ -628,7 +609,6 @@ export default function CuentaPage() {
             borderBottomRightRadius: 32,
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }} />
             <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: 12, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.4)', zIndex: 5 }}>
               <Pencil size={16} color="#fff" />
             </Link>
