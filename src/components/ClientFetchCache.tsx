@@ -45,6 +45,8 @@ export default function ClientFetchCache() {
           : input.url;
 
       const isGet = !init?.method || init.method.toUpperCase() === 'GET';
+      const requestCache = input instanceof Request ? input.cache : undefined;
+      const bypassCache = init?.cache === 'no-store' || requestCache === 'no-store';
       
       // Find matching rule
       let matchedPath = '';
@@ -55,7 +57,7 @@ export default function ClientFetchCache() {
         }
       }
 
-      if (matchedPath && isGet) {
+      if (matchedPath && isGet && !bypassCache) {
         let ttl = CACHE_RULES[matchedPath];
 
 

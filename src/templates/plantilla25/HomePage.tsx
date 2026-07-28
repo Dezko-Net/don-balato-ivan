@@ -487,6 +487,80 @@ export default function HomePage25() {
     });
   }, [bodyHtml]);
 
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root?.dataset.htmlSet || !window.matchMedia('(max-width: 767px)').matches) return;
+
+    const slider = Array.from(root.querySelectorAll<HTMLElement>('slider-element'))
+      .find(element => element.querySelector('motion-list.card-grid .card.media-card'));
+    if (!slider) return;
+
+    slider.style.setProperty('overflow-x', 'auto', 'important');
+    slider.style.setProperty('overscroll-behavior-x', 'contain', 'important');
+    slider.style.setProperty('touch-action', 'pan-y', 'important');
+    slider.style.setProperty('scroll-snap-type', 'x proximity', 'important');
+    slider.querySelectorAll<HTMLElement>('.card.media-card').forEach(card => {
+      card.style.setProperty('scroll-snap-align', 'start', 'important');
+    });
+
+    let pointerId: number | null = null;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    let horizontal = false;
+    let moved = false;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      startScrollLeft = slider.scrollLeft;
+      horizontal = false;
+      moved = false;
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (!horizontal && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+        horizontal = true;
+        slider.setPointerCapture?.(event.pointerId);
+      }
+      if (!horizontal) return;
+      event.preventDefault();
+      event.stopPropagation();
+      moved = moved || Math.abs(dx) > 12;
+      slider.scrollLeft = startScrollLeft - dx;
+    };
+    const onPointerEnd = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      if (slider.hasPointerCapture?.(event.pointerId)) slider.releasePointerCapture(event.pointerId);
+      pointerId = null;
+      horizontal = false;
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!moved) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      moved = false;
+    };
+
+    slider.addEventListener('pointerdown', onPointerDown, { capture: true });
+    slider.addEventListener('pointermove', onPointerMove, { capture: true });
+    slider.addEventListener('pointerup', onPointerEnd, { capture: true });
+    slider.addEventListener('pointercancel', onPointerEnd, { capture: true });
+    slider.addEventListener('click', onClick, { capture: true });
+
+    return () => {
+      slider.removeEventListener('pointerdown', onPointerDown, { capture: true });
+      slider.removeEventListener('pointermove', onPointerMove, { capture: true });
+      slider.removeEventListener('pointerup', onPointerEnd, { capture: true });
+      slider.removeEventListener('pointercancel', onPointerEnd, { capture: true });
+      slider.removeEventListener('click', onClick, { capture: true });
+    };
+  }, [bodyHtml]);
+
   /* ── Inject window.Shopify + window.theme stubs BEFORE loading JS ── */
   useEffect(() => {
     const w = window as any;
@@ -640,7 +714,10 @@ export default function HomePage25() {
         // ── SLIDER-ELEMENT TOUCH FIX: Remove pan-y lock to allow horizontal swiping ──
         if (window.matchMedia('(max-width: 767px)').matches) {
           document.querySelectorAll<HTMLElement>('slider-element, .slider, .card-grid, .media-card, .media-card__link, .media-card .media').forEach(el => {
-            el.style.touchAction = 'pan-x pan-y';
+            const categorySlider = el.matches('slider-element')
+              ? el
+              : el.closest<HTMLElement>('slider-element');
+            el.style.touchAction = categorySlider?.querySelector('motion-list.card-grid .card.media-card') ? 'pan-y' : 'pan-x pan-y';
           });
         }
 

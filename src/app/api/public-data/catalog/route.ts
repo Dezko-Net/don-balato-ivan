@@ -3,18 +3,10 @@ import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_CO
 import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 
-// force-dynamic removed to allow Vercel CDN caching via s-maxage header
-
-let memoryCacheCatalog: any = null;
-let memoryCacheCatalogTime = 0;
+export const dynamic = 'force-dynamic';
 
 const getCachedCatalogData = unstable_cache(
   async () => {
-    const now = Date.now();
-    if (memoryCacheCatalog && (now - memoryCacheCatalogTime < 300000)) { // 5 minutes in memory
-      return memoryCacheCatalog;
-    }
-
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
 
@@ -30,12 +22,10 @@ const getCachedCatalogData = unstable_cache(
       offers: offDocs.documents
     };
 
-    memoryCacheCatalog = result;
-    memoryCacheCatalogTime = now;
     return result;
   },
-  ['public-catalog-cache-v2'],
-  { revalidate: 86400, tags: ['catalog', 'categories', 'offers'] }
+  ['public-catalog-cache-v3'],
+  { revalidate: 3600, tags: ['catalog', 'categories', 'offers'] }
 );
 
 export async function GET() {
@@ -43,7 +33,7 @@ export async function GET() {
     const data = await getCachedCatalogData();
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=86400'
+        'Cache-Control': 'private, no-store, max-age=0'
       }
     });
   } catch (error: any) {
