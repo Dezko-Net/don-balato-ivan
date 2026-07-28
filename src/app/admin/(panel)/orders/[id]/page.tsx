@@ -19,6 +19,7 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:            { label: 'Recibido',                  bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
+  pending_stock:      { label: 'Recibido',                  bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
   processing:         { label: 'En Revisión',               bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
   paid:               { label: 'Confirmado',                bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
   negotiation:        { label: 'Negociando',                bg: 'bg-pink-50',    text: 'text-pink-700',     border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
@@ -31,7 +32,7 @@ const STATUS_FLOW = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
 
 // Colores hex por estado (para gradientes/glows del rediseño)
 const STATUS_HEX: Record<string, string> = {
-  pending: '#f97316', processing: '#3b82f6', paid: '#10b981',
+  pending: '#f97316', pending_stock: '#f97316', processing: '#3b82f6', paid: '#10b981',
   negotiation: '#ec4899', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
 };
 
@@ -1331,7 +1332,7 @@ export default function OrderDetailPage() {
   const isGift = (order as any).ISGIFT;
   const isLive = (order as any).PURCHASEDFROMLIVE;
 
-  const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS);
+  const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
   const isCancelled = order.STATUS === 'cancelled';
 
   const rawAdditionalInfo = order.ADDITIONALINFO || '';

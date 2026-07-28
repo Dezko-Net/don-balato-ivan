@@ -1018,7 +1018,7 @@ export default function PedidoPage() {
                 { key: 'delivered',          label: 'Entregado',           icon: <CheckCircle size={15} /> },
               ];
           const statusOrder = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
-          const currentIdx = statusOrder.indexOf(order.STATUS);
+          const currentIdx = statusOrder.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (
             <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40">

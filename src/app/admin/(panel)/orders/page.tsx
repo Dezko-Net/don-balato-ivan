@@ -24,6 +24,7 @@ const needsTracking = (o: Order) =>
 
 const STATUS_SVG: Record<string, React.ReactNode> = {
   pending:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
+  pending_stock:      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
   processing:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
   paid:               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 11.5l2 2 4-4"/></svg>,
   negotiation:        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-4 3V5a2 2 0 012-2h13a2 2 0 012 2z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/></svg>,
@@ -34,6 +35,7 @@ const STATUS_SVG: Record<string, React.ReactNode> = {
 
 const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   pending:            { color: '#f97316', bg: '#fff7ed' },
+  pending_stock:      { color: '#f97316', bg: '#fff7ed' },
   processing:         { color: '#3b82f6', bg: '#eff6ff' },
   paid:               { color: '#10b981', bg: '#ecfdf5' },
   negotiation:        { color: '#ec4899', bg: '#fdf2f8' },
@@ -48,6 +50,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
   paid_group:         { label: 'Confirmados',               bg: 'bg-green-100',   text: 'text-green-700' },
   pending:            { label: 'Recibido',                  bg: 'bg-orange-100',  text: 'text-orange-700' },
+  pending_stock:      { label: 'Recibido',                  bg: 'bg-orange-100',  text: 'text-orange-700' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-100',     text: 'text-red-700' },
   processing:         { label: 'En Revisión',               bg: 'bg-blue-100',    text: 'text-blue-700' },
   paid:               { label: 'Confirmado',                bg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -59,6 +62,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 // Etiquetas cortas para los badges (evita el bug de label.split(' ')[0] que mostraba "Pago" en ambos)
 const SHORT_LABEL: Record<string, string> = {
   pending:            'Recibido',
+  pending_stock:      'Recibido',
   processing:         'Revisión',
   paid:               'Confirmado',
   negotiation:        'Negociando',
