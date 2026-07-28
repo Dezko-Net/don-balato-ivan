@@ -1608,7 +1608,7 @@ function openProductDetailDrawer(prod: {
   drawer.style.cssText = `
     position: fixed; bottom: 0; left: 0; width: 100%; max-width: 100%; height: 85vh;
     background: #ffffff; z-index: 99990; overflow-y: auto;
-    transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 -8px 40px rgba(0,0,0,0.15); will-change: transform;
     border-radius: 20px 20px 0 0;
   `;
@@ -1618,7 +1618,7 @@ function openProductDetailDrawer(prod: {
   overlay.style.cssText = `
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(0,0,0,0.5); z-index: 99989; opacity: 0;
-    transition: opacity 0.3s ease; backdrop-filter: blur(4px);
+    transition: opacity 0.2s ease; backdrop-filter: blur(4px);
   `;
 
   // Construir secciones de ficha técnica
@@ -1803,7 +1803,7 @@ function openProductDetailDrawer(prod: {
     setTimeout(() => {
       drawer.remove();
       overlay.remove();
-    }, 400);
+    }, 300);
   };
 
   // Usar addEventListener con capture:true para interceptar ANTES que el theme.js

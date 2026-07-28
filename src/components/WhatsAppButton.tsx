@@ -15,6 +15,7 @@ export default function WhatsAppButton() {
   }, []);
 
   if (!mounted) return null;
+  if (pathname !== '/') return null;
   if (pathname.startsWith('/admin') || pathname.startsWith('/login') || pathname.startsWith('/inventario')) return null;
 
   const url = getWhatsAppUrl();
