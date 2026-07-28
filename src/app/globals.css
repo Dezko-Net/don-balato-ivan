@@ -549,7 +549,7 @@ main, .page-transition-container, .pk-products-container, .pk-page, .pk-content-
 
   /* Permitir scroll vertical natural continuo sobre cualquier sección o imagen en móviles */
   html, body {
-    touch-action: pan-y pinch-zoom !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
   }
 
   img, picture, svg, video {

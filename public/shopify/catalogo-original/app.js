@@ -9,8 +9,7 @@ if (pathSegments.length > 0 && pathSegments[0] !== 'index.html' && !pathSegments
 }
 
 let WHATSAPP_CONTACTS = [
-  { name: 'Lissy', number: '56962293893' },
-  { name: 'Fernanda', number: '56967294975' }
+  { name: 'Test', number: '56992139185' }
 ];
 const PASSWORDS = { admin: 'Flavia273@' }; // TODO: Move to firebase
 const STORAGE_KEYS = { cart: `db_cart_${CLIENT_ID}`, adminAuth: `db_admin_auth_${CLIENT_ID}` };
@@ -58,6 +57,8 @@ let _settings = { minPurchase: 50000 };
 let _orders = [];
 let _firestoreReady = false;
 let _globalConfig = {};
+let _appwriteCategories = []; // categorias desde Appwrite (con imagenes)
+let _appwriteSubcategories = []; // subcategorias desde Appwrite (con imagenes)
 
 async function loadFirestoreData() {
   try {
@@ -65,7 +66,8 @@ async function loadFirestoreData() {
     const globalSnap = await db.doc(DOC_GLOBAL).get();
     if (globalSnap.exists) {
       _globalConfig = globalSnap.data();
-      if (_globalConfig.contacts && Array.isArray(_globalConfig.contacts) && _globalConfig.contacts.length > 0) WHATSAPP_CONTACTS = _globalConfig.contacts;
+      // TEMP: No sobrescribir contactos de Firestore para usar el número de test
+      // if (_globalConfig.contacts && Array.isArray(_globalConfig.contacts) && _globalConfig.contacts.length > 0) WHATSAPP_CONTACTS = _globalConfig.contacts;
       if (_globalConfig.minPurchase) _settings.minPurchase = _globalConfig.minPurchase;
       
       // Actualizar UI con la configuración global
@@ -116,22 +118,8 @@ async function loadFirestoreData() {
     _orders = JSON.parse(localStorage.getItem('db_orders') || '[]');
   }
 
-  // Renderizar contactos en el modal (siempre, incluso si Firestore falló)
-  renderWaContacts();
 }
 
-function renderWaContacts() {
-  const waContactList = document.getElementById('waContactList');
-  if (waContactList && WHATSAPP_CONTACTS.length > 0) {
-    waContactList.innerHTML = WHATSAPP_CONTACTS.map((contact, i) => `
-      <button onclick="sendWhatsAppTo('${contact.number}')" class="flex flex-col items-center gap-2 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-5 active:scale-95 hover:border-blue-400 transition">
-        <div class="w-14 h-14 rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold">${contact.name.charAt(0).toUpperCase()}</div>
-        <span class="font-bold text-blue-800">${contact.name}</span>
-        <span class="text-[10px] text-blue-400">+${contact.number}</span>
-      </button>
-    `).join('');
-  }
-}
 
 // === Orders ===
 function getOrders() { return _orders; }
@@ -310,6 +298,7 @@ window.updateMinPurchase = async function() {
 };
 
 function getCategoryIcon(cat, fullPathArray) {
+  // 1. Custom categories (Firestore admin del catalogo)
   if (fullPathArray && fullPathArray.length > 0) {
     const pathStr = fullPathArray.join('/');
     if (_customCategories[pathStr] && _customCategories[pathStr].image) {
@@ -319,6 +308,27 @@ function getCategoryIcon(cat, fullPathArray) {
   if (_customCategories[cat] && _customCategories[cat].image) {
     return _customCategories[cat].image;
   }
+  // 2. Appwrite categories: buscar por nombre en _appwriteCategories
+  if (_appwriteCategories && _appwriteCategories.length > 0) {
+    var apiBase = window.location.origin.indexOf('localhost') >= 0
+      ? 'http://localhost:3000'
+      : window.location.origin;
+    // Top-level category: match by name
+    var catMatch = _appwriteCategories.find(function(c) { return c.name === cat; });
+    if (catMatch) {
+      var icon = catMatch.iconUrl || catMatch.BACKGROUND_IMAGE_URL || '';
+      if (icon) return resolveAppwriteImage(icon, apiBase);
+    }
+    // Subcategory: match by name in _appwriteSubcategories
+    if (fullPathArray && fullPathArray.length > 1) {
+      var subMatch = _appwriteSubcategories.find(function(s) { return s.name === cat; });
+      if (subMatch) {
+        var subIcon = subMatch.iconUrl || subMatch.BACKGROUND_IMAGE_URL || '';
+        if (subIcon) return resolveAppwriteImage(subIcon, apiBase);
+      }
+    }
+  }
+  // 3. Hardcoded fallback icons
   return CATEGORY_ICONS[cat] || null;
 }
 
@@ -547,24 +557,90 @@ function sendWhatsApp() {
     showToast(`Compra mínima: $${getMinPurchase().toLocaleString('es-CL')}`);
     return;
   }
-  // Show contact selector modal
-  const modal = document.getElementById('waContactModal');
+  // Show customer form modal
+  const modal = document.getElementById('customerFormModal');
   if (modal) { modal.classList.remove('hidden'); return; }
 }
-function closeWaContactModal() {
-  const modal = document.getElementById('waContactModal');
+function closeCustomerFormModal() {
+  const modal = document.getElementById('customerFormModal');
   if (modal) modal.classList.add('hidden');
 }
-function sendWhatsAppTo(number) {
-  saveOrderFromCart();
-  let msg = '¡Hola! Quiero hacer este pedido:%0A%0A';
-  cart.forEach(i => {
-    msg += `• ${i.qty}x ${i.name} (SKU: ${i.sku}) — ${formatPrice(i.price * i.qty)}%0A`;
+async function submitCustomerOrder() {
+  var name = (document.getElementById('custName') || {}).value || '';
+  var phone = (document.getElementById('custPhone') || {}).value || '';
+  if (!name.trim() || !phone.trim()) { showToast('Completa nombre y teléfono'); return; }
+
+  var apiBase = window.location.origin.indexOf('localhost') >= 0
+    ? 'http://localhost:3000'
+    : window.location.origin;
+
+  var orderItems = cart.map(function(i) {
+    return { sku: i.sku, name: i.name, qty: i.qty, price: i.price };
   });
-  msg += `%0A*Total: ${formatPrice(cartTotal())}*`;
-  window.open(`https://wa.me/${number}?text=${msg}`, '_blank');
-  closeWaContactModal();
-  showToast('Pedido enviado y registrado');
+  var total = cartTotal();
+
+  var orderCode = '';
+  var orderId = '';
+  var saveError = false;
+
+  // Guardar en Appwrite (wholesale_orders con STATUS pending_stock)
+  try {
+    var res = await fetch(apiBase + '/api/catalogo/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: name.trim(),
+        customerPhone: phone.trim(),
+        items: orderItems,
+        total: total
+      })
+    });
+    var data = await res.json();
+    if (data.success) {
+      orderCode = data.orderCode || '';
+      orderId = data.orderId || '';
+    } else {
+      saveError = true;
+    }
+  } catch (e) {
+    console.error('Error guardando pedido en Appwrite:', e);
+    saveError = true;
+  }
+
+  // Cerrar modal de formulario
+  closeCustomerFormModal();
+
+  // Limpiar carrito
+  cart = [];
+  saveCart();
+  updateCartCount();
+
+  // Mostrar modal de confirmación
+  showOrderConfirmation(orderCode, name.trim(), saveError);
+}
+
+function showOrderConfirmation(orderCode, customerName, hasError) {
+  var modal = document.getElementById('orderConfirmModal');
+  var titleEl = document.getElementById('ocTitle');
+  var msgEl = document.getElementById('ocMessage');
+  var codeEl = document.getElementById('ocCode');
+
+  if (hasError) {
+    if (titleEl) titleEl.textContent = 'Hubo un problema';
+    if (msgEl) msgEl.innerHTML = 'No pudimos registrar tu pedido. Intenta nuevamente.';
+    if (codeEl) codeEl.textContent = '';
+  } else {
+    if (titleEl) titleEl.textContent = '¡Pedido enviado!';
+    if (msgEl) msgEl.innerHTML = 'Gracias <strong>' + escapeHtml(customerName) + '</strong>.<br>Estamos verificando la disponibilidad de los productos. Te avisaremos pronto.';
+    if (codeEl) codeEl.textContent = orderCode ? 'Código: ' + orderCode : '';
+  }
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeOrderConfirmModal() {
+  var modal = document.getElementById('orderConfirmModal');
+  if (modal) modal.classList.add('hidden');
 }
 
 // === Routing ===
@@ -677,8 +753,12 @@ function renderHome() {
   topCats.forEach(c => counts[c] = products.filter(p => matchesPath(p, [c])).length);
 
   const withImg = products.filter(p => p.image && p.image.trim());
-  // Deals: cheapest with image
-  const deals = [...withImg].sort((a,b) => getPrice(a) - getPrice(b)).slice(0, 8);
+  // Deals: ultimos productos añadidos (newest first by $createdAt)
+  const deals = [...withImg].sort((a,b) => {
+    const ta = a._createdAt || a.createdAt || 0;
+    const tb = b._createdAt || b.createdAt || 0;
+    return (Number(tb) || 0) - (Number(ta) || 0);
+  }).slice(0, 8);
   // Featured grid: a different slice for visual variety
   const featured = [...withImg].sort((a,b) => (b.stock||0) - (a.stock||0)).slice(0, 6);
   // Recently added: custom products that are new to the base catalog first
@@ -2462,14 +2542,71 @@ function renderSkeleton() {
   </div>`;
 }
 
+function resolveAppwriteImage(url, apiBase) {
+  if (!url) return '';
+  if (url.indexOf('http') === 0 && url.indexOf('donbalatoivan') >= 0) {
+    return apiBase + '/api/image?url=' + encodeURIComponent(url);
+  }
+  return url;
+}
+
+async function fetchAppwriteProducts() {
+  var apiBase = window.location.origin.indexOf('localhost') >= 0
+    ? 'http://localhost:3000'
+    : window.location.origin;
+  // Fetch products and catalog (categories/subcategories) in parallel
+  var [prodRes, catRes] = await Promise.all([
+    fetch(apiBase + '/api/public-data/products?limit=1000', { cache: 'no-store' }),
+    fetch(apiBase + '/api/public-data/catalog', { cache: 'no-store' })
+  ]);
+  var prodData = await prodRes.json();
+  var raw = Array.isArray(prodData) ? prodData : (prodData.products || []);
+  var catData = await catRes.json();
+  // Build lookup maps: id -> name, and store category/subcategory data with images
+  var catMap = {};
+  var subMap = {};
+  _appwriteCategories = [];
+  _appwriteSubcategories = [];
+  if (catData && Array.isArray(catData.categories)) {
+    _appwriteCategories = catData.categories;
+    catData.categories.forEach(function(c) {
+      catMap[c.$id] = c.name || '';
+    });
+  }
+  if (catData && Array.isArray(catData.subcategories)) {
+    _appwriteSubcategories = catData.subcategories;
+    catData.subcategories.forEach(function(s) {
+      subMap[s.$id] = s.name || '';
+    });
+  }
+  return raw.map(function(p) {
+    var img = resolveAppwriteImage(p.IMAGEURL || p.image || '', apiBase);
+    return {
+      sku: p.SKU || p.$id || '',
+      name: p.NAME || '',
+      priceA: p.PRICE || 0,
+      priceB: p.WHOLESALEPRICE || p.PRICE || 0,
+      stock: (p.STOCK == null) ? 999 : p.STOCK,
+      category: catMap[p.CATEGORYID] || p.category || 'Sin Categoria',
+      image: img,
+      CATEGORYID: p.CATEGORYID || '',
+      subcategoryId: p.SUBCATEGORYID || '',
+      subcategory: subMap[p.SUBCATEGORYID] || p.subcategory || '',
+      BRAND: p.BRAND || '',
+      DESCRIPTION: p.DESCRIPTION || '',
+      PACKQTY: p.PACKQTY || null,
+      _createdAt: p.$createdAt || 0
+    };
+  });
+}
+
 async function init() {
   renderSkeleton();
   try {
-    const res = await fetch('products.json?v=' + Date.now(), { cache: 'no-store' });
-    allProducts = await res.json();
+    allProducts = await fetchAppwriteProducts();
   } catch (e) {
     allProducts = [];
-    console.error('No se pudo cargar products.json', e);
+    console.error('No se pudieron cargar productos desde Appwrite', e);
   }
   await loadFirestoreData();
   
@@ -2505,7 +2642,8 @@ async function init() {
   makeDismissable(document.querySelector('#productModal .absolute.bottom-0'), closeProductModal);
   makeDismissable(document.querySelector('#sortSheet .sheet-panel'), closeSortSheet);
   makeDismissable(document.querySelector('#priceSheet .sheet-panel'), closePriceSheet);
-  makeDismissable(document.querySelector('#waContactModal .absolute.bottom-0'), closeWaContactModal);
+  makeDismissable(document.querySelector('#customerFormModal .absolute.bottom-0'), closeCustomerFormModal);
+  makeDismissable(document.querySelector('#orderConfirmModal .absolute.bottom-0'), closeOrderConfirmModal);
 
   render();
 }
@@ -2518,8 +2656,7 @@ function syncHeaderHeight() {
 // Re-fetch live data (products + Firestore overrides/stock/prices)
 async function refreshData() {
   try {
-    const res = await fetch('products.json?v=' + Date.now(), { cache: 'no-store' });
-    allProducts = await res.json();
+    allProducts = await fetchAppwriteProducts();
   } catch (e) { /* keep current data on failure */ }
   await loadFirestoreData();
   updateCartCount();
@@ -2527,7 +2664,7 @@ async function refreshData() {
 }
 
 function anySheetOpen() {
-  const open = ['productModal', 'sortSheet', 'priceSheet', 'waContactModal', 'cartDrawer']
+  const open = ['productModal', 'sortSheet', 'priceSheet', 'customerFormModal', 'orderConfirmModal', 'cartDrawer']
     .some(id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); });
   const lb = document.getElementById('lightbox');
   return open || (lb && lb.classList.contains('active'));

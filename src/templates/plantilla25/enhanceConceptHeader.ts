@@ -376,16 +376,56 @@ export function enhanceConceptHeader(root: HTMLElement | Document, data: Enhance
     if (h > 0 && (root as HTMLElement).style) {
       (root as HTMLElement).style.setProperty('--header-height', `${h}px`);
     }
-    /* ── Añadir esquinas SVG cóncavas SUPERIORES (amarillas, para conectar con la barra de anuncios) ── */
+    /* ── Esquinas SVG cóncavas: amarillas en inicio, blancas en otras páginas ── */
+    const isHome = typeof window !== 'undefined' && window.location.pathname === '/';
+    const cornerColor = isHome ? '#ffddbf' : '#ffffff';
+    /* Aplicar color a TODOS los corners (top y bottom) del header */
+    headerEl.querySelectorAll<HTMLElement>('.header__corner').forEach(corner => {
+      corner.style.setProperty('color', cornerColor, 'important');
+      corner.querySelectorAll<SVGPathElement>('svg path').forEach(p => {
+        if (p.getAttribute('fill') !== 'none') {
+          p.style.setProperty('fill', cornerColor, 'important');
+        }
+      });
+    });
+    /* Añadir corners SUPERIORES si no existen */
     if (!headerEl.querySelector('.header__corner.top')) {
       const cornerTopLeft = document.createElement('span');
       cornerTopLeft.className = 'header__corner corner left top flex absolute pointer-events-none';
+      cornerTopLeft.style.setProperty('color', cornerColor, 'important');
       cornerTopLeft.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 101 101" stroke="none" fill="currentColor" xmlns="http://www.w3.org/2000/svg" role="presentation"><path fill-rule="evenodd" clip-rule="evenodd" d="M101 0H0V101H1C1 45.7715 45.7715 1 101 1V0Z"></path><path d="M1 101C1 45.7715 45.7715 1 101 1" fill="none"></path></svg>`;
       const cornerTopRight = document.createElement('span');
       cornerTopRight.className = 'header__corner corner right top flex absolute pointer-events-none';
+      cornerTopRight.style.setProperty('color', cornerColor, 'important');
       cornerTopRight.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 101 101" stroke="none" fill="currentColor" xmlns="http://www.w3.org/2000/svg" role="presentation"><path fill-rule="evenodd" clip-rule="evenodd" d="M101 0H0V101H1C1 45.7715 45.7715 1 101 1V0Z"></path><path d="M1 101C1 45.7715 45.7715 1 101 1" fill="none"></path></svg>`;
       headerEl.appendChild(cornerTopLeft);
       headerEl.appendChild(cornerTopRight);
+    }
+    /* Re-aplicar fill a los paths recién creados */
+    headerEl.querySelectorAll<HTMLElement>('.header__corner.top').forEach(corner => {
+      corner.querySelectorAll<SVGPathElement>('svg path').forEach(p => {
+        if (p.getAttribute('fill') !== 'none') {
+          p.style.setProperty('fill', cornerColor, 'important');
+        }
+      });
+    });
+    /* Observer: el theme JS puede re-renderizar los corners; re-aplicar color */
+    const headerHtmlEl = headerEl as HTMLElement;
+    if (!headerHtmlEl.dataset.cornerObserverWired) {
+      headerHtmlEl.dataset.cornerObserverWired = '1';
+      const observer = new MutationObserver(() => {
+        const isH = typeof window !== 'undefined' && window.location.pathname === '/';
+        const cc = isH ? '#ffddbf' : '#ffffff';
+        headerEl.querySelectorAll<HTMLElement>('.header__corner').forEach(corner => {
+          corner.style.setProperty('color', cc, 'important');
+          corner.querySelectorAll<SVGPathElement>('svg path').forEach(p => {
+            if (p.getAttribute('fill') !== 'none') {
+              p.style.setProperty('fill', cc, 'important');
+            }
+          });
+        });
+      });
+      observer.observe(headerEl, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
     }
   }
 
@@ -1422,7 +1462,13 @@ function wireGlobalDrawersAndBuscar(root: HTMLElement | Document): void {
         }
 
         // ¿Click fuera de un drawer abierto? (click en overlay o fuera)
-        const openDrawers = document.querySelectorAll('.drawer:not([hidden]), search-drawer:not([hidden]), menu-drawer:not([hidden]), cart-drawer:not([hidden])');
+        // OJO: solo drawers REALMENTE abiertos ([open]/[active], que es lo que
+        // establecen openAnyDrawer y el theme). En el HTML capturado hay varios
+        // .drawer/x-modal SIN atributo hidden aunque están ocultos por CSS;
+        // con ':not([hidden])' este bloque tragaba TODOS los clicks de la página
+        // (stopImmediatePropagation en capture) hasta que theme.js terminaba de
+        // cargar → botones inertes durante 6-7s tras refrescar.
+        const openDrawers = document.querySelectorAll('.drawer[open], .drawer[active], search-drawer[open], search-drawer[active], menu-drawer[open], menu-drawer[active], cart-drawer[open], cart-drawer[active]');
         openDrawers.forEach(d => {
           const drawer = d as HTMLElement;
           const inner = drawer.querySelector('.drawer__inner, .drawer__content, .drawer__panel');
@@ -1875,7 +1921,106 @@ function openProductDetailDrawer(prod: {
 
 type ComboBundleProduct = NonNullable<ComboRealHydrationData['bundleProducts']>[number];
 const comboProductsBySection = new WeakMap<HTMLElement, Map<string, ComboBundleProduct>>();
-const comboDetailSections = new WeakSet<HTMLElement>();
+
+/* ── Controles del Pack Emprendedor: delegación temprana en capture ──────────
+   Estos listeners se registran APENAS se inyecta el HTML (wireComboSectionEarly),
+   antes de que llegue el fetch de combos y antes de que theme.js despierte sus
+   custom elements. Así "Ver detalle" y el toggle de la cortina responden al
+   instante y stopImmediatePropagation() bloquea el camino lento del theme. ── */
+const COMBO_SECTION_SEL = '#shopify-section-template--27619508257049__product-bundle';
+const comboEarlyWiredRoots = new WeakSet<HTMLElement>();
+const comboToggleActivateHandlers = new WeakMap<HTMLElement, () => void>();
+let pendingComboDetail: { section: HTMLElement; index: number } | null = null;
+
+function showComboDetailLoading(): void {
+  if (document.getElementById('yaxsell-combo-detail-loading')) return;
+  if (!document.getElementById('yaxsell-combo-detail-loading-style')) {
+    const st = document.createElement('style');
+    st.id = 'yaxsell-combo-detail-loading-style';
+    st.textContent = '@keyframes yaxsell-combo-spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(st);
+  }
+  const el = document.createElement('div');
+  el.id = 'yaxsell-combo-detail-loading';
+  el.setAttribute('role', 'status');
+  el.style.cssText = 'position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:99999;background:rgba(15,23,42,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;display:flex;align-items:center;gap:8px;pointer-events:none;';
+  el.innerHTML = '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:yaxsell-combo-spin .7s linear infinite;"></span>Cargando detalle…';
+  document.body.appendChild(el);
+  // Red de seguridad: nunca dejar el aviso visible para siempre
+  window.setTimeout(() => hideComboDetailLoading(), 10000);
+}
+
+function hideComboDetailLoading(): void {
+  document.getElementById('yaxsell-combo-detail-loading')?.remove();
+}
+
+export function wireComboSectionEarly(root: HTMLElement): void {
+  try {
+    if (comboEarlyWiredRoots.has(root)) return;
+    const section = root.querySelector<HTMLElement>(COMBO_SECTION_SEL);
+    if (!section) return;
+    comboEarlyWiredRoots.add(root);
+
+    root.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      // (1) Botón "Ver detalle" de las tarjetas del Pack Emprendedor
+      const detailBtn = target.closest<HTMLElement>('.product-card .product-form__submit');
+      if (detailBtn && detailBtn.closest(COMBO_SECTION_SEL)) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        const card = detailBtn.closest<HTMLElement>('.product-card');
+        const sectionEl = detailBtn.closest<HTMLElement>(COMBO_SECTION_SEL);
+        if (!card || !sectionEl) return;
+
+        const map = comboProductsBySection.get(sectionEl);
+        // 1.a Buscar por id (cuando enhanceConceptCombos ya hidrató las tarjetas)
+        const productId = card.dataset.comboProductId;
+        const byId = productId && map ? map.get(productId) : undefined;
+        if (byId) {
+          openProductDetailDrawer(byId);
+          return;
+        }
+        // 1.b Buscar por índice de tarjeta (el orden del Map conserva allProducts)
+        const cards = Array.from(sectionEl.querySelectorAll<HTMLElement>('.product-card'));
+        const idx = cards.indexOf(card);
+        const byIdx = map && idx >= 0 ? Array.from(map.values())[idx] : undefined;
+        if (byIdx) {
+          openProductDetailDrawer(byIdx);
+          return;
+        }
+        // 1.c Datos aún no disponibles: el click ya fue interceptado (el theme
+        //     no hace su camino lento). Dejar pendiente y dar feedback visual.
+        if (idx >= 0) {
+          pendingComboDetail = { section: sectionEl, index: idx };
+          showComboDetailLoading();
+        }
+        return;
+      }
+
+      // (2) Toggle de la cortina negra "Pack Emprendedor"
+      const toggle = target.closest<HTMLElement>('product-bundle-toggle-button, .product-bundle__toggle');
+      if (toggle && toggle.closest(COMBO_SECTION_SEL)) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        const bundle = toggle.closest<HTMLElement>('.product-bundle');
+        if (!bundle) return;
+        const isActive = bundle.classList.toggle('active');
+        toggle.setAttribute('aria-expanded', String(isActive));
+        // Al expandir: re-seleccionar todo y repintar (si los datos ya llegaron)
+        if (isActive) comboToggleActivateHandlers.get(bundle)?.();
+        const chevron = toggle.querySelector('svg') as SVGElement | null;
+        if (chevron) {
+          chevron.style.transform = isActive ? 'rotate(180deg)' : '';
+          chevron.style.transition = 'transform 0.3s ease';
+        }
+      }
+    }, { capture: true });
+  } catch { /* noop */ }
+}
 
 export function enhanceConceptCombos(
   root: HTMLElement | Document,
@@ -1899,21 +2044,17 @@ export function enhanceConceptCombos(
     });
 
     comboProductsBySection.set(section, new Map(allProducts.map(product => [product.$id, product])));
-    if (!comboDetailSections.has(section)) {
-      comboDetailSections.add(section);
-      section.addEventListener('click', event => {
-        const target = event.target as HTMLElement | null;
-        const button = target?.closest<HTMLElement>('.product-card .product-form__submit');
-        const card = button?.closest<HTMLElement>('.product-card');
-        const productId = card?.dataset.comboProductId;
-        const product = productId ? comboProductsBySection.get(section)?.get(productId) : undefined;
-        if (!button || !product) return;
 
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        openProductDetailDrawer(product);
-      }, { capture: true });
+    // Si el usuario tocó "Ver detalle" antes de que llegaran los datos, abrir
+    // ahora el drawer del producto que quedó pendiente (el click ya fue
+    // interceptado por wireComboSectionEarly, no pasó por el camino lento).
+    if (pendingComboDetail && pendingComboDetail.section === section) {
+      const pendingProd = allProducts[pendingComboDetail.index];
+      pendingComboDetail = null;
+      hideComboDetailLoading();
+      if (pendingProd) {
+        openProductDetailDrawer(pendingProd);
+      }
     }
 
     // Si no hay productos configurados para el pack (0 productos), ocultar sección completamente
@@ -2074,57 +2215,21 @@ export function enhanceConceptCombos(
     // Render inicial
     renderSidebar();
 
-    // 2.5 Toggle del bundle: reemplazar custom elements por divs
-    //     El theme.js usa custom elements que interceptan clicks. Los reemplazamos.
-    const wireToggle = () => {
-      const bundle = section.querySelector<HTMLElement>('.product-bundle');
-      if (!bundle) return;
-      // Reemplazar product-bundle-toggle-button (custom element) por un div
-      const oldToggle = bundle.querySelector<HTMLElement>('product-bundle-toggle-button, .product-bundle__toggle');
-      if (oldToggle && oldToggle.tagName.toLowerCase().startsWith('product-bundle')) {
-        const div = document.createElement('div');
-        div.className = oldToggle.className + ' product-bundle__toggle';
-        div.style.cssText = oldToggle.style.cssText + ';cursor:pointer;';
-        div.innerHTML = oldToggle.innerHTML;
-        oldToggle.parentNode?.replaceChild(div, oldToggle);
-        div.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          const isActive = bundle.classList.toggle('active');
-          if (isActive) {
-            selectedItemsMap.clear();
-            allProducts.forEach(p => selectedItemsMap.set(p.$id, p));
-            renderSidebar();
-          }
-          const chevron = div.querySelector('svg');
-          if (chevron) {
-            chevron.style.transform = isActive ? 'rotate(180deg)' : '';
-            chevron.style.transition = 'transform 0.3s ease';
-          }
-        }, { capture: true });
-      } else if (oldToggle) {
-        // Ya es div, solo asegurar handler
-        (oldToggle as HTMLElement).style.cursor = 'pointer';
-        (oldToggle as HTMLElement).onclick = (e: MouseEvent) => {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          const isActive = bundle.classList.toggle('active');
-          if (isActive) {
-            selectedItemsMap.clear();
-            allProducts.forEach(p => selectedItemsMap.set(p.$id, p));
-            renderSidebar();
-          }
-          const chevron = oldToggle.querySelector('svg');
-          if (chevron) {
-            chevron.style.transform = isActive ? 'rotate(180deg)' : '';
-            chevron.style.transition = 'transform 0.3s ease';
-          }
-        };
-      }
-    };
-    wireToggle();
-    setTimeout(wireToggle, 600);
-    setTimeout(wireToggle, 1200);
+    // 2.5 Toggle del bundle: la apertura/cierre la maneja el listener delegado
+    //     registrado en wireComboSectionEarly() apenas se inyecta el HTML (ya no
+    //     se reemplaza el custom element ni se usan retries con setTimeout).
+    //     Aquí solo registramos qué hacer al expandir: re-seleccionar todo y
+    //     repintar el sidebar con los datos reales.
+    const bundleEl = section.querySelector<HTMLElement>('.product-bundle');
+    if (bundleEl) {
+      const toggleEl = bundleEl.querySelector<HTMLElement>('product-bundle-toggle-button, .product-bundle__toggle');
+      if (toggleEl) toggleEl.style.cursor = 'pointer';
+      comboToggleActivateHandlers.set(bundleEl, () => {
+        selectedItemsMap.clear();
+        allProducts.forEach(p => selectedItemsMap.set(p.$id, p));
+        renderSidebar();
+      });
+    }
 
     // 3. Botón final "Añadir al carrito" en la barra lateral
     const finalSubmitBtn = section.querySelector<HTMLElement>('[data-product-bundle-submit], .product-bundle__footer button');

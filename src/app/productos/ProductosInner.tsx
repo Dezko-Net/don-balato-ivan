@@ -539,7 +539,15 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           {/* Row 2: Categories Horizontal Scroll on Mobile only */}
           {!lockCategoryId && (
             <div style={{ ...(searchFocused ? { display: 'none' } : {}), minWidth: 0, width: '100%' }}>
-            <div className="pk-mobile-only pk-categories-scroll-wrap" style={{ display: 'none', width: '100%', overflowX: 'auto', gap: 10, padding: '4px 0 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y', overscrollBehavior: 'contain', borderTop: '1px solid rgba(229,231,235,0.4)', paddingTop: 10, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', alignItems: 'center', minWidth: 0 }}>
+            <div className="pk-mobile-only pk-categories-scroll-wrap" style={{ display: 'none', width: '100%', overflowX: 'auto', gap: 10, padding: '4px 0 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y', overscrollBehavior: 'contain', borderTop: '1px solid rgba(229,231,235,0.4)', paddingTop: 10, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', alignItems: 'center', minWidth: 0 }}
+              onWheel={(e) => {
+                const el = e.currentTarget;
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                  el.scrollLeft += e.deltaY;
+                  e.preventDefault();
+                }
+              }}
+            >
               <button
                 onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
                 style={{
@@ -783,7 +791,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
-                          {p.PACKQTY && p.PACKQTY > 1 && (
+                          {p.PACKQTY != null && p.PACKQTY > 1 && (
                             <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paquete</span>
                           )}
                           {p.STOCK === 0 && (

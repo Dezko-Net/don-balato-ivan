@@ -354,6 +354,57 @@ Una solución aceptable debe mantener la respuesta del control por debajo de apr
 - `src/components/BackToTop.tsx`: botón global de retorno.
 - `src/templates/plantilla666/HomePage.tsx`: patrón estable usado como referencia.
 
+## Caso aplicado: "Ver detalle" y cortina del Pack Emprendedor (plantilla25)
+
+### Síntoma
+
+Tras refrescar, el botón "Ver detalle" de cada producto del pack y el botón para expandir la cortina negra "Pack Emprendedor" tardaban 6-7 segundos en responder.
+
+### Causa
+
+Había DOS problemas:
+
+**A. Los handlers se conectaban tarde** — dentro de `enhanceConceptCombos()`, que solo corre **después** del fetch `/api/public-data/combos`:
+
+- "Ver detalle": si el click llegaba antes del fetch, el handler hacía `return` sin `preventDefault()` y el evento caía al form `is="product-bundle-form"` del theme (camino lento).
+- El toggle de la cortina se cableaba reemplazando el custom element `<product-bundle-toggle-button>` por un `<div>` con reintentos fijos a 600 y 1200 ms; si `theme.js` hidrataba después del último retry, el toggle quedaba inerte o con el comportamiento lento del theme.
+
+**B. (la causa real de los 6-7 s) Un interceptor global tragaba TODOS los clicks** — el handler "click fuera cierra drawers" de `wireGlobalDrawersAndBuscar()` (document, capture) usaba:
+
+```ts
+const openDrawers = document.querySelectorAll('.drawer:not([hidden]), search-drawer:not([hidden]), ...');
+openDrawers.forEach(d => { ...; e.stopImmediatePropagation(); closeAnyDrawer(d); });
+```
+
+En el HTML capturado existen ~5 elementos `.drawer`/`x-modal` **sin atributo `hidden`** aunque están ocultos por CSS (quick-views, search-drawer, etc.). `theme.js` les pone `hidden` recién al terminar de cargar (~6-7 s). Mientras tanto, cualquier click en la página se consideraba "fuera de un drawer abierto" → `stopImmediatePropagation()` en capture → **ningún otro handler recibía el click**, ni siquiera los delegados ya conectados. Diagnosticado espiando `Event.prototype.stopImmediatePropagation` con Puppeteer: 5 llamadas a SIP por cada click real, todas desde ese `forEach`.
+
+### Solución aplicada
+
+1. **`wireComboSectionEarly(root)`** (en `enhanceConceptHeader.ts`): un único listener delegado en `root` con `{ capture: true }`, registrado **apenas se inyecta el HTML** en `HomePage.tsx` (antes de cualquier fetch y de `theme.js`).
+   - "Ver detalle": intercepta `.product-card .product-form__submit` dentro de la sección del bundle, siempre con `preventDefault() + stopImmediatePropagation()`. Resuelve el producto por `data-combo-product-id`, o por índice de tarjeta sobre el `Map` de productos. Si los datos aún no llegaron, deja el click pendiente, muestra un aviso "Cargando detalle…" y `enhanceConceptCombos()` abre el drawer automáticamente cuando llega el fetch.
+   - Toggle de la cortina: intercepta `product-bundle-toggle-button, .product-bundle__toggle`, alterna la clase `.active` en `.product-bundle` (la animación es 100% CSS) y rota el chevron. Ya no se reemplaza el custom element ni se usan `setTimeout` de reconexión: al estar en capture sobre un ancestro estable, `stopImmediatePropagation()` impide que los handlers de `theme.js` se ejecuten, sin importar cuándo hidrate.
+2. **`enhanceConceptCombos()`** ahora solo registra en `comboToggleActivateHandlers` (WeakMap) la acción de "re-seleccionar todo y repintar el sidebar" al expandir, y resuelve el `pendingComboDetail` si existía.
+3. **El "click fuera cierra drawers" ahora filtra solo drawers realmente abiertos** (`[open]`/`[active]`, que es lo que establecen `openAnyDrawer` y el theme), en lugar de `:not([hidden])`:
+
+```ts
+const openDrawers = document.querySelectorAll(
+  '.drawer[open], .drawer[active], search-drawer[open], search-drawer[active],
+   menu-drawer[open], menu-drawer[active], cart-drawer[open], cart-drawer[active]'
+);
+```
+
+### Validación (Puppeteer, viewport móvil, taps reales)
+
+- Tap en toggle de la cortina negra → `.active` aplicado en **~26-31 ms**, cortina con los 3 productos reales.
+- Tap en "Ver detalle" → drawer de detalle abierto en **~35 ms** con el producto real.
+- Scripts de diagnóstico en `.dbg/test-pack-emprendedor-*.js` (útiles para regresiones: miden taps reales y espían `stopImmediatePropagation`).
+
+### Por qué funciona
+
+- El listener vive en un ancestro estable (`root`), no en elementos que `theme.js` pueda reemplazar.
+- La fase capture garantiza que corre antes que cualquier handler del theme sobre el target.
+- La interacción básica responde de inmediato aunque los datos lleguen después; el usuario ve feedback en lugar de un botón inerte.
+
 ## Resumen reutilizable
 
 Cuando un botón responde varios segundos después del tap:

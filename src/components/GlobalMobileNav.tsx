@@ -17,7 +17,7 @@ export default function GlobalMobileNav() {
   const pathname = usePathname();
   const { totalItems } = useCart();
 
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario') || pathname?.startsWith('/checkout')) {
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario') || pathname?.startsWith('/checkout') || pathname?.startsWith('/catalogo')) {
     return null;
   }
 

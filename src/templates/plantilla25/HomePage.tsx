@@ -17,6 +17,7 @@ import { useCart } from '@/context/CartContext';
 import {
   enhanceConceptHeader,
   enhanceConceptCombos,
+  wireComboSectionEarly,
   syncConceptCartCount,
   type EnhCategory,
   type EnhSubcategory,
@@ -316,6 +317,12 @@ export default function HomePage25() {
     document.documentElement.classList.toggle('keep-mobile-dock', route === '/carrito' || route === '/cuenta');
     containerRef.current.innerHTML = bodyHtml;
     containerRef.current.dataset.htmlSet = '1';
+
+    // ⚡ Conectar DE INMEDIATO los controles del Pack Emprendedor ("Ver detalle"
+    //    y toggle de la cortina negra) mediante delegación en capture. Así
+    //    responden al instante, antes de que llegue el fetch de combos y antes
+    //    de que theme.js despierte sus custom elements (camino lento).
+    wireComboSectionEarly(containerRef.current);
 
     // Hide demo content sections until Appwrite data replaces them
     const root = containerRef.current;
