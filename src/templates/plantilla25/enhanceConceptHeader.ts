@@ -1148,6 +1148,53 @@ export function enhanceConceptHeader(root: HTMLElement | Document, data: Enhance
         }
       }
 
+      // ── Lightbox: botón "media-lightbox-button" para expandir imagen ──
+      const lightboxButtons = fpSection.querySelectorAll<HTMLButtonElement>('button[is="media-lightbox-button"], .product__media button[aria-label*="Open media"]');
+      lightboxButtons.forEach((btn, idx) => {
+        btn.style.cursor = 'zoom-in';
+        btn.onclick = (e: MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const mediaEl = btn.closest<HTMLElement>('.product__media');
+          const img = mediaEl?.querySelector<HTMLImageElement>('img');
+          const imgSrc = img?.src || productImages[idx] || productImages[0];
+          if (!imgSrc) return;
+
+          const lightbox = document.createElement('div');
+          lightbox.id = 'yaxsell-media-lightbox';
+          lightbox.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.92); z-index: 99999;
+            display: flex; align-items: center; justify-content: center;
+            cursor: zoom-out; opacity: 0; transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
+          `;
+          lightbox.innerHTML = `
+            <img src="${imgSrc}" alt="${esc(fp.NAME)}" style="max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,0.5);" />
+            <button style="position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; border: none; background: #0f172a; color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">\u2715</button>
+          `;
+          document.body.appendChild(lightbox);
+          requestAnimationFrame(() => { lightbox.style.opacity = '1'; });
+
+          const closeLightbox = () => {
+            lightbox.style.opacity = '0';
+            setTimeout(() => lightbox.remove(), 300);
+          };
+          lightbox.onclick = (ev: MouseEvent) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            closeLightbox();
+          };
+          const lbEsc = (ev: KeyboardEvent) => {
+            if (ev.key === 'Escape') {
+              closeLightbox();
+              document.removeEventListener('keydown', lbEsc);
+            }
+          };
+          document.addEventListener('keydown', lbEsc);
+        };
+      });
+
       // Insignia circular giratoria "FEATURED • PRODUCT 👍" sobre la galería
       const galleryContainer = fpSection.querySelector<HTMLElement>('.product__gallery-container');
       if (galleryContainer && !galleryContainer.querySelector('.featured-badge-stamp')) {

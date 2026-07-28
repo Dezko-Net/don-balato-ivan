@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, Suspense, useRef, type CSSProperties } from 'react';
+import { useEffect, useState, useCallback, useMemo, Suspense, useRef, type CSSProperties, type ReactNode } from 'react';
 import useSWR from 'swr';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -19,7 +19,7 @@ import { useFavorites } from '@/context/FavoritesContext';
 
 import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
-import ProductImageGallery from '@/components/ProductImageGallery';
+import ProductImageGallery, { getProductImages, ProductThumbnails } from '@/components/ProductImageGallery';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice, isDisableDiscounts } from '@/lib/apertura-promo';
@@ -943,14 +943,15 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const lowStock = limitedStock && effectiveStock <= 10;
                   const added = !!justAdded[p.$id];
                   return (
-                    <div key={p.$id} className={`pk-card${outOfStock ? ' is-oos' : ''}`} style={{ '--pk-accent': primaryColor } as CSSProperties}>
+                    <ImageStateManager product={p} key={p.$id}>
+                    {({ activeIndex, setActiveIndex, images }) => (
+                    <div className={`pk-card${outOfStock ? ' is-oos' : ''}`} style={{ '--pk-accent': primaryColor } as CSSProperties}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <div className="pk-card-image">
-                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
+                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} hideThumbnails activeIndex={activeIndex} onActiveIndexChange={setActiveIndex} />
                           {(p.PACKQTY ?? 0) > 1 && (
                             <span className="pk-pack-pill">{p.PACKQTY} un/paquete</span>
                           )}
-                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span className="pk-cat-chip">{cat.name}</span> : null; })()}
                           <button
                             type="button"
                             className="pk-card-fav"
@@ -965,31 +966,24 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         </div>
                       </div>
                       <div className="pk-card-body">
-                        {/* La categoría vive sobre la imagen; aquí quedan sólo los
-                            distintivos, y el nombre gana la jerarquía. */}
                         <div className="pk-card-meta">
+                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span className="pk-cat-pill">{cat.name}</span> : null; })()}
                           <ProductBadges product={p} />
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                           <p className="pk-card-title">{p.NAME}</p>
                         </Link>
-                        {(pBrand || cardSku) && (
+                        {pBrand && pBrand !== HOUSE_BRAND && (
                           <div className="pk-card-subline">
-                            {pBrand && (
-                              <span className="pk-brand-pill" style={{ color: badgeColor, background: badgeBg }}>{pBrand}</span>
-                            )}
-                            {cardSku && <span className="pk-card-sku">SKU {cardSku}</span>}
+                            <span className="pk-brand-pill" style={{ color: badgeColor, background: badgeBg }}>{pBrand}</span>
                           </div>
                         )}
-                        <div className={`pk-card-stock ${outOfStock ? 'is-out' : lowStock ? 'is-low' : 'is-ok'}`}>
-                          <span className="pk-stock-dot" />
-                          {outOfStock ? 'Sin stock' : lowStock ? `Quedan ${effectiveStock} unidades` : 'Stock disponible'}
-                        </div>
                         <div className="pk-card-price-row">
                           {price > 0 ? (
                             <>
                               <span className="pk-price">{formatPrice(price)}</span>
                               <span className="pk-price-unit">{isPackModeCard ? 'por paquete' : 'c/u'}</span>
+                              <ProductThumbnails images={images} activeIndex={activeIndex} onIndexChange={setActiveIndex} />
                             </>
                           ) : (
                             <span className="pk-price-ask">Consultar precio</span>
@@ -1016,6 +1010,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                         </button>
                       </div>
                     </div>
+                    )}
+                    </ImageStateManager>
                   );
                 })}
               </div>
@@ -1078,7 +1074,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
                           {cardSku && <span className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700 }}>SKU: {cardSku}</span>}
-                          {pBrand && (
+                          {pBrand && pBrand !== HOUSE_BRAND && (
                             <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '1px 6px', borderRadius: 999 }}>
                               {pBrand}
                             </span>
@@ -1388,15 +1384,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         /* ── Media: integrada dentro de la tarjeta ── */
         .pk-card-image {
           position: relative; overflow: hidden;
-          border-radius: 16px 16px 0 0;
-          background: #fafafa;
-          box-shadow: inset 0 -1px 3px rgba(0,0,0,.06);
+          border-radius: 0;
+          background: #fff;
+          border-bottom: 1px solid rgba(17,24,39,.06);
         }
-        /* viñeta inferior: asienta el producto sobre la teja */
         .pk-card-image::after {
-          content: ''; position: absolute; inset: auto 0 0 0; height: 40%;
-          background: linear-gradient(180deg, rgba(255,255,255,0), rgba(17,24,39,.07));
-          pointer-events: none; z-index: 3;
+          display: none;
         }
         .pk-card-image img { transition: transform .6s cubic-bezier(.2,.7,.3,1); }
         /* las miniaturas no participan del zoom */
@@ -1994,7 +1987,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
           /* El lift, la sombra y el borde los define el bloque de la tarjeta
              (elevación azul de marca); aquí sólo el matiz del precio. */
-          .pk-card:hover .pk-price { color: #bae6fd; }
+          .pk-card:hover .pk-price { color: #2563eb; }
         }
 
         @media (max-width: 1024px) {
@@ -2464,6 +2457,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
       `}</style>
     </div>
   );
+}
+
+function ImageStateManager({ product, children }: { product: Product; children: (state: { activeIndex: number; setActiveIndex: (i: number) => void; images: string[] }) => ReactNode }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const images = useMemo(() => getProductImages(product), [product]);
+  return <>{children({ activeIndex, setActiveIndex, images })}</>;
 }
 
 export default function CollectionAll1({ lockCategoryId, catalogMode }: { lockCategoryId?: string; catalogMode?: 'retail' | 'paquetes' | 'embalajes' } = {}) {

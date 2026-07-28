@@ -11,7 +11,7 @@ import { generateOrderPdf } from '@/lib/generateOrderPdf';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'ready_to_ship', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
 
 // BluExpress no requiere paso extra (etiqueta se imprime antes); retiro en tienda termina antes.
 const isBluexpress = (agency?: string) => !!agency && agency.toUpperCase().replace(/\s/g, '').includes('BLUEXPRESS');
@@ -26,13 +26,7 @@ const STATUS_SVG: Record<string, React.ReactNode> = {
   pending:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
   processing:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
   paid:               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 11.5l2 2 4-4"/></svg>,
-  assembling:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V3h12v6"/><path d="M6 17H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="7"/><circle cx="17.5" cy="12" r=".7"/></svg>,
-  confirming_stock:   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>,
-  stock_confirmed:    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 13l2 2 4-4"/></svg>,
-  packing:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5"/><path d="M12 22V12"/></svg>,
   negotiation:        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-4 3V5a2 2 0 012-2h13a2 2 0 012 2z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/></svg>,
-  preparing_shipping: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
-  ready_to_ship:      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5L4 4h16l1 4.5"/><path d="M4 8.5V19a1 1 0 001 1h14a1 1 0 001-1V8.5"/><path d="M9.5 12.5h5"/></svg>,
   shipped:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4h13v11H1z"/><path d="M14 8h4l3 3v4h-7z"/><circle cx="5.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>,
   delivered:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18"/><path d="M9 21v-7h6v7"/></svg>,
   cancelled:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
@@ -42,13 +36,7 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   pending:            { color: '#f97316', bg: '#fff7ed' },
   processing:         { color: '#3b82f6', bg: '#eff6ff' },
   paid:               { color: '#10b981', bg: '#ecfdf5' },
-  assembling:         { color: '#6366f1', bg: '#eef2ff' },
-  confirming_stock:   { color: '#14b8a6', bg: '#f0fdfa' },
-  stock_confirmed:    { color: '#65a30d', bg: '#f7fee7' },
-  packing:            { color: '#d97706', bg: '#fffbeb' },
   negotiation:        { color: '#ec4899', bg: '#fdf2f8' },
-  preparing_shipping: { color: '#f97316', bg: '#fff7ed' },
-  ready_to_ship:      { color: '#06b6d4', bg: '#ecfeff' },
   shipped:            { color: '#8b5cf6', bg: '#f5f3ff' },
   delivered:          { color: '#22c55e', bg: '#f0fdf4' },
   cancelled:          { color: '#ef4444', bg: '#fef2f2' },
@@ -58,35 +46,23 @@ const PAGE_SIZE = 10;
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
-  paid_group:         { label: 'Pagados',                   bg: 'bg-green-100',   text: 'text-green-700' },
-  pending:            { label: 'Pendiente',                 bg: 'bg-orange-100',  text: 'text-orange-700' },
+  paid_group:         { label: 'Confirmados',               bg: 'bg-green-100',   text: 'text-green-700' },
+  pending:            { label: 'Recibido',                  bg: 'bg-orange-100',  text: 'text-orange-700' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-100',     text: 'text-red-700' },
-  processing:         { label: 'Pago Recibido',             bg: 'bg-blue-100',    text: 'text-blue-700' },
-  paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  assembling:         { label: 'Imprimiendo Etiqueta',      bg: 'bg-indigo-100',  text: 'text-indigo-700' },
-  confirming_stock:   { label: 'Confirmando Stock',         bg: 'bg-teal-100',    text: 'text-teal-700' },
-  stock_confirmed:    { label: 'Stock Confirmado',          bg: 'bg-lime-100',    text: 'text-lime-700' },
-  packing:            { label: 'Embalando Pedido',          bg: 'bg-amber-100',   text: 'text-amber-700' },
-  negotiation:        { label: 'Negociación',               bg: 'bg-pink-100',    text: 'text-pink-700' },
-  preparing_shipping: { label: 'Etiqueta Lista',            bg: 'bg-orange-100',  text: 'text-orange-700' },
-  ready_to_ship:      { label: 'Listo para Despachar',      bg: 'bg-cyan-100',    text: 'text-cyan-700' },
-  shipped:            { label: 'Salió de Tienda',           bg: 'bg-violet-100',  text: 'text-violet-700' },
-  delivered:          { label: 'Entregado a Agencia',       bg: 'bg-green-100',   text: 'text-green-700' },
+  processing:         { label: 'En Revisión',               bg: 'bg-blue-100',    text: 'text-blue-700' },
+  paid:               { label: 'Confirmado',                bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  negotiation:        { label: 'Negociando',                bg: 'bg-pink-100',    text: 'text-pink-700' },
+  shipped:            { label: 'Enviado',                   bg: 'bg-violet-100',  text: 'text-violet-700' },
+  delivered:          { label: 'Entregado',                 bg: 'bg-green-100',   text: 'text-green-700' },
 };
 
 // Etiquetas cortas para los badges (evita el bug de label.split(' ')[0] que mostraba "Pago" en ambos)
 const SHORT_LABEL: Record<string, string> = {
-  pending:            'Pendiente',
-  processing:         'Recibido',
-  paid:               'Verificado',
-  assembling:         'Etiqueta',
-  confirming_stock:   'Confirmando',
-  stock_confirmed:    'Confirmado',
-  packing:            'Embalando',
-  negotiation:        'Negociación',
-  preparing_shipping: 'Etiqueta',
-  ready_to_ship:      'Despachar',
-  shipped:            'Salió',
+  pending:            'Recibido',
+  processing:         'Revisión',
+  paid:               'Confirmado',
+  negotiation:        'Negociando',
+  shipped:            'Enviado',
   delivered:          'Entregado',
   cancelled:          'Cancelado',
 };
@@ -134,7 +110,7 @@ function OrdersContent() {
   const [exportDateEnd, setExportDateEnd] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [printStatuses, setPrintStatuses] = useState<string[]>(['assembling', 'packing', 'ready_to_ship']);
+  const [printStatuses, setPrintStatuses] = useState<string[]>(['paid', 'shipped']);
   // Stats cache — persists until manual refresh
   const [statsCache, setStatsCache] = useState<{ totalToday: number; countToday: number; topCustomer: { name: string; total: number } | null; avgTicket: number; totalPaid: number; countPaid: number; byStatus: Record<string, number>; byStatusAll: Record<string, number>; byStatusYesterday: Record<string, number>; byStatusDayBefore: Record<string, number>; allOrdersRaw: any[]; totalYesterday: number; countYesterday: number; totalAll: number; countAll: number; } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -178,7 +154,7 @@ function OrdersContent() {
 
       const todayOrders = allOrders.filter((o: any) => (o.CREATEDAT || new Date(o.$createdAt).getTime()) >= startToday);
       const yesterdayOrders = allOrders.filter((o: any) => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= startYesterday && ts < startToday; });
-      const paidStatuses = ['processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+      const paidStatuses = ['processing', 'paid', 'negotiation', 'shipped', 'delivered'];
       const paidOrdersToday = todayOrders.filter((o: any) => paidStatuses.includes(o.STATUS));
 
       // Top customer
@@ -300,8 +276,7 @@ function OrdersContent() {
       const queries = [Query.orderDesc('CREATEDAT'), Query.limit(PAGE_SIZE), Query.offset((page - 1) * PAGE_SIZE)];
       if (activeFilter === 'paid_group') {
         queries.push(Query.equal('STATUS', [
-          'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing',
-          'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'
+          'processing', 'paid', 'negotiation', 'shipped', 'delivered'
         ]));
       } else if (activeFilter !== 'all') {
         queries.push(Query.equal('STATUS', activeFilter));
@@ -678,7 +653,7 @@ function OrdersContent() {
         o.REGION || '',
         o.COMUNA || '',
         o.TOTAL,
-        (o.STATUS === 'ready_to_ship' && o.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') ? 'Listo para retirar' : (STATUS_CONFIG[o.STATUS]?.label || o.STATUS),
+        (STATUS_CONFIG[o.STATUS]?.label || o.STATUS),
         o.PAYMENTMETHOD || '',
         (o as any).COUPONCODE || '',
         itemCount,
@@ -752,7 +727,7 @@ function OrdersContent() {
     }
     if (liveOnly && !(o as any).PURCHASEDFROMLIVE) return false;
     if (trackingPending && !needsTracking(o)) return false;
-    if (pickupReady && !(o.STATUS === 'ready_to_ship' && isPickup(o.SHIPPINGAGENCY))) return false;
+    if (pickupReady && !(o.STATUS === 'paid' && isPickup(o.SHIPPINGAGENCY))) return false;
     return true;
   });
 
@@ -857,7 +832,7 @@ function OrdersContent() {
 
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
               <p className="text-xs text-emerald-700 font-medium">
-                Se excluirán los pedidos en estado: <b>Negociación</b>, <b>Pendiente</b> y <b>Cancelado</b>.
+                Se excluirán los pedidos en estado: <b>Negociando</b>, <b>Recibido</b> y <b>Cancelado</b>.
               </p>
             </div>
 
@@ -967,7 +942,7 @@ function OrdersContent() {
               <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-bold">Ventas Confirmadas</p>
             </div>
             <p className="text-lg sm:text-2xl font-extrabold text-gray-900 tracking-tight">{fmt(statsCache.totalPaid)}</p>
-            <p className="text-[10px] text-gray-400 font-medium mt-1">{statsCache.countPaid} pagados hoy</p>
+            <p className="text-[10px] text-gray-400 font-medium mt-1">{statsCache.countPaid} confirmados hoy</p>
           </div>
           {/* Cliente Top */}
           <div className="relative rounded-2xl border border-gray-100/80 p-3 sm:p-4 overflow-hidden"
@@ -1231,12 +1206,12 @@ function OrdersContent() {
         {/* Pagados — soft green */}
         <button onClick={() => setActiveFilter('paid_group')}
           className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-green-100 text-green-700 border border-green-200 ${activeFilter === 'paid_group' ? 'ring-2 ring-green-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
-          Pagados
+          Confirmados
         </button>
-        {/* Pendiente — soft orange */}
+        {/* Recibido — soft orange */}
         <button onClick={() => setActiveFilter('pending')}
           className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-orange-100 text-orange-700 border border-orange-200 ${activeFilter === 'pending' ? 'ring-2 ring-orange-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
-          Pendiente
+          Recibido
         </button>
         {/* Cancelado — soft red */}
         <button onClick={() => setActiveFilter('cancelled')}
@@ -1245,7 +1220,7 @@ function OrdersContent() {
         </button>
         {/* More states — opens modal */}
         <button onClick={() => setShowStatusModal(true)}
-          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 ${['processing','paid','assembling','confirming_stock','stock_confirmed','packing','negotiation','preparing_shipping','ready_to_ship','shipped','delivered'].includes(activeFilter) ? 'ring-2 ring-indigo-500 ring-inset shadow-sm' : ''}`}>
+          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 ${['processing','paid','negotiation','shipped','delivered'].includes(activeFilter) ? 'ring-2 ring-indigo-500 ring-inset shadow-sm' : ''}`}>
           Más estados ▾
         </button>
         {paymentMethods.length > 2 && (
@@ -1262,7 +1237,7 @@ function OrdersContent() {
             🔴 Solo Live
           </button>
         )}
-        {(() => { const n = orders.filter(o => o.STATUS === 'ready_to_ship' && isPickup(o.SHIPPINGAGENCY)).length; return n > 0 ? (
+        {(() => { const n = orders.filter(o => o.STATUS === 'paid' && isPickup(o.SHIPPINGAGENCY)).length; return n > 0 ? (
           <button onClick={() => setPickupReady(v => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition border ${pickupReady ? 'bg-teal-500 text-white border-teal-500' : 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'}`}>
             🏪 Listo para retirar <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pickupReady ? 'bg-white/25' : 'bg-teal-200 text-teal-800'}`}>{n}</span>
@@ -1296,7 +1271,7 @@ function OrdersContent() {
               <button onClick={() => setShowStatusModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl leading-none">×</button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-              {(['processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'negotiation', 'ready_to_ship', 'shipped', 'delivered'] as const).map(key => {
+              {(['processing', 'paid', 'negotiation', 'shipped', 'delivered'] as const).map(key => {
                 const color = STATUS_COLORS[key]?.color || '#6b7280';
                 const bg = STATUS_COLORS[key]?.bg || '#f3f4f6';
                 return (
@@ -1324,20 +1299,13 @@ function OrdersContent() {
           pending: 'El cliente hizo el pedido pero aún no ha pagado.',
           processing: 'Se recibió el comprobante de pago, hay que verificarlo.',
           paid: 'El pago fue confirmado y verificado correctamente.',
-          assembling: 'Se está imprimiendo la etiqueta del pedido.',
-          confirming_stock: 'El embalador está separando y confirmando los productos.',
-          stock_confirmed: 'El stock fue confirmado, el pedido está completo.',
-          packing: 'Se está embalando el pedido.',
           negotiation: 'Faltan productos, se está negociando con el cliente.',
-          preparing_shipping: 'La etiqueta de envío está lista para imprimir.',
-          ready_to_ship: tIsPickup ? 'El pedido está listo para que el cliente lo retire.' : 'El paquete está listo para despachar (toma foto de las cajas).',
           shipped: tIsPickup ? 'El pedido salió de la tienda.' : 'El pedido salió de la tienda con la agencia.',
           delivered: tIsPickup ? 'El cliente retiró su pedido.' : 'El pedido fue entregado a la agencia de transporte.',
           cancelled: 'El pedido fue cancelado y el stock fue devuelto.',
         };
         // Etiquetas dependientes de retiro/agencia para el timeline
         const labelFor = (status: string) => {
-          if (status === 'ready_to_ship' && tIsPickup) return 'Listo para Retirar';
           if (status === 'delivered' && tIsPickup) return 'Entregado';
           return STATUS_CONFIG[status]?.label || status;
         };
@@ -1521,7 +1489,7 @@ function OrdersContent() {
         const exactTime = date.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' });
         const ageStr = `${ageStrRel} (${exactTime})`;
         
-        const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+        const isRetiro = order.STATUS === 'paid' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
         const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
         const statusBg = isRetiro ? '#fdf4ff' : (STATUS_COLORS[order.STATUS]?.bg || '#f3f4f6');
         const statusLabel = isRetiro ? 'Listo para Retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS);
@@ -1888,7 +1856,7 @@ function OrdersContent() {
           <span className="text-sm font-medium text-indigo-700">{selected.size} seleccionado{selected.size !== 1 ? 's' : ''}</span>
           <span className="text-indigo-300">|</span>
           <span className="text-xs text-indigo-600">Cambiar a:</span>
-          {(['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'negotiation', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
+          {(['pending', 'processing', 'paid', 'negotiation', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
             <button key={s} onClick={() => bulkUpdateStatus(s)} disabled={bulkUpdating}
               className={`px-3 py-1 rounded-xl text-xs font-medium transition disabled:opacity-60 ${STATUS_CONFIG[s].bg} ${STATUS_CONFIG[s].text} hover:opacity-80`}>
               {STATUS_CONFIG[s].label}
@@ -1927,7 +1895,7 @@ function OrdersContent() {
               const isWarning = hasMissing && ['pending', 'processing'].includes(order.STATUS);
               const agency = order.SHIPPINGAGENCY || '';
               const scfg = STATUS_CONFIG[order.STATUS];
-              const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+              const isRetiro = order.STATUS === 'paid' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
               const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
               const ageH = Math.floor(ageMs / 3600000);
               const ageD = Math.floor(ageH / 24);
@@ -2066,7 +2034,7 @@ function OrdersContent() {
                   const hasMissing = items.some((it: any) => it.missing === true);
                   const isWarning = hasMissing && ['pending', 'processing'].includes(order.STATUS);
                   const totalItems = items.reduce((s: number, it: any) => s + (it.qty || 1), 0);
-                  const isRetiro = order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+                  const isRetiro = order.STATUS === 'paid' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
                   const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
 
                   return (

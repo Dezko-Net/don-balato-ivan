@@ -28,9 +28,12 @@ interface SavedAddress { id: string; alias: string; name: string; phone: string;
 
 // Fallback agencies if API fails
 const FALLBACK_AGENCIES: AgencyOption[] = [
-  { name: 'STARKEN', color: '#1a7f37', bg: '#e6f4ea', desc: 'Envío se paga contraentrega al recibir', logo: '', active: true },
-  { name: 'BLUEXPRESS', color: '#1558b0', bg: '#e8f0fe', desc: 'Envío se paga contraentrega al recibir', logo: '', active: true },
-  { name: 'VARMONTT', color: '#c62828', bg: '#fce8e6', desc: 'Envío se paga contraentrega al recibir', logo: '', active: true },
+  { name: 'STARKEN', color: '#1a7f37', bg: '#e6f4ea', desc: 'Tarifa económica - Cobertura Nacional', logo: 'https://www.starken.cl/static/media/logo-q100.bac31f50de7b41338e6c.webp', active: true },
+  { name: 'PULLMAN CARGO', color: '#002855', bg: '#e6f0fa', desc: 'Tarifa económica - Ideal para cajas grandes', logo: '', active: true },
+  { name: 'VARMONTT', color: '#c62828', bg: '#fce8e6', desc: 'Tarifa económica - Especialistas al Sur de Chile', logo: 'https://varmontt.cl/wp-content/uploads/2020/03/logo_varmontt-trans.png', active: true },
+  { name: 'CORREOS DE CHILE', color: '#da291c', bg: '#fce8e6', desc: 'Tarifa media - Excelente cobertura rural', logo: '', active: true },
+  { name: 'BLUEXPRESS', color: '#1558b0', bg: '#e8f0fe', desc: 'Tarifa media/alta - Entrega express', logo: '', active: true },
+  { name: 'CHILEXPRESS', color: '#ffc600', bg: '#fffde6', desc: 'Tarifa alta - La más rápida del mercado', logo: '', active: true },
   { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal (sin costo de envío)', logo: '', active: true },
 ];
 
@@ -746,7 +749,7 @@ function CheckoutInner() {
         PAYMENTMETHOD: 'Transferencia Bancaria', SHIPPINGAGENCY: agency,
         SUBTOTAL: subtotal, SHIPPINGCOST: 0, TOTAL: total,
         ORDERCODE: orderCode, ORDERINDEX: orderIndex,
-        STATUS: 'pending', CREATEDAT: now,
+        STATUS: 'pending_stock', CREATEDAT: now,
         ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
         ...(isGift ? { ISGIFT: true } : {}),
       });
@@ -1016,18 +1019,131 @@ function CheckoutInner() {
         }
         .ck-input-placeholder::placeholder { color: #6b7280; opacity: 1; }
         .ck-textarea-placeholder::placeholder { color: #6b7280; opacity: 1; }
+
+        /* ══════════════════════════════════════════════════════════
+           REDISEÑO CHECKOUT — superficie con aurora + tarjetas premium
+           + stepper + barra de compra fija en móvil.
+           ══════════════════════════════════════════════════════════ */
+        .ck-aurora {
+          position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+        }
+        .ck-aurora::before, .ck-aurora::after {
+          content: ''; position: absolute; border-radius: 50%; filter: blur(70px);
+        }
+        .ck-aurora::before {
+          width: 62vw; height: 62vw; max-width: 560px; max-height: 560px;
+          top: -18%; left: -14%;
+          background: radial-gradient(circle, rgba(56,189,248,.24), transparent 68%);
+        }
+        .ck-aurora::after {
+          width: 60vw; height: 60vw; max-width: 540px; max-height: 540px;
+          top: -12%; right: -16%;
+          background: radial-gradient(circle, rgba(59,130,246,.20), transparent 68%);
+        }
+
+        /* Tarjeta de sección: marco premium con hairline de luz arriba */
+        .ck-card {
+          position: relative;
+          border-radius: 20px !important;
+          border: 1px solid rgba(37,99,235,.12) !important;
+          background: linear-gradient(180deg, #fff, #fbfcff) !important;
+          box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 14px 34px -22px rgba(37,99,235,.40) !important;
+          backdrop-filter: none !important;
+          overflow: hidden;
+        }
+        .ck-card::before {
+          content: ''; position: absolute; top: 0; left: 18px; right: 18px; height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(56,189,248,.55), rgba(59,130,246,.35), transparent);
+          pointer-events: none;
+        }
+        /* Insignia numerada: chip con halo */
+        .ck-step-badge {
+          width: 30px; height: 30px; border-radius: 11px; flex-shrink: 0;
+          display: inline-flex; align-items: center; justify-content: center;
+          color: #fff; font-size: 14px; font-weight: 800;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          box-shadow: 0 4px 12px rgba(37,99,235,.35), inset 0 1px 0 rgba(255,255,255,.4);
+        }
+
+        /* ── Stepper de progreso ── */
+        .ck-stepper { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+        .ck-step { display: flex; align-items: center; gap: 8px; }
+        .ck-step-dot {
+          width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 800; font-family: ${FF};
+          background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff;
+          box-shadow: 0 3px 10px rgba(37,99,235,.30);
+        }
+        .ck-step-label { font-size: 13px; font-weight: 700; color: #1e3a8a; font-family: ${FF}; white-space: nowrap; }
+        .ck-step-line { flex: 1; height: 2px; border-radius: 2px; background: linear-gradient(90deg, #93c5fd, #dbeafe); min-width: 14px; }
+        .ck-step.is-todo .ck-step-dot { background: #eef2ff; color: #93a4c8; box-shadow: none; }
+        .ck-step.is-todo .ck-step-label { color: #9ca3af; }
+
+        /* ── Barra de compra fija (móvil) ── */
+        .ck-bar-total { display: none; }
+
+        @media (max-width: 800px) {
+          .ck-stepper { gap: 4px; margin-bottom: 14px; }
+          .ck-step-label { display: none; }
+          .ck-step-label.is-current { display: inline; }
+          .ck-step-line { min-width: 10px; }
+
+          /* CTA anclado abajo: total + botón siempre a la vista del pulgar */
+          .ck-submit-bar {
+            position: fixed !important; left: 0; right: 0; bottom: 0; z-index: 900;
+            margin: 0 !important; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+            background: rgba(255,255,255,.86);
+            backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+            border-top: 1px solid rgba(37,99,235,.14);
+            box-shadow: 0 -8px 26px rgba(16,24,40,.12);
+            display: flex; align-items: center; gap: 12px;
+          }
+          .ck-bar-total {
+            display: flex; flex-direction: column; line-height: 1.1; flex-shrink: 0;
+          }
+          .ck-bar-total small { font-size: 10px; font-weight: 700; color: #9ca3af; font-family: ${FF}; }
+          .ck-bar-total b { font-size: 19px; font-weight: 900; color: ${PINK}; font-family: ${FF}; letter-spacing: -.02em; }
+          .ck-submit-bar .ck-confirm-btn,
+          .ck-submit-bar .ck-confirm-btn-wholesale {
+            flex: 1; padding: 15px 0 !important; font-size: 15px !important; border-radius: 14px !important;
+          }
+          /* reserva para que la barra no tape el contenido */
+          .ck-page { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+        }
       `}</style>
-    <div className="ck-page" style={{ minHeight: '100vh', padding: '24px 4%', fontFamily: FF, position: 'relative', background: '#ffffff' }}>
+    <div className="ck-page" style={{ minHeight: '100vh', padding: '24px 4%', fontFamily: FF, position: 'relative', background: 'linear-gradient(180deg, #f6f9ff 0%, #eef4ff 100%)' }}>
+      <div className="ck-aurora" aria-hidden="true" />
       <div style={{ position: 'relative', zIndex: 1 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
         {/* Breadcrumb */}
-        <div className="ck-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginBottom: 16 }}>
+        <div className="ck-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginBottom: 14 }}>
           <Link href="/" style={{ color: PINK, textDecoration: 'none', fontWeight: 600 }}>Inicio</Link>
           <ChevronRight size={12} color={PINK_LIGHT} />
           <Link href="/carrito" style={{ color: PINK, textDecoration: 'none', fontWeight: 600 }}>Carrito</Link>
           <ChevronRight size={12} color={PINK_LIGHT} />
           <span style={{ color: '#9ca3af', fontWeight: 600 }}>Finalizar compra</span>
+        </div>
+
+        {/* Stepper de progreso */}
+        <div className="ck-stepper" aria-hidden="true">
+          <div className="ck-step">
+            <span className="ck-step-dot">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span className="ck-step-label">Carrito</span>
+          </div>
+          <div className="ck-step-line" />
+          <div className="ck-step">
+            <span className="ck-step-dot">2</span>
+            <span className="ck-step-label is-current">Tus datos y envío</span>
+          </div>
+          <div className="ck-step-line" style={{ background: 'linear-gradient(90deg,#dbeafe,#eef2ff)' }} />
+          <div className="ck-step is-todo">
+            <span className="ck-step-dot">3</span>
+            <span className="ck-step-label">Confirmar</span>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -1037,56 +1153,31 @@ function CheckoutInner() {
             <div style={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               {/* Shipping agencies */}
-              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 50 }}>
+              <div className="ck-card" style={{ background: '#fff', borderRadius: 20, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: 'none', backdropFilter: 'none', position: 'relative', zIndex: 50 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>1</span>
+                  <span className="ck-step-badge">1</span>
                   Agencia de envío
                 </h2>
                 <div style={{ position: 'relative', zIndex: 10 }}>
-                  <button type="button" onClick={() => setAgencyDropdownOpen(!agencyDropdownOpen)}
-                    style={{ width: '100%', padding: '14px 16px', border: `2px solid ${agency ? PINK : '#dbeafe'}`, borderRadius: 14, background: agency ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 10, boxShadow: agency ? '0 4px 14px rgba(37,99,235,0.1)' : 'none' }}>
-                    {agency ? (() => {
-                      const ag = agencies.find((a: AgencyOption) => a.name === agency);
-                      return ag ? (
-                        <>
-                          <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 10, flexShrink: 0, overflow: 'hidden' }}>
-                            {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 28, height: 28, objectFit: 'contain' }} /> : <Truck size={16} color={ag.color} />}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 10 }}>
+                    {agencies.map((ag: AgencyOption) => {
+                      const sel = agency === ag.name;
+                      return (
+                        <button type="button" key={ag.name} onClick={() => { setAgency(ag.name); if (ag.name === 'RETIRO EN TIENDA') { setForm(f => ({ ...f, region: 'Región Metropolitana', comuna: 'Santiago', address: 'Toesca 2537, Santiago Centro, Chile' })); setSelectedAddressId(null); setShowingNewAddress(true); } }}
+                          style={{ padding: '12px 8px', border: `2px solid ${sel ? PINK : '#dbeafe'}`, borderRadius: 14, background: sel ? PINK_BG : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, transition: 'all .2s', boxShadow: sel ? '0 4px 14px rgba(37,99,235,0.12)' : 'none', position: 'relative' }}
+                          onMouseEnter={e => { if (!sel) e.currentTarget.style.borderColor = '#93c5fd'; }}
+                          onMouseLeave={e => { if (!sel) e.currentTarget.style.borderColor = '#dbeafe'; }}>
+                          {sel && <span style={{ position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                          </span>}
+                          <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 12, overflow: 'hidden' }}>
+                            {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 38, height: 38, objectFit: 'contain' }} /> : <Truck size={22} color={ag.color} />}
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ag.color }}>{ag.name}</p>
-                            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#888' }}>{ag.desc}</p>
-                          </div>
-                        </>
-                      ) : null;
-                    })() : (
-                      <span style={{ color: '#9ca3af', fontSize: 14 }}>Selecciona agencia de envío</span>
-                    )}
-                    <ChevronDown size={16} color="#999" style={{ marginLeft: 'auto', transition: 'transform .2s', transform: agencyDropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
-                  </button>
-                  {agencyDropdownOpen && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: 4, background: '#fff', borderRadius: 14, border: '1px solid #dbeafe', boxShadow: '0 12px 40px rgba(0,0,0,0.12)', maxHeight: 280, overflowY: 'auto' }}>
-                      {agencies.map((ag: AgencyOption) => {
-                        const sel = agency === ag.name;
-                        return (
-                          <button type="button" key={ag.name} onClick={() => { setAgency(ag.name); setAgencyDropdownOpen(false); if (ag.name === 'RETIRO EN TIENDA') { setForm(f => ({ ...f, region: 'Región Metropolitana', comuna: 'Santiago', address: 'Toesca 2537, Santiago Centro, Chile' })); setSelectedAddressId(null); setShowingNewAddress(true); } }}
-                            style={{ width: '100%', padding: '12px 16px', border: 'none', background: sel ? PINK_BG : 'transparent', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #eff6ff', transition: 'background .15s' }}
-                            onMouseEnter={e => { if (!sel) e.currentTarget.style.background = '#f8fafc'; }}
-                            onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent'; }}>
-                            <div style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 9, flexShrink: 0, overflow: 'hidden' }}>
-                              {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 26, height: 26, objectFit: 'contain' }} /> : <Truck size={15} color={ag.color} />}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: sel ? ag.color : '#333' }}>{ag.name}</p>
-                              <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>{ag.desc}</p>
-                            </div>
-                            {sel && <span style={{ width: 20, height: 20, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                            </span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: sel ? ag.color : '#333', textAlign: 'center' }}>{ag.name}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <p style={{ margin: '12px 0 0', fontSize: 12, color: '#00a650', display: 'flex', alignItems: 'center', gap: 5 }}>
                   <RefreshCw size={12} /> El costo de envío se coordina con el vendedor tras confirmar el pedido.
@@ -1095,9 +1186,9 @@ function CheckoutInner() {
 
               {/* Saved Addresses */}
               {savedAddresses.length > 0 && !showingNewAddress && (
-                <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)' }}>
+                <div className="ck-card" style={{ background: '#fff', borderRadius: 20, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: 'none', backdropFilter: 'none' }}>
                   <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                    <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>2</span>
+                    <span className="ck-step-badge">2</span>
                     Dirección de envío
                   </h2>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10, marginBottom: 12 }}>
@@ -1130,9 +1221,9 @@ function CheckoutInner() {
               )}
 
               {/* Personal data */}
-              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 1 }}>
+              <div className="ck-card" style={{ background: '#fff', borderRadius: 20, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: 'none', backdropFilter: 'none', position: 'relative', zIndex: 1 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>3</span>
+                  <span className="ck-step-badge">3</span>
                   Datos personales
                 </h2>
                 <div style={{ margin: '0 0 14px', padding: '8px 12px', borderRadius: 10, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#3b82f6', fontFamily: FF, fontWeight: 600 }}>
@@ -1164,10 +1255,10 @@ function CheckoutInner() {
 
               {/* Shipping address - only show if no saved addresses OR user is adding new */}
               {(savedAddresses.length === 0 || showingNewAddress) && (
-                <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: '0 8px 28px rgba(37,99,235,0.08)', backdropFilter: 'blur(10px)' }}>
+                <div className="ck-card" style={{ background: '#fff', borderRadius: 20, padding: '22px 24px', border: '1px solid #dbeafe', boxShadow: 'none', backdropFilter: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                      <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>4</span>
+                      <span className="ck-step-badge">4</span>
                       Dirección de envío
                     </h2>
                     {showingNewAddress && savedAddresses.length > 0 && (
@@ -1375,6 +1466,7 @@ function CheckoutInner() {
                               }}
                               className="ck-input-placeholder"
                             />
+                            <p style={{ margin: '2px 2px 0', fontSize: 9.5, color: '#9ca3af', fontFamily: FF }}>No es 100% seguro, se añadirá solo si hay stock disponible.</p>
                           </div>
                         </div>
                       );
@@ -1536,8 +1628,12 @@ function CheckoutInner() {
             </div>
           </div>
 
-          {/* Submit button — full width at bottom */}
-          <div style={{ marginTop: 16, padding: '0 0 8px' }}>
+          {/* Submit button — full width at bottom (barra fija en móvil) */}
+          <div className="ck-submit-bar" style={{ marginTop: 16, padding: '0 0 8px' }}>
+            <div className="ck-bar-total">
+              <small>Total</small>
+              <b>{formatPrice(total)}</b>
+            </div>
             <button type="submit" disabled={submitting || belowMinimum} className={hasPackItems ? "ck-confirm-btn-wholesale" : "ck-confirm-btn"}
               style={{ display: 'block', width: '100%', padding: '18px 0', backgroundImage: submitting ? 'none' : (hasPackItems ? 'linear-gradient(135deg, #f7e5d4, #eed9c4, #d4b290, #eed9c4, #f7e5d4)' : 'linear-gradient(135deg, #bfdbfe, #60a5fa, #2563eb, #60a5fa, #bfdbfe)'), backgroundColor: submitting ? (hasPackItems ? '#eed9c4' : '#60a5fa') : 'transparent', color: hasPackItems ? '#5c3d24' : '#fff', textAlign: 'center', borderRadius: 16, fontSize: 17, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
               {!submitting && <>

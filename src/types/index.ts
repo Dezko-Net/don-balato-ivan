@@ -128,7 +128,7 @@ export interface Coupon {
   description?: string;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'packing' | 'negotiation' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled' | 'waiting_payment' | 'pending_stock' | 'stock_confirmed' | 'partial_stock' | 'confirming_stock';
+export type OrderStatus = 'pending' | 'pending_stock' | 'processing' | 'paid' | 'negotiation' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
   id: string;

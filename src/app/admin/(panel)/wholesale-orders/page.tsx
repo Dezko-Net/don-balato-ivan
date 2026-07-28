@@ -35,22 +35,14 @@ interface WholesaleOrder {
   $updatedAt: string;
 }
 
-// Flujo principal del pedido mayorista; partial_stock / negotiation / cancelled son ramas laterales
-const STATUS_FLOW = ['pending', 'pending_stock', 'confirming_stock', 'stock_confirmed', 'waiting_payment', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+// Flujo principal del pedido; negotiation / cancelled son ramas laterales
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
 
 const STATUS_SVG: Record<string, React.ReactNode> = {
   pending:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
-  pending_stock:      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M8 11h6"/></svg>,
-  confirming_stock:   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>,
-  stock_confirmed:    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 13l2 2 4-4"/></svg>,
-  partial_stock:      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
-  waiting_payment:    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
   processing:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
   paid:               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 11.5l2 2 4-4"/></svg>,
-  assembling:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5"/><path d="M12 22V12"/></svg>,
   negotiation:        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-4 3V5a2 2 0 012-2h13a2 2 0 012 2z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/></svg>,
-  preparing_shipping: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
-  ready_to_ship:      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5L4 4h16l1 4.5"/><path d="M4 8.5V19a1 1 0 001 1h14a1 1 0 001-1V8.5"/><path d="M9.5 12.5h5"/></svg>,
   shipped:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4h13v11H1z"/><path d="M14 8h4l3 3v4h-7z"/><circle cx="5.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>,
   delivered:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18"/><path d="M9 21v-7h6v7"/></svg>,
   cancelled:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
@@ -58,17 +50,9 @@ const STATUS_SVG: Record<string, React.ReactNode> = {
 
 const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   pending:            { color: '#f97316', bg: '#fff7ed' },
-  pending_stock:      { color: '#d97706', bg: '#fffbeb' },
-  confirming_stock:   { color: '#14b8a6', bg: '#f0fdfa' },
-  stock_confirmed:    { color: '#65a30d', bg: '#f7fee7' },
-  partial_stock:      { color: '#ea580c', bg: '#fff7ed' },
-  waiting_payment:    { color: '#3b82f6', bg: '#eff6ff' },
   processing:         { color: '#2563eb', bg: '#eff6ff' },
   paid:               { color: '#10b981', bg: '#ecfdf5' },
-  assembling:         { color: '#6366f1', bg: '#eef2ff' },
   negotiation:        { color: '#ec4899', bg: '#fdf2f8' },
-  preparing_shipping: { color: '#f97316', bg: '#fff7ed' },
-  ready_to_ship:      { color: '#06b6d4', bg: '#ecfeff' },
   shipped:            { color: '#8b5cf6', bg: '#f5f3ff' },
   delivered:          { color: '#22c55e', bg: '#f0fdf4' },
   cancelled:          { color: '#ef4444', bg: '#fef2f2' },
@@ -78,61 +62,38 @@ const PAGE_SIZE = 10;
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   all:                { label: 'Todos',                bg: 'bg-gray-100',    text: 'text-gray-700' },
-  paid_group:         { label: 'Pagados',              bg: 'bg-green-100',   text: 'text-green-700' },
-  pending:            { label: 'Pendiente',            bg: 'bg-orange-100',  text: 'text-orange-700' },
-  pending_stock:      { label: 'Verificando Stock',    bg: 'bg-amber-100',   text: 'text-amber-700' },
-  confirming_stock:   { label: 'Confirmando Stock',    bg: 'bg-teal-100',    text: 'text-teal-700' },
-  stock_confirmed:    { label: 'Stock Confirmado',     bg: 'bg-lime-100',    text: 'text-lime-700' },
-  partial_stock:      { label: 'Stock Parcial',        bg: 'bg-orange-100',  text: 'text-orange-700' },
-  waiting_payment:    { label: 'Esperando Pago',       bg: 'bg-blue-100',    text: 'text-blue-700' },
-  processing:         { label: 'Pago a Verificar',     bg: 'bg-blue-100',    text: 'text-blue-700' },
-  paid:               { label: 'Pago Verificado',      bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  assembling:         { label: 'Armando Pedido',       bg: 'bg-indigo-100',  text: 'text-indigo-700' },
-  negotiation:        { label: 'Negociación',          bg: 'bg-pink-100',    text: 'text-pink-700' },
-  preparing_shipping: { label: 'Etiqueta Lista',       bg: 'bg-orange-100',  text: 'text-orange-700' },
-  ready_to_ship:      { label: 'Listo para Despachar', bg: 'bg-cyan-100',    text: 'text-cyan-700' },
+  paid_group:         { label: 'Confirmados',          bg: 'bg-green-100',   text: 'text-green-700' },
+  pending:            { label: 'Recibido',             bg: 'bg-orange-100',  text: 'text-orange-700' },
+  processing:         { label: 'En Revisión',          bg: 'bg-blue-100',    text: 'text-blue-700' },
+  paid:               { label: 'Confirmado',           bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  negotiation:        { label: 'Negociando',           bg: 'bg-pink-100',    text: 'text-pink-700' },
   shipped:            { label: 'Enviado',              bg: 'bg-violet-100',  text: 'text-violet-700' },
   delivered:          { label: 'Entregado',            bg: 'bg-green-100',   text: 'text-green-700' },
   cancelled:          { label: 'Cancelado',            bg: 'bg-red-100',     text: 'text-red-700' },
 };
 
 const SHORT_LABEL: Record<string, string> = {
-  pending:            'Pendiente',
-  pending_stock:      'Verificando',
-  confirming_stock:   'Confirmando',
-  stock_confirmed:    'Confirmado',
-  partial_stock:      'Parcial',
-  waiting_payment:    'Esperando',
-  processing:         'Recibido',
-  paid:               'Verificado',
-  assembling:         'Armando',
-  negotiation:        'Negociación',
-  preparing_shipping: 'Etiqueta',
-  ready_to_ship:      'Despachar',
+  pending:            'Recibido',
+  processing:         'Revisión',
+  paid:               'Confirmado',
+  negotiation:        'Negociando',
   shipped:            'Enviado',
   delivered:          'Entregado',
   cancelled:          'Cancelado',
 };
 
-const PAID_GROUP_STATUSES = ['processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
-const ALL_STATUS_KEYS = STATUS_FLOW.concat(['partial_stock', 'negotiation', 'cancelled']);
+const PAID_GROUP_STATUSES = ['processing', 'paid', 'shipped', 'delivered'];
+const ALL_STATUS_KEYS = STATUS_FLOW.concat(['negotiation', 'cancelled']);
 
 const STATUS_DESC: Record<string, string> = {
-  pending:            'El cliente envió la solicitud mayorista, aún sin revisar.',
-  pending_stock:      'Se está verificando la disponibilidad de stock en bodega.',
-  confirming_stock:   'El embalador está separando y confirmando los productos.',
-  stock_confirmed:    'El stock fue confirmado, el pedido está completo.',
-  waiting_payment:    'Se enviaron los datos de pago, esperando la transferencia.',
+  pending:            'El cliente envió la solicitud, aún sin revisar.',
+  pending_stock:      'El cliente envió la solicitud, aún sin revisar.',
   processing:         'Se recibió el comprobante de pago, hay que verificarlo.',
   paid:               'El pago fue confirmado y verificado correctamente.',
-  assembling:         'Se está armando y embalando el pedido.',
-  preparing_shipping: 'La etiqueta de envío está lista para imprimir.',
-  ready_to_ship:      'El paquete está listo para despachar.',
+  negotiation:        'Faltan productos, se está negociando con el cliente.',
   shipped:            'El pedido salió de la tienda con la agencia.',
   delivered:          'El pedido fue entregado a la agencia de transporte.',
-  partial_stock:      'Solo hay stock parcial, hay que acordarlo con el cliente.',
-  negotiation:        'Faltan productos, se está negociando con el cliente.',
-  cancelled:          'El pedido mayorista fue cancelado.',
+  cancelled:          'El pedido fue cancelado.',
 };
 
 type DateFilter = 'all' | 'today' | 'yesterday' | 'day_before' | 'custom';
@@ -1025,7 +986,7 @@ export default function WholesaleOrdersPage() {
                 })}
                 {/* Estados desconectados (extremo derecho) */}
                 <div className="flex-1 min-w-[24px]" />
-                {renderSideNode('partial_stock')}
+                {renderSideNode('negotiation')}
                 {renderDashedSep('sep-neg')}
                 {renderSideNode('negotiation')}
                 {renderDashedSep('sep-cancel')}
@@ -1054,12 +1015,12 @@ export default function WholesaleOrdersPage() {
         {/* Pagados — soft green */}
         <button onClick={() => setActiveFilter('paid_group')}
           className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-green-100 text-green-700 border border-green-200 ${activeFilter === 'paid_group' ? 'ring-2 ring-green-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
-          Pagados
+          Confirmados
         </button>
-        {/* Pendiente — soft orange */}
+        {/* Recibido — soft orange */}
         <button onClick={() => setActiveFilter('pending')}
           className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-orange-100 text-orange-700 border border-orange-200 ${activeFilter === 'pending' ? 'ring-2 ring-orange-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
-          Pendiente
+          Recibido
         </button>
         {/* Cancelado — soft red */}
         <button onClick={() => setActiveFilter('cancelled')}
@@ -1196,7 +1157,7 @@ export default function WholesaleOrdersPage() {
                     );
                   })}
                   {/* Side branch nodes */}
-                  {(['partial_stock', 'negotiation'] as const).map(branch => {
+                  {(['negotiation'] as const).map(branch => {
                     const isBranch = tOrder.STATUS === branch;
                     const ncol = STATUS_COLORS[branch];
                     return (
@@ -1615,7 +1576,7 @@ export default function WholesaleOrdersPage() {
             paged.map(order => {
               const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
               const ageMs = Date.now() - date.getTime();
-              const isOverdue = ['pending', 'waiting_payment'].includes(order.STATUS) && ageMs > 3 * 86400000;
+              const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
               const items = parseItems(order.ITEMS);
               const scfg = STATUS_CONFIG[order.STATUS];
               const statusColor = STATUS_COLORS[order.STATUS]?.color || '#6b7280';
@@ -1724,7 +1685,7 @@ export default function WholesaleOrdersPage() {
                   const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
                   const isUpdating = updatingId === order.$id;
                   const ageMs = Date.now() - date.getTime();
-                  const isOverdue = ['pending', 'waiting_payment'].includes(order.STATUS) && ageMs > 3 * 86400000;
+                  const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
                   const ageH = Math.floor(ageMs / 3600000);
                   const ageD = Math.floor(ageH / 24);
                   const ageStrRel = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;

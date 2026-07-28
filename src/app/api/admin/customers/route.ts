@@ -149,7 +149,7 @@ function buildCustomerRow(
   const orderStats = aggregateOrdersForUser(orders, uid);
   const paidCount = orders.filter(o => 
     o.USERID === uid && 
-    ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'].includes((o.STATUS || '').toLowerCase())
+    ['paid', 'negotiation', 'shipped', 'delivered'].includes((o.STATUS || '').toLowerCase())
   ).length;
   const loyaltyCalculated = calculateLoyaltyFromPaidOrders(paidCount);
   const loyaltyStored = (String(prefs.loyaltyLevel || 'bronze') as LoyaltyLevelId);
@@ -264,7 +264,7 @@ export async function PATCH(request: Request) {
     // 1. Calcular basePoints para el usuario basado en sus pedidos
     const ordersRes = await databases.listDocuments(databaseId, 'orders', [
       Query.equal('USERID', userId),
-      Query.equal('STATUS', ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered']),
+      Query.equal('STATUS', ['paid', 'negotiation', 'shipped', 'delivered']),
     ]);
 
     const paidOrdersCount = ordersRes.total;

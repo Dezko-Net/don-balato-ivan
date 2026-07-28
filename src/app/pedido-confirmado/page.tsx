@@ -55,13 +55,14 @@ function loadBankDetails(): BankField[] {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  pending:          { label: 'Pendiente de pago',  color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  confirming_stock: { label: 'Confirmando stock',  color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  processing:       { label: 'Pago en revisión',   color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  paid:             { label: 'Pago confirmado',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  shipped:    { label: 'Despachado',         color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
-  delivered:  { label: 'Entregado',          color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  cancelled:  { label: 'Cancelado',          color: '#991b1b', bg: '#fef2f2', border: '#fecaca' },
+  pending:          { label: 'Recibido',      color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  pending_stock:    { label: 'Recibido',      color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  processing:       { label: 'En revisión',   color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  paid:             { label: 'Confirmado',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  negotiation:      { label: 'Negociando',    color: '#7b1fa2', bg: '#faf5ff', border: '#e9d5ff' },
+  shipped:          { label: 'Enviado',       color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
+  delivered:        { label: 'Entregado',     color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  cancelled:        { label: 'Cancelado',     color: '#991b1b', bg: '#fef2f2', border: '#fecaca' },
 };
 
 function Countdown({ expiresAt }: { expiresAt: number }) {
@@ -118,7 +119,7 @@ function ConfirmadoInner() {
         } catch { setItems([]); }
       }
       setUploaded(!!o.PROOFURL);
-      if (o.STATUS === 'pending' || o.STATUS === 'processing' || o.STATUS === 'confirming_stock') {
+      if (o.STATUS === 'pending' || o.STATUS === 'pending_stock' || o.STATUS === 'processing' || o.STATUS === 'negotiation') {
         setShowConfetti(true);
       }
     } catch (e) {
@@ -203,13 +204,15 @@ function ConfirmadoInner() {
   }
 
   const isPending = order.STATUS === 'pending';
-  const isSuccess = uploaded || (order.STATUS !== 'pending' && order.STATUS !== 'cancelled');
+  const isStockPending = order.STATUS === 'pending_stock';
+  const isSuccess = uploaded || (order.STATUS !== 'pending' && order.STATUS !== 'cancelled' && order.STATUS !== 'pending_stock' && order.STATUS !== 'negotiation');
   const BANK = loadBankDetails();
   const status = STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#374151', bg: '#f3f4f6', border: '#e5e7eb' };
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
 
   return (
-    <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#eff6ff 0%,#fff 320px)' }}>
+    <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#eef4ff 0%,#f6f9ff 46%,#f8fafc 100%)', position: 'relative' }}>
+      <div className="pk-cc-aurora" aria-hidden="true" />
       {/* Confetti */}
       {showConfetti && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 100, overflow: 'hidden' }}>
@@ -229,35 +232,25 @@ function ConfirmadoInner() {
       )}
 
       <div className="pk-confirm-container" style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px calc(70px + env(safe-area-inset-bottom, 0px))' }}>
-        {/* ── Success header ── */}
-        <div className="pk-confirm-header" style={{ background: '#fff', borderRadius: 24, padding: '40px 32px 32px', border: '1px solid #dbeafe', textAlign: 'center', boxShadow: '0 12px 48px rgba(37,99,235,0.1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
-          {/* Background decoration */}
-          <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,99,235,0.08), transparent)' }} />
-          <div style={{ position: 'absolute', bottom: -40, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,99,235,0.06), transparent)' }} />
-
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div className="pk-confirm-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 84, borderRadius: '50%', background: 'linear-gradient(135deg,#dbeafe,#bfdbfe)', marginBottom: 16, animation: 'pkPulse 2s ease-in-out infinite', boxShadow: '0 12px 40px rgba(37,99,235,0.2)' }}>
-              {isSuccess ? <CheckCircle2 size={44} color="#2563eb" strokeWidth={2.5} /> : <PartyPopper size={42} color="#2563eb" strokeWidth={2.2} />}
-            </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', color: '#2563eb', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
-              <Sparkles size={13} /> Pedido recibido
-            </div>
-            <h1 className="pk-confirm-title" style={{ margin: '0 0 8px', fontSize: 30, fontWeight: 900, color: '#111', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              {isSuccess ? '¡Pedido confirmado!' : '¡Gracias por tu compra!'}
-            </h1>
-            {order.CUSTOMERNAME && (
-              <p className="pk-confirm-subtitle" style={{ margin: '0 0 16px', fontSize: 15, color: '#6b7280' }}>
-                Hola <strong style={{ color: '#111' }}>{order.CUSTOMERNAME}</strong>, te enviamos los detalles a tu correo.
-              </p>
-            )}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#fff', border: '1.5px solid #dbeafe', borderRadius: 999, fontSize: 13, color: '#6b7280', fontWeight: 600 }}>
-                Código: <strong style={{ color: '#2563eb', fontFamily: 'monospace' }}>{order.ORDERCODE}</strong>
-              </div>
-              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 14px', borderRadius: 999, background: status.bg, color: status.color, border: `1.5px solid ${status.border}`, fontSize: 13, fontWeight: 700 }}>
-                {status.label}
-              </span>
-            </div>
+        {/* ── Hero celebratorio ── */}
+        <div className="pk-cc-hero">
+          <div className="pk-cc-hero-orb">
+            {isSuccess ? <CheckCircle2 size={46} color="#2563eb" strokeWidth={2.6} /> : <PartyPopper size={44} color="#2563eb" strokeWidth={2.3} />}
+          </div>
+          <div className="pk-cc-hero-eyebrow">
+            <Sparkles size={13} /> Pedido recibido
+          </div>
+          <h1 className="pk-cc-hero-title">
+            {isSuccess ? '¡Pedido confirmado!' : '¡Gracias por tu compra!'}
+          </h1>
+          {order.CUSTOMERNAME && (
+            <p className="pk-cc-hero-sub">
+              Hola <strong>{order.CUSTOMERNAME}</strong>, te enviamos los detalles a tu correo.
+            </p>
+          )}
+          <div className="pk-cc-chips">
+            <span className="pk-cc-chip">Código <strong>{order.ORDERCODE}</strong></span>
+            <span className="pk-cc-chip pk-cc-chip--status" style={{ color: status.color }}>{status.label}</span>
           </div>
         </div>
 
@@ -273,7 +266,7 @@ function ConfirmadoInner() {
           const statusOrder = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           return (
-            <div style={{ background: '#fff', borderRadius: 20, padding: '24px 20px', border: '1px solid #dbeafe', marginBottom: 16 }}>
+            <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 20px', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: 16, left: '10%', right: '10%', height: 3, background: '#dbeafe', zIndex: 0, borderRadius: 999 }} />
                 <div style={{ position: 'absolute', top: 16, left: '10%', height: 3, background: 'linear-gradient(90deg,#2563eb,#60a5fa)', zIndex: 1, width: currentIdx >= 0 ? `${(currentIdx / (steps.length - 1)) * 80}%` : '0%', transition: 'width 0.6s cubic-bezier(0.16,1,0.3,1)', borderRadius: 999 }} />
@@ -304,6 +297,22 @@ function ConfirmadoInner() {
           );
         })()}
 
+        {/* ── Stock pending message ── */}
+        {isStockPending && (
+          <div className="pk-cc-card" style={{ borderRadius: 20, padding: '28px 24px', marginBottom: 16, textAlign: 'center' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: '#eff6ff', marginBottom: 14 }}>
+              <Clock size={28} color="#2563eb" />
+            </div>
+            <h2 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 800, color: '#1e3a8a' }}>Estamos revisando el stock</h2>
+            <p style={{ margin: '0 0 6px', fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>
+              Te confirmaremos en unos momentos por <strong>WhatsApp</strong> y en la sección <strong>Mis Pedidos</strong>.
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9ca3af' }}>
+              Una vez confirmado el stock, te enviaremos los datos para la transferencia.
+            </p>
+          </div>
+        )}
+
         {/* ── Timer ── */}
         {showTimer && (
           <div style={{ background: '#fff', borderRadius: 20, padding: '20px', border: '1px solid #fde68a', marginBottom: 16, textAlign: 'center' }}>
@@ -318,8 +327,8 @@ function ConfirmadoInner() {
         )}
 
         {/* ── Bank details ── */}
-        {isPending && !uploaded && (
-          <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #dbeafe', marginBottom: 16, boxShadow: '0 4px 16px rgba(37,99,235,0.06)' }}>
+        {isPending && !isStockPending && !uploaded && (
+          <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 22px', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
                 <CreditCard size={18} color="#2563eb" /> Datos para transferir
@@ -359,7 +368,7 @@ function ConfirmadoInner() {
         )}
 
         {/* ── Upload proof ── */}
-        {(isPending || order.STATUS === 'processing') && (
+        {(isPending || order.STATUS === 'processing') && !isStockPending && (
           <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: `1.5px solid ${uploaded ? '#bbf7d0' : '#dbeafe'}`, marginBottom: 16 }}>
             <h2 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
               <Upload size={18} color={uploaded ? '#16a34a' : '#2563eb'} /> Comprobante de pago
@@ -403,26 +412,44 @@ function ConfirmadoInner() {
           </div>
         )}
 
-        {/* ── WhatsApp Link Section ── */}
-        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #dbeafe', marginBottom: 16 }}>
+        {/* ── WhatsApp Link Section ── (temporalmente oculto) */}
+        {false && order && (
+        <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 22px', marginBottom: 16 }}>
           <h2 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
-            <MessageCircle size={18} color="#25D366" /> Recibir notificaciones
+            <MessageCircle size={18} color="#25D366" /> Notificaciones por WhatsApp
           </h2>
           <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
-            Conecta tu pedido a nuestro WhatsApp para recibir actualizaciones automáticas. Si escribiste mal tu número en el carrito, haz click aquí para corregirlo.
+            Recibe actualizaciones de tu pedido por WhatsApp. Verifica que tu número esté correcto para asegurar que te lleguen las notificaciones.
           </p>
+
+          {/* Phone display */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 12, marginBottom: 14 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <MessageCircle size={16} color="#fff" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#16a34a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Número registrado</p>
+              <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700, color: '#111' }}>{order.CUSTOMERPHONE || 'No registrado'}</p>
+            </div>
+          </div>
+
+          {/* Verify button */}
           <a
-            href={`https://wa.me/56962293893?text=vincular_pedido%20${order.$id}`}
+            href={`https://wa.me/56936599658?text=Hola%20Kenia,%20quiero%20verificar%20mi%20número%20para%20el%20pedido%20${order.$id}%20(${order.ORDERCODE}).%20Mi%20número%20registrado%20es%20${order.CUSTOMERPHONE}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#25D366', color: '#fff', borderRadius: 14, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(37,211,102,0.2)' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#25D366', color: '#fff', borderRadius: 14, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(37,211,102,0.2)', transition: 'all 0.2s' }}
           >
-            <MessageCircle size={18} /> Conectar WhatsApp
+            <MessageCircle size={18} /> Comprobar número
           </a>
+          <p style={{ margin: '10px 0 0', fontSize: 11, color: '#9ca3af', textAlign: 'center', lineHeight: 1.4 }}>
+            Si tu número no coincide, Kenia te ayudará a vincularlo correctamente desde WhatsApp.
+          </p>
         </div>
+        )}
 
         {/* ── Order items ── */}
-        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #dbeafe', marginBottom: 16 }}>
+        <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 22px', marginBottom: 16 }}>
           <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
             <Package size={18} color="#2563eb" /> Detalle del pedido
           </h2>
@@ -498,7 +525,7 @@ function ConfirmadoInner() {
         </div>
 
         {/* ── Shipping info ── */}
-        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #dbeafe', marginBottom: 16 }}>
+        <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 22px', marginBottom: 16 }}>
           <h2 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
             <MapPin size={18} color="#2563eb" /> Datos de envío
           </h2>
@@ -563,52 +590,87 @@ function ConfirmadoInner() {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
         }
+
+        /* ══ REDISEÑO CONFIRMACIÓN — hero celebratorio + tarjetas premium ══ */
+        .pk-cc-aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .pk-cc-aurora::before, .pk-cc-aurora::after { content: ''; position: absolute; border-radius: 50%; filter: blur(80px); }
+        .pk-cc-aurora::before { width: 66vw; height: 66vw; max-width: 600px; max-height: 600px; top: -20%; left: -16%; background: radial-gradient(circle, rgba(56,189,248,.22), transparent 68%); }
+        .pk-cc-aurora::after  { width: 60vw; height: 60vw; max-width: 540px; max-height: 540px; top: -8%; right: -18%; background: radial-gradient(circle, rgba(59,130,246,.20), transparent 68%); }
+        .pk-confirm-container { position: relative; z-index: 1; }
+
+        /* Tarjeta premium con hairline de luz */
+        .pk-cc-card {
+          position: relative; overflow: hidden;
+          background: linear-gradient(180deg,#fff,#fbfcff) !important;
+          border: 1px solid rgba(37,99,235,.11) !important;
+          border-radius: 20px !important;
+          box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 16px 36px -24px rgba(37,99,235,.42) !important;
+        }
+        .pk-cc-card::before {
+          content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(56,189,248,.6), rgba(59,130,246,.35), transparent);
+          pointer-events: none;
+        }
+
+        /* ── HERO celebratorio ── */
+        .pk-cc-hero {
+          position: relative; overflow: hidden; text-align: center;
+          border-radius: 26px; margin-bottom: 16px; padding: 40px 30px 34px;
+          background: linear-gradient(150deg,#1d4ed8 0%,#2563eb 42%,#3b82f6 72%,#38bdf8 120%);
+          box-shadow: 0 20px 48px -18px rgba(37,99,235,.60), inset 0 1px 0 rgba(255,255,255,.28);
+        }
+        .pk-cc-hero::before {
+          content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%);
+          width: 120%; height: 90%;
+          background: radial-gradient(closest-side, rgba(255,255,255,.28), transparent 70%);
+          pointer-events: none;
+        }
+        .pk-cc-hero > * { position: relative; z-index: 1; }
+        .pk-cc-hero-orb {
+          display: flex; align-items: center; justify-content: center;
+          width: 92px; height: 92px; border-radius: 50%; margin: 0 auto 16px;
+          background: radial-gradient(circle at 50% 35%, #fff, #eaf2ff);
+          box-shadow: 0 12px 34px rgba(2,20,60,.30), 0 0 0 10px rgba(255,255,255,.14), inset 0 -6px 14px rgba(37,99,235,.14);
+          animation: pkPulse 2.2s ease-in-out infinite;
+        }
+        .pk-cc-hero-eyebrow {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: rgba(255,255,255,.20); color: #fff;
+          padding: 5px 14px; border-radius: 999px; font-size: 12px; font-weight: 800;
+          letter-spacing: .02em; margin-bottom: 12px;
+          border: 1px solid rgba(255,255,255,.30); backdrop-filter: blur(6px);
+        }
+        .pk-cc-hero-title { margin: 0 0 8px; font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -.03em; line-height: 1.08; text-shadow: 0 2px 14px rgba(2,20,60,.28); }
+        .pk-cc-hero-sub { margin: 0 0 18px; font-size: 15px; color: rgba(255,255,255,.9); }
+        .pk-cc-hero-sub strong { color: #fff; }
+        .pk-cc-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+        .pk-cc-chip {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 7px 15px; border-radius: 999px; font-size: 13px; font-weight: 700;
+          background: rgba(255,255,255,.16); color: #fff;
+          border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(8px);
+        }
+        .pk-cc-chip strong { font-family: monospace; letter-spacing: .04em; }
+        .pk-cc-chip--status { background: #fff; color: #1d4ed8; }
         /* Mobile compact styles for checkout confirmation */
         @media (max-width: 768px) {
           .pk-confirm-container {
             padding: 12px 12px calc(70px + env(safe-area-inset-bottom, 0px)) !important;
           }
-          .pk-confirm-header {
-            padding: 24px 16px 20px !important;
-            border-radius: 18px !important;
-            margin-bottom: 10px !important;
+          .pk-cc-hero {
+            padding: 30px 20px 24px !important;
+            border-radius: 22px !important;
+            margin-bottom: 12px !important;
           }
-          .pk-confirm-icon {
-            width: 60px !important;
-            height: 60px !important;
-            margin-bottom: 10px !important;
-          }
-          .pk-confirm-icon svg { width: 32px !important; height: 32px !important; }
-          .pk-confirm-title {
-            font-size: 22px !important;
-            margin-bottom: 4px !important;
-          }
-          .pk-confirm-subtitle {
-            font-size: 13px !important;
-            margin-bottom: 10px !important;
-          }
-          /* Compact all card sections on mobile */
-          .pk-confirm-container > div[style*="borderRadius: 20px"] {
+          .pk-cc-hero-orb { width: 72px !important; height: 72px !important; margin-bottom: 12px !important; }
+          .pk-cc-hero-orb svg { width: 36px !important; height: 36px !important; }
+          .pk-cc-hero-title { font-size: 25px !important; }
+          .pk-cc-hero-sub { font-size: 13px !important; margin-bottom: 14px !important; }
+          /* Compactar tarjetas en móvil */
+          .pk-cc-card {
             border-radius: 16px !important;
             padding: 16px 14px !important;
             margin-bottom: 10px !important;
-          }
-          /* Compact bank detail buttons on mobile */
-          .pk-confirm-container button[style*="borderRadius: 12px"] {
-            padding: 10px 12px !important;
-          }
-          /* Compact order items on mobile */
-          .pk-confirm-container img[style*="60px"],
-          .pk-confirm-container div[style*="width: 60"] {
-            width: 44px !important;
-            height: 44px !important;
-          }
-          /* Smaller fonts on mobile */
-          .pk-confirm-container h2 {
-            font-size: 14px !important;
-          }
-          .pk-confirm-container p {
-            font-size: 12px !important;
           }
           /* Hide the bottom navbar on this page to prevent overlap */
           .tpl1-bottom-nav { display: none !important; }

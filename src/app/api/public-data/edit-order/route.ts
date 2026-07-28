@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const latest = await serverGetDocument(targetCollection, orderId);
     
     // 2. Validar que el estado permita modificaciones
-    const unmodifiableStatuses = ['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+    const unmodifiableStatuses = ['paid', 'negotiation', 'shipped', 'delivered', 'cancelled'];
     if (unmodifiableStatuses.includes(latest.STATUS)) {
       return NextResponse.json({
         error: 'No puedes modificar el pedido si ya está verificado, en proceso de preparación o anulado.'

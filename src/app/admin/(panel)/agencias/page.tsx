@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Truck, Plus, Save, Trash2, CheckCircle, Edit2, X, GripVertical, RefreshCw, Box, AlertTriangle } from 'lucide-react';
+import { Truck, Plus, Save, Trash2, CheckCircle, Edit2, X, GripVertical, RefreshCw, Box, AlertTriangle, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdminEmail } from '@/lib/admin-access';
 
@@ -17,13 +17,13 @@ interface Agency {
 }
 
 const DEFAULTS: Agency[] = [
-  { id: '', name: 'RETIRO EN TIENDA',  color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal sin costo',  logo: 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png', active: true },
-  { id: '', name: 'STARKEN',          color: '#1a7f37', bg: '#e6f4ea', desc: 'Tarifa económica - Cobertura Nacional',   logo: 'https://starken.cl/wp-content/uploads/2021/04/starken.png', active: true },
-  { id: '', name: 'PULLMAN CARGO',    color: '#002855', bg: '#e6f0fa', desc: 'Tarifa económica - Ideal para cajas grandes', logo: 'https://www.pullmancargo.cl/wp-content/uploads/2022/02/cropped-logo-pullman-cargo-2022-300x95.png', active: true },
-  { id: '', name: 'VARMONTT',         color: '#c62828', bg: '#fce8e6', desc: 'Tarifa económica - Especialistas al Sur de Chile', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEPQN4hjn8F2PQXVmphZVnstiaQTEs4ILyArmNbu1DjCaj2EfwPxnUnEWLEUivCr_95IE&usqp=CAU', active: true },
-  { id: '', name: 'CORREOS DE CHILE', color: '#da291c', bg: '#fce8e6', desc: 'Tarifa media - Excelente cobertura rural', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Logo_Correos_de_Chile_2024.png', active: true },
-  { id: '', name: 'BLUEXPRESS',       color: '#1558b0', bg: '#e8f0fe', desc: 'Tarifa media/alta - Entrega express',    logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSz2T8HSqmWqmSShlCx8iGNP2tkT_OGLK4cdg&s', active: true },
-  { id: '', name: 'CHILEXPRESS',      color: '#ffc600', bg: '#fffde6', desc: 'Tarifa alta - La más rápida del mercado', logo: 'https://www.chilexpress.cl/Style%20Library/img/logo-chilexpress.png', active: true },
+  { id: 'default-0', name: 'RETIRO EN TIENDA',  color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal sin costo',  logo: '', active: true },
+  { id: 'default-1', name: 'STARKEN',          color: '#1a7f37', bg: '#e6f4ea', desc: 'Tarifa económica - Cobertura Nacional',   logo: 'https://www.starken.cl/static/media/logo-q100.bac31f50de7b41338e6c.webp', active: true },
+  { id: 'default-2', name: 'PULLMAN CARGO',    color: '#002855', bg: '#e6f0fa', desc: 'Tarifa económica - Ideal para cajas grandes', logo: '', active: true },
+  { id: 'default-3', name: 'VARMONTT',         color: '#c62828', bg: '#fce8e6', desc: 'Tarifa económica - Especialistas al Sur de Chile', logo: 'https://varmontt.cl/wp-content/uploads/2020/03/logo_varmontt-trans.png', active: true },
+  { id: 'default-4', name: 'CORREOS DE CHILE', color: '#da291c', bg: '#fce8e6', desc: 'Tarifa media - Excelente cobertura rural', logo: '', active: true },
+  { id: 'default-5', name: 'BLUEXPRESS',       color: '#1558b0', bg: '#e8f0fe', desc: 'Tarifa media/alta - Entrega express',    logo: '', active: true },
+  { id: 'default-6', name: 'CHILEXPRESS',      color: '#ffc600', bg: '#fffde6', desc: 'Tarifa alta - La más rápida del mercado', logo: '', active: true },
 ];
 
 const EMPTY_AGENCY: Omit<Agency, 'id'> = {
@@ -188,9 +188,27 @@ export default function AgenciasPage() {
                           className={inp} placeholder="Breve descripción" />
                       </div>
                       <div className="md:col-span-2">
-                        <label className={lbl}>URL del logo</label>
-                        <input value={agency.logo} onChange={e => updateField(agency.id, 'logo', e.target.value)}
-                          className={inp} placeholder="https://..." />
+                        <label className={lbl}>Logo de la agencia</label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                            {agency.logo
+                              ? <img src={agency.logo} alt="preview" className="w-full h-full object-contain" />
+                              : <Truck className="w-6 h-6 text-gray-300" />}
+                          </div>
+                          <input value={agency.logo} onChange={e => updateField(agency.id, 'logo', e.target.value)}
+                            className={`${inp} flex-1`} placeholder="Pega URL o sube archivo..." />
+                          <label className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold cursor-pointer transition">
+                            <Upload className="w-3.5 h-3.5" />
+                            Subir
+                            <input type="file" accept="image/*" className="hidden" onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => updateField(agency.id, 'logo', reader.result as string);
+                              reader.readAsDataURL(file);
+                            }} />
+                          </label>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 md:col-span-2">
                         <div>
@@ -281,9 +299,27 @@ export default function AgenciasPage() {
                       className={inp} placeholder="Breve descripción" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className={lbl}>URL del logo</label>
-                    <input value={newForm.logo} onChange={e => setNewForm(f => f && ({ ...f, logo: e.target.value }))}
-                      className={inp} placeholder="https://..." />
+                    <label className={lbl}>Logo de la agencia</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                        {newForm.logo
+                          ? <img src={newForm.logo} alt="preview" className="w-full h-full object-contain" />
+                          : <Truck className="w-6 h-6 text-gray-300" />}
+                      </div>
+                      <input value={newForm.logo} onChange={e => setNewForm(f => f && ({ ...f, logo: e.target.value }))}
+                        className={`${inp} flex-1`} placeholder="Pega URL o sube archivo..." />
+                      <label className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl text-xs font-bold cursor-pointer transition">
+                        <Upload className="w-3.5 h-3.5" />
+                        Subir
+                        <input type="file" accept="image/*" className="hidden" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => setNewForm(f => f && ({ ...f, logo: reader.result as string }));
+                          reader.readAsDataURL(file);
+                        }} />
+                      </label>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 md:col-span-2">
                     <div>

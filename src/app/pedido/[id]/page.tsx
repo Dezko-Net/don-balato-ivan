@@ -46,102 +46,54 @@ function getBankDetails(): Record<string, string> {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  pending:            { label: 'Pendiente',                 color: '#b45309', bg: '#fffbeb' },
-  pending_stock:      { label: 'Verificando stock',         color: '#b45309', bg: '#fffbeb' },
-  confirming_stock:   { label: 'Confirmando stock',         color: '#2563eb', bg: '#eff6ff' },
-  stock_confirmed:    { label: 'Stock confirmado',          color: '#166534', bg: '#f0fdf4' },
-  partial_stock:      { label: 'Stock parcial',             color: '#e65c00', bg: '#fff3e0' },
-  waiting_payment:    { label: 'Esperando pago',            color: '#1558b0', bg: '#e8f0fe' },
-  processing:         { label: 'Pago a verificar',          color: '#1558b0', bg: '#e8f0fe' },
-  paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
-  assembling:         { label: 'Embalando pedido',          color: '#7b1fa2', bg: '#f3e5f5' },
-  packing:            { label: 'Embalando pedido',          color: '#d97706', bg: '#fffbeb' },
-  negotiation:        { label: 'Negociación',               color: '#2563eb', bg: '#eff6ff' },
-  preparing_shipping: { label: 'Etiqueta lista',            color: '#5d4037', bg: '#efebe9' },
-  ready_to_ship:      { label: 'Listo para enviar',         color: '#00838f', bg: '#e0f7fa' },
-  shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
-  delivered:          { label: 'Entregado',                 color: '#166534', bg: '#f0fdf4' },
-  cancelled:          { label: 'Cancelado',                 color: '#991b1b', bg: '#fff5f5' },
+  pending:            { label: 'Recibido',            color: '#b45309', bg: '#fffbeb' },
+  pending_stock:      { label: 'Recibido',            color: '#b45309', bg: '#fffbeb' },
+  processing:         { label: 'En revisión',         color: '#1558b0', bg: '#e8f0fe' },
+  paid:               { label: 'Confirmado',          color: '#166534', bg: '#f0fdf4' },
+  negotiation:        { label: 'Negociando',          color: '#2563eb', bg: '#eff6ff' },
+  shipped:            { label: 'Enviado',             color: '#6b21a8', bg: '#faf5ff' },
+  delivered:          { label: 'Entregado',           color: '#166534', bg: '#f0fdf4' },
+  cancelled:          { label: 'Cancelado',           color: '#991b1b', bg: '#fff5f5' },
 };
 
 const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertType: 'warning' | 'info' | 'success' | 'indigo' | 'danger' }> = {
   pending: {
-    title: 'Esperando el Pago',
+    title: 'Pedido Recibido',
     desc: 'Tu pedido ha sido recibido. Para comenzar a procesarlo, realiza la transferencia bancaria con los datos indicados abajo y sube tu comprobante de pago.',
     alertType: 'warning'
   },
-  confirming_stock: {
-    title: 'Confirmando Stock',
-    desc: 'Estamos validando la disponibilidad física de tus productos en bodega. Muy pronto te actualizaremos.',
+  pending_stock: {
+    title: 'Pedido Recibido',
+    desc: 'Estamos revisando el stock de tu pedido. Te confirmaremos en unos momentos por WhatsApp y en esta página.',
     alertType: 'info'
   },
   processing: {
-    title: 'Verificando tu Pago',
+    title: 'En Revisión',
     desc: 'Hemos recibido tu comprobante de pago. Nuestro equipo administrativo validará la transferencia a la brevedad para confirmar tu compra.',
     alertType: 'info'
   },
   paid: {
-    title: 'Pago Confirmado',
+    title: 'Confirmado',
     desc: '¡Excelente! Tu pago ha sido verificado con éxito. Tu pedido pasará a nuestra área de preparación en bodega en las próximas horas.',
     alertType: 'success'
   },
-  assembling: {
-    title: 'Armando tu Pedido',
-    desc: 'Nuestro equipo en bodega está seleccionando y empaquetando tus productos con mucho cuidado. ¡Pronto estará listo para el despacho!',
-    alertType: 'indigo'
-  },
-  packing: {
-    title: 'Embalando tu Pedido',
-    desc: 'Nuestro equipo en bodega está embalando tu pedido con cuidado. ¡Pronto estará listo para el despacho!',
-    alertType: 'warning'
-  },
   negotiation: {
-    title: 'Pedido en Negociación',
+    title: 'Negociando',
     desc: 'Estamos revisando la disponibilidad de algunos productos de tu pedido. Te contactaremos pronto con las novedades.',
     alertType: 'warning'
   },
-  preparing_shipping: {
-    title: 'Etiqueta de Despacho Lista',
-    desc: 'Estamos generando la etiqueta de envío con tus datos de entrega y sellando la caja para entregarla a la empresa de transporte.',
-    alertType: 'indigo'
-  },
-  ready_to_ship: {
-    title: 'Pedido listo para enviar',
-    desc: 'El paquete ya está embalado y etiquetado en nuestro centro de despacho, a la espera de ser retirado por la agencia de envíos seleccionada.',
-    alertType: 'indigo'
-  },
   shipped: {
-    title: 'Pedido Despachado / En camino',
+    title: 'Enviado',
     desc: '¡Tu pedido ya está en camino! Ha sido entregado a la empresa de transporte. Puedes ver y descargar el comprobante de envío abajo para realizar el seguimiento.',
     alertType: 'success'
   },
   delivered: {
-    title: 'Pedido Entregado',
+    title: 'Entregado',
     desc: 'El pedido ha sido entregado correctamente en la dirección de destino. ¡Muchas gracias por tu compra y por confiar en nosotros!',
     alertType: 'success'
   },
-  waiting_payment: {
-    title: 'Esperando tu Pago',
-    desc: 'El stock de tu pedido mayorista está confirmado. Realiza la transferencia bancaria con los datos indicados abajo y sube tu comprobante de pago.',
-    alertType: 'warning'
-  },
-  pending_stock: {
-    title: 'Verificando Stock',
-    desc: 'Estamos validando la disponibilidad física de los productos de tu pedido mayorista en bodega. Te avisaremos por WhatsApp muy pronto.',
-    alertType: 'info'
-  },
-  stock_confirmed: {
-    title: 'Stock Confirmado',
-    desc: 'Todos los productos de tu pedido mayorista están disponibles. Procede con el pago para que podamos preparar tu envío.',
-    alertType: 'success'
-  },
-  partial_stock: {
-    title: 'Stock Parcial',
-    desc: 'Algunos productos de tu pedido mayorista tienen stock limitado. Te contactaremos por WhatsApp con las novedades.',
-    alertType: 'warning'
-  },
   cancelled: {
-    title: 'Pedido Cancelado',
+    title: 'Cancelado',
     desc: 'Este pedido ha sido anulado. Si ya habías realizado la transferencia o tienes dudas, ponte en contacto con soporte técnico.',
     alertType: 'danger'
   }
@@ -861,7 +813,7 @@ export default function PedidoPage() {
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
-      const unmodifiableStatuses = ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+      const unmodifiableStatuses = ['paid', 'negotiation', 'shipped', 'delivered', 'cancelled'];
       if (unmodifiableStatuses.includes(latest.STATUS)) {
         alert('No puedes anular el pedido si ya está verificado, en proceso de preparación o anulado.');
         return;
@@ -955,17 +907,17 @@ export default function PedidoPage() {
     }
   }
 
-  const isPending = order.STATUS === 'pending' || order.STATUS === 'waiting_payment' || order.STATUS === 'stock_confirmed';
+  const isPending = order.STATUS === 'pending' || order.STATUS === 'pending_stock';
   const BANK = getBankDetails();
   const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-  const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
-  const status = isReadyRetiro 
+  const isReadyRetiro = order.STATUS === 'paid' && isRetiro;
+  const status = isReadyRetiro
     ? { label: 'Listo para retirar', color: '#a21caf', bg: '#fae8ff' }
     : (STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#333', bg: '#f5f5f5' });
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
   const customerEditCount = getCustomerEditCount(order);
-  const canCustomerModify = !['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS) && order.STATUS !== 'pending_stock';
+  const canCustomerModify = !['paid', 'negotiation', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS) && order.STATUS !== 'pending_stock';
   // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
   const hasMissingItems = items.some(it => !!(it as any).missing);
   const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);
@@ -1000,7 +952,7 @@ export default function PedidoPage() {
 
         {(() => {
           const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-          const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
+          const isReadyRetiro = order.STATUS === 'paid' && isRetiro;
           const infoRaw = STATUS_DESCRIPTIONS[order.STATUS] || { title: 'Estado del pedido', desc: 'Tu pedido está siendo procesado.', alertType: 'info' };
           const info = isReadyRetiro 
             ? {
@@ -1029,19 +981,11 @@ export default function PedidoPage() {
           return (
             <div className={`border rounded-3xl p-5 md:p-6 mb-8 flex items-start gap-4 transition-all duration-300 ${bgClass}`}>
               <div className={`p-3 rounded-2xl bg-white shadow-sm flex-shrink-0 ${iconColor}`}>
-                {isPending && <Clock size={24} />}
+                {order.STATUS === 'pending' && <Clock size={24} />}
                 {order.STATUS === 'pending_stock' && <Clock size={24} />}
-                {order.STATUS === 'confirming_stock' && <Box size={24} />}
-                {order.STATUS === 'stock_confirmed' && <CheckCircle size={24} />}
-                {order.STATUS === 'partial_stock' && <AlertTriangle size={24} />}
-                {order.STATUS === 'waiting_payment' && <Clock size={24} />}
                 {order.STATUS === 'processing' && <Upload size={24} />}
                 {order.STATUS === 'paid' && <CheckCircle size={24} />}
-                {order.STATUS === 'assembling' && <Package size={24} />}
-                {order.STATUS === 'packing' && <Package size={24} />}
                 {order.STATUS === 'negotiation' && <MessageSquare size={24} />}
-                {order.STATUS === 'preparing_shipping' && <Tag size={24} />}
-                {order.STATUS === 'ready_to_ship' && <Receipt size={24} />}
                 {order.STATUS === 'shipped' && <Truck size={24} />}
                 {order.STATUS === 'delivered' && <CheckCircle size={24} />}
                 {order.STATUS === 'cancelled' && <AlertTriangle size={24} />}
@@ -1057,37 +1001,23 @@ export default function PedidoPage() {
         {/* ── Order Timeline (Stepper) ── */}
         {(() => {
           const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-          const useWholesaleTimeline = isWholesale || ['pending_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment'].includes(order.STATUS);
+          const useWholesaleTimeline = isWholesale;
           const steps = useWholesaleTimeline
             ? [
-                { key: 'pending',            label: 'Pendiente',         icon: <Clock size={15} /> },
-                { key: 'pending_stock',      label: 'Verificando Stock', icon: <Clock size={15} /> },
-                { key: 'confirming_stock',   label: 'Confirmando Stock', icon: <Box size={15} /> },
-                { key: 'stock_confirmed',    label: 'Stock Confirmado',  icon: <CheckCircle size={15} /> },
-                { key: 'waiting_payment',    label: 'Esperando Pago',    icon: <Clock size={15} /> },
-                { key: 'processing',         label: 'Pago a Verificar',  icon: <Upload size={15} /> },
-                { key: 'paid',               label: 'Pago Verificado',   icon: <CheckCircle size={15} /> },
-                { key: 'assembling',         label: 'Armando Pedido',    icon: <Package size={15} /> },
-                { key: 'packing',            label: 'Etiqueta Lista',    icon: <Package size={15} /> },
-                { key: 'ready_to_ship',      label: 'Listo para Despachar', icon: <Box size={15} /> },
+                { key: 'pending',            label: 'Recibido',          icon: <Clock size={15} /> },
+                { key: 'processing',         label: 'En Revisión',       icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Confirmado',        icon: <CheckCircle size={15} /> },
                 { key: 'shipped',            label: 'Enviado',           icon: <Truck size={15} /> },
                 { key: 'delivered',          label: 'Entregado',         icon: <CheckCircle size={15} /> },
               ]
             : [
-                { key: 'pending',            label: 'Pendiente',            icon: <Clock size={15} /> },
-                { key: 'processing',         label: 'Pago Recibido',        icon: <Upload size={15} /> },
-                { key: 'paid',               label: 'Pago Verificado',      icon: <CheckCircle size={15} /> },
-                { key: 'assembling',         label: 'Imprimiendo Etiqueta', icon: <Package size={15} /> },
-                { key: 'confirming_stock',   label: 'Confirmando Stock',    icon: <Box size={15} /> },
-                { key: 'stock_confirmed',    label: 'Stock Confirmado',     icon: <CheckCircle size={15} /> },
-                { key: 'packing',            label: 'Embalando Pedido',     icon: <Package size={15} /> },
-                { key: 'ready_to_ship',      label: 'Listo para Despachar', icon: <Box size={15} /> },
-                { key: 'shipped',            label: 'Salió de Tienda',      icon: <Truck size={15} /> },
-                { key: 'delivered',          label: 'Entregado a Agencia',  icon: <CheckCircle size={15} /> },
+                { key: 'pending',            label: 'Recibido',            icon: <Clock size={15} /> },
+                { key: 'processing',         label: 'En Revisión',         icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Confirmado',          icon: <CheckCircle size={15} /> },
+                { key: 'shipped',            label: 'Enviado',             icon: <Truck size={15} /> },
+                { key: 'delivered',          label: 'Entregado',           icon: <CheckCircle size={15} /> },
               ];
-          const statusOrder = useWholesaleTimeline
-            ? ['pending', 'pending_stock', 'confirming_stock', 'stock_confirmed', 'partial_stock', 'waiting_payment', 'processing', 'paid', 'assembling', 'packing', 'ready_to_ship', 'shipped', 'delivered']
-            : ['pending', 'processing', 'paid', 'assembling', 'confirming_stock', 'stock_confirmed', 'packing', 'ready_to_ship', 'shipped', 'delivered'];
+          const statusOrder = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (

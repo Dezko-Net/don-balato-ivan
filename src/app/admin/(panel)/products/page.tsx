@@ -1482,6 +1482,52 @@ export default function ProductsPage() {
     XLSX.writeFile(wb, `productos_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
+  const [isExportingAllXLSX, setIsExportingAllXLSX] = useState(false);
+
+  const exportAllXLSX = async () => {
+    setIsExportingAllXLSX(true);
+    try {
+      const allProducts = await fetchAllProductsForExport();
+      if (allProducts.length === 0) {
+        alert('No se encontraron productos para exportar.');
+        return;
+      }
+      const data = allProducts.map(p => ({
+        SKU: getSku(p),
+        'Código de barras': getBarcode(p) || '',
+        ID: p.$id,
+        Nombre: p.NAME || '',
+        Descripción: p.DESCRIPTION || '',
+        Precio: p.PRICE,
+        Stock: p.STOCK ?? 0,
+        Categoría: catName(p.CATEGORYID),
+        Costo: p.COST || 0,
+        'Margen %': p.COST && p.PRICE ? Math.round(((p.PRICE - p.COST) / p.PRICE) * 100) : '',
+        'Precio Mayorista': p.WHOLESALEPRICE || 0,
+        'Mín. Mayorista': p.WHOLESALEMINQUANTITY || 0,
+        'Vendidos': p.SOLDQUANTITY || 0,
+        'Sección': getSection(p)?.section ?? '',
+        'Góndola': getSection(p)?.gondola ?? '',
+        'URL Imagen': p.IMAGEURL || '',
+        'URL Imagen 2': p.IMAGEURL2 || '',
+        'URL Imagen 3': p.IMAGEURL3 || '',
+        'Tags': Array.isArray(p.TAGS) ? p.TAGS.join(', ') : (p.TAGS || ''),
+        'Activo': p.ISACTIVE !== false ? 'Sí' : 'No',
+        'Destacado': p.ISFEATURED ? 'Sí' : 'No',
+        'Fecha creación': p.$createdAt || '',
+        'Fecha actualización': p.$updatedAt || '',
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+      XLSX.writeFile(wb, `productos_completos_${new Date().toISOString().slice(0,10)}.xlsx`);
+    } catch (e: any) {
+      alert('Error al exportar todos los productos: ' + e.message);
+    } finally {
+      setIsExportingAllXLSX(false);
+    }
+  };
+
   const fetchAllProductsForExport = async (): Promise<Product[]> => {
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
@@ -2493,6 +2539,10 @@ export default function ProductsPage() {
                     </button>
                     <button onClick={() => { setToolsOpen(false); exportXLSX(); }} disabled={filtered.length === 0} className={menuItem}>
                       <FileSpreadsheet className="w-4 h-4 text-emerald-500" /> Excel (XLSX)
+                    </button>
+                    <button onClick={() => { setToolsOpen(false); exportAllXLSX(); }} disabled={isExportingAllXLSX} className={menuItem}>
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                      {isExportingAllXLSX ? '⏳ Exportando...' : 'Excel Completo (XLSX)'}
                     </button>
                     <button onClick={() => { setToolsOpen(false); exportInventoryPDF(); }} disabled={isExportingPDF} className={menuItem}>
                       <FileText className="w-4 h-4 text-purple-500" />

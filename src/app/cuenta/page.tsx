@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
-  User, MapPin, Receipt, HelpCircle, Phone, Package,
+  User, MapPin, Receipt, HelpCircle, Phone,
   Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles, PackageSearch,
   Award, Crown, Gem,
 } from 'lucide-react';
@@ -25,7 +25,6 @@ interface MenuItem { icon: any; label: string; href: string; desc?: string; badg
 
 const MIS_COMPRAS_ITEMS: MenuItem[] = [
   { icon: Receipt,      label: 'Mis Pedidos',   href: '/cuenta/pedidos',    desc: 'Seguí el estado de tus pedidos' },
-  { icon: Package,      label: 'Pedidos Mayoristas', href: '/cuenta/pedidos-mayoristas', desc: 'Pedidos al por mayor y paquetes' },
   { icon: Heart,        label: 'Mis Favoritos', href: '/cuenta/favoritos',  desc: 'Productos que guardaste' },
   { icon: PackageSearch,label: 'Mis Consultas', href: '/cuenta/consultas', desc: 'Consultas de disponibilidad' },
   { icon: ShoppingCart, label: 'Mi Carrito',    href: '/carrito',           desc: 'Productos en tu carrito' },

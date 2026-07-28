@@ -17,22 +17,14 @@ const AMBER = '#c68b59';
 const AMBER_BG = '#fef9f4';
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string; icon: React.ReactNode }> = {
-  pending:            { label: 'Pendiente',              bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
-  pending_stock:      { label: 'Verificando stock',      bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
-  confirming_stock:   { label: 'Confirmando stock',      bg: '#eff6ff', color: '#1d4ed8', icon: <RefreshCw size={13} /> },
-  stock_confirmed:    { label: 'Stock confirmado',       bg: '#e8f5e9', color: '#2e7d32', icon: <CheckCircle size={13} /> },
-  partial_stock:      { label: 'Stock parcial',          bg: '#fff3e0', color: '#e65c00', icon: <RefreshCw size={13} /> },
-  waiting_payment:    { label: 'Esperando pago',         bg: '#e3f2fd', color: '#1565c0', icon: <Clock size={13} /> },
-  processing:         { label: 'Pago a verificar',       bg: '#e3f2fd', color: '#1558b0', icon: <FileText size={13} /> },
-  paid:               { label: 'Pago verificado',        bg: '#e8f5e9', color: '#1b5e20', icon: <CheckCircle size={13} /> },
-  assembling:         { label: 'Embalando pedido',       bg: '#f3e5f5', color: '#7b1fa2', icon: <Box size={13} /> },
-  packing:            { label: 'Embalando pedido',       bg: '#fff8e1', color: '#d97706', icon: <Box size={13} /> },
-  negotiation:        { label: 'Negociación',            bg: '#eff6ff', color: '#1d4ed8', icon: <MessageCircle size={13} /> },
-  preparing_shipping: { label: 'Etiqueta lista',         bg: '#efebe9', color: '#5d4037', icon: <FileText size={13} /> },
-  ready_to_ship:      { label: 'Listo para enviar',      bg: '#e0f7fa', color: '#00838f', icon: <Package size={13} /> },
-  shipped:            { label: 'Enviado',                bg: '#faf5ff', color: '#6b21a8', icon: <Truck size={13} /> },
-  delivered:          { label: 'Entregado',              bg: '#e8f5e9', color: '#166534', icon: <CheckCircle size={13} /> },
-  cancelled:          { label: 'Cancelado',              bg: '#ffebee', color: '#c62828', icon: <XCircle size={13} /> },
+  pending:            { label: 'Recibido',              bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
+  pending_stock:      { label: 'Recibido',              bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
+  processing:         { label: 'En revisión',           bg: '#e3f2fd', color: '#1558b0', icon: <FileText size={13} /> },
+  paid:               { label: 'Confirmado',            bg: '#e8f5e9', color: '#1b5e20', icon: <CheckCircle size={13} /> },
+  negotiation:        { label: 'Negociando',            bg: '#eff6ff', color: '#1d4ed8', icon: <MessageCircle size={13} /> },
+  shipped:            { label: 'Enviado',               bg: '#faf5ff', color: '#6b21a8', icon: <Truck size={13} /> },
+  delivered:          { label: 'Entregado',             bg: '#e8f5e9', color: '#166534', icon: <CheckCircle size={13} /> },
+  cancelled:          { label: 'Cancelado',             bg: '#ffebee', color: '#c62828', icon: <XCircle size={13} /> },
 };
 
 const BG = 'https://img.freepik.com/free-photo/shipment-delivery-by-truck-bell-notification-delivery-transportation-concept-3d-rendering_56104-1309.jpg?semt=ais_hybrid&w=740&q=80';
@@ -199,30 +191,6 @@ export default function PedidosMayoristasPage() {
                           </p>
                         </div>
                       )}
-                      {req.STATUS === 'stock_confirmed' && (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#e8f5e9', borderRadius: 8, border: '1px solid #a7f3d0' }}>
-                          <CheckCircle size={14} color="#2e7d32" style={{ flexShrink: 0, marginTop: 1 }} />
-                          <p style={{ margin: 0, fontSize: 11, color: '#1b5e20', lineHeight: 1.4 }}>
-                            Stock confirmado. Podés proceder al pago.
-                          </p>
-                        </div>
-                      )}
-                      {req.STATUS === 'partial_stock' && (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#fff3e0', borderRadius: 8, border: '1px solid #fed7aa' }}>
-                          <RefreshCw size={14} color="#e65c00" style={{ flexShrink: 0, marginTop: 1 }} />
-                          <p style={{ margin: 0, fontSize: 11, color: '#92400e', lineHeight: 1.4 }}>
-                            Algunos productos tienen stock limitado. Revisá los detalles que te enviamos por WhatsApp.
-                          </p>
-                        </div>
-                      )}
-                      {req.STATUS === 'waiting_payment' && (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#e3f2fd', borderRadius: 8, border: '1px solid #90caf9' }}>
-                          <Clock size={14} color="#1565c0" style={{ flexShrink: 0, marginTop: 1 }} />
-                          <p style={{ margin: 0, fontSize: 11, color: '#0d47a1', lineHeight: 1.4 }}>
-                            Stock confirmado. Realiza la transferencia y sube el comprobante en el detalle del pedido.
-                          </p>
-                        </div>
-                      )}
                       {req.STATUS === 'processing' && (
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#e3f2fd', borderRadius: 8, border: '1px solid #90caf9' }}>
                           <FileText size={14} color="#1558b0" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -236,14 +204,6 @@ export default function PedidosMayoristasPage() {
                           <CheckCircle size={14} color="#1b5e20" style={{ flexShrink: 0, marginTop: 1 }} />
                           <p style={{ margin: 0, fontSize: 11, color: '#1b5e20', lineHeight: 1.4 }}>
                             Pago verificado. Tu pedido está siendo preparado en bodega.
-                          </p>
-                        </div>
-                      )}
-                      {req.STATUS === 'assembling' && (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#f3e5f5', borderRadius: 8, border: '1px solid #ce93d8' }}>
-                          <Box size={14} color="#7b1fa2" style={{ flexShrink: 0, marginTop: 1 }} />
-                          <p style={{ margin: 0, fontSize: 11, color: '#4a148c', lineHeight: 1.4 }}>
-                            Nuestro equipo está armando tu pedido con cuidado.
                           </p>
                         </div>
                       )}

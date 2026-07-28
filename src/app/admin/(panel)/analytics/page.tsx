@@ -57,7 +57,7 @@ export default function AnalyticsPage() {
   const fmtN = (n: number) => new Intl.NumberFormat('es-CL').format(n);
 
   // KPIs
-  const revenueStatuses = ['paid', 'processing', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+  const revenueStatuses = ['paid', 'processing', 'negotiation', 'shipped', 'delivered'];
   const paidOrders = orders.filter(o => revenueStatuses.includes(o.STATUS));
   const totalRevenue = paidOrders.reduce((s, o) => s + o.TOTAL, 0);
   const avgOrderValue = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
@@ -101,15 +101,13 @@ export default function AnalyticsPage() {
 
   // Status breakdown
   const statusBreakdown = [
-    { label: 'Pendiente',                 key: 'pending',            color: 'bg-amber-400' },
-    { label: 'Pago a Verificar',          key: 'processing',         color: 'bg-blue-400' },
-    { label: 'Pago Verificado',           key: 'paid',               color: 'bg-emerald-400' },
-    { label: 'Armando',                   key: 'assembling',         color: 'bg-indigo-400' },
-    { label: 'Etiqueta Lista', key: 'preparing_shipping', color: 'bg-orange-400' },
-    { label: 'Pedido listo para enviar', key: 'ready_to_ship', color: 'bg-cyan-400' },
-    { label: 'Enviado',                   key: 'shipped',            color: 'bg-violet-400' },
-    { label: 'Entregado',                 key: 'delivered',          color: 'bg-green-400' },
-    { label: 'Cancelado',                 key: 'cancelled',          color: 'bg-red-400' },
+    { label: 'Recibido',                   key: 'pending',            color: 'bg-amber-400' },
+    { label: 'En Revisión',                key: 'processing',         color: 'bg-blue-400' },
+    { label: 'Confirmado',                 key: 'paid',               color: 'bg-emerald-400' },
+    { label: 'Negociando',                 key: 'negotiation',        color: 'bg-pink-400' },
+    { label: 'Enviado',                    key: 'shipped',            color: 'bg-violet-400' },
+    { label: 'Entregado',                  key: 'delivered',          color: 'bg-green-400' },
+    { label: 'Cancelado',                  key: 'cancelled',          color: 'bg-red-400' },
   ].map(s => ({ ...s, count: orders.filter(o => o.STATUS === s.key).length }));
 
   // Category revenue (from products SOLDQUANTITY × PRICE)
@@ -403,14 +401,11 @@ export default function AnalyticsPage() {
       {/* Conversion funnel */}
       {orders.length > 0 && (() => {
         const stages = [
-          { key: 'pending',            label: 'Pendiente',                 color: 'bg-amber-400' },
-          { key: 'processing',         label: 'Pago a Verificar',          color: 'bg-blue-400' },
-          { key: 'paid',               label: 'Pago Verificado',           color: 'bg-emerald-400' },
-          { key: 'assembling',         label: 'Armando',                   color: 'bg-indigo-400' },
-          { key: 'preparing_shipping', label: 'Etiqueta Lista', color: 'bg-orange-400' },
-          { key: 'ready_to_ship',      label: 'Pedido listo para enviar', color: 'bg-cyan-400' },
-          { key: 'shipped',            label: 'Enviado',                   color: 'bg-violet-400' },
-          { key: 'delivered',          label: 'Entregado',                 color: 'bg-emerald-500' },
+          { key: 'pending',            label: 'Recibido',                   color: 'bg-amber-400' },
+          { key: 'processing',         label: 'En Revisión',                color: 'bg-blue-400' },
+          { key: 'paid',               label: 'Confirmado',                 color: 'bg-emerald-400' },
+          { key: 'shipped',            label: 'Enviado',                    color: 'bg-violet-400' },
+          { key: 'delivered',          label: 'Entregado',                  color: 'bg-emerald-500' },
         ];
         const total = orders.length;
         const cancelledCount = orders.filter(o => o.STATUS === 'cancelled').length;

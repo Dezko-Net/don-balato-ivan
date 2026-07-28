@@ -1289,15 +1289,12 @@ Por favor contáctalo para ayudarle.
           const yesterdayStr = getChileDateStr(yesterday);
           const oneWeekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-          const REVENUE_STATUSES = ['paid', 'processing', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+          const REVENUE_STATUSES = ['paid', 'processing', 'negotiation', 'shipped', 'delivered'];
           const STATUS_LABELS: Record<string, string> = {
-            pending: 'Pendiente de pago',
-            processing: 'Procesando',
-            paid: 'Pagado',
-            assembling: 'En preparación',
-            negotiation: 'En negociación / mod.',
-            preparing_shipping: 'Etiqueta Lista',
-            ready_to_ship: 'Pedido listo para enviar',
+            pending: 'Recibido',
+            processing: 'En Revisión',
+            paid: 'Confirmado',
+            negotiation: 'Negociando',
             shipped: 'Enviado',
             delivered: 'Entregado',
             cancelled: 'Cancelado'

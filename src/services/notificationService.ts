@@ -57,9 +57,6 @@ const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'pending',
   'pending_stock',
   'paid',
-  'confirming_stock',
-  'stock_confirmed',
-  'ready_to_ship',
   'delivered',
 ];
 
@@ -68,59 +65,35 @@ const ORDER_STATUS_COPY: Record<
   { title: string; buildMessage: (code: string) => string } | null
 > = {
   pending_stock: {
-    title: 'Pedido Mayorista Recibido',
-    buildMessage: (c) => `¡Hemos recibido tu pedido mayorista ${c}! Estamos verificando el stock.`,
+    title: 'Pedido Recibido',
+    buildMessage: (c) => `¡Hemos recibido tu pedido ${c}! Estamos revisando el stock.`,
   },
   pending: {
     title: 'Pedido Recibido',
     buildMessage: (c) => `¡Hemos recibido tu pedido ${c}! Estamos a la espera del pago.`,
   },
   processing: {
-    title: 'Pago a verificar',
+    title: 'En Revisión',
     buildMessage: (c) => `Tu pago del pedido ${c} está siendo verificado.`,
   },
   paid: {
-    title: 'Pago verificado',
+    title: 'Confirmado',
     buildMessage: (c) => `Tu pago para el pedido ${c} fue verificado con éxito.`,
   },
-  assembling: {
-    title: 'Imprimiendo etiqueta',
-    buildMessage: (c) => `Estamos imprimiendo la etiqueta de tu pedido ${c}.`,
-  },
-  confirming_stock: {
-    title: 'Confirmando stock',
-    buildMessage: (c) => `Estamos confirmando el stock de tu pedido ${c} en bodega.`,
-  },
-  stock_confirmed: {
-    title: 'Stock confirmado',
-    buildMessage: (c) => `El stock de tu pedido ${c} fue confirmado. ¡Pronto lo embalamos!`,
-  },
-  packing: {
-    title: 'Embalando tu pedido',
-    buildMessage: (c) => `Estamos embalando tu pedido ${c}.`,
-  },
   negotiation: {
-    title: 'Pedido en negociación',
+    title: 'Negociando',
     buildMessage: (c) => `Tu pedido ${c} está en proceso de negociación. Te contactaremos pronto.`,
   },
-  preparing_shipping: {
-    title: 'Etiqueta de envío lista',
-    buildMessage: (c) => `La etiqueta de despacho de tu pedido ${c} ya está lista.`,
-  },
-  ready_to_ship: {
-    title: 'Pedido listo para enviar',
-    buildMessage: (c) => `Tu pedido ${c} ya está preparado y etiquetado para ser retirado por la agencia.`,
-  },
   shipped: {
-    title: 'Pedido despachado',
+    title: 'Enviado',
     buildMessage: (c) => `Tu pedido ${c} salió de la tienda. ¡Pronto lo recibirás!`,
   },
   delivered: {
-    title: 'Entregado a la agencia',
+    title: 'Entregado',
     buildMessage: (c) => `Tu pedido ${c} fue entregado a la agencia de transporte.`,
   },
   cancelled: {
-    title: 'Pedido cancelado',
+    title: 'Cancelado',
     buildMessage: (c) => `Tu pedido ${c} fue cancelado. Si tienes dudas, contáctanos.`,
   },
 };
@@ -211,7 +184,7 @@ export async function notifyOrderStatusChange(
     let title = copy.title;
     let message = copy.buildMessage(code);
 
-    if (newStatus === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') {
+    if (newStatus === 'paid' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') {
       title = 'Listo para retirar';
       message = `Tu pedido ${code} está listo para ser retirado en tienda.`;
     }
@@ -368,7 +341,7 @@ export async function notifyOrderStatusChange(
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
 
         // ── Send photo for ready_to_ship (caja embalada = SHIPPINGPROOFURL) ──
-        if (newStatus === 'ready_to_ship' && order.SHIPPINGPROOFURL) {
+        if (newStatus === 'paid' && order.SHIPPINGPROOFURL) {
           try {
             const { sendWhatsAppImage } = await import('@/lib/whatsapp');
             const photoCaption = `¡Aquí está tu pedido #${code} todo embaladito y listo! 📦✨`;

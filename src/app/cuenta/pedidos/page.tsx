@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Package, ChevronRight, ArrowLeft, Loader2, Search, Receipt, RefreshCw, ShoppingCart } from 'lucide-react';
+import { Package, ChevronRight, ArrowLeft, Loader2, Search, Receipt, RefreshCw, ShoppingCart, Clock } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
@@ -15,22 +15,14 @@ const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#3b82f6';
 
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  pending:            { label: 'Pendiente',                 bg: '#fff8e1', color: '#f57f17' },
-  pending_stock:      { label: 'Verificando stock',        bg: '#fff8e1', color: '#f57f17' },
-  confirming_stock:   { label: 'Confirmando stock',       bg: '#eff6ff', color: '#1d4ed8' },
-  stock_confirmed:    { label: 'Stock confirmado',        bg: '#e8f5e9', color: '#2e7d32' },
-  partial_stock:      { label: 'Stock parcial',           bg: '#fff3e0', color: '#e65c00' },
-  waiting_payment:    { label: 'Esperando pago',          bg: '#e3f2fd', color: '#1565c0' },
-  processing:         { label: 'Pago a verificar',        bg: '#e3f2fd', color: '#1565c0' },
-  paid:               { label: 'Pago verificado',         bg: '#e8f5e9', color: '#2e7d32' },
-  assembling:         { label: 'Embalando pedido',        bg: '#f3e5f5', color: '#7b1fa2' },
-  packing:            { label: 'Embalando pedido',        bg: '#fff8e1', color: '#d97706' },
-  negotiation:        { label: 'Negociación',             bg: '#eff6ff', color: '#1d4ed8' },
-  preparing_shipping: { label: 'Etiqueta lista',          bg: '#efebe9', color: '#5d4037' },
-  ready_to_ship:      { label: 'Listo para enviar',       bg: '#e0f7fa', color: '#00838f' },
-  shipped:            { label: 'Enviado',                 bg: '#eff6ff', color: '#3b82f6' },
-  delivered:          { label: 'Entregado',               bg: '#e8f5e9', color: '#1b5e20' },
-  cancelled:          { label: 'Cancelado',               bg: '#ffebee', color: '#c62828' },
+  pending:            { label: 'Recibido',            bg: '#fff8e1', color: '#f57f17' },
+  pending_stock:      { label: 'Recibido',            bg: '#fff8e1', color: '#f57f17' },
+  processing:         { label: 'En revisión',         bg: '#e3f2fd', color: '#1565c0' },
+  paid:               { label: 'Confirmado',          bg: '#e8f5e9', color: '#2e7d32' },
+  negotiation:        { label: 'Negociando',          bg: '#eff6ff', color: '#1d4ed8' },
+  shipped:            { label: 'Enviado',             bg: '#eff6ff', color: '#3b82f6' },
+  delivered:          { label: 'Entregado',           bg: '#e8f5e9', color: '#1b5e20' },
+  cancelled:          { label: 'Cancelado',           bg: '#ffebee', color: '#c62828' },
 };
 
 const BG_PEDIDOS = 'https://img.freepik.com/free-photo/shipment-delivery-by-truck-bell-notification-delivery-transportation-concept-3d-rendering_56104-1309.jpg?semt=ais_hybrid&w=740&q=80';
@@ -137,18 +129,13 @@ export default function MisPedidosPage() {
 
   const statusTabs = [
     { key: 'all', label: 'Todos' },
-    { key: 'pending', label: 'Pendientes' },
-    { key: 'pending_stock', label: 'Verificando stock' },
-    { key: 'stock_confirmed', label: 'Stock confirmado' },
-    { key: 'waiting_payment', label: 'Esperando pago' },
-    { key: 'processing', label: 'Pago a verificar' },
-    { key: 'paid', label: 'Pago verificado' },
-    { key: 'assembling', label: 'Embalando' },
-    { key: 'packing', label: 'Embalando' },
-    { key: 'preparing_shipping', label: 'Etiqueta lista' },
-    { key: 'ready_to_ship', label: 'Listo para enviar' },
+    { key: 'pending', label: 'Recibidos' },
+    { key: 'processing', label: 'En Revisión' },
+    { key: 'paid', label: 'Confirmados' },
+    { key: 'negotiation', label: 'Negociando' },
     { key: 'shipped', label: 'Enviados' },
     { key: 'delivered', label: 'Entregados' },
+    { key: 'cancelled', label: 'Cancelados' },
   ];
 
   return (
@@ -206,9 +193,25 @@ export default function MisPedidosPage() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <style>{`
+              @keyframes pulseRing {
+                0% { box-shadow: 0 0 0 0 rgba(245,127,23,0.4); }
+                70% { box-shadow: 0 0 0 8px rgba(245,127,23,0); }
+                100% { box-shadow: 0 0 0 0 rgba(245,127,23,0); }
+              }
+              @keyframes pulseRingBlue {
+                0% { box-shadow: 0 0 0 0 rgba(21,101,192,0.4); }
+                70% { box-shadow: 0 0 0 8px rgba(21,101,192,0); }
+                100% { box-shadow: 0 0 0 0 rgba(21,101,192,0); }
+              }
+              @keyframes shimmer {
+                0% { background-position: -200% 0; }
+                100% { background-position: 200% 0; }
+              }
+            `}</style>
             {filtered.map(order => {
               const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-              const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
+              const isReadyRetiro = order.STATUS === 'paid' && isRetiro;
               const st = isReadyRetiro 
                 ? { label: 'Listo para retirar', bg: '#fae8ff', color: '#a21caf' }
                 : (STATUS[order.STATUS] || { label: order.STATUS, bg: '#f5f5f5', color: '#666' });
@@ -216,18 +219,43 @@ export default function MisPedidosPage() {
               try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
               const qty = items.reduce((s: number, i: any) => s + (i.qty || 1), 0);
               const date = new Date(order.CREATEDAT || order.$createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+              const isWaiting = order.STATUS === 'pending' || order.STATUS === 'pending_stock' || order.STATUS === 'processing';
+              const isProcessing = order.STATUS === 'processing' || order.STATUS === 'pending_stock';
+              const cardBorder = isWaiting
+                ? (isProcessing ? '1.5px solid #90caf9' : '1.5px solid #ffcc80')
+                : '1px solid #dbeafe';
+              const cardBg = isWaiting
+                ? (isProcessing ? 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 60%)' : 'linear-gradient(135deg, #fff8e8 0%, #ffffff 60%)')
+                : '#fff';
+              const iconBg = isWaiting
+                ? (isProcessing ? 'linear-gradient(135deg, #e3f2fd, #bbdefb)' : 'linear-gradient(135deg, #fff8e1, #ffe0b2)')
+                : '#eff6ff';
+              const iconColor = isWaiting ? (isProcessing ? '#1565c0' : '#f57f17') : PINK;
+              const pulseAnim = isProcessing ? 'pulseRingBlue 2s infinite' : (order.STATUS === 'pending' || order.STATUS === 'pending_stock' ? 'pulseRing 2s infinite' : 'none');
               return (
                 <Link key={order.$id} href={`/pedido/${order.$id}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#fff', borderRadius: 16, padding: '16px 18px', textDecoration: 'none', border: '1px solid #dbeafe', boxShadow: '0 2px 8px rgba(59,130,246,0.06)', transition: 'all .25s cubic-bezier(.16,1,.3,1)' }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(59,130,246,0.3)'; el.style.boxShadow = '0 4px 16px rgba(59,130,246,0.12)'; }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#dbeafe'; el.style.boxShadow = '0 2px 8px rgba(59,130,246,0.06)'; }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Package size={22} color={PINK} />
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, background: cardBg, borderRadius: 16, padding: '16px 18px', textDecoration: 'none', border: cardBorder, boxShadow: '0 2px 8px rgba(59,130,246,0.06)', transition: 'all .25s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = isWaiting ? (isProcessing ? '#64b5f6' : '#ffb74d') : 'rgba(59,130,246,0.3)'; el.style.boxShadow = '0 4px 16px rgba(59,130,246,0.12)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = cardBorder; el.style.boxShadow = '0 2px 8px rgba(59,130,246,0.06)'; }}>
+                  {isWaiting && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: isProcessing ? 'linear-gradient(90deg, transparent, #1565c0, transparent)' : 'linear-gradient(90deg, transparent, #f57f17, transparent)', backgroundSize: '200% 100%', animation: 'shimmer 2s linear infinite' }} />
+                  )}
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: pulseAnim, position: 'relative' }}>
+                    {isWaiting ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={20} color={iconColor} strokeWidth={2.5} />
+                      </div>
+                    ) : (
+                      <Package size={22} color={iconColor} />
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{order.ORDERCODE}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: st.bg, color: st.color }}>{st.label}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: st.bg, color: st.color, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {isWaiting && <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.color, animation: 'pulse 1.5s ease-in-out infinite' }} />}
+                        {st.label}
+                      </span>
                     </div>
                     <p style={{ margin: 0, fontSize: 13, color: '#374151', fontWeight: 500 }}>{items.length} producto{items.length !== 1 ? 's' : ''}{qty !== items.length ? ` · ${qty} uds` : ''} · {formatPrice(order.TOTAL)}</p>
                     <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>{date}</p>

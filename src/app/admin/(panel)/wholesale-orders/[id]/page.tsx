@@ -41,30 +41,21 @@ interface WholesaleOrder {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
-  pending:            { label: 'Pendiente',            bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🕐' },
-  pending_stock:      { label: 'Verificando Stock',    bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🔎' },
-  confirming_stock:   { label: 'Confirmando Stock',    bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-200',    dot: 'bg-teal-400',    icon: '🔄' },
-  stock_confirmed:    { label: 'Stock Confirmado',     bg: 'bg-lime-50',    text: 'text-lime-700',    border: 'border-lime-200',    dot: 'bg-lime-400',    icon: '✔️' },
-  partial_stock:      { label: 'Stock Parcial',        bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '⚠️' },
-  waiting_payment:    { label: 'Esperando Pago',       bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '💳' },
-  processing:         { label: 'Pago a Verificar',     bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
-  paid:               { label: 'Pago Verificado',      bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
-  assembling:         { label: 'Armando Pedido',       bg: 'bg-indigo-50',  text: 'text-indigo-700',  border: 'border-indigo-200',  dot: 'bg-indigo-400',  icon: '📦' },
-  negotiation:        { label: 'Negociación',          bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
-  preparing_shipping: { label: 'Etiqueta Lista',       bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🏷️' },
-  ready_to_ship:      { label: 'Listo para Despachar', bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '📋' },
+  pending:            { label: 'Recibido',            bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🕐' },
+  pending_stock:      { label: 'Recibido',            bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '�' },
+  processing:         { label: 'En Revisión',         bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
+  paid:               { label: 'Confirmado',          bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
+  negotiation:        { label: 'Negociando',          bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
   shipped:            { label: 'Enviado',              bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
   delivered:          { label: 'Entregado',            bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
   cancelled:          { label: 'Cancelado',            bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'pending_stock', 'confirming_stock', 'stock_confirmed', 'waiting_payment', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
 
 const STATUS_HEX: Record<string, string> = {
-  pending: '#f97316', pending_stock: '#d97706', confirming_stock: '#14b8a6', stock_confirmed: '#65a30d',
-  partial_stock: '#ea580c', waiting_payment: '#3b82f6', processing: '#2563eb', paid: '#10b981',
-  assembling: '#6366f1', negotiation: '#ec4899', preparing_shipping: '#f97316',
-  ready_to_ship: '#06b6d4', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
+  pending: '#f97316', pending_stock: '#f97316', processing: '#2563eb', paid: '#10b981',
+  negotiation: '#ec4899', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
 };
 
 // Icon paths (Material-style) for the status stepper nodes
@@ -84,21 +75,14 @@ const STEP_ICON_PATHS: Record<string, string> = {
 };
 
 const STATUS_DESC: Record<string, string> = {
-  pending:            'El cliente envió la solicitud mayorista, aún sin revisar.',
-  pending_stock:      'Se está verificando la disponibilidad de stock en bodega.',
-  confirming_stock:   'El embalador está separando y confirmando los productos.',
-  stock_confirmed:    'El stock fue confirmado, el pedido está completo.',
-  waiting_payment:    'Se enviaron los datos de pago, esperando la transferencia.',
+  pending:            'El cliente envió la solicitud, aún sin revisar.',
+  pending_stock:      'El cliente envió la solicitud, aún sin revisar.',
   processing:         'Se recibió el comprobante de pago, hay que verificarlo.',
   paid:               'El pago fue confirmado y verificado correctamente.',
-  assembling:         'Se está armando y embalando el pedido.',
-  preparing_shipping: 'La etiqueta de envío está lista para imprimir.',
-  ready_to_ship:      'El paquete está listo para despachar.',
+  negotiation:        'Faltan productos, se está negociando con el cliente.',
   shipped:            'El pedido salió de la tienda con la agencia.',
   delivered:          'El pedido fue entregado a la agencia de transporte.',
-  partial_stock:      'Solo hay stock parcial, hay que acordarlo con el cliente.',
-  negotiation:        'Faltan productos, se está negociando con el cliente.',
-  cancelled:          'El pedido mayorista fue cancelado.',
+  cancelled:          'El pedido fue cancelado.',
 };
 
 const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
@@ -236,7 +220,7 @@ export default function WholesaleOrderDetailPage() {
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
       await databases.updateDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, orderId, {
         PAYMENTPROOFURL: url,
-        STATUS: order.STATUS === 'waiting_payment' || order.STATUS === 'stock_confirmed' || order.STATUS === 'pending' ? 'processing' : order.STATUS,
+        STATUS: order.STATUS === 'pending' ? 'processing' : order.STATUS,
       });
       await load();
     } catch (err: any) {
@@ -471,7 +455,7 @@ export default function WholesaleOrderDetailPage() {
   try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
   const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
   const ageMs = Date.now() - date.getTime();
-  const isOverdue = ['pending', 'waiting_payment'].includes(order.STATUS) && ageMs > 3 * 86400000;
+  const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
   const scRaw = STATUS_CONFIG[order.STATUS] || STATUS_CONFIG.pending;
   const sc = scRaw;
   const customerNote = order.CUSTOMERNOTE;
@@ -721,13 +705,6 @@ export default function WholesaleOrderDetailPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => handleStatusChange('partial_stock')}
-                  disabled={updating || order.STATUS === 'partial_stock'}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition disabled:opacity-60 hover:-translate-y-0.5"
-                  style={{ background: order.STATUS === 'partial_stock' ? '#ea580c' : '#fff7ed', color: order.STATUS === 'partial_stock' ? '#fff' : '#ea580c', border: '1px solid #fed7aa' }}>
-                  ⚠️ {order.STATUS === 'partial_stock' ? 'Stock parcial' : 'Parcial'}
-                </button>
                 <button
                   onClick={() => handleStatusChange('negotiation')}
                   disabled={updating || order.STATUS === 'negotiation'}
@@ -1114,7 +1091,7 @@ export default function WholesaleOrderDetailPage() {
                     </div>
                     <div className="text-right flex-shrink-0 flex items-center gap-2">
                       <p className="text-xs sm:text-sm font-bold text-gray-900">{fmt(it.total || it.price * it.qty)}</p>
-                      {(order.STATUS === 'partial_stock' || order.STATUS === 'negotiation') && (
+                      {(order.STATUS === 'negotiation') && (
                         <button
                           onClick={() => removeItem(i)}
                           disabled={updating}

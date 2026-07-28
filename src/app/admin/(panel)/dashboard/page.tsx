@@ -1547,7 +1547,7 @@ export default function DashboardPage() {
     const rOrders  = dateRange === 'all' ? allOrders : allOrders.filter(o => (o.CREATEDAT || 0) >= cutoff);
     const prevPeriod = dateRange === 'all' ? [] : allOrders.filter(o => { const t = o.CREATEDAT || 0; return t >= prevCutoff && t < cutoff; });
     let totalRevenue = 0, pendingOrders = 0, paidCount = 0;
-    const paidStatuses = ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+    const paidStatuses = ['paid', 'negotiation', 'shipped', 'delivered'];
     for (const o of rOrders) {
       if (o.STATUS === 'pending') pendingOrders++;
       if (paidStatuses.includes(o.STATUS)) { totalRevenue += o.TOTAL; paidCount++; }
@@ -1583,7 +1583,7 @@ export default function DashboardPage() {
       const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
       const next = new Date(d); next.setDate(next.getDate() + 1);
       const dayOrders = rangeOrders.filter(o => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= d.getTime() && ts < next.getTime(); });
-      const rev = dayOrders.filter(o => ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s, o) => s + o.TOTAL, 0);
+      const rev = dayOrders.filter(o => ['paid', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s, o) => s + o.TOTAL, 0);
       result.push({ label: d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }), revenue: rev, orders: dayOrders.length });
     }
     return result;
@@ -1595,7 +1595,7 @@ export default function DashboardPage() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
       const next = new Date(d); next.setDate(next.getDate() + 1);
-      const rev = rangeOrders.filter(o => { const ts = o.CREATEDAT || 0; return ts >= d.getTime() && ts < next.getTime() && ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'].includes(o.STATUS); }).reduce((s, o) => s + o.TOTAL, 0);
+      const rev = rangeOrders.filter(o => { const ts = o.CREATEDAT || 0; return ts >= d.getTime() && ts < next.getTime() && ['paid', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS); }).reduce((s, o) => s + o.TOTAL, 0);
       pts.push(rev);
     }
     return pts;
@@ -1621,7 +1621,7 @@ export default function DashboardPage() {
 
   /* ─── Dashboard status semaphore ─── */
   const todayStart = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
-  const todayRevenue = allOrders.filter(o => (o.CREATEDAT||0) >= todayStart && ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s,o) => s+o.TOTAL, 0);
+  const todayRevenue = allOrders.filter(o => (o.CREATEDAT||0) >= todayStart && ['paid', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s,o) => s+o.TOTAL, 0);
   const topRegions = (() => {
     const map: Record<string, number> = {};
     for (const o of allOrders) { const r = (o.REGION || 'Sin región') as string; map[r] = (map[r]||0)+1; }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, Suspense, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, Suspense, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/hooks/useAuth';
 import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
-import ProductImageGallery from '@/components/ProductImageGallery';
+import ProductImageGallery, { getProductImages, ProductThumbnails } from '@/components/ProductImageGallery';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
@@ -787,10 +787,12 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const badgeBg = isSadoer ? '#e0f2fe' : '#f3f4f6';
                   const badgeColor = isSadoer ? '#1e40af' : '#4b5563';
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: '#faf9f7', borderRadius: 16, overflow: 'hidden', border: '1px solid #f0f0f0', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
+                    <ImageStateManager product={p} key={p.$id}>
+                    {({ activeIndex, setActiveIndex, images }) => (
+                    <div className="pk-card" style={{ background: '#faf9f7', borderRadius: 16, overflow: 'hidden', border: '1px solid #f0f0f0', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: '#fafafa', overflow: 'hidden', boxShadow: 'inset 0 -1px 3px rgba(0,0,0,0.06)' }}>
-                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
+                        <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                          <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} hideThumbnails activeIndex={activeIndex} onActiveIndexChange={setActiveIndex} />
                           {p.PACKQTY != null && p.PACKQTY > 1 && (
                             <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#1e40af', background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>{p.PACKQTY} un/paquete</span>
                           )}
@@ -804,8 +806,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                       <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1, background: '#faf9f7' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                           <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            {cardSku && <span className="pk-card-sku">SKU: {cardSku}</span>}
-                            {pBrand && (
+                            {pBrand && pBrand !== HOUSE_BRAND && (
                               <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999 }}>
                                 {pBrand}
                               </span>
@@ -840,6 +841,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                               <span style={{ fontSize: 10.5, fontWeight: 800, color: '#6b7280', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
                               {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
+                              <ProductThumbnails images={images} activeIndex={activeIndex} onIndexChange={setActiveIndex} />
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
@@ -851,6 +853,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                         </button>
                       </div>
                     </div>
+                    )}
+                    </ImageStateManager>
                   );
                 })}
               </div>
@@ -1389,4 +1393,10 @@ export default function ProductosPage() {
       <ProductosInner />
     </Suspense>
   );
+}
+
+function ImageStateManager({ product, children }: { product: Product; children: (state: { activeIndex: number; setActiveIndex: (i: number) => void; images: string[] }) => ReactNode }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const images = useMemo(() => getProductImages(product), [product]);
+  return <>{children({ activeIndex, setActiveIndex, images })}</>;
 }
