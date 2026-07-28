@@ -1385,12 +1385,12 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* ── Media: teja blanca flotante dentro del marco oscuro ── */
+        /* ── Media: integrada dentro de la tarjeta ── */
         .pk-card-image {
           position: relative; overflow: hidden;
-          border-radius: 19px;
-          background: radial-gradient(115% 78% at 50% 0%, #fff 0%, #fbfaf9 62%, #f1eeea 100%);
-          box-shadow: 0 6px 16px -8px rgba(2,6,23,.55);
+          border-radius: 16px 16px 0 0;
+          background: #fafafa;
+          box-shadow: inset 0 -1px 3px rgba(0,0,0,.06);
         }
         /* viñeta inferior: asienta el producto sobre la teja */
         .pk-card-image::after {

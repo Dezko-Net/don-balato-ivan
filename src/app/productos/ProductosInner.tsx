@@ -789,7 +789,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: '#faf9f7', borderRadius: 16, overflow: 'hidden', border: '1px solid #f0f0f0', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: '#f5f4f2', overflow: 'hidden' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: '#fafafa', overflow: 'hidden', boxShadow: 'inset 0 -1px 3px rgba(0,0,0,0.06)' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
                           {p.PACKQTY != null && p.PACKQTY > 1 && (
                             <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#1e40af', background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>{p.PACKQTY} un/paquete</span>
