@@ -4,7 +4,7 @@ import path from 'path';
 import { serverGetDocument, serverCreateDocument, serverUpdateDocument } from '@/lib/appwrite-server';
 
 const CONFIG_PATH = path.join(process.cwd(), 'src', 'data', 'combos-config.json');
-const SETTINGS_COLLECTION_ID = 'apertura_settings';
+const SETTINGS_COLLECTION_ID = 'theme_config';
 const COMBOS_DOC_ID = 'combos-config';
 
 export async function GET() {
@@ -12,8 +12,8 @@ export async function GET() {
     // Try Appwrite first (works in production)
     try {
       const doc = await serverGetDocument(SETTINGS_COLLECTION_ID, COMBOS_DOC_ID);
-      if (doc && (doc as any).DATA) {
-        const configs = JSON.parse((doc as any).DATA);
+      if (doc && (doc as any).config) {
+        const configs = JSON.parse((doc as any).config);
         return NextResponse.json({ success: true, configs });
       }
     } catch { /* doc doesn't exist yet, fall through to local */ }
@@ -44,10 +44,10 @@ export async function POST(req: Request) {
     try {
       try {
         // Try update first
-        await serverUpdateDocument(SETTINGS_COLLECTION_ID, COMBOS_DOC_ID, { DATA: dataStr });
+        await serverUpdateDocument(SETTINGS_COLLECTION_ID, COMBOS_DOC_ID, { config: dataStr });
       } catch {
         // Document doesn't exist — create it
-        await serverCreateDocument(SETTINGS_COLLECTION_ID, COMBOS_DOC_ID, { DATA: dataStr }, [
+        await serverCreateDocument(SETTINGS_COLLECTION_ID, COMBOS_DOC_ID, { NAME: 'combos-config', config: dataStr }, [
           'read("any")',
           'update("any")',
           'delete("any")',

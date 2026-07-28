@@ -6,7 +6,7 @@ import { trackRead } from '@/lib/appwrite-read-tracker';
 import { serverGetDocument } from '@/lib/appwrite-server';
 
 const CONFIG_PATH = path.join(process.cwd(), 'src', 'data', 'combos-config.json');
-const SETTINGS_COLLECTION_ID = 'apertura_settings';
+const SETTINGS_COLLECTION_ID = 'theme_config';
 const COMBOS_DOC_ID = 'combos-config';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
@@ -37,8 +37,8 @@ async function readLocalConfig(): Promise<ComboItemConfig[]> {
   // Try Appwrite first (works in production)
   try {
     const doc = await serverGetDocument(SETTINGS_COLLECTION_ID, COMBOS_DOC_ID);
-    if (doc && (doc as any).DATA) {
-      return JSON.parse((doc as any).DATA);
+    if (doc && (doc as any).config) {
+      return JSON.parse((doc as any).config);
     }
   } catch { /* doc doesn't exist yet */ }
 
