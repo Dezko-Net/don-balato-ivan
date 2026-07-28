@@ -20,6 +20,7 @@ interface Props {
   stockFilter: StockFilter;
   onStockFilterChange: (v: StockFilter) => void;
   onEdit: (p: Product) => void;
+  onEnhanceProduct: (p: Product) => void;
   onAdd: () => void;
   onAddWithAI: () => void;
   aiLoading?: boolean;
@@ -46,7 +47,7 @@ export default function MobileProductList({
   search, onSearchChange, onSearchSubmit, onSearchClear,
   categories, catFilter, onCatChange,
   stockFilter, onStockFilterChange,
-  onEdit, onAdd, onAddWithAI, aiLoading, onRefresh,
+  onEdit, onEnhanceProduct, onAdd, onAddWithAI, aiLoading, onRefresh,
   currentPage, hasMore, onNextPage, onPrevPage,
 }: Props) {
   const counts: Record<StockFilter, number> = {
@@ -148,27 +149,37 @@ export default function MobileProductList({
       ) : (
         <div className="space-y-2.5">
           {products.map(p => (
-            <button key={p.$id} onClick={() => onEdit(p)}
+            <div key={p.$id}
               className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-3 flex gap-3 items-center text-left active:scale-[0.98] active:bg-gray-50 transition">
-              <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
-                {p.IMAGEURL ? (
-                  <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} className="w-full h-full object-cover" loading="lazy" />
-                ) : (
-                  <Package className="w-6 h-6 text-gray-300" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 leading-snug"
-                  style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {p.NAME}
-                </p>
-                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                  <span className="text-sm font-bold text-gray-900">{fmt(p.PRICE || p.WHOLESALEPRICE || 0)}</span>
-                  <StockBadge stock={p.STOCK ?? 0} />
+              <button onClick={() => onEdit(p)} className="flex-1 flex gap-3 items-center text-left min-w-0">
+                <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                  {p.IMAGEURL ? (
+                    <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <Package className="w-6 h-6 text-gray-300" />
+                  )}
                 </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
-            </button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 leading-snug"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {p.NAME}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className="text-sm font-bold text-gray-900">{fmt(p.PRICE || p.WHOLESALEPRICE || 0)}</span>
+                    <StockBadge stock={p.STOCK ?? 0} />
+                  </div>
+                </div>
+              </button>
+              <button
+                onClick={() => onEnhanceProduct(p)}
+                disabled={aiLoading}
+                className="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200 text-gray-900 shrink-0 disabled:opacity-50"
+                title="Mejorar con IA"
+              >
+                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 animate-pulse" />}
+              </button>
+              <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" onClick={() => onEdit(p)} />
+            </div>
           ))}
         </div>
       )}

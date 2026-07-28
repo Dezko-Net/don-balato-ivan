@@ -958,6 +958,23 @@ export default function ProductsPage() {
     });
   };
 
+  const enhanceProductWithAI = (p: Product) => {
+    const tabs = getCustomTabsFromFeatures(p.FEATURES) ?? {};
+    setModal({
+      mode: 'edit',
+      data: {
+        ...p,
+        _barcode: getBarcodeFromFeatures(p.FEATURES, p.barcode),
+        _sku: getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku),
+        _details: tabs.details || '',
+        _usage: tabs.usage || '',
+        _ingredients: tabs.ingredients || '',
+        DISABLE_DISCOUNTS: getDisableDiscountsFromFeatures(p.FEATURES),
+      },
+    });
+    setAiAutoEnhance(true);
+  };
+
   const duplicate = (p: Product) => {
     const sku = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
     const barcode = getBarcodeFromFeatures(p.FEATURES, p.barcode);
@@ -3002,6 +3019,14 @@ export default function ProductsPage() {
                           <Eye className="w-3.5 h-3.5" />
                         </a>
                         <button
+                          onClick={() => enhanceProductWithAI(p)}
+                          disabled={aiLoading !== null}
+                          className="p-1.5 rounded-lg hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition disabled:opacity-50"
+                          title="Mejorar con IA: buscar imágenes similares + autocompletar todo"
+                        >
+                          {aiLoading !== null ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
                           onClick={() => openEdit(p)}
                           className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition"
                           title="Editar"
@@ -3652,6 +3677,7 @@ export default function ProductsPage() {
           stockFilter={stockFilter}
           onStockFilterChange={setStockFilter}
           onEdit={openEdit}
+          onEnhanceProduct={enhanceProductWithAI}
           onAdd={openAdd}
           onAddWithAI={() => { setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } }); setAiAutoEnhance(true); }}
           aiLoading={aiLoading !== null}
