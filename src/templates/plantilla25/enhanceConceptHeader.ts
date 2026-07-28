@@ -1267,7 +1267,7 @@ export function enhanceConceptHeader(root: HTMLElement | Document, data: Enhance
         }
         if (slides[1]) {
           const p2 = slides[1].querySelector<HTMLElement>('.announcement-text, p');
-          if (p2) p2.textContent = '🚚 ENVIOS A TODO CHILE • SE PAGA CONTRAENTREGA';
+          if (p2) p2.textContent = 'ENVIOS A TODO CHILE • SE PAGA CONTRAENTREGA';
         }
       }
     }
