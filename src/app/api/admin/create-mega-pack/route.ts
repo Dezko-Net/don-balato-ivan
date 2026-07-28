@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, ID } from '@/lib/appwrite';
 
 export async function POST(request: NextRequest) {
@@ -8,8 +8,8 @@ export async function POST(request: NextRequest) {
 
     // Datos del Mega Pack Favoritos
     const megaPackData = {
-      NAME: 'Mega Pack Favoritos (10 Productos · 15 Unidades)',
-      DESCRIPTION: 'Pack especial con 10 productos favoritos de Kevin & Coco. Incluye base de maquillaje, iluminadores, polvo suelto, paleta de rubores, corrector, paleta de sombras, toallitas, brocha, brillos labiales y delineador. Total 15 unidades. ¡El mejor precio!',
+      NAME: 'Mega Pack Favoritos (10 Productos Â· 15 Unidades)',
+      DESCRIPTION: 'Pack especial con 10 productos favoritos de Don Balato Iván. Incluye base de maquillaje, iluminadores, polvo suelto, paleta de rubores, corrector, paleta de sombras, toallitas, brocha, brillos labiales y delineador. Total 15 unidades. Â¡El mejor precio!',
       PRICE: 15990,
       STOCK: 50,
       COST: 8000,
@@ -48,3 +48,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+

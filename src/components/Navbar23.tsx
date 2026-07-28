@@ -1,14 +1,14 @@
-'use client';
+﻿'use client';
 
-/* ══════════════════════════════════════════════════════════════════
-   Navbar23 — versión REUTILIZABLE del navbar del home (plantilla 23).
-   Antes ese navbar solo existía inyectado dentro de plantilla23/HomePage
-   (DOM manipulado sobre el HTML del tema). Aquí está como componente React
-   para usarlo en product detail y demás páginas vía DynamicNavbar.
-   - Mega-menú de categorías (mismo diseño que el home).
-   - Badge del carrito REACTIVO (useCart) — arregla el "(0)" que no se movía.
-   - Header + drawer móvil + barra inferior de accesos.
-   ══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   Navbar23 â€” versiÃ³n REUTILIZABLE del navbar del home (plantilla 23).
+   Antes ese navbar solo existÃ­a inyectado dentro de plantilla23/HomePage
+   (DOM manipulado sobre el HTML del tema). AquÃ­ estÃ¡ como componente React
+   para usarlo en product detail y demÃ¡s pÃ¡ginas vÃ­a DynamicNavbar.
+   - Mega-menÃº de categorÃ­as (mismo diseÃ±o que el home).
+   - Badge del carrito REACTIVO (useCart) â€” arregla el "(0)" que no se movÃ­a.
+   - Header + drawer mÃ³vil + barra inferior de accesos.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -20,9 +20,9 @@ import type { Category, Subcategory } from '@/types';
 const LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png';
 
 const EMOJI: Record<string, string> = {
-  'Skincare': '🧴', 'Skincare Facial': '🧴', 'Maquillaje': '💄', 'Capilar': '💇‍♀️',
-  'Manicure': '💅', 'Herramientas': '🔧', 'Otros': '📦', 'Aromaterapia y Difusores': '🕯️',
-  'Empaques y Regalos': '🎁', 'Fragancias': '🌸', 'Cabello': '💇‍♀️', 'Cuerpo': '🧼', 'Ofertas': '🏷️',
+  'Skincare': 'ðŸ§´', 'Skincare Facial': 'ðŸ§´', 'Maquillaje': 'ðŸ’„', 'Capilar': 'ðŸ’‡â€â™€ï¸',
+  'Manicure': 'ðŸ’…', 'Herramientas': 'ðŸ”§', 'Otros': 'ðŸ“¦', 'Aromaterapia y Difusores': 'ðŸ•¯ï¸',
+  'Empaques y Regalos': 'ðŸŽ', 'Fragancias': 'ðŸŒ¸', 'Cabello': 'ðŸ’‡â€â™€ï¸', 'Cuerpo': 'ðŸ§¼', 'Ofertas': 'ðŸ·ï¸',
 };
 
 export default function Navbar23() {
@@ -38,7 +38,7 @@ export default function Navbar23() {
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
 
-  // ── Fetch categorías + conteos (misma fuente que el home) ──
+  // â”€â”€ Fetch categorÃ­as + conteos (misma fuente que el home) â”€â”€
   useEffect(() => {
     let active = true;
     (async () => {
@@ -60,7 +60,7 @@ export default function Navbar23() {
     return () => { active = false; };
   }, []);
 
-  // Cerrar drawer y mega-menús al cambiar de página
+  // Cerrar drawer y mega-menÃºs al cambiar de pÃ¡gina
   useEffect(() => { setDrawer(false); setOpenGroup(null); }, [pathname]);
 
   const navCats = useMemo(
@@ -76,14 +76,14 @@ export default function Navbar23() {
 
   return (
     <div className="nb23-root">
-      {/* ─────────── NAVBAR DESKTOP (mega-menú) ─────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ NAVBAR DESKTOP (mega-menÃº) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="nb23-pc">
         <div className="nb23-container">
           <Link href="/" className="nb23-logo">
-            <img src={LOGO} alt="Kevin & Coco Chile" />
+            <img src={LOGO} alt="Don Balato Iván Chile" />
           </Link>
 
-          <nav className="nb23-bottom" aria-label="Navegación principal">
+          <nav className="nb23-bottom" aria-label="NavegaciÃ³n principal">
             <Link href="/" className="nb23-link" style={{ fontWeight: 700, color: '#e0457b' }}>Inicio</Link>
             <Link href="/productos" className="nb23-link">Tienda</Link>
             {navCats.map(cat => {
@@ -125,7 +125,7 @@ export default function Navbar23() {
           </nav>
 
           <div className="nb23-actions">
-            <Link href="/productos" className="nb23-cat-link">Catálogo</Link>
+            <Link href="/productos" className="nb23-cat-link">CatÃ¡logo</Link>
             <Link href="/productos" aria-label="Buscar" className="nb23-icon"><Search size={21} /></Link>
             <Link href="/carrito" aria-label="Carrito" className="nb23-icon nb23-cart">
               <ShoppingBag size={21} />
@@ -136,10 +136,10 @@ export default function Navbar23() {
         </div>
       </div>
 
-      {/* ─────────── HEADER MÓVIL ─────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ HEADER MÃ“VIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="nb23-mobile">
-        <button type="button" className="nb23-m-btn" aria-label="Menú" onClick={() => setDrawer(true)}><Menu size={24} /></button>
-        <Link href="/" className="nb23-m-logo"><img src={LOGO} alt="Kevin & Coco" /></Link>
+        <button type="button" className="nb23-m-btn" aria-label="MenÃº" onClick={() => setDrawer(true)}><Menu size={24} /></button>
+        <Link href="/" className="nb23-m-logo"><img src={LOGO} alt="Don Balato Iván" /></Link>
         <div className="nb23-m-icons">
           <Link href="/productos" aria-label="Buscar" className="nb23-m-btn"><Search size={22} /></Link>
           <Link href="/carrito" aria-label="Carrito" className="nb23-m-btn nb23-cart">
@@ -149,18 +149,18 @@ export default function Navbar23() {
         </div>
       </div>
 
-      {/* ─────────── DRAWER MÓVIL ─────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DRAWER MÃ“VIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {drawer && (
         <>
           <div className="nb23-backdrop" onClick={() => setDrawer(false)} />
           <aside className="nb23-drawer">
             <div className="nb23-drawer-head">
-              <img src={LOGO} alt="Kevin & Coco" />
+              <img src={LOGO} alt="Don Balato Iván" />
               <button type="button" aria-label="Cerrar" onClick={() => setDrawer(false)}><X size={22} /></button>
             </div>
             <Link href="/" className="nb23-d-link nb23-d-strong">Inicio</Link>
             <Link href="/productos" className="nb23-d-link nb23-d-strong">Tienda</Link>
-            <div className="nb23-d-sep">Categorías</div>
+            <div className="nb23-d-sep">CategorÃ­as</div>
             {navCats.map(cat => (
               <Link key={cat.$id} href={`/productos?categoria=${encodeURIComponent(cat.name)}`} className="nb23-d-link">
                 {EMOJI[cat.name] ? `${EMOJI[cat.name]} ` : ''}{cat.name}
@@ -174,8 +174,8 @@ export default function Navbar23() {
         </>
       )}
 
-      {/* ─────────── BARRA INFERIOR MÓVIL ─────────── */}
-      <nav className="nb23-tabbar" aria-label="Accesos rápidos">
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ BARRA INFERIOR MÃ“VIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <nav className="nb23-tabbar" aria-label="Accesos rÃ¡pidos">
         <Link href="/" className={`nb23-tab${pathname === '/' ? ' active' : ''}`}><Home size={20} /><span>Inicio</span></Link>
         <Link href="/productos" className={`nb23-tab${pathname.startsWith('/productos') ? ' active' : ''}`}><Search size={20} /><span>Tienda</span></Link>
         <Link href="/favoritos" className={`nb23-tab${pathname === '/favoritos' ? ' active' : ''}`}><Heart size={20} /><span>Favoritos</span></Link>
@@ -195,7 +195,7 @@ export default function Navbar23() {
         }
         .nb23-cart { position: relative; }
 
-        /* ── DESKTOP ── */
+        /* â”€â”€ DESKTOP â”€â”€ */
         .nb23-pc { display: none; }
         @media (min-width: 993px) {
           .nb23-pc {
@@ -241,7 +241,7 @@ export default function Navbar23() {
         .nb23-icon { color: #000; display: inline-flex; align-items: center; position: relative; text-decoration: none; }
         .nb23-icon:hover { opacity: 0.7; }
 
-        /* ── MÓVIL: header superior ── */
+        /* â”€â”€ MÃ“VIL: header superior â”€â”€ */
         .nb23-mobile {
           display: flex; align-items: center; justify-content: space-between; gap: 12px;
           padding: 10px 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
@@ -251,7 +251,7 @@ export default function Navbar23() {
         .nb23-m-logo img { height: 28px; width: auto; object-fit: contain; }
         .nb23-m-icons { display: flex; align-items: center; gap: 14px; }
 
-        /* ── DRAWER ── */
+        /* â”€â”€ DRAWER â”€â”€ */
         .nb23-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); z-index: 9998; }
         .nb23-drawer {
           position: fixed; top: 0; left: 0; bottom: 0; width: min(82vw, 340px); background: #fff; z-index: 9999;
@@ -271,7 +271,7 @@ export default function Navbar23() {
         .nb23-d-count { font-size: 11px; font-weight: 800; color: #9ca3af; background: #f3f4f6; border-radius: 999px; padding: 2px 9px; }
         .nb23-d-sep { padding: 12px 12px 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #c0547a; }
 
-        /* ── BARRA INFERIOR ── */
+        /* â”€â”€ BARRA INFERIOR â”€â”€ */
         .nb23-tabbar {
           position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex;
           background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-top: 1px solid #f1e6ec;
@@ -288,3 +288,4 @@ export default function Navbar23() {
     </div>
   );
 }
+

@@ -30,6 +30,7 @@ interface Props {
   setAiTitles: (v: string[]) => void;
   onGenerateAll: () => void;
   onGenerateTabs: () => void;
+  aiAutoEnhance?: boolean;
 }
 
 /* ── Slot de imagen grande: tocar para subir/tomar foto ─────────────── */
@@ -388,6 +389,7 @@ export default function MobileProductEditor({
   categories, subcategories,
   aiLoading, setAiLoading, aiTitles, setAiTitles,
   onGenerateAll, onGenerateTabs,
+  aiAutoEnhance,
 }: Props) {
   const [step, setStep] = useState(0);
   const [specsOpen, setSpecsOpen] = useState(false);
@@ -586,6 +588,12 @@ export default function MobileProductEditor({
       {/* ── PASO 1: FOTOS ── */}
       {step === 0 && (
         <div className="space-y-4">
+          {aiAutoEnhance && !imageUrls[0] && (
+            <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-2xl p-3">
+              <Sparkles className="w-5 h-5 text-purple-600 animate-pulse shrink-0" />
+              <p className="text-sm text-purple-700 font-medium">Sube una foto del producto y la IA autocompletará todo automáticamente</p>
+            </div>
+          )}
           <MobilePhotoUploader
             imageUrls={imageUrls}
             onChange={urls => {

@@ -1,14 +1,14 @@
-// Marcas conocidas de la tienda. Muchos productos no tienen el atributo BRAND
-// poblado en Appwrite, así que se infiere desde el nombre como fallback.
+﻿// Marcas conocidas de la tienda. Muchos productos no tienen el atributo BRAND
+// poblado en Appwrite, asÃ­ que se infiere desde el nombre como fallback.
 // Compartido entre cliente (ProductosInner, plantillas) y servidor (route de products).
 export const extractBrand = (name?: string): string => {
   if (!name) return '';
   const n = name.toLowerCase();
   if (n.includes('sadoer')) return 'SADOER';
-  if (n.includes('kevin&coco') || n.includes('kevin & coco') || n.includes('kevincoco') || n.includes('kevin coco')) return 'Kevin & Coco';
+  if (n.includes('kevin&coco') || n.includes('Don Balato Iván') || n.includes('kevincoco') || n.includes('Don Balato Iván')) return 'Don Balato Iván';
   if (n.includes('3q') || n.includes('3 q')) return '3Q Beauty';
   if (n.includes('billion') || n.includes('billion beauty')) return 'Billion Beauty';
-  if (n.includes('karite') || n.includes('karité')) return 'Karite';
+  if (n.includes('karite') || n.includes('karitÃ©')) return 'Karite';
   if (n.includes('kiss beauty')) return 'Kiss Beauty';
   if (n.includes('ushas')) return 'Ushas';
   if (n.includes('ruby rose')) return 'Ruby Rose';
@@ -19,8 +19,8 @@ export const extractBrand = (name?: string): string => {
   return '';
 };
 
-// Marca de la casa: la tienda ES Don Balato Iván
-export const HOUSE_BRAND = 'Don Balato Iván';
+// Marca de la casa: la tienda ES Don Balato IvÃ¡n
+export const HOUSE_BRAND = 'Don Balato IvÃ¡n';
 
 export const productMatchesBrand = (
   p: { BRAND?: string; NAME?: string },
@@ -31,3 +31,4 @@ export const productMatchesBrand = (
   if (b) return b === target;
   return target === HOUSE_BRAND.toLowerCase();
 };
+

@@ -304,39 +304,86 @@ export default function HomePage25() {
     containerRef.current.innerHTML = bodyHtml;
     containerRef.current.dataset.htmlSet = '1';
 
-    // Remove leftover Shopify elements
+    // Hide demo content sections until Appwrite data replaces them
     const root = containerRef.current;
+    const preEnhanceStyle = document.createElement('style');
+    preEnhanceStyle.id = 'yaxsell-pre-enhance-hide';
+    preEnhanceStyle.textContent = `
+      .yaxsell-pre-enhance .card-grid.media-card,
+      .yaxsell-pre-enhance motion-list.card-grid,
+      .yaxsell-pre-enhance .product-bundle-wrapper,
+      .yaxsell-pre-enhance .shopify-section:has(.media-card),
+      .yaxsell-pre-enhance .shopify-section:has(.product-bundle),
+      .yaxsell-pre-enhance .shopify-section:has(.featured-product),
+      .yaxsell-pre-enhance #featured-product-section,
+      .yaxsell-pre-enhance .search__recommendation {
+        visibility: hidden !important;
+      }
+    `;
+    if (!document.getElementById('yaxsell-pre-enhance-hide')) {
+      document.head.appendChild(preEnhanceStyle);
+    }
+    root.classList.add('yaxsell-pre-enhance');
+
+    // Remove leftover Shopify elements
     root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
     root.querySelectorAll('.mobile-dock-section, #shopify-section-sections--27201778909465__mobile-dock, nav.mobile-dock').forEach(el => el.remove());
 
-    // Hide product-bundle__sidebar on mobile unless intersecting the bundle section
+    // Fix: Remove white space below footer on mobile by setting html background to dark and padding footer
+    const footerMobileFixId = 'footer-mobile-dock-fix';
+    let footerFixStyle = document.getElementById(footerMobileFixId);
+    if (!footerFixStyle) {
+      footerFixStyle = document.createElement('style');
+      footerFixStyle.id = footerMobileFixId;
+      document.head.appendChild(footerFixStyle);
+    }
+    footerFixStyle.textContent = `
+      @media (max-width: 1023px) {
+        html {
+          background-color: #171717 !important;
+        }
+        body {
+          padding-bottom: 0 !important;
+          margin-bottom: 0 !important;
+        }
+        footer.footer-group,
+        .shopify-section-group-footer-group,
+        [id*="__footer-copyright"],
+        .footer-copyright {
+          background-color: #171717 !important;
+        }
+        [id*="__footer-copyright"],
+        .shopify-section-group-footer-group:last-of-type {
+          padding-bottom: 95px !important;
+        }
+      }
+    `;
+
+    // Sticky bundle sidebar on mobile: aparece fijo al llegar a "Arma tu combo"
+    // y se oculta al salir de la sección. Respeta el fondo oscuro + blur del theme.
     const bundleSidebar = root.querySelector('.product-bundle__sidebar') as HTMLElement | null;
-    const bundleSection = root.querySelector('#shopify-section-template--27201783660825__product-bundle, #shopify-section-template--27619508257049__product-bundle, .shopify-section:has(.product-bundle)') as HTMLElement | null;
+    const bundleSection = root.querySelector('#shopify-section-template--27619508257049__product-bundle, .shopify-section:has(.product-bundle)') as HTMLElement | null;
     if (bundleSidebar && bundleSection) {
-      const styleId = 'bundle-sidebar-mobile-fix';
+      const styleId = 'bundle-sidebar-mobile-sticky';
       if (!document.getElementById(styleId)) {
         const style = document.createElement('style');
         style.id = styleId;
         style.textContent = `
           @media (max-width: 1023px) {
-            .product-bundle__sidebar {
+            .product-bundle__sidebar.yaxsell-sticky {
               position: fixed !important;
-              bottom: 0 !important;
+              top: auto !important;
+              bottom: 56px !important;
               left: 0 !important;
               right: 0 !important;
-              z-index: 50 !important;
-              background: #ffffff !important;
-              padding: 16px !important;
-              box-shadow: 0 -4px 16px rgba(0,0,0,0.15) !important;
-              border-top-left-radius: 16px !important;
-              border-top-right-radius: 16px !important;
-              max-height: 85vh !important;
+              z-index: 65 !important;
+              max-height: 50vh !important;
               overflow-y: auto !important;
               transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease !important;
               transform: translateY(0) !important;
               opacity: 1 !important;
             }
-            .product-bundle__sidebar.yaxsell-mobile-hidden {
+            .product-bundle__sidebar.yaxsell-sticky.yaxsell-mobile-hidden {
               transform: translateY(120%) !important;
               opacity: 0 !important;
               pointer-events: none !important;
@@ -346,7 +393,7 @@ export default function HomePage25() {
         document.head.appendChild(style);
       }
 
-      bundleSidebar.classList.add('yaxsell-mobile-hidden'); // initially hidden
+      bundleSidebar.classList.add('yaxsell-sticky', 'yaxsell-mobile-hidden');
 
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -678,9 +725,14 @@ export default function HomePage25() {
       }
       syncConceptCartCount(r, totalItems);
       fixCloneBehaviour(r);
+
+      // Demo content has been replaced — show sections again
+      r.classList.remove('yaxsell-pre-enhance');
     };
-    // Pequeño delay para asegurar que el DOM del theme está estable
-    const t = setTimeout(run, 100);
+    // Ejecutar inmediatamente sin delay
+    run();
+    // Re-aplicar después de que el theme.js cargue (500ms) por si sobrescribió handlers
+    const t = setTimeout(run, 600);
     return () => clearTimeout(t);
   }, [bodyHtml, cats, subs, catCounts, subCounts, totalItems, featuredProd, combos, addItem]);
 

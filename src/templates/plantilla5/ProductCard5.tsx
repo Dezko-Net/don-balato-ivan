@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -139,13 +139,13 @@ export default function ProductCard5({ product }: { product: Product }) {
                 display: 'inline-block',
                 marginBottom: 2,
                 backgroundColor:
-                  (product as any).BRAND === 'Kevin & Coco' ? '#ffe4f0' :
+                  (product as any).BRAND === 'Don Balato Iván' ? '#ffe4f0' :
                   (product as any).BRAND === '3Q Beauty' ? '#231815' :
                   (product as any).BRAND === 'SADOER' ? '#e8f5e9' :
                   (product as any).BRAND === 'Billion Beauty' ? '#fde1ed' :
                   '#f3f4f6',
                 color:
-                  (product as any).BRAND === 'Kevin & Coco' ? '#c2185b' :
+                  (product as any).BRAND === 'Don Balato Iván' ? '#c2185b' :
                   (product as any).BRAND === '3Q Beauty' ? '#ffffff' :
                   (product as any).BRAND === 'SADOER' ? '#2e7d32' :
                   (product as any).BRAND === 'Billion Beauty' ? '#ad1457' :
@@ -177,3 +177,4 @@ export default function ProductCard5({ product }: { product: Product }) {
     </li>
   );
 }
+

@@ -3,8 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import { Client, Databases, Query } from 'node-appwrite';
 import { trackRead } from '@/lib/appwrite-read-tracker';
+import { serverGetDocument } from '@/lib/appwrite-server';
 
 const CONFIG_PATH = path.join(process.cwd(), 'src', 'data', 'combos-config.json');
+const SETTINGS_COLLECTION_ID = 'apertura_settings';
+const COMBOS_DOC_ID = 'combos-config';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = 'donbalatoivan';
@@ -30,7 +33,16 @@ export interface ComboItemConfig {
   bundleProductIds: string[];
 }
 
-function readLocalConfig(): ComboItemConfig[] {
+async function readLocalConfig(): Promise<ComboItemConfig[]> {
+  // Try Appwrite first (works in production)
+  try {
+    const doc = await serverGetDocument(SETTINGS_COLLECTION_ID, COMBOS_DOC_ID);
+    if (doc && (doc as any).DATA) {
+      return JSON.parse((doc as any).DATA);
+    }
+  } catch { /* doc doesn't exist yet */ }
+
+  // Fallback to local file (works in dev)
   try {
     if (fs.existsSync(CONFIG_PATH)) {
       const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
@@ -44,7 +56,7 @@ function readLocalConfig(): ComboItemConfig[] {
 
 export async function GET() {
   try {
-    const rawConfigs = readLocalConfig();
+    const rawConfigs = await readLocalConfig();
     const activeConfigs = rawConfigs.filter(c => c.isActive);
 
     // Collect all product IDs needed
@@ -72,8 +84,17 @@ export async function GET() {
             PRICE: doc.PRICE || 0,
             CURRENTPRICE: doc.CURRENTPRICE || 0,
             IMAGEURL: doc.IMAGEURL || '',
+            IMAGEURL2: doc.IMAGEURL2 || '',
+            IMAGEURL3: doc.IMAGEURL3 || '',
+            IMAGEURL4: doc.IMAGEURL4 || '',
+            IMAGEURL5: doc.IMAGEURL5 || '',
             DESCRIPTION: doc.DESCRIPTION || '',
+            FEATURES: doc.FEATURES || '',
+            TAGS: doc.TAGS || '',
+            SKU: doc.SKU || doc.sku || '',
+            BRAND: doc.BRAND || '',
             STOCK: doc.STOCK || 0,
+            PACKQTY: doc.PACKQTY || 1,
           };
         });
       } catch (e) {

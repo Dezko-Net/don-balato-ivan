@@ -1,19 +1,19 @@
-'use client';
+﻿'use client';
 
-/* ══════════════════════════════════════════════════════════════════
-   NavbarConceptReal — el header REAL del tema Shopify "Concept" (el
-   mismo del home de la plantilla 25) para el RESTO de páginas
-   (producto, carrito, cuenta, catálogo…), reemplazando al nb23.
-   ──────────────────────────────────────────────────────────────────
-   • Inyecta el HTML real del header (header-clean.html).
-   • Carga su CSS pero SCOPEADO bajo `.tpl25nav` (theme-scoped.css) para
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   NavbarConceptReal â€” el header REAL del tema Shopify "Concept" (el
+   mismo del home de la plantilla 25) para el RESTO de pÃ¡ginas
+   (producto, carrito, cuenta, catÃ¡logoâ€¦), reemplazando al nb23.
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   â€¢ Inyecta el HTML real del header (header-clean.html).
+   â€¢ Carga su CSS pero SCOPEADO bajo `.tpl25nav` (theme-scoped.css) para
      que NO contamine el resto de la app (body/button/a/*).
-   • Carga el JS del tema (custom elements: dropdowns, drawers, dock…).
-   • Lo hace funcional con enhanceConceptHeader (categorías del DB,
-     buscador → /productos?q=, cuenta → /cuenta, carrito → /carrito con
+   â€¢ Carga el JS del tema (custom elements: dropdowns, drawers, dockâ€¦).
+   â€¢ Lo hace funcional con enhanceConceptHeader (categorÃ­as del DB,
+     buscador â†’ /productos?q=, cuenta â†’ /cuenta, carrito â†’ /carrito con
      badge reactivo).
    Solo se usa cuando la plantilla activa es la 25 (ver DynamicNavbar).
-   ══════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
@@ -27,7 +27,7 @@ import {
 import { fixCloneBehaviour } from '@/templates/plantilla25/fixCloneBehaviour';
 
 const STORE_LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png';
-const STORE_NAME = 'Kevin & Coco Chile';
+const STORE_NAME = 'Don Balato Iván Chile';
 
 const SCOPED_CSS = '/shopify/plantilla25/theme-scoped.css';
 const HEADER_HTML = '/shopify/plantilla25/header-clean.html';
@@ -40,7 +40,7 @@ const FONT_FACE_CSS = `
 @font-face{font-family:Inter;font-weight:700;font-style:normal;font-display:swap;src:url("${FONT_BASE}/inter_n7.02711e6b374660cfc7915d1afc1c204e633421e4.woff2") format("woff2")}
 `;
 
-/* Stubs mínimos para que el theme.js del tema no reviente fuera de Shopify. */
+/* Stubs mÃ­nimos para que el theme.js del tema no reviente fuera de Shopify. */
 function ensureThemeStubs() {
   const w = window as any;
   if (!w.Shopify) {
@@ -78,7 +78,7 @@ export default function NavbarConceptReal() {
   const [catCounts, setCatCounts] = useState<Record<string, number>>({});
   const [subCounts, setSubCounts] = useState<Record<string, number>>({});
 
-  /* ── CSS scopeado + fuentes (una sola vez, global pero sin bleed) ── */
+  /* â”€â”€ CSS scopeado + fuentes (una sola vez, global pero sin bleed) â”€â”€ */
   useEffect(() => {
     if (!document.querySelector('link[data-tpl25nav-css]')) {
       const link = document.createElement('link');
@@ -102,7 +102,7 @@ export default function NavbarConceptReal() {
     }
   }, []);
 
-  /* ── Stubs + traer el HTML del header ── */
+  /* â”€â”€ Stubs + traer el HTML del header â”€â”€ */
   useEffect(() => {
     ensureThemeStubs();
     let aborted = false;
@@ -113,7 +113,7 @@ export default function NavbarConceptReal() {
     return () => { aborted = true; };
   }, []);
 
-  /* ── Inyectar el header una vez ── */
+  /* â”€â”€ Inyectar el header una vez â”€â”€ */
   useEffect(() => {
     const el = containerRef.current;
     if (!headerHtml || !el || el.dataset.injected) return;
@@ -126,8 +126,8 @@ export default function NavbarConceptReal() {
     el.innerHTML = headerHtml;
   }, [headerHtml]);
 
-  /* ── Cargar el JS del tema (custom elements). Solo si no está ya cargado
-     (p. ej. si venimos del home que lo cargó). ── */
+  /* â”€â”€ Cargar el JS del tema (custom elements). Solo si no estÃ¡ ya cargado
+     (p. ej. si venimos del home que lo cargÃ³). â”€â”€ */
   useEffect(() => {
     if (!headerHtml) return;
     const w = window as any;
@@ -150,7 +150,7 @@ export default function NavbarConceptReal() {
     })();
   }, [headerHtml]);
 
-  /* ── Categorías + conteos (con reintentos, misma fuente que el navbar original) ── */
+  /* â”€â”€ CategorÃ­as + conteos (con reintentos, misma fuente que el navbar original) â”€â”€ */
   useEffect(() => {
     let active = true;
     const getJSON = async (url: string, isValid?: (d: any) => boolean, tries = 5): Promise<any | null> => {
@@ -176,7 +176,7 @@ export default function NavbarConceptReal() {
     return () => { active = false; };
   }, []);
 
-  /* ── Hacer funcional el header (idempotente; re-corre al llegar la data) ── */
+  /* â”€â”€ Hacer funcional el header (idempotente; re-corre al llegar la data) â”€â”€ */
   useEffect(() => {
     const root = containerRef.current;
     if (!root || !root.dataset.injected) return;
@@ -188,7 +188,7 @@ export default function NavbarConceptReal() {
     fixCloneBehaviour(root);
   }, [headerHtml, cats, subs, catCounts, subCounts]);
 
-  /* ── Badge del carrito reactivo ── */
+  /* â”€â”€ Badge del carrito reactivo â”€â”€ */
   useEffect(() => {
     const root = containerRef.current;
     if (root?.dataset.injected) syncConceptCartCount(root, totalItems);
@@ -209,3 +209,4 @@ export default function NavbarConceptReal() {
     </>
   );
 }
+

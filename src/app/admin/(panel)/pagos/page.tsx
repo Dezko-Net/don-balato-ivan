@@ -15,12 +15,12 @@ interface BankDetails {
 }
 
 const DEFAULT: BankDetails = {
-  bankAccountHolder: 'YESBELLA LTDA.',
-  bankRut: '77.270.689-8',
-  bankName: 'BCI',
-  bankAccountType: 'Cuenta Corriente',
-  bankAccountNumber: '32590547',
-  bankEmail: 'kevincoco0819@gmail.com',
+  bankAccountHolder: 'DON BALATO IVAN',
+  bankRut: '782674269',
+  bankName: 'Mercado Pago',
+  bankAccountType: 'Cuenta Vista',
+  bankAccountNumber: '1037879898',
+  bankEmail: 'donbalatosoporte@gmail.com',
   bankInstructions: 'Transfiere el monto exacto del pedido y sube el comprobante para confirmar tu orden.',
   minimumPurchase: '50000',
 };

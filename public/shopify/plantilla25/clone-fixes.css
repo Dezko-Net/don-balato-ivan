@@ -943,6 +943,48 @@ header.header.section--rounded,
   }
 }
 
+/* Product bundle: forzar visibilidad del body cuando .active */
+#shopify-section-template--27619508257049__product-bundle .product-bundle.active .product-bundle__body {
+  display: flex !important;
+  max-height: none !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+#shopify-section-template--27619508257049__product-bundle .product-bundle.active {
+  max-height: none !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+#shopify-section-template--27619508257049__product-bundle .product-bundle.active .product-bundle__sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important;
+  z-index: 60 !important;
+  border-radius: 0 !important;
+  padding-top: 20px !important;
+  animation: yaxsell-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes yaxsell-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+#shopify-section-template--27619508257049__product-bundle .product-bundle:not(.active) .product-bundle__sidebar {
+  animation: yaxsell-slide-down 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes yaxsell-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
 /* Slider: wider cards on mobile to avoid large right-side gap */
 @media screen and (max-width: 767px) {
   .slider--tablet .mobile\:card-grid--1,
@@ -1571,12 +1613,24 @@ input, textarea {
   }
 }
 
-/* ── 3. BOTÓN "VER PRODUCTOS": texto blanco al hover ── */
+/* ── 3. BOTÓN "VER PRODUCTOS": texto negro al hover ── */
 .button--primary:hover .btn-text,
 .button--primary:hover .btn-text *,
 .button--primary:hover .btn-text svg,
 .button--primary:focus .btn-text,
 .button--primary:focus .btn-text * {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  fill: #000000 !important;
+}
+
+/* ── 3a. BOTÓN "AÑADIR AL CARRITO" DEL PRODUCT-BUNDLE: texto blanco al hover ── */
+[data-product-bundle-submit]:hover .btn-text,
+[data-product-bundle-submit]:hover .btn-text *,
+[data-product-bundle-submit]:hover .btn-price,
+[data-product-bundle-submit]:focus .btn-text,
+[data-product-bundle-submit]:focus .btn-text *,
+[data-product-bundle-submit]:focus .btn-price {
   color: #ffffff !important;
   stroke: #ffffff !important;
   fill: #ffffff !important;
@@ -1584,7 +1638,39 @@ input, textarea {
 
 .button.icon-with-text:hover .btn-text,
 .button.icon-with-text:hover .btn-text * {
+  color: #000000 !important;
+}
+
+/* ── 3b. BOTONES HERO BANNER (button--blur) Y "NUESTRA HISTORIA" (button--secondary): texto blanco al hover ── */
+.button--blur:hover .btn-text,
+.button--blur:hover .btn-text *,
+.button--blur:hover .btn-text svg,
+.button--blur:focus .btn-text,
+.button--blur:focus .btn-text * {
   color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.button.button--secondary:hover .btn-text,
+.button.button--secondary:hover .btn-text *,
+.button.button--secondary:hover .btn-text svg,
+.button.button--secondary:focus .btn-text,
+.button.button--secondary:focus .btn-text * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* ── 3c. BOTÓN "VER PRODUCTOS" EN BANNER "CALIDAD PARA TU HOGAR": texto blanco al hover ── */
+.banner .button--primary:hover .btn-text,
+.banner .button--primary:hover .btn-text *,
+.banner .button--primary:hover .btn-text svg,
+.banner .button--primary:focus .btn-text,
+.banner .button--primary:focus .btn-text * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: #ffffff !important;
 }
 
 /* ── 4. ESPACIO/PADDING HORIZONTAL A LA DERECHA EN MÓVIL ── */

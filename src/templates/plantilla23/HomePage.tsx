@@ -1,17 +1,17 @@
-'use client';
-/* ════════════════════════════════════════════════════════════════════
-   PLANTILLA 23 — Shopify Theme Capturado por FOLLA v2
-   ──────────────────────────────────────────────────────────────────
-   ⚠️  BOILERPLATE: Requiere revisión manual antes de usar.
-   ──────────────────────────────────────────────────────────────────
+﻿'use client';
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PLANTILLA 23 â€” Shopify Theme Capturado por FOLLA v2
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   âš ï¸  BOILERPLATE: Requiere revisiÃ³n manual antes de usar.
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Estrategia:
    - Render del HTML body limpio via containerRef.innerHTML
-   - Carga dinámica de CSS via <link> tags en <head>
-   - Carga dinámica de JS via <script> tags secuenciales
-   - Scripts inline de animación están en body-clean.html (se ejecutan al inyectar)
-   - Scripts de Shopify problemáticos excluidos
+   - Carga dinÃ¡mica de CSS via <link> tags en <head>
+   - Carga dinÃ¡mica de JS via <script> tags secuenciales
+   - Scripts inline de animaciÃ³n estÃ¡n en body-clean.html (se ejecutan al inyectar)
+   - Scripts de Shopify problemÃ¡ticos excluidos
    - .in-view forzado en .animation-element tras carga
-   ════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import LatestProductsCarousel from '@/components/LatestProductsCarousel';
@@ -37,12 +37,12 @@ import { getSectionConfigAsync, type SectionConfig } from '@/lib/section-config'
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
-/* ── CSS files: pre-bundled into a single file to avoid 45 network requests and layout thrashes ── */
+/* â”€â”€ CSS files: pre-bundled into a single file to avoid 45 network requests and layout thrashes â”€â”€ */
 const CSS_FILES = [
   `/shopify/plantilla23/assets/css/bundle-all.css`
 ];
 
-/* ── JS files: solo los críticos del tema ── */
+/* â”€â”€ JS files: solo los crÃ­ticos del tema â”€â”€ */
 type JsFile = { src: string; module?: boolean };
 const JS_FILES: JsFile[] = [
     { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/swiper-bundle.min.js` },
@@ -80,9 +80,9 @@ const JS_FILES: JsFile[] = [
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/added-to-cart-popup.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization-popup.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/search-drawer.js` },
-  // cart-drawer.js removed — native script calls Shopify fetch() which crashes; React handles drawer instead
-  // cart-quantity-selector.js removed — React handles qty updates
-  // cart-recommended-product-form.js removed — React hydrates recommendations
+  // cart-drawer.js removed â€” native script calls Shopify fetch() which crashes; React handles drawer instead
+  // cart-quantity-selector.js removed â€” React handles qty updates
+  // cart-recommended-product-form.js removed â€” React hydrates recommendations
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-popup.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-invalid.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-validate.js` },
@@ -97,7 +97,7 @@ const JS_FILES: JsFile[] = [
   // { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/split-hero.js` } // REMOVED to prevent mobile touch scroll hijacking
 ];
 
-/* ── Font faces ── */
+/* â”€â”€ Font faces â”€â”€ */
 const FONT_FACE_CSS = `
 @font-face {
   font-family: Montserrat;
@@ -275,12 +275,12 @@ const BUNDLE_PACK_PRODUCTS: (Product & { quantity?: number; bundleUnitPrice?: nu
 ];
 
 export default function HomePage23() {
-  // ═══ CONFIGURACIÓN MANUAL DEL HERO BANNER (EDITAR AQUÍ DIRECTAMENTE) ═══
-  // Si deseas cambiar las imágenes o textos de los banners, edítalos aquí:
+  // â•â•â• CONFIGURACIÃ“N MANUAL DEL HERO BANNER (EDITAR AQUÃ DIRECTAMENTE) â•â•â•
+  // Si deseas cambiar las imÃ¡genes o textos de los banners, edÃ­talos aquÃ­:
   const MANUAL_HERO_CONFIG = {
     hero1: {
       // Reemplaza estas URLs de imagen si quieres cambiar el banner de entrada (Hero 1).
-      // Si las dejas vacías (''), se usará el video original de la plantilla.
+      // Si las dejas vacÃ­as (''), se usarÃ¡ el video original de la plantilla.
       desktopImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/1783586640034-pegada-1783586638070.png',
       mobileImg: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1783675932133-pegada-1783675928798.png',
       title: 'Poderosamente Bella',
@@ -552,7 +552,7 @@ export default function HomePage23() {
     };
   }, [bodyHtml]);
 
-  /* 🪄🤖 Tabbed FAQ JS Logic 🤖🪄 */
+  /* ðŸª„ðŸ¤– Tabbed FAQ JS Logic ðŸ¤–ðŸª„ */
   useEffect(() => {
     if (!bodyHtml || !containerRef.current) return;
     const root = containerRef.current;
@@ -669,7 +669,7 @@ export default function HomePage23() {
     };
   }, [bodyHtml]);
 
-  /* ── Fetch categories, subcategories & products from Appwrite API (CACHED) with robust retries ── */
+  /* â”€â”€ Fetch categories, subcategories & products from Appwrite API (CACHED) with robust retries â”€â”€ */
   useEffect(() => {
     let active = true;
     let retryCount = 0;
@@ -706,12 +706,12 @@ export default function HomePage23() {
             subcategories: nextSubcategories.length,
             cheapestProducts: nextCheapestProducts.length,
           });
-          // Un payload vacío suele ser transitorio (rate limit / cold start de Appwrite).
+          // Un payload vacÃ­o suele ser transitorio (rate limit / cold start de Appwrite).
           // Reintentar en vez de renderizar la home sin productos.
           if (retryCount < maxRetries) {
             retryCount++;
             const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
-            console.warn(`[Plantilla23] Empty payload — retrying in ${delay}ms (${retryCount}/${maxRetries})`);
+            console.warn(`[Plantilla23] Empty payload â€” retrying in ${delay}ms (${retryCount}/${maxRetries})`);
             setTimeout(fetchData, delay);
             return;
           }
@@ -745,13 +745,13 @@ export default function HomePage23() {
     };
   }, []);
 
-  /* ── Mark template attribute on document for CSS scoping ── */
+  /* â”€â”€ Mark template attribute on document for CSS scoping â”€â”€ */
   useEffect(() => {
     document.documentElement.dataset.template = '23';
     return () => { delete document.documentElement.dataset.template; };
   }, []);
 
-  /* ── Fetch products with CURRENTPRICE offers for the offers carousel ── */
+  /* â”€â”€ Fetch products with CURRENTPRICE offers for the offers carousel â”€â”€ */
   useEffect(() => {
     if (offersProducts.length > 0) return;
     let alive = true;
@@ -775,14 +775,14 @@ export default function HomePage23() {
     return () => { alive = false; };
   }, [offersProducts.length]);
 
-  /* ── Load font faces ── */
+  /* â”€â”€ Load font faces â”€â”€ */
   useEffect(() => {
     const styleEl = document.createElement('style');
     styleEl.id = 'tpl23-fontfaces';
     styleEl.textContent = FONT_FACE_CSS;
     document.head.appendChild(styleEl);
 
-    // Precargar la imagen del hero para que aparezca instantáneamente
+    // Precargar la imagen del hero para que aparezca instantÃ¡neamente
     const preloadLink = document.createElement('link');
     preloadLink.rel = 'preload';
     preloadLink.as = 'image';
@@ -797,21 +797,21 @@ export default function HomePage23() {
     };
   }, []);
 
-  /* ── Load CSS files dynamically + split-hero overrides ── */
+  /* â”€â”€ Load CSS files dynamically + split-hero overrides â”€â”€ */
   useEffect(() => {
     CSS_FILES.forEach(href => {
       const existing = document.querySelector(`link[data-tpl23="${href}"]`);
       if (existing) return;
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      // Versión estable: con Date.now() el navegador re-descargaba todo el CSS en cada visita.
-      // Subir el número solo cuando se edite bundle-all.css.
+      // VersiÃ³n estable: con Date.now() el navegador re-descargaba todo el CSS en cada visita.
+      // Subir el nÃºmero solo cuando se edite bundle-all.css.
       link.href = `${href}?v=20260701`;
       link.setAttribute('data-tpl23', href);
       document.head.appendChild(link);
     });
 
-    // ═══ CRITICAL OVERRIDES for split-hero (from plantilla8 docs) ═══
+    // â•â•â• CRITICAL OVERRIDES for split-hero (from plantilla8 docs) â•â•â•
     const overrideStyle = document.createElement('style');
     overrideStyle.id = 'tpl23-overrides';
     overrideStyle.textContent = `
@@ -907,7 +907,7 @@ export default function HomePage23() {
       utility-bar, .utility-bar { background-color: #ffc0cb !important; }
       .utility-bar * { border-color: rgba(255,192,203,0.3) !important; }
 
-      /* FIX 7: Video reveal — see main animation block below (cinematicReveal) */
+      /* FIX 7: Video reveal â€” see main animation block below (cinematicReveal) */
 
       /* FIX 8: Fade out collage background once loaded to prevent source-swap flashes */
       .multimedia-collage__background.is-loaded {
@@ -979,7 +979,7 @@ export default function HomePage23() {
         animation: floatAnimation 4s ease-in-out infinite !important;
       }
 
-      /* ═══ Video starts hidden — JS handles the cinematic reveal animation ═══ */
+      /* â•â•â• Video starts hidden â€” JS handles the cinematic reveal animation â•â•â• */
       .reveal-on-play {
         opacity: 0 !important;
       }
@@ -1020,14 +1020,14 @@ export default function HomePage23() {
         animation: premiumReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
       }
 
-      /* Highlight word "CATÁLOGO" in menu to black */
+      /* Highlight word "CATÃLOGO" in menu to black */
       .header[data-id="sections--27304712208665__header"] .highlight {
         color: #000000 !important;
       }
 
-      /* ═══ Responsive nav & elements: prevent menu items crowding at medium/small laptops (e.g. 1366x768) ═══ */
+      /* â•â•â• Responsive nav & elements: prevent menu items crowding at medium/small laptops (e.g. 1366x768) â•â•â• */
 
-      /* CRITICAL: Force nav to stay on ONE LINE — no wrapping allowed.
+      /* CRITICAL: Force nav to stay on ONE LINE â€” no wrapping allowed.
          The ul has Tailwind "flex-wrap" class which causes items to drop
          to a 2nd row and overlap the hero heading text. */
       .menu-wrapper ul[data-tier="1"] {
@@ -1035,9 +1035,9 @@ export default function HomePage23() {
         overflow: hidden !important;
       }
 
-      /* [MODIFICACION YAXSEL]: Ajustes para pantallas laptops pequeñas (como 1366x768) hasta 1400px */
+      /* [MODIFICACION YAXSEL]: Ajustes para pantallas laptops pequeÃ±as (como 1366x768) hasta 1400px */
       @media (max-width: 1400px) {
-        /* Reducir espaciado del menú de navegación */
+        /* Reducir espaciado del menÃº de navegaciÃ³n */
         .menu-wrapper ul[data-tier="1"] > li > a,
         .menu-wrapper ul[data-tier="1"] > li > button {
           font-size: 12px !important;
@@ -1051,7 +1051,7 @@ export default function HomePage23() {
           padding-right: 2px !important;
         }
         
-        /* Reducir tamaño del logo para liberar espacio vertical y horizontal */
+        /* Reducir tamaÃ±o del logo para liberar espacio vertical y horizontal */
         .header a.logo-wrapper {
           width: 200px !important;
           min-width: 200px !important;
@@ -1063,22 +1063,22 @@ export default function HomePage23() {
           max-width: 200px !important;
         }
         
-        /* Reducir tamaño de las acciones Buscar y Carrito en el header */
+        /* Reducir tamaÃ±o de las acciones Buscar y Carrito en el header */
         .header .search-icon,
         .header .cart-icon {
           font-size: 12px !important;
         }
 
-        /* --- Ajustes específicos de Hero Banner 1 --- */
+        /* --- Ajustes especÃ­ficos de Hero Banner 1 --- */
         
-        /* Reducir el tamaño de las letras del título gigante (La Selección Glow) */
+        /* Reducir el tamaÃ±o de las letras del tÃ­tulo gigante (La SelecciÃ³n Glow) */
         .slideshow .giant-heading,
         .slideshow .giant-heading span,
         .slideshow .giant-heading .highlighted-text {
           font-size: clamp(2rem, 3.8vw, 3.4rem) !important;
         }
         
-        /* Reducir tamaño del texto descriptivo */
+        /* Reducir tamaÃ±o del texto descriptivo */
         .slideshow .body-text p,
         .slideshow .body-text span p {
           font-size: 0.95rem !important;
@@ -1091,14 +1091,14 @@ export default function HomePage23() {
           padding-bottom: 2rem !important;
         }
         
-        /* Reducir paddings de espaciado del botón del slideshow para compactar verticalmente */
+        /* Reducir paddings de espaciado del botÃ³n del slideshow para compactar verticalmente */
         .slideshow-block-button .custom-theme-block,
         .slideshow__content .button-block .custom-theme-block {
           --padding-bottom: 15px !important;
         }
       }
 
-      /* [MODIFICACION YAXSEL]: Ajustes para pantallas medianamente pequeñas hasta 1200px */
+      /* [MODIFICACION YAXSEL]: Ajustes para pantallas medianamente pequeÃ±as hasta 1200px */
       @media (max-width: 1200px) {
         .menu-wrapper ul[data-tier="1"] > li > a,
         .menu-wrapper ul[data-tier="1"] > li > button {
@@ -1127,7 +1127,7 @@ export default function HomePage23() {
         }
       }
 
-      /* [MODIFICACION YAXSEL]: Ajustes extremos antes de pasar a la vista móvil */
+      /* [MODIFICACION YAXSEL]: Ajustes extremos antes de pasar a la vista mÃ³vil */
       @media (max-width: 1024px) {
         .menu-wrapper ul[data-tier="1"] > li > a,
         .menu-wrapper ul[data-tier="1"] > li > button {
@@ -1265,7 +1265,7 @@ export default function HomePage23() {
         }
       }
 
-      /* Animación suave de transición para todo el header al scrollear */
+      /* AnimaciÃ³n suave de transiciÃ³n para todo el header al scrollear */
       custom-header.header-element {
         transition: background 0.4s ease-in-out, 
                     background-color 0.4s ease-in-out, 
@@ -1275,8 +1275,8 @@ export default function HomePage23() {
                     transform 0.4s ease-in-out !important;
       }
 
-      /* ── COMPACT HEADER & UTILITY BAR (MOVE NAVBAR HIGHER) ── */
-      /* Hacer la barra de utilidad (utility-bar) súper delgada */
+      /* â”€â”€ COMPACT HEADER & UTILITY BAR (MOVE NAVBAR HIGHER) â”€â”€ */
+      /* Hacer la barra de utilidad (utility-bar) sÃºper delgada */
       utility-bar.header-element {
         min-height: 24px !important;
         --min-height: 24px !important;
@@ -1293,9 +1293,9 @@ export default function HomePage23() {
         margin-bottom: 0px !important;
       }
 
-      /* Reducir paddings internos del header para subir la barra y compactarla al máximo */
+      /* Reducir paddings internos del header para subir la barra y compactarla al mÃ¡ximo */
       custom-header.header-element {
-        --top: 24px !important; /* Fuerza al header a estar pegado al utility-bar súper arriba */
+        --top: 24px !important; /* Fuerza al header a estar pegado al utility-bar sÃºper arriba */
         --utility-bar-gap: 0px !important;
         --announcement-bar-gap: 0px !important;
       }
@@ -1310,7 +1310,7 @@ export default function HomePage23() {
         padding-bottom: 1px !important;
       }
 
-      /* Quitar la línea blanca de abajo de forma ultra agresiva en toda la sección del header */
+      /* Quitar la lÃ­nea blanca de abajo de forma ultra agresiva en toda la secciÃ³n del header */
       .section-header,
       .shopify-section,
       custom-header.header-element,
@@ -1325,8 +1325,8 @@ export default function HomePage23() {
         outline: none !important;
       }
 
-      /* ── HERO BANNER CONTENT POSITION (LOWER IT) ── */
-      /* Bajar el título, descripción y botón del slideshow para que no queden pegados arriba */
+      /* â”€â”€ HERO BANNER CONTENT POSITION (LOWER IT) â”€â”€ */
+      /* Bajar el tÃ­tulo, descripciÃ³n y botÃ³n del slideshow para que no queden pegados arriba */
       @media (min-width: 1024px) {
         .slideshow__content .custom-container {
           padding-top: 140px !important; /* Desplaza el bloque hacia abajo en desktop */
@@ -1394,7 +1394,7 @@ export default function HomePage23() {
           padding-top: 90px !important; /* Desplaza el bloque hacia abajo en mobile */
         }
       }
-      /* ── HEADER THREE-STATE STYLING (GLASSMORPHISM ONLY ON SCROLLED STICKY) ── */
+      /* â”€â”€ HEADER THREE-STATE STYLING (GLASSMORPHISM ONLY ON SCROLLED STICKY) â”€â”€ */
       /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
       /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
       custom-header.header-element[data-scroll="false"],
@@ -1407,7 +1407,7 @@ export default function HomePage23() {
         border: none !important;
         border-bottom: none !important;
         box-shadow: none !important;
-      }      /* Ocultar logo en móvil cuando no hay scroll y mostrarlo solo en el sticky (data-scroll="true") */
+      }      /* Ocultar logo en mÃ³vil cuando no hay scroll y mostrarlo solo en el sticky (data-scroll="true") */
       @media (max-width: 1023px) {
         custom-header[data-scroll="false"] .logo-wrapper {
           display: none !important;
@@ -1417,7 +1417,7 @@ export default function HomePage23() {
         }
       }
 
-            /* ── NEWSLETTER POPUP: Never auto-open on mobile — only if user clicks button ── */
+            /* â”€â”€ NEWSLETTER POPUP: Never auto-open on mobile â€” only if user clicks button â”€â”€ */
       /* On mobile the popup will only show when user taps the button-newsletter label */
       @media (max-width: 767px) {
         /* When popup opens (triggered by user), make it look nice and compact */
@@ -1435,15 +1435,15 @@ export default function HomePage23() {
         }
       }
 
-      /* ── HIDE HEROBANNER NATIVE SWIPER PAGINATION + ARROWS ── */
+      /* â”€â”€ HIDE HEROBANNER NATIVE SWIPER PAGINATION + ARROWS â”€â”€ */
       /* El carrusel del hero ahora usa flechas/puntos propios (.hero-nav/.hero-dots),
-         así que ocultamos los controles nativos de Swiper que quedaron sin función. */
+         asÃ­ que ocultamos los controles nativos de Swiper que quedaron sin funciÃ³n. */
       .slideshow .swiper-pagination,
       .slideshow .swiper-navigation-wrapper {
           display: none !important;
       }
 
-      /* Ocultar el bloque de video y el contenido del collage en móviles y tablets para evitar lag severo */
+      /* Ocultar el bloque de video y el contenido del collage en mÃ³viles y tablets para evitar lag severo */
       @media (max-width: 1023px) {
         .multimedia-collage,
         multimedia-collage,
@@ -1463,7 +1463,7 @@ export default function HomePage23() {
         }
       }
 
-      /* ── MOBILE HERO BANNER: Remove description, add two buttons ── */
+      /* â”€â”€ MOBILE HERO BANNER: Remove description, add two buttons â”€â”€ */
       @media (max-width: 767px) {
         /* Hide description text in hero banner */
         #shopify-block-AcVBhSWFiRHVuUkd6T__text_JfdEpN { display: none !important; }
@@ -1477,7 +1477,7 @@ export default function HomePage23() {
         #shopify-block-ASEtVbTFsdUJKUm1XV__button_yUjQqP .custom-button { font-size: 11px !important; padding: 6px 14px !important; }
         /* Tu Ritual Diario description */
         #shopify-block-Aa0hpRFd5WEFEbWEwV__text_mzj3iN { display: none !important; }
-        /* Dulce Color description — will need to find its block ID, applying via parent */
+        /* Dulce Color description â€” will need to find its block ID, applying via parent */
         .multimedia-collage__block .text-block.shopify-block:not(:first-child) { display: none !important; }
 
         /* Videos: allow scroll through them */
@@ -1489,7 +1489,7 @@ export default function HomePage23() {
         /* Keep Navbar1 top section visible on mobile */
         .tpl1-nav { display: block !important; }
 
-        /* Hide theme's native hamburger, search and cart in hero header — capsule navbar handles them */
+        /* Hide theme's native hamburger, search and cart in hero header â€” capsule navbar handles them */
         .menu-hamburger-button,
         #button-mobile-menu-drawer,
         .search-icon[data-action="open"],
@@ -1520,7 +1520,7 @@ export default function HomePage23() {
         .tpl1-nav-mobile-overlay { display: none !important; }
       }
 
-      /* ── MANOS SUAVES BLOCK CUSTOM LAYOUT ── */
+      /* â”€â”€ MANOS SUAVES BLOCK CUSTOM LAYOUT â”€â”€ */
       [data-block-id="AMXRRQ2RsU3J0dWQzY__multimedia_collage_image_block_hThbgy"] .multimedia-collage-block__inner {
         position: relative !important;
       }
@@ -1590,7 +1590,7 @@ export default function HomePage23() {
 
 
 
-      /* ── FEATURED COLLECTION & PRODUCT CARDS REDESIGN ── */
+      /* â”€â”€ FEATURED COLLECTION & PRODUCT CARDS REDESIGN â”€â”€ */
       .featured-collection {
         background-color: #faf6f6/30 !important;
         padding-top: 60px !important;
@@ -1612,7 +1612,7 @@ export default function HomePage23() {
         margin-top: 6px !important;
       }
       
-      /* Pestañas de Tags Estilo Minimalista Boutique */
+      /* PestaÃ±as de Tags Estilo Minimalista Boutique */
       .featured-collection__tags {
         margin-bottom: 40px !important;
         border-bottom: 1px solid rgba(0,0,0,0.06) !important;
@@ -1679,7 +1679,7 @@ export default function HomePage23() {
         display: none !important;
       }
 
-      /* Flechas de navegación */
+      /* Flechas de navegaciÃ³n */
       .featured-collection .button-previous,
       .featured-collection .button-next {
         background: white !important;
@@ -1699,7 +1699,7 @@ export default function HomePage23() {
         transform: scale(1.05) !important;
       }
 
-/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
+/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin lÃ­nea blanca abajo */
       custom-header.header-element[data-scroll="true"],
       .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
         background: #fdf2f8 !important;
@@ -1768,7 +1768,7 @@ export default function HomePage23() {
       }
       /* "Producto Destacado" badge/ribbon */
       featured-product[data-id="template--27304712470809__featured_product_38eqkx"]::before {
-        content: "✨ Producto Destacado";
+        content: "âœ¨ Producto Destacado";
         position: absolute !important;
         top: 20px !important;
         left: 20px !important;
@@ -1960,7 +1960,7 @@ export default function HomePage23() {
           max-width: 100% !important;
           width: 100% !important;
         }
-        /* ── Media: consistent square showcase so ANY product image (portrait/square/wide) looks good ── */
+        /* â”€â”€ Media: consistent square showcase so ANY product image (portrait/square/wide) looks good â”€â”€ */
         .product[data-id="template--27304712470809__featured_product_38eqkx"] product-media {
           border-radius: 18px !important;
           background: radial-gradient(circle at 50% 35%, #ffffff 0%, #fdf2f8 100%) !important;
@@ -2004,7 +2004,7 @@ export default function HomePage23() {
         .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container span.text-\[10px\] {
           font-size: 7px !important;
         }
-        /* ── Typography: clear hierarchy ── */
+        /* â”€â”€ Typography: clear hierarchy â”€â”€ */
         .product[data-id="template--27304712470809__featured_product_38eqkx"] .vendor {
           font-size: 10px !important;
           margin-bottom: 4px !important;
@@ -2136,7 +2136,7 @@ export default function HomePage23() {
       }
 
       @media (max-width: 992px) {
-        /* Hide the theme's native header on mobile — capsule navbar replaces it entirely */
+        /* Hide the theme's native header on mobile â€” capsule navbar replaces it entirely */
         .tpl23-shopify-root custom-header.header-element {
           display: none !important;
         }
@@ -2144,7 +2144,7 @@ export default function HomePage23() {
         /* Push the hero slideshow down so it starts below the fixed capsule navbar (56px).
            No margin-top blanco: usamos un filler pintado del mismo rosa base del hero
            (#tpl23-hero-gap-filler, insertado por JS) para que no se vea un espacio en blanco
-           detrás del navbar cápsula flotante. */
+           detrÃ¡s del navbar cÃ¡psula flotante. */
         #shopify-section-template--27304712470809__slideshow_FBfKC8 {
           margin-top: 0 !important;
         }
@@ -2192,7 +2192,7 @@ export default function HomePage23() {
     };
   }, []);
 
-  /* ── Fetch the cleaned HTML body content ── */
+  /* â”€â”€ Fetch the cleaned HTML body content â”€â”€ */
   useEffect(() => {
     let aborted = false;
     fetch('/shopify/plantilla23/body-clean.html?v=' + Date.now())
@@ -2212,7 +2212,7 @@ export default function HomePage23() {
     return () => { aborted = true; };
   }, []);
 
-  /* ── Set innerHTML ONCE via ref ── */
+  /* â”€â”€ Set innerHTML ONCE via ref â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || !containerRef.current || !isAppwriteLoaded || !isThemeConfigLoaded) return;
     if (containerRef.current.dataset.htmlSet) return;
@@ -2251,9 +2251,9 @@ export default function HomePage23() {
       wrapper.innerHTML = html;
     });
 
-    // ─── NUEVO: HYDRATE NAV MENUS CON CATEGORÍAS REALES ───
-    // Siempre se reconstruyen los menús base (aunque no haya categorías) para que
-    // nunca quede visible el menú de la plantilla original.
+    // â”€â”€â”€ NUEVO: HYDRATE NAV MENUS CON CATEGORÃAS REALES â”€â”€â”€
+    // Siempre se reconstruyen los menÃºs base (aunque no haya categorÃ­as) para que
+    // nunca quede visible el menÃº de la plantilla original.
     {
       // 1. PC Megamenu
       const pcNavUl = tempDiv.querySelector('.menu-wrapper ul[data-tier="1"]')
@@ -2261,14 +2261,14 @@ export default function HomePage23() {
       if (pcNavUl) {
         const homeLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;color:#e396bf">Inicio</span></a></li>`;
         const storeLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/productos" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Tienda</span></a></li>`;
-        // 📦 Paquetes OCULTO (jul 2026): todo pedido es mayorista vía precios por
-        // volumen — para restaurar, re-añadir packLink al innerHTML de abajo.
+        // ðŸ“¦ Paquetes OCULTO (jul 2026): todo pedido es mayorista vÃ­a precios por
+        // volumen â€” para restaurar, re-aÃ±adir packLink al innerHTML de abajo.
         // const packLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus"><a href="/paquetes" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;">Paquetes</span></a></li>`;
         
         const ordersLink = `<li class="inline-block group py-2 px-1 shrink-0 no-keyboard-focus ml-auto"><a href="/cuenta/pedidos" class="flex items-center no-keyboard-focus" data-menu-tier="1"><span class="link-hover-animation" style="font-weight:600;color:#333">Mis Pedidos</span></a></li>`;
         
-        // La navegación de categorías se construye en el efecto del mega menú.
-        // Aquí solo dejamos los enlaces base para evitar una lista plana temporal.
+        // La navegaciÃ³n de categorÃ­as se construye en el efecto del mega menÃº.
+        // AquÃ­ solo dejamos los enlaces base para evitar una lista plana temporal.
         pcNavUl.innerHTML = homeLink + storeLink + ordersLink;
       }
 
@@ -2281,7 +2281,7 @@ export default function HomePage23() {
 
         const homeLi = makeDrawerLi('Inicio', '/', true, '#e396bf');
         const storeLi = makeDrawerLi('Tienda', '/productos', true);
-        // 📦 Paquetes oculto: sin entrada "Catálogo Paquetes" en el drawer
+        // ðŸ“¦ Paquetes oculto: sin entrada "CatÃ¡logo Paquetes" en el drawer
         
         const catHeader = '';
         const catLis = '';
@@ -2292,7 +2292,7 @@ export default function HomePage23() {
         drawerUl.innerHTML = homeLi + storeLi + catHeader + catLis + `<div class="h-2 bg-gray-50"></div>` + ordersLi + loginLi;
       }
     }
-    // ────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     {
       // Find Swiper wrapper inside collection-list
@@ -2301,7 +2301,7 @@ export default function HomePage23() {
       if (swiperWrapper) {
         swiperWrapper.innerHTML = ''; // Clear hardcoded slides
 
-        // Sin categorías no hay nada que mostrar: ocultar la sección completa
+        // Sin categorÃ­as no hay nada que mostrar: ocultar la secciÃ³n completa
         if (categories.length === 0) {
           const clSection = swiperWrapper.closest('.shopify-section') as HTMLElement | null;
           if (clSection) clSection.style.setProperty('display', 'none', 'important');
@@ -2399,7 +2399,7 @@ export default function HomePage23() {
     // Insert Live Shopping, Wholesale Offers and Latest Products placeholders right after the Hero banner (slideshow)
     const heroBannerSection = tempDiv.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
     if (heroBannerSection) {
-      // Mobile: filler rosa detrás del navbar cápsula flotante, para que el hueco que
+      // Mobile: filler rosa detrÃ¡s del navbar cÃ¡psula flotante, para que el hueco que
       // deja el "margin-top" del hero (espacio reservado para el navbar) no se vea en
       // blanco/gris sino del mismo tono base que el fondo del hero (#FBCAC9).
       if (!tempDiv.querySelector('#tpl23-hero-gap-filler')) {
@@ -2414,8 +2414,8 @@ export default function HomePage23() {
         countdownSection.style.display = 'none';
       }
 
-      // ORDEN DESEADO: Hero → Explora Nuestras Marcas → Mega Pack → (Novedades / carrusel / etc.)
-      // Insertamos en orden INVERSO después del hero (cada insertAdjacentElement 'afterend' empuja al siguiente)
+      // ORDEN DESEADO: Hero â†’ Explora Nuestras Marcas â†’ Mega Pack â†’ (Novedades / carrusel / etc.)
+      // Insertamos en orden INVERSO despuÃ©s del hero (cada insertAdjacentElement 'afterend' empuja al siguiente)
       let anchor: Element = heroBannerSection;
 
       // 1. Primero: Explora Nuestras Marcas (media_columns_slider)
@@ -2425,15 +2425,15 @@ export default function HomePage23() {
         anchor = exploraSection;
       }
 
-      // 2. Segundo: Mega Pack (bundle_products) — TEMPORALMENTE OCULTO
+      // 2. Segundo: Mega Pack (bundle_products) â€” TEMPORALMENTE OCULTO
       const bundleSection = tempDiv.querySelector('#shopify-section-template--27304712470809__bundle_products_3zgi3T') as HTMLElement | null;
       if (bundleSection) {
         bundleSection.style.display = 'none';
-        // No lo insertamos en el DOM — temporalmente oculto
+        // No lo insertamos en el DOM â€” temporalmente oculto
         // anchor se mantiene en exploraSection para que el resto del layout funcione
       }
 
-      // 3. Después del Mega Pack van todos los roots dinámicos de React
+      // 3. DespuÃ©s del Mega Pack van todos los roots dinÃ¡micos de React
       const offersCarouselRoot = document.createElement('div');
       offersCarouselRoot.id = 'yaxsell-offers-carousel-root';
       anchor.insertAdjacentElement('afterend', offersCarouselRoot);
@@ -2462,8 +2462,8 @@ export default function HomePage23() {
     tempDiv.querySelectorAll('.product-columns-block .swiper-container .swiper-wrapper, product-columns .swiper-container .swiper-wrapper').forEach(wrapper => {
       wrapper.innerHTML = '';
     });
-    // No vaciar el esqueleto de featured-product (la hidratación lo necesita para
-    // rellenar título/precio/imagen). Se oculta la sección hasta que haya producto real.
+    // No vaciar el esqueleto de featured-product (la hidrataciÃ³n lo necesita para
+    // rellenar tÃ­tulo/precio/imagen). Se oculta la secciÃ³n hasta que haya producto real.
     tempDiv.querySelectorAll('featured-product').forEach(block => {
       const section = (block.closest('.shopify-section') || block) as HTMLElement;
       section.style.setProperty('display', 'none', 'important');
@@ -2505,7 +2505,7 @@ export default function HomePage23() {
     // Hydrate bundle products with the 12 selected products
     const bundleTitle = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list h2 span');
     if (bundleTitle) {
-      bundleTitle.textContent = 'Mega Pack Favoritos (10 Productos · 15 Unidades)';
+      bundleTitle.textContent = 'Mega Pack Favoritos (10 Productos Â· 15 Unidades)';
     }
 
     const bundleListWrapper = tempDiv.querySelector('.section-bundle-products .bundle-products__product-list ul');
@@ -2598,17 +2598,17 @@ export default function HomePage23() {
     containerRef.current.dataset.htmlSet = '1';
     setHtmlInjected(true);
 
-    // ── FORZAR ORDEN EN EL DOM REAL (después de inyectar innerHTML) ──
+    // â”€â”€ FORZAR ORDEN EN EL DOM REAL (despuÃ©s de inyectar innerHTML) â”€â”€
     // Movemos las secciones directamente en el DOM ya renderizado,
-    // sin depender del orden de tempDiv ni de ninguna caché.
+    // sin depender del orden de tempDiv ni de ninguna cachÃ©.
     {
       const realHero = containerRef.current.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
       const realExplora = containerRef.current.querySelector('#shopify-section-template--27304712470809__media_columns_slider_zMFEzH');
       const realBundle = containerRef.current.querySelector('#shopify-section-template--27304712470809__bundle_products_3zgi3T');
       if (realHero) {
-        // Insertar Explora justo después del hero
+        // Insertar Explora justo despuÃ©s del hero
         if (realExplora) realHero.insertAdjacentElement('afterend', realExplora);
-        // Insertar Bundle después de Explora (o después del hero si Explora no existe)
+        // Insertar Bundle despuÃ©s de Explora (o despuÃ©s del hero si Explora no existe)
         const afterExplora = realExplora ?? realHero;
         if (realBundle) afterExplora.insertAdjacentElement('afterend', realBundle);
       }
@@ -2620,7 +2620,7 @@ export default function HomePage23() {
     if (bundleCartBtn) {
       bundleCartBtn.classList.remove('disabled', 'pointer-events-none');
       const texts = bundleCartBtn.querySelectorAll('.link-hover-animation');
-      texts.forEach(t => t.textContent = 'Añadir Pack al Carrito ($15.990)');
+      texts.forEach(t => t.textContent = 'AÃ±adir Pack al Carrito ($15.990)');
       
       // Clone it to strip native Shopify listeners
       const clonedBtn = bundleCartBtn.cloneNode(true);
@@ -2633,7 +2633,7 @@ export default function HomePage23() {
         // Add the bundle as a single product (la caja)
         const BUNDLE_PRODUCT: Product = {
           $id: '6a4d2d0f0006e27d56f6',
-          NAME: 'Mega Pack Favoritos (10 Productos · 15 Unidades)',
+          NAME: 'Mega Pack Favoritos (10 Productos Â· 15 Unidades)',
           DESCRIPTION: 'Base Raspberry Tart + Iluminadores + Polvo Suelto + Paleta 4 Rubores + Corrector + Paleta Sombras Ghost Music + Toallitas + Brocha + Brillos Labial 6 Colores x3 + Brillos Love Color x4',
           PRICE: 15990,
           STOCK: 100,
@@ -2654,7 +2654,7 @@ export default function HomePage23() {
       });
     }
 
-    // ═══ CUSTOM HERO CONFIG OVERRIDES (MANUAL DESDE CÓDIGO) ═══
+    // â•â•â• CUSTOM HERO CONFIG OVERRIDES (MANUAL DESDE CÃ“DIGO) â•â•â•
     
     // 1. Desktop Image override
     if (MANUAL_HERO_CONFIG.hero1.desktopImg) {
@@ -2708,9 +2708,9 @@ export default function HomePage23() {
       }
     }
 
-    // 🎞️ Hero Banner: carrusel de 3 imágenes (fade) controlado por JS propio — sin Swiper.
+    // ðŸŽžï¸ Hero Banner: carrusel de 3 imÃ¡genes (fade) controlado por JS propio â€” sin Swiper.
     // Maneja crossfade, autoplay (5s), flechas y puntos. El overlay de "Kenia" fue removido:
-    // el hero rota SOLO entre las 3 imágenes.
+    // el hero rota SOLO entre las 3 imÃ¡genes.
     try {
       const heroSec = containerRef.current.querySelector('[data-id="template--27304712470809__slideshow_FBfKC8"]') as HTMLElement | null;
       const heroBg = heroSec?.querySelector('.slideshow__background') as HTMLElement | null;
@@ -2752,7 +2752,7 @@ export default function HomePage23() {
           dummyMob.src = MANUAL_HERO_CONFIG.hero1.mobileImg;
         }
 
-        // Las dos pistas (PC/móvil); solo una está visible a la vez vía CSS.
+        // Las dos pistas (PC/mÃ³vil); solo una estÃ¡ visible a la vez vÃ­a CSS.
         const carousels = Array.from(heroBg.querySelectorAll('.hero-carousel')) as HTMLElement[];
         const slidesByCarousel = carousels.map(c => Array.from(c.querySelectorAll('.hero-slide')) as HTMLElement[]);
         const total = slidesByCarousel[0]?.length || 0;
@@ -2821,15 +2821,15 @@ export default function HomePage23() {
         }
       }
 
-      // Temporizador removido a petición del usuario.
+      // Temporizador removido a peticiÃ³n del usuario.
     } catch (e) { console.error('[TPL23] Hero carousel error', e); }
 
-    // 🧭 Header/drawer móvil: (1) "COMPRA DESDE" ya fue eliminado del HTML,
+    // ðŸ§­ Header/drawer mÃ³vil: (1) "COMPRA DESDE" ya fue eliminado del HTML,
     // (2) subir lupa + carrito a la fila de la hamburguesa, y (3) en el drawer izquierdo
     // reemplazar "TIENDA" por UNIDAD (/productos) y PAQUETE (/paquetes).
-    // El header y el menú del drawer se terminan de poblar (categorías con contador)
-    // DESPUÉS de inyectar el HTML, así que aplicamos los cambios con un polling
-    // idempotente hasta que el contenido esté listo (o se agote el tiempo).
+    // El header y el menÃº del drawer se terminan de poblar (categorÃ­as con contador)
+    // DESPUÃ‰S de inyectar el HTML, asÃ­ que aplicamos los cambios con un polling
+    // idempotente hasta que el contenido estÃ© listo (o se agote el tiempo).
     const applyMobileHeaderDrawer = (): boolean => {
       const root = containerRef.current;
       if (!root) return true;
@@ -2869,11 +2869,11 @@ export default function HomePage23() {
               burgerWrap.appendChild(grp);
               iconsBar.style.display = 'none';
             } else {
-              done = false; // aún no están los iconos
+              done = false; // aÃºn no estÃ¡n los iconos
             }
           }
         } else {
-          done = false; // aún no está la hamburguesa
+          done = false; // aÃºn no estÃ¡ la hamburguesa
         }
 
         // (3) Drawer logic is now handled during initial HTML hydration above.
@@ -2882,7 +2882,7 @@ export default function HomePage23() {
         if (!drawerUl) {
           done = false;
         }
-      } catch (e) { console.error('[TPL23] header/drawer móvil error', e); }
+      } catch (e) { console.error('[TPL23] header/drawer mÃ³vil error', e); }
       return done;
     };
     {
@@ -2894,7 +2894,7 @@ export default function HomePage23() {
       applyMobileHeaderDrawer();
     }
 
-    // ✨ Hero Banner — Premium Particle System (lag-free via pre-rendered textures)
+    // âœ¨ Hero Banner â€” Premium Particle System (lag-free via pre-rendered textures)
     const heroParticlesCanvas = containerRef.current.querySelector('#yaxsell-hero-particles') as HTMLCanvasElement;
     if (heroParticlesCanvas && !heroParticlesCanvas.dataset.particlesBound) {
       heroParticlesCanvas.dataset.particlesBound = '1';
@@ -3087,8 +3087,8 @@ export default function HomePage23() {
     const root = containerRef.current;
     root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
 
-    // ═══ MutationObserver: remove filter:blur(0px) that Shopify scripts re-add ═══
-    // filter:blur(0) creates a new stacking context → breaks position:fixed → white flash
+    // â•â•â• MutationObserver: remove filter:blur(0px) that Shopify scripts re-add â•â•â•
+    // filter:blur(0) creates a new stacking context â†’ breaks position:fixed â†’ white flash
     // Must observe on document.body too, not just root, because Shopify scripts add
     // filter:blur(0px) to ANCESTOR elements (main, div wrappers) outside our container
     const removeBlurFilter = (el: HTMLElement) => {
@@ -3118,7 +3118,7 @@ export default function HomePage23() {
       if (sweepCount >= 20) clearInterval(sweepInterval); // 10 seconds
     }, 500);
 
-    // ═══ IntersectionObserver fallback for .animation-element outside split-hero ═══
+    // â•â•â• IntersectionObserver fallback for .animation-element outside split-hero â•â•â•
     const animObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -3132,7 +3132,7 @@ export default function HomePage23() {
       }
     });
 
-    // ═══ Video lazy-play: only play videos when visible ═══
+    // â•â•â• Video lazy-play: only play videos when visible â•â•â•
     const isMobile = window.innerWidth < 1024;
     const videoObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -3146,7 +3146,7 @@ export default function HomePage23() {
                                  video.querySelector('source[src*="rever.mp4"]') ||
                                  (video.src && (video.src.includes('therea.mp4') || video.src.includes('rever.mp4')));
           
-          // En móvil (no hay hover), auto-reproducir incluso los videos de collage
+          // En mÃ³vil (no hay hover), auto-reproducir incluso los videos de collage
           if (!isCollageVideo || isMobile) {
             // Ensure loop on mobile so video repeats while visible
             if (isMobile) video.loop = true;
@@ -3159,7 +3159,7 @@ export default function HomePage23() {
       });
     }, { threshold: 0.1 });
     root.querySelectorAll('video').forEach(video => {
-      // Skip our custom hero videos — they are managed entirely by the inline HTML scripts
+      // Skip our custom hero videos â€” they are managed entirely by the inline HTML scripts
       const videoId = video.id;
       if (videoId === 'hero1-video-desktop' || videoId === 'hero1-video-mobile') return;
 
@@ -3189,9 +3189,9 @@ export default function HomePage23() {
       }
     });
 
-    // ═══ HERO VIDEO INIT (runs here because <script> inside innerHTML doesn't execute) ═══
+    // â•â•â• HERO VIDEO INIT (runs here because <script> inside innerHTML doesn't execute) â•â•â•
     const initHeroVideos = () => {
-      // ── Desktop ──
+      // â”€â”€ Desktop â”€â”€
       const vidDesktop = root.querySelector('#hero1-video-desktop') as HTMLVideoElement | null;
       const imgDesktop = root.querySelector('#hero1-image-desktop') as HTMLElement | null;
       if (vidDesktop) {
@@ -3211,7 +3211,7 @@ export default function HomePage23() {
         vidDesktop.play().catch(() => {});
       }
 
-      // ── Mobile ──
+      // â”€â”€ Mobile â”€â”€
       const vidMobile = root.querySelector('#hero1-video-mobile') as HTMLVideoElement | null;
       const imgMobile = root.querySelector('#hero1-image-mobile') as HTMLElement | null;
       if (vidMobile && imgMobile) {
@@ -3230,7 +3230,7 @@ export default function HomePage23() {
     // Also retry after 500ms in case preload=auto hasn't buffered yet
     setTimeout(initHeroVideos, 500);
 
-    // ═══ Pause hero video when nav menu dropdown is open ═══
+    // â•â•â• Pause hero video when nav menu dropdown is open â•â•â•
     const heroVideos = root.querySelectorAll('split-hero video, .split-hero video');
     const navItems = root.querySelectorAll('.header-menu-item, menu-drawer .menu-item, .header nav li');
     navItems.forEach(item => {
@@ -3242,7 +3242,7 @@ export default function HomePage23() {
       });
     });
 
-    // ═══ Swiper active slide video re-trigger ═══
+    // â•â•â• Swiper active slide video re-trigger â•â•â•
     const swiperObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -3274,7 +3274,7 @@ export default function HomePage23() {
       }
     });
 
-    // ═══ HeroBanner 1: Smooth JS-driven fade-in on initial load ═══
+    // â•â•â• HeroBanner 1: Smooth JS-driven fade-in on initial load â•â•â•
     // Uses rAF + transition to bypass CSS !important conflicts reliably.
     setTimeout(() => {
       const firstSlide = root.querySelector('.swiper-slide');
@@ -3298,12 +3298,12 @@ export default function HomePage23() {
       }
     }, 600);
 
-    // ═══ HeroBanner: el carrusel de 3 imágenes es 100% CSS (fade) en body-clean.html ═══
-    // No se inicializa Swiper en el hero a propósito: con innerHTML los <script> nativos
-    // no corren y el init perdía la carrera, dejando los slides apilados. El fade por CSS
-    // no depende de JS, así que nunca se rompe el layout.
+    // â•â•â• HeroBanner: el carrusel de 3 imÃ¡genes es 100% CSS (fade) en body-clean.html â•â•â•
+    // No se inicializa Swiper en el hero a propÃ³sito: con innerHTML los <script> nativos
+    // no corren y el init perdÃ­a la carrera, dejando los slides apilados. El fade por CSS
+    // no depende de JS, asÃ­ que nunca se rompe el layout.
 
-    // ═══ NEWSLETTER POPUP ON MOBILE: Never auto-open, only on user tap ═══
+    // â•â•â• NEWSLETTER POPUP ON MOBILE: Never auto-open, only on user tap â•â•â•
     // On mobile, always keep the popup closed unless the user explicitly opens it.
     if (window.matchMedia('(max-width: 767px)').matches) {
       const preventAutoPopup = () => {
@@ -3360,7 +3360,7 @@ export default function HomePage23() {
       setTimeout(preventAutoPopup, 3000);
     }
 
-    // ═══ MOBILE HERO: Replace single button with two buttons (Tienda + Catálogo) ═══
+    // â•â•â• MOBILE HERO: Replace single button with two buttons (Tienda + CatÃ¡logo) â•â•â•
     const injectMobileHeroButtons = () => {
       const heroButtonBlock = root.querySelector('#shopify-block-ANTBPMjNnaUZNbklXR__button_VKQi4f .custom-theme-block') as HTMLElement | null;
       if (!heroButtonBlock || heroButtonBlock.dataset.mobileBtnsInjected) return;
@@ -3388,7 +3388,7 @@ export default function HomePage23() {
             color:#111827; font-weight:800; font-size:14px; text-transform:uppercase;
             text-decoration:none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05) inset;
             letter-spacing:1px; border:none; white-space:nowrap;
-          ">Catálogo</a>
+          ">CatÃ¡logo</a>
           ` : ''}
         </div>
         <div class="hidden md:block">
@@ -3402,7 +3402,7 @@ export default function HomePage23() {
 
   }, [bodyHtml, categories, products, isAppwriteLoaded, timedOffers, keniaEnabled, isThemeConfigLoaded, htmlInjected]);
 
-  /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
+  /* â”€â”€ Wire "Iniciar SesiÃ³n" button to auth popup (same style as plantilla1) â”€â”€ */
   useEffect(() => {
     if (!containerRef.current || !containerRef.current.dataset.htmlSet) return;
 
@@ -3410,10 +3410,10 @@ export default function HomePage23() {
     const loginLink = root.querySelector('li[data-type="account"] a') as HTMLElement | null;
     if (!loginLink) return;
 
-    // Actualizar texto y enlace basado en si el usuario está logueado
+    // Actualizar texto y enlace basado en si el usuario estÃ¡ logueado
     const labelSpan = loginLink.querySelector('.link-hover-animation');
     if (labelSpan) {
-      labelSpan.textContent = user ? (user.name ? user.name.split(' ')[0] : 'Mi Cuenta') : 'Iniciar Sesión';
+      labelSpan.textContent = user ? (user.name ? user.name.split(' ')[0] : 'Mi Cuenta') : 'Iniciar SesiÃ³n';
     }
     loginLink.setAttribute('href', user ? '/cuenta' : '/login');
 
@@ -3509,9 +3509,9 @@ export default function HomePage23() {
           <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg,#fdf2f8,#fbcfe8);display:flex;align-items:center;justify-content:center;color:#db2777;box-shadow:0 8px 20px rgba(219,39,119,0.15); border: 2px solid #fce7f3;">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <p style="font-size:20px;font-weight:800;color:#1f2937;margin:0 0 8px;letter-spacing:-0.02em;">¡Hola, Belleza!</p>
-          <p style="font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.5;">Ingresa o regístrate para acceder a ofertas exclusivas y realizar pedidos.</p>
-          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#f9a8d4,#f472b6);color:#fff;border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 8px 20px rgba(244,114,182,0.3);margin-bottom:12px;transition:all 0.3s ease;">Iniciar sesión</a>
+          <p style="font-size:20px;font-weight:800;color:#1f2937;margin:0 0 8px;letter-spacing:-0.02em;">Â¡Hola, Belleza!</p>
+          <p style="font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.5;">Ingresa o regÃ­strate para acceder a ofertas exclusivas y realizar pedidos.</p>
+          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#f9a8d4,#f472b6);color:#fff;border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 8px 20px rgba(244,114,182,0.3);margin-bottom:12px;transition:all 0.3s ease;">Iniciar sesiÃ³n</a>
           <a href="/login?tab=register" style="display:block;width:100%;padding:14px;background:rgba(253,242,248,0.8);color:#db2777;border:1px solid #fbcfe8;border-radius:16px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;transition:all 0.3s ease;">Crear cuenta nueva</a>
         </div>
       `;
@@ -3577,18 +3577,18 @@ export default function HomePage23() {
     };
   }, [bodyHtml, user]);
 
-  /* ── INJECT DYNAMIC CATEGORIES INTO NAVBAR MEGAMENU (separate effect) ── */
+  /* â”€â”€ INJECT DYNAMIC CATEGORIES INTO NAVBAR MEGAMENU (separate effect) â”€â”€ */
   useEffect(() => {
     if (!containerRef.current || !containerRef.current.dataset.htmlSet) return;
-    // Solo las categorías son imprescindibles: la tienda puede no tener subcategorías.
+    // Solo las categorÃ­as son imprescindibles: la tienda puede no tener subcategorÃ­as.
     // (Exigir subcategories > 0 saltaba TODO este efecto: productos sin hidratar,
-    // secciones vacías y el video del split-hero sin su observer de reproducción.)
+    // secciones vacÃ­as y el video del split-hero sin su observer de reproducciÃ³n.)
     if (categories.length === 0) return;
     if (products.length === 0) return;
 
     const root = containerRef.current;
 
-    // ── Compute product counts per category and subcategory ──
+    // â”€â”€ Compute product counts per category and subcategory â”€â”€
     const catProductCount: Record<string, number> = {};
     const subProductCount: Record<string, number> = {};
     const catProducts: Record<string, Product[]> = {};
@@ -3621,9 +3621,9 @@ export default function HomePage23() {
       }))
       .sort((a, b) => b.prodCount - a.prodCount);
 
-    // ── Desktop menu ──
-    // Solo reconstruir si hay categorías con productos; si no, se conservan los
-    // links base que dejó la inyección inicial (nunca el menú de la plantilla original).
+    // â”€â”€ Desktop menu â”€â”€
+    // Solo reconstruir si hay categorÃ­as con productos; si no, se conservan los
+    // links base que dejÃ³ la inyecciÃ³n inicial (nunca el menÃº de la plantilla original).
     const desktopMenu = root.querySelector('ul.menu[data-tier="1"]:not(.menu--drawer)');
     if (desktopMenu && sortedCats.length > 0) {
       desktopMenu.innerHTML = '';
@@ -3639,7 +3639,7 @@ export default function HomePage23() {
           .filter(sc => sc.prodCount > 0)
           .sort((a, b) => b.prodCount - a.prodCount);
 
-        // Sin subcategorías no hay megamenú que desplegar: link directo a la categoría
+        // Sin subcategorÃ­as no hay megamenÃº que desplegar: link directo a la categorÃ­a
         if (catSubs.length === 0) {
           const plainLi = document.createElement('li');
           plainLi.className = 'inline-block group py-2 px-1 shrink-0 no-keyboard-focus';
@@ -3668,7 +3668,7 @@ export default function HomePage23() {
           </a>
         `;
 
-        // ── Megamenu <template> (must be SIBLING of <li>, not child) ──
+        // â”€â”€ Megamenu <template> (must be SIBLING of <li>, not child) â”€â”€
         const templateEl = document.createElement('template');
         templateEl.id = megamenuId;
 
@@ -3692,7 +3692,7 @@ export default function HomePage23() {
           `;
         });
 
-        // Right column: product carousel per subcategory — show 4 products max
+        // Right column: product carousel per subcategory â€” show 4 products max
         let grandchildHtml = '';
         catSubs.forEach((sub, subIdx) => {
           const subHandle = `cat${idx}-sub${subIdx}`;
@@ -3701,7 +3701,7 @@ export default function HomePage23() {
           const inertAttr = subIdx === 0 ? '' : 'inert';
           const subProds = (subProducts[sub.$id] || []).slice(0, 4);
 
-          // Build product cards (no Swiper — simple flex row for 4 items)
+          // Build product cards (no Swiper â€” simple flex row for 4 items)
           let productCardsHtml = '';
           subProds.forEach(p => {
             const pLink = `/productos/${p.$id}`;
@@ -3769,7 +3769,7 @@ export default function HomePage23() {
 
     }
 
-    // ── Mobile drawer menu ──
+    // â”€â”€ Mobile drawer menu â”€â”€
     const mobileMenu = root.querySelector('ul.menu--drawer[data-tier="1"]');
     if (mobileMenu && sortedCats.length > 0) {
       mobileMenu.innerHTML = '';
@@ -3821,7 +3821,7 @@ export default function HomePage23() {
 
       const extraLinks = ['TIENDA|https://kevincocochile.cl/productos'];
       if (!unlimitedStock) {
-        extraLinks.push('CATÁLOGO|https://kevincocochile.cl/catalogo');
+        extraLinks.push('CATÃLOGO|https://kevincocochile.cl/catalogo');
       }
       extraLinks.forEach(item => {
         const [label, href] = item.split('|');
@@ -3832,7 +3832,7 @@ export default function HomePage23() {
       });
     }
 
-    // ── Watch megamenu-wrapper for content injection by header.js ──
+    // â”€â”€ Watch megamenu-wrapper for content injection by header.js â”€â”€
     // header.js clones <template> content into #megamenu-wrapper on hover.
     // We observe it to apply our custom styling overrides after injection.
     const megamenuWrapper = root.querySelector('#megamenu-wrapper');
@@ -3962,7 +3962,7 @@ export default function HomePage23() {
           console.warn('Error initializing swiper manually:', err);
         }
       }
-    // ── Inject dynamic categories into collection-list section below hero banner ──
+    // â”€â”€ Inject dynamic categories into collection-list section below hero banner â”€â”€
     const collectionList = root.querySelector('collection-list.collection-list');
     if (collectionList) {
       const allCats = [...categories]
@@ -4018,7 +4018,7 @@ export default function HomePage23() {
       }
     }
 
-    // ── Inject dynamic products into Featured Collections tabs ──
+    // â”€â”€ Inject dynamic products into Featured Collections tabs â”€â”€
     if (products.length > 0) {
       const formatCLP = (val: number) => '$' + Math.round(val).toLocaleString('es-CL');
 
@@ -4068,12 +4068,12 @@ export default function HomePage23() {
                 ` : ''}
                 ${product.STOCK > 0 && product.STOCK <= 5 ? `
                   <span class="bg-[#fce7f3] text-[#be5d8a] text-[9px] font-extrabold tracking-widest px-2.5 py-1.5 rounded-full border border-[#f5bfd7] uppercase shadow-sm">
-                    ¡Solo ${product.STOCK}!
+                    Â¡Solo ${product.STOCK}!
                   </span>
                 ` : ''}
               </div>
 
-              <!-- Botón flotante al hover -->
+              <!-- BotÃ³n flotante al hover -->
               <div class="absolute bottom-3 right-3 z-20 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
                 <button class="pk-grid-add-to-cart w-11 h-11 rounded-full bg-[#fce7f3] text-[#b34f7e] border border-[#f5bfd7] flex items-center justify-center shadow-md hover:bg-[#f7c3da] hover:text-[#8f3e66] transition-all duration-300"
                         data-product-id="${product.$id}"
@@ -4088,7 +4088,7 @@ export default function HomePage23() {
             <!-- Contenido de Texto Elegante -->
             <div class="pt-4 pb-2 px-2 text-center flex flex-col items-center">
               <span class="text-[9px] uppercase tracking-[0.2em] font-semibold text-gray-400 mb-1.5 block">
-                ${categoryName || 'Colección'}
+                ${categoryName || 'ColecciÃ³n'}
               </span>
               <a href="${pLink}" aria-label="${pName}" title="${pName}" class="block w-full">
                 <h3 class="font-medium text-[13px] text-gray-800 hover:text-gray-500 line-clamp-2 leading-relaxed transition-colors duration-200 m-0">
@@ -4268,21 +4268,21 @@ export default function HomePage23() {
                 
                 <!-- Content Side -->
                 <div class="w-full md:w-1/2 flex flex-col gap-3 text-left">
-                  <span class="text-xs font-black uppercase tracking-widest text-pink-500">KEVIN & COCO</span>
+                  <span class="text-xs font-black uppercase tracking-widest text-pink-500">Don Balato Iván</span>
                   <h3 class="text-xl md:text-2xl font-black text-gray-900 leading-tight">SET DE BROCHAS DE 5PCS</h3>
                   <div class="w-12 h-1 bg-pink-500 rounded-full my-1"></div>
                   <div class="space-y-3 font-medium text-gray-600 text-sm leading-relaxed">
                     <p class="flex items-start gap-2">
-                      <span class="text-pink-500 shrink-0">✨</span>
-                      <span><strong>Diseño Pastel:</strong> Estos sets incluyen mini brochas de maquillaje con mangos de colores pastel y cerdas suaves.</span>
+                      <span class="text-pink-500 shrink-0">âœ¨</span>
+                      <span><strong>DiseÃ±o Pastel:</strong> Estos sets incluyen mini brochas de maquillaje con mangos de colores pastel y cerdas suaves.</span>
                     </p>
                     <p class="flex items-start gap-2">
-                      <span class="text-pink-500 shrink-0">👜</span>
-                      <span><strong>Bolsa Holográfica:</strong> Cada conjunto viene en una práctica bolsa holográfica sellable, ideal para llevar en el bolso.</span>
+                      <span class="text-pink-500 shrink-0">ðŸ‘œ</span>
+                      <span><strong>Bolsa HologrÃ¡fica:</strong> Cada conjunto viene en una prÃ¡ctica bolsa hologrÃ¡fica sellable, ideal para llevar en el bolso.</span>
                     </p>
                     <p class="flex items-start gap-2">
-                      <span class="text-pink-500 shrink-0">💄</span>
-                      <span><strong>Uso Diario:</strong> Los sets se comercializan comúnmente como kits básicos para retoques rápidos o viajes.</span>
+                      <span class="text-pink-500 shrink-0">ðŸ’„</span>
+                      <span><strong>Uso Diario:</strong> Los sets se comercializan comÃºnmente como kits bÃ¡sicos para retoques rÃ¡pidos o viajes.</span>
                     </p>
                   </div>
                 </div>
@@ -4340,7 +4340,7 @@ export default function HomePage23() {
               <div class="flex flex-col gap-1 my-2 w-full">
                 <span class="text-xs sm:text-sm font-bold text-red-500 uppercase tracking-wide">La oferta termina en:</span>
                 <div class="flex items-center gap-1 sm:gap-2 flex-nowrap justify-between w-full" id="dt-timer-container">
-                  <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-gray-900" id="dt-d">00</span><span class="text-[8px] sm:text-[10px] text-gray-500 uppercase">Días</span></div>
+                  <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-gray-900" id="dt-d">00</span><span class="text-[8px] sm:text-[10px] text-gray-500 uppercase">DÃ­as</span></div>
                   <span class="text-gray-400 font-bold text-xs sm:text-sm">:</span>
                   <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-gray-900" id="dt-h">00</span><span class="text-[8px] sm:text-[10px] text-gray-500 uppercase">Hrs</span></div>
                   <span class="text-gray-400 font-bold text-xs sm:text-sm">:</span>
@@ -4396,7 +4396,7 @@ export default function HomePage23() {
           });
         }
 
-        // Remove shopify payment skeleton as we only use "Añadir to cart" for simple checkout
+        // Remove shopify payment skeleton as we only use "AÃ±adir to cart" for simple checkout
         const shopifyPaymentBtn = fpBlock.querySelector('.shopify-payment-button');
         if (shopifyPaymentBtn) shopifyPaymentBtn.remove();
         
@@ -4413,11 +4413,11 @@ export default function HomePage23() {
         // Update vendor
         const vendor = fpBlock.querySelector('.vendor span');
         if (vendor) {
-          const brand = (targetProduct as any).BRAND || 'Kevin & Coco';
-          vendor.textContent = brand.toLowerCase() === 'yaxsell' ? 'Kevin & Coco' : brand;
+          const brand = (targetProduct as any).BRAND || 'Don Balato Iván';
+          vendor.textContent = brand.toLowerCase() === 'yaxsell' ? 'Don Balato Iván' : brand;
         }
 
-        // Ya hay producto real: mostrar la sección (se ocultó en la inyección inicial)
+        // Ya hay producto real: mostrar la secciÃ³n (se ocultÃ³ en la inyecciÃ³n inicial)
         const fpSection = (fpBlock.closest('.shopify-section') || fpBlock) as HTMLElement;
         fpSection.style.removeProperty('display');
       });
@@ -4444,14 +4444,14 @@ export default function HomePage23() {
       }, { threshold: 0.1 });
       scrollVideos.forEach(v => {
         const video = v as HTMLVideoElement;
-        // El clip dura ~5s: sin loop muere en el último frame y el hero se ve congelado
+        // El clip dura ~5s: sin loop muere en el Ãºltimo frame y el hero se ve congelado
         video.loop = true;
         video.muted = true;
         videoObserver.observe(video);
       });
     }
 
-    // ═══ MOBILE: Inject Profile icon next to Buscar / Carrito in mobile header ═══
+    // â•â•â• MOBILE: Inject Profile icon next to Buscar / Carrito in mobile header â•â•â•
     if (window.innerWidth < 1024) {
       const mobileHeaderActions = root.querySelector('.flex.lg\\:hidden.justify-center.items-center') || 
                                   document.querySelector('.flex.lg\\:hidden.justify-center.items-center');
@@ -4476,7 +4476,7 @@ export default function HomePage23() {
       // Allow search drawer to open natively (no redirect)
     }
 
-    // ═══ Replace "Buscar", "Carrito" text with SVGs in PC & Mobile header ═══
+    // â•â•â• Replace "Buscar", "Carrito" text with SVGs in PC & Mobile header â•â•â•
     const searchIcons = root.querySelectorAll('.search-icon .link-hover-animation');
     searchIcons.forEach((el) => {
       if (el.textContent?.trim().toLowerCase() === 'buscar') {
@@ -4505,7 +4505,7 @@ export default function HomePage23() {
       }
     });
 
-    // ═══ Inject Notification SVG in PC header ═══
+    // â•â•â• Inject Notification SVG in PC header â•â•â•
     const headerActionsPC = root.querySelector('.lg\\:flex.hidden.items-center.justify-center.pl-\\[30px\\]');
     if (headerActionsPC && !headerActionsPC.querySelector('.notification-icon')) {
       const storeBtn = document.createElement('a');
@@ -4518,7 +4518,7 @@ export default function HomePage23() {
         const catalogBtn = document.createElement('a');
         catalogBtn.href = '/productos';
         catalogBtn.className = 'px-[1rem] uppercase';
-        catalogBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#fff; font-size: 14px; letter-spacing: 0.5px;">Catálogo</span>`;
+        catalogBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#fff; font-size: 14px; letter-spacing: 0.5px;">CatÃ¡logo</span>`;
         headerActionsPC.insertBefore(catalogBtn, headerActionsPC.firstChild);
       }
 
@@ -4533,7 +4533,7 @@ export default function HomePage23() {
     // catalog counts cannot leave stale categories in the DOM.
   }, [categories, subcategories, products, cheapestProducts, isAppwriteLoaded, unlimitedStock, htmlInjected]);
 
-  /* ── CUSTOM PC NAVBAR: independent fetch + build (same source as /productos) ── */
+  /* â”€â”€ CUSTOM PC NAVBAR: independent fetch + build (same source as /productos) â”€â”€ */
   useEffect(() => {
     if (isEditorMockEnabled()) return;
     let active = true;
@@ -4560,19 +4560,19 @@ export default function HomePage23() {
         if (!customNav) return;
 
         const emojiMap: Record<string, string> = {
-          'Skincare': '🧴',
-          'Skincare Facial': '🧴',
-          'Maquillaje': '💄',
-          'Capilar': '💇‍♀️',
-          'Manicure': '💅',
-          'Herramientas': '🔧',
-          'Otros': '📦',
-          'Aromaterapia y Difusores': '🕯️',
-          'Empaques y Regalos': '🎁',
-          'Fragancias': '🌸',
-          'Cabello': '💇‍♀️',
-          'Cuerpo': '🧼',
-          'Ofertas': '🏷️',
+          'Skincare': 'ðŸ§´',
+          'Skincare Facial': 'ðŸ§´',
+          'Maquillaje': 'ðŸ’„',
+          'Capilar': 'ðŸ’‡â€â™€ï¸',
+          'Manicure': 'ðŸ’…',
+          'Herramientas': 'ðŸ”§',
+          'Otros': 'ðŸ“¦',
+          'Aromaterapia y Difusores': 'ðŸ•¯ï¸',
+          'Empaques y Regalos': 'ðŸŽ',
+          'Fragancias': 'ðŸŒ¸',
+          'Cabello': 'ðŸ’‡â€â™€ï¸',
+          'Cuerpo': 'ðŸ§¼',
+          'Ofertas': 'ðŸ·ï¸',
         };
 
         const catsWithProducts = cats
@@ -4688,7 +4688,7 @@ export default function HomePage23() {
     };
   }, [htmlInjected]);
 
-  /* ── Inject window.Shopify stub BEFORE loading JS ── */
+  /* â”€â”€ Inject window.Shopify stub BEFORE loading JS â”€â”€ */
   useEffect(() => {
     if ((window as any).Shopify) return;
     (window as any).Shopify = {
@@ -4702,7 +4702,7 @@ export default function HomePage23() {
     };
   }, []);
 
-  /* ── Load JS scripts sequentially after HTML is rendered ── */
+  /* â”€â”€ Load JS scripts sequentially after HTML is rendered â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     if ((window as any).__tpl23ScriptsLoaded) return;
@@ -4722,7 +4722,7 @@ export default function HomePage23() {
     });
 
     const initScrollAnimations = () => {
-      // Usar IntersectionObserver para añadir .in-view al hacer scroll
+      // Usar IntersectionObserver para aÃ±adir .in-view al hacer scroll
       // Esto reactiva las animaciones CSS/GSAP que estaban congeladas
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -4741,8 +4741,8 @@ export default function HomePage23() {
       };
       document.querySelectorAll('.animation-element, .animation-wrapper').forEach(observeAnimEl);
 
-      // Los productos y carruseles se inyectan DESPUÉS de este init (hidratación
-      // asíncrona de Appwrite): sin esto, los nodos nuevos jamás reciben .in-view
+      // Los productos y carruseles se inyectan DESPUÃ‰S de este init (hidrataciÃ³n
+      // asÃ­ncrona de Appwrite): sin esto, los nodos nuevos jamÃ¡s reciben .in-view
       // y quedan en opacity:0 por el CSS del tema (animation.css).
       const prevLateObserver = (window as any).__tpl23LateAnimObserver as MutationObserver | undefined;
       if (prevLateObserver) prevLateObserver.disconnect();
@@ -4775,7 +4775,7 @@ export default function HomePage23() {
       setTimeout(() => {
         initScrollAnimations();
 
-        // ═══ Stacked Seamless Video Alternator & Hover Hunter ═══
+        // â•â•â• Stacked Seamless Video Alternator & Hover Hunter â•â•â•
         const collageVideoInterval = setInterval(() => {
           const wrappers = document.querySelectorAll('.collage-video-wrapper');
           wrappers.forEach(el => {
@@ -4908,7 +4908,7 @@ export default function HomePage23() {
         }, 500);
         setTimeout(() => clearInterval(collageVideoInterval), 10000);
 
-        // ═══ Simple Fade-In Reveal for Videos ═══
+        // â•â•â• Simple Fade-In Reveal for Videos â•â•â•
         const cinematicReveal = (video: HTMLVideoElement) => {
           if (video.dataset.revealStarted) return;
           video.dataset.revealStarted = 'true';
@@ -4941,7 +4941,7 @@ export default function HomePage23() {
         }, 500);
         setTimeout(() => clearInterval(revealInterval), 10000);
 
-        // ═══ Logo Instant Load Reveal & Override ═══
+        // â•â•â• Logo Instant Load Reveal & Override â•â•â•
         const logo = document.querySelector('.header img.logo') as HTMLImageElement;
         if (logo) {
           logo.src = "https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png";
@@ -4952,14 +4952,14 @@ export default function HomePage23() {
           }
         }
 
-        // ═══ Early Skeleton Reveal for Slideshow Buttons (before video loads) ═══
+        // â•â•â• Early Skeleton Reveal for Slideshow Buttons (before video loads) â•â•â•
         setTimeout(() => {
           document.querySelectorAll('.slideshow__content .custom-button').forEach(el => {
             el.classList.add('is-loaded');
           });
         }, 400);
 
-        // ═══ Delayed Skeleton-to-Content Reveal for Other Buttons ═══
+        // â•â•â• Delayed Skeleton-to-Content Reveal for Other Buttons â•â•â•
         setTimeout(() => {
           document.querySelectorAll('.header img.logo, .custom-button').forEach(el => {
             el.classList.add('is-loaded');
@@ -4978,10 +4978,10 @@ export default function HomePage23() {
     return () => { (window as any).__tpl23ScriptsLoaded = false; };
   }, [bodyHtml, categories]);
 
-  /* ═══ Scroll FX extra: barra de progreso, parallax profundo y skew por velocidad ═══ */
+  /* â•â•â• Scroll FX extra: barra de progreso, parallax profundo y skew por velocidad â•â•â• */
   useEffect(() => {
     // htmlInjected: los targets de parallax/skew viven en el HTML inyectado;
-    // con solo bodyHtml el efecto correría antes de que existan en el DOM.
+    // con solo bodyHtml el efecto correrÃ­a antes de que existan en el DOM.
     if (!bodyHtml || !htmlInjected) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -4994,11 +4994,11 @@ export default function HomePage23() {
       document.body.appendChild(bar);
     }
 
-    // 2) Parallax profundo en fondos grandes — solo desktop con mouse.
+    // 2) Parallax profundo en fondos grandes â€” solo desktop con mouse.
     //    Los targets viven en contenedores overflow-hidden; el scale extra
-    //    evita que asomen bordes vacíos al desplazarlos.
-    //    Se re-coleccionan periódicamente: morph-svg y otros scripts del tema
-    //    clonan/re-crean nodos después del primer render.
+    //    evita que asomen bordes vacÃ­os al desplazarlos.
+    //    Se re-coleccionan periÃ³dicamente: morph-svg y otros scripts del tema
+    //    clonan/re-crean nodos despuÃ©s del primer render.
     const isDesktop = window.innerWidth >= 1024 && window.matchMedia('(hover: hover)').matches;
     // (media-with-text queda fuera: morph-svg re-clona sus nodos en cada frame)
     const PARALLAX_TARGETS: [string, number, number][] = [
@@ -5007,7 +5007,7 @@ export default function HomePage23() {
       ['.editorial-banner .editorial-banner__column:nth-child(even)', 30, 1],
     ];
     const parallaxItems = new Map<HTMLElement, { depth: number; scale: number }>();
-    // 3) Skew sutil del contenido del marquee según velocidad de scroll
+    // 3) Skew sutil del contenido del marquee segÃºn velocidad de scroll
     let skewTargets: HTMLElement[] = [];
 
     const refreshTargets = () => {
@@ -5049,7 +5049,7 @@ export default function HomePage23() {
         parallaxItems.forEach(({ depth, scale }, el) => {
           const rect = el.getBoundingClientRect();
           if (rect.bottom < -100 || rect.top > vh + 100) return;
-          // -1..1 según qué tan lejos está el centro del elemento del centro del viewport
+          // -1..1 segÃºn quÃ© tan lejos estÃ¡ el centro del elemento del centro del viewport
           const progress = ((rect.top + rect.height / 2) - vh / 2) / vh;
           el.style.transform = `translate3d(0, ${(-progress * depth).toFixed(1)}px, 0) scale(${scale})`;
         });
@@ -5071,7 +5071,7 @@ export default function HomePage23() {
       skewTargets.forEach(el => { el.style.transform = ''; });
     };
   }, [bodyHtml, htmlInjected]);
-  /* ═══ GRID ADD TO CART DELEGATION ═══ */
+  /* â•â•â• GRID ADD TO CART DELEGATION â•â•â• */
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
@@ -5151,7 +5151,7 @@ export default function HomePage23() {
     return () => root.removeEventListener('click', handleClickEvents);
   }, [bodyHtml, products, addItem]);
 
-  /* ═══ CART DOM HYDRATION ═══ */
+  /* â•â•â• CART DOM HYDRATION â•â•â• */
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
@@ -5180,8 +5180,8 @@ export default function HomePage23() {
                 <path d="M16 10a4 4 0 0 1-8 0"/>
               </svg>
             </div>
-            <h6 style="margin:0 0 8px 0; font-size: 17px; font-weight: 800; color: #1f2937; letter-spacing:-0.3px; position:relative; z-index:1;">Tu carrito está vacío</h6>
-            <p style="margin:0 0 24px 0; font-size: 13px; color: #9ca3af; max-width: 220px; line-height: 1.6; position:relative; z-index:1;">Descubre productos increíbles y agrélos a tu carrito.</p>
+            <h6 style="margin:0 0 8px 0; font-size: 17px; font-weight: 800; color: #1f2937; letter-spacing:-0.3px; position:relative; z-index:1;">Tu carrito estÃ¡ vacÃ­o</h6>
+            <p style="margin:0 0 24px 0; font-size: 13px; color: #9ca3af; max-width: 220px; line-height: 1.6; position:relative; z-index:1;">Descubre productos increÃ­bles y agrÃ©los a tu carrito.</p>
             <button class="drawer__close pk-explore-btn" data-close="" style="background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); color: #fff; border: none; padding: 13px 32px; border-radius: 50px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 16px rgba(251,202,201,0.4); letter-spacing: 0.3px; position:relative; z-index:1;">
               Explorar Productos
             </button>
@@ -5221,7 +5221,7 @@ export default function HomePage23() {
                       <div style="display:flex; align-items:center; justify-content:space-between;">
                           <div style="font-weight:800; font-size:15px; color:#111827;">${formatPrice(price)}</div>
                           <div style="display:flex; align-items:center; background:#fff; border-radius:50px; padding:3px; border: 1px solid #e5e7eb;">
-                              <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; border-radius:50%; cursor:pointer; font-weight:600; font-size:15px; color:#9ca3af; transition:all 0.15s;">−</button>
+                              <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; border-radius:50%; cursor:pointer; font-weight:600; font-size:15px; color:#9ca3af; transition:all 0.15s;">âˆ’</button>
                               <span style="font-size:13px; font-weight:700; width:24px; text-align:center; color:#111827;">${item.quantity}</span>
                               <button class="cart-qty-btn" data-action="plus" data-id="${item.product.$id}" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; border-radius:50%; cursor:pointer; font-weight:600; font-size:15px; color:#9ca3af; transition:all 0.15s;">+</button>
                           </div>
@@ -5249,7 +5249,7 @@ export default function HomePage23() {
             <span style="font-size: 13px; font-weight: 600; color: #6b7280;">Subtotal</span>
             <span style="font-size: 20px; font-weight: 800; color: #111827;">${formatPrice(cartTotal || 0)}</span>
           </div>
-          <p style="font-size: 11px; color: #b0b0b0; margin: 0;">Impuestos y envío calculados al pagar</p>
+          <p style="font-size: 11px; color: #b0b0b0; margin: 0;">Impuestos y envÃ­o calculados al pagar</p>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px; padding-top:4px;">
@@ -5330,7 +5330,7 @@ export default function HomePage23() {
     });
 
     // Removed old cart-specific closeBtn logic, handled globally now
-    // Hydrate "Otros también compraron" with compact 2-col scrollable grid
+    // Hydrate "Otros tambiÃ©n compraron" with compact 2-col scrollable grid
     root.querySelectorAll('.drawer__recommendation-wrapper').forEach((wrapper, index) => {
       // Fix PC squishing issue
       if (wrapper.classList.contains('md:block')) {
@@ -5389,7 +5389,7 @@ export default function HomePage23() {
     });
 
     // Hydrate "Trending Search" with real products
-    // ═══ SEARCH DRAWER REDESIGN ═══
+    // â•â•â• SEARCH DRAWER REDESIGN â•â•â•
     const searchDrawer = root.querySelector('search-drawer') as HTMLElement;
     if (searchDrawer && !(searchDrawer as any)._pkSearchHydrated) {
       (searchDrawer as any)._pkSearchHydrated = true;
@@ -5440,7 +5440,7 @@ export default function HomePage23() {
               <div style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#FBCAC9;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
-              <input type="search" id="pk-search-input" placeholder="¿Qué estás buscando?" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%; padding:13px 44px 13px 44px; border:1.5px solid #f0f0f0; border-radius:50px; font-size:14px; font-weight:500; color:#111827; background:#fafafa; outline:none; transition:all 0.2s; box-sizing:border-box;" />
+              <input type="search" id="pk-search-input" placeholder="Â¿QuÃ© estÃ¡s buscando?" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%; padding:13px 44px 13px 44px; border:1.5px solid #f0f0f0; border-radius:50px; font-size:14px; font-weight:500; color:#111827; background:#fafafa; outline:none; transition:all 0.2s; box-sizing:border-box;" />
               <button id="pk-search-clear" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#d1d5db; display:none; padding:2px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6"/><path d="M9 9l6 6"/></svg>
               </button>
@@ -5449,7 +5449,7 @@ export default function HomePage23() {
 
           <div id="pk-search-initial" style="padding:0 24px 24px;">
             <div style="margin-bottom:24px;">
-              <h6 style="margin:0 0 12px; font-size:13px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:0.8px;">Búsquedas populares</h6>
+              <h6 style="margin:0 0 12px; font-size:13px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:0.8px;">BÃºsquedas populares</h6>
               <div style="display:flex; flex-wrap:wrap; gap:8px;">
                 ${popularTerms.map(t => `
                   <button class="pk-search-term" data-term="${t}" style="padding:8px 16px; border-radius:50px; border:1.5px solid #f0f0f0; background:#fff; font-size:12px; font-weight:600; color:#6b7280; cursor:pointer; transition:all 0.2s; white-space:nowrap;">
@@ -5479,7 +5479,7 @@ export default function HomePage23() {
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FBCAC9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
               </div>
               <p style="margin:0 0 4px; font-size:15px; font-weight:700; color:#374151;">Sin resultados</p>
-              <p style="margin:0; font-size:13px; color:#9ca3af;">Intenta con otro término de búsqueda</p>
+              <p style="margin:0; font-size:13px; color:#9ca3af;">Intenta con otro tÃ©rmino de bÃºsqueda</p>
             </div>
           </div>
         `;
@@ -5567,7 +5567,7 @@ export default function HomePage23() {
 
   }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products, htmlInjected]);
 
-  /* ── Anular enlaces de WhatsApp de Kenia si está desactivada ── */
+  /* â”€â”€ Anular enlaces de WhatsApp de Kenia si estÃ¡ desactivada â”€â”€ */
   useEffect(() => {
     if (!keniaEnabled) {
       const keniaLinks = document.querySelectorAll('a[href*="56962293893"]');
@@ -5579,7 +5579,7 @@ export default function HomePage23() {
     }
   }, [keniaEnabled, bodyHtml]);
 
-  /* ── Loading/error states ── */
+  /* â”€â”€ Loading/error states â”€â”€ */
   if (loadError) {
     return (
       <div style={{ padding: 32, textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
@@ -5593,7 +5593,7 @@ export default function HomePage23() {
   if (!bodyHtml) {
     return (
       <div style={{ padding: 40, textAlign: 'center', fontFamily: 'system-ui, sans-serif', color: '#888' }}>
-        {/* Pantalla en blanco mientras carga — no mostrar texto al cliente */}
+        {/* Pantalla en blanco mientras carga â€” no mostrar texto al cliente */}
       </div>
     );
   }
@@ -5631,7 +5631,7 @@ export default function HomePage23() {
         .kc-accordion-content { padding: 0 32px; display: none; }
         .kc-accordion-content p { color: #4b5563; line-height: 1.7; font-size: 1.05rem; padding-bottom: 24px; margin: 0; }
 
-        /* ── FAQ MOBILE OVERRIDES ── */
+        /* â”€â”€ FAQ MOBILE OVERRIDES â”€â”€ */
         @media (max-width: 767px) {
           .kc-tabbed-faq { padding: 48px 0 32px; }
           .kc-faq-header { margin-bottom: 28px; }
@@ -5986,7 +5986,7 @@ export default function HomePage23() {
           height: 100% !important;
           object-fit: cover !important;
         }
-        /* Hero images are now absolute overlays — let inline styles + HTML classes handle them */
+        /* Hero images are now absolute overlays â€” let inline styles + HTML classes handle them */
         .tpl23-shopify-root #hero1-image-desktop,
         .tpl23-shopify-root #hero1-image-mobile {
           position: absolute !important;
@@ -6005,7 +6005,7 @@ export default function HomePage23() {
           display: none !important;
         }
 
-        /* ── GLOBAL MOBILE OVERRIDES for tpl23 ── */
+        /* â”€â”€ GLOBAL MOBILE OVERRIDES for tpl23 â”€â”€ */
         @media (max-width: 767px) {
           /* FIX HERO BANNER MOBILE TOUCH SCROLL:
              All hero slideshow containers, custom elements and images must pass touch events 100% directly to page scroll */
@@ -6148,11 +6148,11 @@ export default function HomePage23() {
           color: #111827 !important;
         }
         cart-drawer .drawer__recommendation-wrapper h6.heading::before {
-          content: '✨' !important;
+          content: 'âœ¨' !important;
           font-size: 14px !important;
         }
 
-        /* Diseño responsivo de Featured Collection en Móviles (apilar verticalmente) */
+        /* DiseÃ±o responsivo de Featured Collection en MÃ³viles (apilar verticalmente) */
         @media (max-width: 767.98px) {
           .featured-collection__products-inner {
             flex-direction: column !important;
@@ -6175,7 +6175,7 @@ export default function HomePage23() {
           }
         }
 
-        /* Botón flotante de WhatsApp a la izquierda */
+        /* BotÃ³n flotante de WhatsApp a la izquierda */
         .whatsapp-floating-btn {
           position: fixed !important;
           left: 24px !important;
@@ -6214,7 +6214,7 @@ export default function HomePage23() {
       `}</style>
 
       <div className={`splash-screen ${!showSplash ? 'hidden' : ''}`}>
-        <img src="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04" alt="Cargando Kevin & Coco..." className="splash-logo" />
+        <img src="https://firebasestorage.googleapis.com/v0/b/asistoraerp.firebasestorage.app/o/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-1.png?alt=media&token=70260dd2-54c9-4dc2-b581-82c0e2861a04" alt="Cargando Don Balato Iván..." className="splash-logo" />
       </div>
 
       <div
@@ -6245,7 +6245,7 @@ export default function HomePage23() {
               <div style={{ maxWidth: 1400, margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px 12px' }}>
                   <div>
-                    <h2 style={{ fontSize: 22, fontWeight: 900, color: '#374151', margin: 0, fontFamily: FF }}>🔥 Ofertas del día</h2>
+                    <h2 style={{ fontSize: 22, fontWeight: 900, color: '#374151', margin: 0, fontFamily: FF }}>ðŸ”¥ Ofertas del dÃ­a</h2>
                     <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0', fontFamily: FF }}>Productos en oferta por tiempo limitado</p>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -6276,7 +6276,7 @@ export default function HomePage23() {
                           {getProductImageUrl(p) ? (
                             <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
                           ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>🛍️</div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>ðŸ›ï¸</div>
                           )}
                         </div>
                         <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -6329,3 +6329,4 @@ export default function HomePage23() {
     </>
   );
 }
+

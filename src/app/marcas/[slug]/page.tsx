@@ -6,7 +6,7 @@ export default async function MarcaPage({ params }: { params: Promise<{ slug: st
   let brandName = '';
   switch (slug) {
     case 'kevin-coco':
-      brandName = 'Kevin & Coco';
+      brandName = 'Don Balato Iván';
       break;
     case '3q-beauty':
       brandName = '3Q Beauty';

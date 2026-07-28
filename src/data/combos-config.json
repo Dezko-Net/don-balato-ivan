@@ -6,11 +6,11 @@
     "discountPercent": 0,
     "badge": "PACK DESTACADO",
     "isActive": true,
-    "mainProductId": "6a63077900301d50a1c2",
+    "mainProductId": "6a630779000120e5ea52",
     "bundleProductIds": [
-      "6a630779003c76f6d57f",
       "6a63077900301d50a1c2",
-      "6a6307790024a59b58cb"
+      "6a6307790024a59b58cb",
+      "6a67d1f00028546a65a2"
     ]
   }
 ]

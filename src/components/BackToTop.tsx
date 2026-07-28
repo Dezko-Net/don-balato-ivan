@@ -30,25 +30,29 @@ export default function BackToTop() {
   if (pathname?.startsWith('/admin')) return null;
   if (!visible) return null;
 
-  const handleClick = () => {
-    // Intentar smooth scroll, con fallback instantáneo
-    try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch {
-      window.scrollTo(0, 0);
-    }
-    // Fallback después de 500ms por si smooth no funciona en mobile
-    setTimeout(() => { if (window.scrollY > 0) window.scrollTo(0, 0); }, 500);
+  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Cancelar cualquier scroll en curso del theme JS
+    try { (window as any).stopScroll?.(); } catch { /* noop */ }
+    // Scroll instantáneo — más confiable que smooth en móviles
+    // donde el theme JS puede interferir con el smooth scroll
+    window.scrollTo(0, 0);
+    // Doble seguridad: forzar de nuevo en el siguiente frame
+    requestAnimationFrame(() => {
+      if (window.scrollY > 0) window.scrollTo(0, 0);
+    });
   };
 
   return (
     <button
       onClick={handleClick}
+      onTouchEnd={handleClick}
       aria-label="Volver arriba"
       style={{
-        position: 'fixed', bottom: 90, right: 20, zIndex: 40,
+        position: 'fixed', bottom: 90, right: 20, zIndex: 70,
         width: 44, height: 44, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.92)', border: '2px solid #000000', cursor: 'pointer',
+        background: 'rgba(255,255,255,0.92)', border: '2px solid #ffffff', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'opacity .2s, transform .2s',
         opacity: 1,

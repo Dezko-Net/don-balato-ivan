@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -13,10 +13,10 @@ export const extractBrand = (name?: string): string => {
   if (!name) return '';
   const n = name.toLowerCase();
   if (n.includes('sadoer')) return 'SADOER';
-  if (n.includes('kevin&coco') || n.includes('kevin & coco') || n.includes('kevincoco') || n.includes('kevin coco')) return 'Kevin & Coco';
+  if (n.includes('kevin&coco') || n.includes('Don Balato Iván') || n.includes('kevincoco') || n.includes('Don Balato Iván')) return 'Don Balato Iván';
   if (n.includes('3q') || n.includes('3 q')) return '3Q Beauty';
   if (n.includes('billion') || n.includes('billion beauty')) return 'Billion Beauty';
-  if (n.includes('karite') || n.includes('karité')) return 'Karite';
+  if (n.includes('karite') || n.includes('karitÃ©')) return 'Karite';
   if (n.includes('kiss beauty')) return 'Kiss Beauty';
   if (n.includes('ushas')) return 'Ushas';
   if (n.includes('ruby rose')) return 'Ruby Rose';
@@ -129,7 +129,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
 
   const priceMaxAllowed = useMemo(() => {
     const max = Math.max(0, ...products.map(p => Number(p.PRICE) || 0));
-    // fallback por si aún no cargan productos
+    // fallback por si aÃºn no cargan productos
     return max > 0 ? max : 6600;
   }, [products]);
 
@@ -299,7 +299,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
 
     const priceChangeHandler = (e: Event) => {
       // Evitar que los handlers del theme (facets.js) reescriban valores.
-      // (lo ejecutamos en capture, ver addEventListener más abajo).
+      // (lo ejecutamos en capture, ver addEventListener mÃ¡s abajo).
       try {
         e.stopImmediatePropagation();
         e.stopPropagation();
@@ -341,7 +341,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
       input.removeEventListener('change', priceChangeHandler, true);
       input.removeEventListener('input', priceChangeHandler, true);
 
-      // Usar capture para ganarle a facets.js y cortar propagación
+      // Usar capture para ganarle a facets.js y cortar propagaciÃ³n
       input.addEventListener('change', priceChangeHandler, true);
       input.addEventListener('input', priceChangeHandler, true);
     });
@@ -479,13 +479,13 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
           margin-top: 0 !important;
         }
 
-        /* ──────────────────────────────────────────────────────────
-           Slider de precio custom (minimalista B/N, pero “complejo”)
+        /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+           Slider de precio custom (minimalista B/N, pero â€œcomplejoâ€)
            - Doble thumb (min/max)
            - Track con fill
-           - Histograma (distribución) detrás
+           - Histograma (distribuciÃ³n) detrÃ¡s
            - Sync con inputs existentes
-        ────────────────────────────────────────────────────────── */
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .tpl5-shopify-root .tpl5-price-range {
           --min-pct: 0%;
           --max-pct: 100%;
@@ -516,7 +516,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
         .tpl5-shopify-root .tpl5-price-range__track-wrap {
           position: relative;
           height: 28px;
-          /* Extender un poco para que los thumbs lleguen más a los bordes */
+          /* Extender un poco para que los thumbs lleguen mÃ¡s a los bordes */
           margin-left: -10px;
           margin-right: -10px;
         }
@@ -586,7 +586,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
           background: transparent;
           -webkit-appearance: none;
           appearance: none;
-          pointer-events: none; /* importante: el input de arriba decide la interacción */
+          pointer-events: none; /* importante: el input de arriba decide la interacciÃ³n */
           outline: none;
           border: 0;
           box-shadow: none;
@@ -621,7 +621,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
           cursor: ew-resize;
         }
         .tpl5-shopify-root .tpl5-price-range__range::-webkit-slider-runnable-track {
-          height: 28px; /* agranda el “hit area” sin cambiar la barra */
+          height: 28px; /* agranda el â€œhit areaâ€ sin cambiar la barra */
           background: transparent;
           border: 0;
           box-shadow: none;
@@ -671,10 +671,10 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
         }
       `}</style>
 
-      {/* Selector de Categorías y Marcas en Plantilla 5 */}
+      {/* Selector de CategorÃ­as y Marcas en Plantilla 5 */}
       <div style={{ maxWidth: 1200, margin: '20px auto 0', padding: '0 20px', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Categoría:</span>
+          <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', fontFamily: 'Bricolage Grotesque, sans-serif' }}>CategorÃ­a:</span>
           <div style={{ position: 'relative' }}>
             <select
               value={selectedCat || ''}
@@ -695,7 +695,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
                 WebkitAppearance: 'none',
               }}
             >
-              <option value="">Todas las categorías</option>
+              <option value="">Todas las categorÃ­as</option>
               {categories.map(c => (
                 <option key={c.$id} value={c.$id}>{c.name}</option>
               ))}
@@ -792,7 +792,7 @@ export default function CollectionAll5({ initialBrand }: { initialBrand?: string
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'none' }}
               >
-                Cargar más ({filteredProducts.length - visibleCount} restantes)
+                Cargar mÃ¡s ({filteredProducts.length - visibleCount} restantes)
               </button>
             </div>
           )}
@@ -819,7 +819,7 @@ function Tpl5PriceRange({
   const fmt = useMemo(() => new Intl.NumberFormat('es-CL'), []);
   const clampMax = Math.max(1, Number(maxAllowed) || 1);
 
-  // Estado local (para interacción suave), sincronizado con el estado global
+  // Estado local (para interacciÃ³n suave), sincronizado con el estado global
   const [localMin, setLocalMin] = useState<number>(minPrice ?? 0);
   const [localMax, setLocalMax] = useState<number>(maxPrice ?? clampMax);
   const [activeThumb, setActiveThumb] = useState<'min' | 'max' | null>(null);
@@ -831,7 +831,7 @@ function Tpl5PriceRange({
     setLocalMax(maxPrice ?? clampMax);
   }, [maxPrice, clampMax]);
 
-  // Debounce para “en vivo” sin recalcular todo en cada pixel
+  // Debounce para â€œen vivoâ€ sin recalcular todo en cada pixel
   useEffect(() => {
     const t = setTimeout(() => {
       const nextMin = localMin <= 0 ? null : localMin;
@@ -872,7 +872,7 @@ function Tpl5PriceRange({
       <div className="tpl5-price-range__top">
         <div className="tpl5-price-range__title">Precio</div>
         <div className="tpl5-price-range__value">
-          ${fmt.format(localMin)} – ${fmt.format(localMax)}
+          ${fmt.format(localMin)} â€“ ${fmt.format(localMax)}
         </div>
       </div>
 
@@ -893,7 +893,7 @@ function Tpl5PriceRange({
           max={clampMax}
           step={1}
           value={localMin}
-          aria-label="Precio mínimo"
+          aria-label="Precio mÃ­nimo"
           onPointerDown={() => setActiveThumb('min')}
           onPointerUp={() => setActiveThumb(null)}
           onBlur={() => setActiveThumb(null)}
@@ -906,7 +906,7 @@ function Tpl5PriceRange({
           max={clampMax}
           step={1}
           value={localMax}
-          aria-label="Precio máximo"
+          aria-label="Precio mÃ¡ximo"
           onPointerDown={() => setActiveThumb('max')}
           onPointerUp={() => setActiveThumb(null)}
           onBlur={() => setActiveThumb(null)}
@@ -927,16 +927,17 @@ function Tpl5PriceRange({
           className="tpl5-price-range__btn"
           onClick={() => setBoth(localMin, clampMax)}
         >
-          Solo mínimo
+          Solo mÃ­nimo
         </button>
         <button
           type="button"
           className="tpl5-price-range__btn"
           onClick={() => setBoth(0, localMax)}
         >
-          Solo máximo
+          Solo mÃ¡ximo
         </button>
       </div>
     </div>
   );
 }
+

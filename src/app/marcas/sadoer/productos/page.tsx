@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -88,7 +88,7 @@ export default function SadoerProductsPage() {
 
       {/* Announcement Bar */}
       <div className="w-full bg-[#d08395] text-white py-2.5 px-4 text-center text-xs font-semibold tracking-wider relative flex items-center justify-center min-h-[36px]">
-        <span>Kevin & Coco te da la bienvenida al apartado de Sadoer.</span>
+        <span>Don Balato Iván te da la bienvenida al apartado de Sadoer.</span>
       </div>
 
       {/* Bespoke Header */}
@@ -98,7 +98,7 @@ export default function SadoerProductsPage() {
           <button 
             onClick={() => setMenuOpen(true)}
             className="p-2 border border-gray-200 rounded hover:bg-gray-50 transition-colors focus:outline-none"
-            aria-label="Menú"
+            aria-label="MenÃº"
           >
             <Menu size={16} className="text-gray-700" />
           </button>
@@ -160,8 +160,8 @@ export default function SadoerProductsPage() {
               </div>
               <nav className="flex flex-col gap-4 text-sm font-semibold text-gray-700">
                 <Link href="/marcas/sadoer" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Inicio</Link>
-                <Link href="/marcas/sadoer/productos" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Catálogo Sadoer</Link>
-                <Link href="/productos?brand=SADOER" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Catálogo Completo</Link>
+                <Link href="/marcas/sadoer/productos" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>CatÃ¡logo Sadoer</Link>
+                <Link href="/productos?brand=SADOER" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>CatÃ¡logo Completo</Link>
               </nav>
             </div>
             <div className="border-t border-gray-100 pt-6">
@@ -171,7 +171,7 @@ export default function SadoerProductsPage() {
                 onClick={() => setMenuOpen(false)}
               >
                 <User size={18} />
-                <span>{isLoggedIn ? "Mi Cuenta" : "Iniciar Sesión"}</span>
+                <span>{isLoggedIn ? "Mi Cuenta" : "Iniciar SesiÃ³n"}</span>
               </Link>
             </div>
           </div>
@@ -185,3 +185,4 @@ export default function SadoerProductsPage() {
     </div>
   );
 }
+

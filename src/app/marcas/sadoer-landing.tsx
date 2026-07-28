@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -28,7 +28,7 @@ const LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IAD
 
 const CATEGORIES = [
   { name: 'Skincare Facial (49)', realName: 'Skincare Facial', img: `${SADOER_IMG}/2026/03/sadoer-face-creams-300x300.webp` },
-  { name: 'Tónicos y Esencias (12)', realName: 'Tónicos y Esencias', img: `${SADOER_IMG}/2026/03/sadoer-eye-creams-300x300.webp` },
+  { name: 'TÃ³nicos y Esencias (12)', realName: 'TÃ³nicos y Esencias', img: `${SADOER_IMG}/2026/03/sadoer-eye-creams-300x300.webp` },
   { name: 'Limpiadores Faciales (12)', realName: 'Limpiadores Faciales', img: `${SADOER_IMG}/2026/03/sadoer-facial-cleansers-300x300.webp` },
   { name: 'Otros (2)', realName: 'Otros', img: `${SADOER_IMG}/2026/03/sadoer-face-masks-300x300.webp` },
   { name: 'Rubor e Iluminador (1)', realName: 'Rubor e Iluminador', img: `${SADOER_IMG}/2026/03/sadoer-eye-masks-300x300.webp` },
@@ -43,19 +43,19 @@ const REVIEWS_24K = [
 ];
 
 const FAQS = [
-  { q: '¿Los productos SADOER son auténticos?', a: 'Sí. Todos nuestros productos son 100% auténticos y directamente importados.' },
-  { q: '¿Cómo hago un pedido?', a: 'Explora nuestro catálogo de productos SADOER, agrega al carrito y completa tu compra.' },
-  { q: '¿Necesito una cuenta para comprar?', a: 'Puedes comprar como invitado, pero crear una cuenta te da acceso a descuentos exclusivos y seguimiento de pedidos.' },
-  { q: '¿Qué métodos de pago aceptan?', a: 'Aceptamos tarjetas de crédito, débito, transferencias y pago contra entrega.' },
-  { q: '¿Hacen envíos a todo el país?', a: 'Sí, enviamos a todo el país. El tiempo de entrega varía según tu ubicación.' },
-  { q: '¿Cuál es la política de devoluciones?', a: 'Aceptamos devoluciones dentro de los 30 días posteriores a la compra, siempre que el producto esté sin usar.' },
+  { q: 'Â¿Los productos SADOER son autÃ©nticos?', a: 'SÃ­. Todos nuestros productos son 100% autÃ©nticos y directamente importados.' },
+  { q: 'Â¿CÃ³mo hago un pedido?', a: 'Explora nuestro catÃ¡logo de productos SADOER, agrega al carrito y completa tu compra.' },
+  { q: 'Â¿Necesito una cuenta para comprar?', a: 'Puedes comprar como invitado, pero crear una cuenta te da acceso a descuentos exclusivos y seguimiento de pedidos.' },
+  { q: 'Â¿QuÃ© mÃ©todos de pago aceptan?', a: 'Aceptamos tarjetas de crÃ©dito, dÃ©bito, transferencias y pago contra entrega.' },
+  { q: 'Â¿Hacen envÃ­os a todo el paÃ­s?', a: 'SÃ­, enviamos a todo el paÃ­s. El tiempo de entrega varÃ­a segÃºn tu ubicaciÃ³n.' },
+  { q: 'Â¿CuÃ¡l es la polÃ­tica de devoluciones?', a: 'Aceptamos devoluciones dentro de los 30 dÃ­as posteriores a la compra, siempre que el producto estÃ© sin usar.' },
 ];
 
 const WHY_CHOOSE = [
-  { icon: Sparkles, title: 'Piel Radiante', desc: 'Fórmulas diseñadas para iluminar y revitalizar tu piel.' },
-  { icon: Droplet, title: 'Hidratación Duradera', desc: 'Ingredientes que mantienen tu piel hidratada todo el día.' },
-  { icon: Leaf, title: 'Fórmulas Suaves', desc: 'Productos libres de químicos agresivos, aptos para piel sensible.' },
-  { icon: Shield, title: 'Calidad Garantizada', desc: 'Productos auténticos con estándares de calidad internacional.' },
+  { icon: Sparkles, title: 'Piel Radiante', desc: 'FÃ³rmulas diseÃ±adas para iluminar y revitalizar tu piel.' },
+  { icon: Droplet, title: 'HidrataciÃ³n Duradera', desc: 'Ingredientes que mantienen tu piel hidratada todo el dÃ­a.' },
+  { icon: Leaf, title: 'FÃ³rmulas Suaves', desc: 'Productos libres de quÃ­micos agresivos, aptos para piel sensible.' },
+  { icon: Shield, title: 'Calidad Garantizada', desc: 'Productos autÃ©nticos con estÃ¡ndares de calidad internacional.' },
 ];
 
 export default function SadoerLanding() {
@@ -160,7 +160,7 @@ export default function SadoerLanding() {
 
       {/* Announcement Bar */}
       <div className="w-full bg-[#d08395] text-white py-2.5 px-4 text-center text-xs font-semibold tracking-wider relative flex items-center justify-center min-h-[36px]">
-        <span>Kevin & Coco te da la bienvenida al apartado de Sadoer.</span>
+        <span>Don Balato Iván te da la bienvenida al apartado de Sadoer.</span>
       </div>
 
       {/* Bespoke Header */}
@@ -170,7 +170,7 @@ export default function SadoerLanding() {
           <button 
             onClick={() => setMenuOpen(true)}
             className="p-2 border border-gray-200 rounded hover:bg-gray-50 transition-colors focus:outline-none"
-            aria-label="Menú"
+            aria-label="MenÃº"
           >
             <Menu size={16} className="text-gray-700" />
           </button>
@@ -232,9 +232,9 @@ export default function SadoerLanding() {
               </div>
               <nav className="flex flex-col gap-4 text-sm font-semibold text-gray-700">
                 <Link href="/marcas/sadoer" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Inicio</Link>
-                <Link href="#categorias" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Categorías</Link>
+                <Link href="#categorias" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>CategorÃ­as</Link>
                 <Link href="#productos" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Productos Destacados</Link>
-                <Link href="/productos?brand=SADOER" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Catálogo Completo</Link>
+                <Link href="/productos?brand=SADOER" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>CatÃ¡logo Completo</Link>
                 <Link href="#faq" className="hover:text-[#ca7d90] transition py-1" onClick={() => setMenuOpen(false)}>Preguntas Frecuentes</Link>
               </nav>
             </div>
@@ -245,7 +245,7 @@ export default function SadoerLanding() {
                 onClick={() => setMenuOpen(false)}
               >
                 <User size={18} />
-                <span>{isLoggedIn ? "Mi Cuenta" : "Iniciar Sesión"}</span>
+                <span>{isLoggedIn ? "Mi Cuenta" : "Iniciar SesiÃ³n"}</span>
               </Link>
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function SadoerLanding() {
         <div className="max-w-3xl mx-auto text-center px-6 z-10">
           {/* Eyebrow */}
           <span className="text-gray-500 tracking-[0.2em] text-xs sm:text-sm uppercase font-semibold">
-            Kevin & Coco Chile
+            Don Balato Iván Chile
           </span>
           {/* Divider */}
           <div className="w-16 h-[1px] bg-[#ca7d90] my-4 mx-auto" />
@@ -267,7 +267,7 @@ export default function SadoerLanding() {
           </h1>
           {/* Subheading */}
           <p className="text-gray-600 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto font-sans leading-relaxed mb-8 px-2">
-            Kevin & Coco Chile trabaja directamente con la marca oficial. Tenemos todos sus productos para que disfrutes de una excelente experiencia y un cuidado óptimo de tu piel.
+            Don Balato Iván Chile trabaja directamente con la marca oficial. Tenemos todos sus productos para que disfrutes de una excelente experiencia y un cuidado Ã³ptimo de tu piel.
           </p>
           {/* Button */}
           <div className="mb-10">
@@ -291,7 +291,7 @@ export default function SadoerLanding() {
       <section id="categorias" className="py-16 px-6 max-w-7xl mx-auto scroll-mt-20">
         <div className="text-center mb-10">
           <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-2">Explora</p>
-          <h2 className="text-3xl font-bold text-gray-900">Comprar por Categoría</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Comprar por CategorÃ­a</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {CATEGORIES.map((cat) => (
@@ -310,7 +310,7 @@ export default function SadoerLanding() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-2">Favoritos</p>
-            <h2 className="text-3xl font-bold text-gray-900">Nuestros Más Vendidos</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Nuestros MÃ¡s Vendidos</h2>
           </div>
           
           {isLoading && bestsellers.length === 0 ? renderSkeletons() : (
@@ -335,7 +335,7 @@ export default function SadoerLanding() {
                         <button 
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(prod as any); }}
                           className="p-2 bg-[#ca7d90] hover:bg-[#b36b7c] text-white rounded-full transition-colors flex items-center justify-center focus:outline-none"
-                          title="Añadir al carrito"
+                          title="AÃ±adir al carrito"
                         >
                           <ShoppingBag size={14} />
                         </button>
@@ -378,7 +378,7 @@ export default function SadoerLanding() {
                       <button 
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem(prod as any); }}
                         className="p-2 bg-[#ca7d90] hover:bg-[#b36b7c] text-white rounded-full transition-colors flex items-center justify-center focus:outline-none"
-                        title="Añadir al carrito"
+                        title="AÃ±adir al carrito"
                       >
                         <ShoppingBag size={14} />
                       </button>
@@ -405,8 +405,8 @@ export default function SadoerLanding() {
       <section className="py-16 px-6 bg-gradient-to-br from-[#ffeef2] via-[#fff5f7] to-white">
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-3">Cuidado Simple</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Cuidado de la Piel Simple para<br />Hidratación, Suavidad y Cuidado Diario</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto mb-8">En SADOER creemos que el cuidado de la piel no tiene que ser complicado. Nuestras fórmulas están diseñadas para ser efectivas y simples de usar en tu rutina diaria.</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Cuidado de la Piel Simple para<br />HidrataciÃ³n, Suavidad y Cuidado Diario</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto mb-8">En SADOER creemos que el cuidado de la piel no tiene que ser complicado. Nuestras fÃ³rmulas estÃ¡n diseÃ±adas para ser efectivas y simples de usar en tu rutina diaria.</p>
           <Link href="/productos?brand=SADOER" className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#ca7d90] text-white font-bold rounded-full text-sm hover:bg-[#b36b7c] transition-all shadow-md">
             Ver todos los productos <ChevronRight size={16} />
           </Link>
@@ -419,9 +419,9 @@ export default function SadoerLanding() {
           <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-2">Testimonios</p>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Lo Que Dicen Nuestras Clientas</h2>
           <div className="flex items-center justify-center gap-2 mt-3">
-            <span className="text-yellow-400">★★★★★</span>
+            <span className="text-yellow-400">â˜…â˜…â˜…â˜…â˜…</span>
             <span className="text-gray-600 text-sm font-bold">4.9/5</span>
-            <span className="text-gray-400 text-sm">· Basado en más de 120 opiniones de Chile</span>
+            <span className="text-gray-400 text-sm">Â· Basado en mÃ¡s de 120 opiniones de Chile</span>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -429,23 +429,23 @@ export default function SadoerLanding() {
             {
               name: "Camila Espinoza",
               location: "Santiago",
-              comment: "Increíble la hidratación de los productos Sadoer. Mi piel solía ser muy seca y ahora tiene un brillo súper sano y natural. ¡Muy recomendado!",
+              comment: "IncreÃ­ble la hidrataciÃ³n de los productos Sadoer. Mi piel solÃ­a ser muy seca y ahora tiene un brillo sÃºper sano y natural. Â¡Muy recomendado!",
               avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
               rating: 5,
               product: "Crema de Naranja Vitamin C"
             },
             {
-              name: "Valentina Henríquez",
-              location: "Viña del Mar",
-              comment: "Las mascarillas hidratantes son otro nivel. Se siente una frescura inmediata y el aroma es exquisito. Kevin & Coco las entrega rapidísimo.",
+              name: "Valentina HenrÃ­quez",
+              location: "ViÃ±a del Mar",
+              comment: "Las mascarillas hidratantes son otro nivel. Se siente una frescura inmediata y el aroma es exquisito. Don Balato Iván las entrega rapidÃ­simo.",
               avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&auto=format&fit=crop&q=80",
               rating: 5,
               product: "Mascarillas Faciales Sadoer"
             },
             {
               name: "Francisca Rojas",
-              location: "Concepción",
-              comment: "Llevo usando el contorno de ojos Sadoer dos semanas y las ojeras han disminuido un montón. La textura no es grasosa y se absorbe al instante.",
+              location: "ConcepciÃ³n",
+              comment: "Llevo usando el contorno de ojos Sadoer dos semanas y las ojeras han disminuido un montÃ³n. La textura no es grasosa y se absorbe al instante.",
               avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
               rating: 5,
               product: "Contorno de Ojos Aloe Vera"
@@ -455,7 +455,7 @@ export default function SadoerLanding() {
               <div>
                 <div className="flex items-center gap-1 text-yellow-400 mb-3.5">
                   {[...Array(item.rating)].map((_, idx) => (
-                    <span key={idx}>★</span>
+                    <span key={idx}>â˜…</span>
                   ))}
                 </div>
                 <p className="text-gray-600 text-sm italic leading-relaxed mb-6">
@@ -470,7 +470,7 @@ export default function SadoerLanding() {
                 />
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">{item.name}</h4>
-                  <p className="text-[10px] text-gray-400 font-medium">{item.location} · {item.product}</p>
+                  <p className="text-[10px] text-gray-400 font-medium">{item.location} Â· {item.product}</p>
                 </div>
               </div>
             </div>
@@ -482,7 +482,7 @@ export default function SadoerLanding() {
       <section className="py-16 px-6 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
-            <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-2">Por Qué Elegirnos</p>
+            <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-2">Por QuÃ© Elegirnos</p>
             <h2 className="text-3xl font-bold text-gray-900">La Diferencia SADOER</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -503,7 +503,7 @@ export default function SadoerLanding() {
       <section id="faq" className="py-16 px-6 max-w-3xl mx-auto scroll-mt-20">
         <div className="text-center mb-10">
           <p className="text-[#ca7d90] text-xs font-bold uppercase tracking-widest mb-2">Preguntas Frecuentes</p>
-          <h2 className="text-3xl font-bold text-gray-900">¿Tienes Dudas?</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Â¿Tienes Dudas?</h2>
         </div>
         <div className="space-y-3">
           {FAQS.map((faq, i) => (
@@ -528,12 +528,13 @@ export default function SadoerLanding() {
         <div className="max-w-4xl mx-auto text-center">
           <img src={LOGO} alt="SADOER" className="h-10 object-contain brightness-0 invert mx-auto mb-6 opacity-90" />
           <h2 className="text-3xl font-bold text-white mb-4">Comienza Tu Rutina de Cuidado Hoy</h2>
-          <p className="text-white/80 mb-8 max-w-xl mx-auto">Descubre la colección completa de productos SADOER y encuentra el adecuado para tu piel.</p>
+          <p className="text-white/80 mb-8 max-w-xl mx-auto">Descubre la colecciÃ³n completa de productos SADOER y encuentra el adecuado para tu piel.</p>
           <Link href="/productos?brand=SADOER" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#ca7d90] font-bold rounded-full text-sm hover:bg-pink-50 transition-all shadow-md">
-            Ver Catálogo Completo <ChevronRight size={18} />
+            Ver CatÃ¡logo Completo <ChevronRight size={18} />
           </Link>
         </div>
       </section>
     </div>
   );
 }
+

@@ -66,6 +66,9 @@ export default function ProductsPage() {
   const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'low' | 'out'>('instock');
   const [noImageOnly, setNoImageOnly] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [showAddChoice, setShowAddChoice] = useState(false);
+  const [aiWizard, setAiWizard] = useState<{ step: 'prices' | 'images' | null; refImage: string; cost: number; price: number; catalogPrice: number; marginPct: string; catalogPct: string; imgUrls: string[] } | null>(null);
+  const [aiAutoEnhance, setAiAutoEnhance] = useState(false);
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [sort, setSort] = useState<{ key: 'NAME' | 'PRICE' | 'STOCK' | 'SOLDQUANTITY' | 'MARGIN' | 'CREATED'; dir: 'asc' | 'desc' }>({ key: 'CREATED', dir: 'desc' });
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; data: ProductModalData } | null>(null);
@@ -839,7 +842,106 @@ export default function ProductsPage() {
     }
   };
 
-  const openAdd = () => setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } });
+  const openAdd = () => {
+    // En PC (md+), mostrar modal de selección primero
+    if (window.innerWidth >= 768) {
+      setShowAddChoice(true);
+      return;
+    }
+    setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } });
+  };
+  const openAddManual = () => {
+    setShowAddChoice(false);
+    setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } });
+  };
+  const openAddWithAI = () => {
+    setShowAddChoice(false);
+    setAiWizard({ step: 'prices', refImage: '', cost: 0, price: 0, catalogPrice: 0, marginPct: '', catalogPct: '', imgUrls: [] });
+  };
+  const aiWizardContinue = () => {
+    if (!aiWizard) return;
+    setAiWizard(w => w ? { ...w, step: 'images' } : w);
+  };
+  const aiWizardFinish = async () => {
+    if (!aiWizard) return;
+    const baseData = { ...EMPTY, COST: aiWizard.cost, PRICE: aiWizard.price, WHOLESALEPRICE: aiWizard.price, CATALOGPRICE: aiWizard.catalogPrice || 0, IMAGEURL: aiWizard.imgUrls[0] || aiWizard.refImage || '', IMAGEURL2: aiWizard.imgUrls[1] || '', IMAGEURL3: aiWizard.imgUrls[2] || '', _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' };
+    setAiWizard(null);
+    setModal({ mode: 'add', data: baseData });
+    setAiAutoEnhance(true);
+  };
+
+  // Función unificada: toma la primera imagen, busca similares, las selecciona y autocompleta todo
+  const aiEnhanceProduct = useCallback(async () => {
+    if (!modal) return;
+    const firstImage = getModalImageUrls(modal.data)[0];
+    if (!firstImage) {
+      // Sin imagen, solo generar contenido
+      generateAllProductContent();
+      return;
+    }
+    setAiLoading('all');
+    try {
+      // 1. Buscar imágenes similares
+      const searchRes = await fetch('/api/vision-similar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: firstImage }),
+      });
+      const searchData = await searchRes.json();
+      if (searchData.error) throw new Error(searchData.error);
+      const similarUrls: string[] = (searchData.images || []).slice(0, 2).map((img: any) => img.url);
+
+      // 2. Importar las imágenes similares (subirlas a Appwrite)
+      const newImageUrls: string[] = [firstImage];
+      for (const url of similarUrls) {
+        if (newImageUrls.length >= 3) break;
+        try {
+          const proxyRes = await fetch(`/api/vision-similar?url=${encodeURIComponent(url)}`);
+          if (!proxyRes.ok) continue;
+          const blob = await proxyRes.blob();
+          const file = new File([blob], `ai-${Date.now()}-${Math.random()}.jpg`, { type: blob.type || 'image/jpeg' });
+          const { storage } = getServices();
+          const { endpoint, projectId } = getAppwriteConfig();
+          const fileId = ID.unique();
+          await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+          const uploadedUrl = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
+          newImageUrls.push(uploadedUrl);
+        } catch { /* skip failed image */ }
+      }
+
+      // 3. Actualizar imágenes en el modal
+      setModal(m => m ? {
+        ...m,
+        data: {
+          ...m.data,
+          IMAGEURL: newImageUrls[0] || m.data.IMAGEURL || '',
+          IMAGEURL2: newImageUrls[1] || m.data.IMAGEURL2 || '',
+          IMAGEURL3: newImageUrls[2] || m.data.IMAGEURL3 || '',
+        },
+      } : m);
+
+      // 4. Generar todo el contenido con IA
+      await new Promise(r => setTimeout(r, 300));
+      generateAllProductContent();
+    } catch (e: any) {
+      // Si falla la búsqueda de imágenes, al menos generar el contenido
+      generateAllProductContent();
+    } finally {
+      setAiLoading(null);
+    }
+  }, [modal, generateAllProductContent]);
+
+  // Auto-enhance cuando se abre el modal con aiAutoEnhance y hay imagen
+  useEffect(() => {
+    if (modal && aiAutoEnhance) {
+      const firstImage = getModalImageUrls(modal.data)[0];
+      if (firstImage) {
+        setAiAutoEnhance(false);
+        const timer = setTimeout(() => aiEnhanceProduct(), 600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [modal, aiAutoEnhance, aiEnhanceProduct]);
   const openEdit = (p: Product) => {
     const tabs = getCustomTabsFromFeatures(p.FEATURES) ?? {};
     setModal({
@@ -1633,6 +1735,13 @@ export default function ProductsPage() {
          ═══════════════════════════════════════════════════════════════ */}
       {modal && (
         <div className="hidden md:block min-h-[calc(100vh-140px)]">
+          {/* AI waiting banner */}
+          {aiAutoEnhance && !getModalImageUrls(modal.data)[0] && (
+            <div className="mb-4 flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl p-3">
+              <Sparkles className="w-5 h-5 text-purple-600 animate-pulse shrink-0" />
+              <p className="text-sm text-purple-700 font-medium">Sube una imagen del producto y la IA autocompletará todo automáticamente</p>
+            </div>
+          )}
           {/* Header bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -1700,22 +1809,6 @@ export default function ProductsPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-sm font-medium text-gray-700">Nombre del producto *</label>
-                        <button type="button" disabled={aiLoading === 'title' || aiLoading === 'all'} onClick={async () => {
-                          setAiLoading('title'); setAiTitles([]);
-                          try {
-                            const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
-                            const titles = await generateProductTitle(
-                              modal.data.DESCRIPTION || modal.data.NAME || '',
-                              catName,
-                              getModalImageUrls(modal.data),
-                              modal.data.NAME || ''
-                            );
-                            setAiTitles(titles);
-                          } catch (e: any) { alert(e.message); }
-                          finally { setAiLoading(null); }
-                        }} className="flex items-center gap-1 text-xs text-gray-900 hover:text-indigo-800 disabled:opacity-50">
-                          <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'title' ? 'Generando...' : 'Sugerir con IA'}
-                        </button>
                       </div>
                       <input value={modal.data.NAME || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, NAME: e.target.value } } : m)}
                         className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Nombre del producto" />
@@ -1733,32 +1826,6 @@ export default function ProductsPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-sm font-medium text-gray-700">Descripción</label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            disabled={aiLoading === 'all'}
-                            onClick={generateAllProductContent}
-                            className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-100 disabled:opacity-50"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'all' ? 'Autocompletando...' : 'Autocompletar todo'}
-                          </button>
-                        <button type="button" disabled={aiLoading === 'desc' || aiLoading === 'all'} onClick={async () => {
-                          setAiLoading('desc');
-                          try {
-                            const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
-                            const desc = await generateProductDescription(
-                              modal.data.NAME || '',
-                              catName,
-                              modal.data.DESCRIPTION || '',
-                              getModalImageUrls(modal.data)
-                            );
-                            setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: desc } } : m);
-                          } catch (e: any) { alert(e.message); }
-                          finally { setAiLoading(null); }
-                        }} className="flex items-center gap-1 text-xs text-gray-900 hover:text-indigo-800 disabled:opacity-50">
-                          <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'desc' ? 'Generando...' : 'Generar con IA'}
-                        </button>
-                        </div>
                       </div>
                       <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
                         rows={5} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none" placeholder="Describe tu producto..." />
@@ -1952,7 +2019,7 @@ export default function ProductsPage() {
 
               {/* Custom specs/info tabs */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="mb-4">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-gray-800 animate-pulse" /> Pestañas de Información (Ficha Técnica)
@@ -1961,15 +2028,6 @@ export default function ProductsPage() {
                       Completa estos campos para mostrar pestañas dedicadas debajo de la descripción en el detalle de producto de Plantilla 5. Si los dejas vacíos, no se mostrarán.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={aiLoading === 'tabs' || aiLoading === 'all'}
-                    onClick={generateTechnicalTabsOnly}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-100 disabled:opacity-50"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    {aiLoading === 'tabs' ? 'Generando ficha...' : 'Generar ficha con IA'}
-                  </button>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -2117,7 +2175,189 @@ export default function ProductsPage() {
           setAiTitles={setAiTitles}
           onGenerateAll={generateAllProductContent}
           onGenerateTabs={generateTechnicalTabsOnly}
+          aiAutoEnhance={aiAutoEnhance}
         />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          MODAL DE SELECCIÓN: Agregar manualmente o con IA (solo PC)
+         ═══════════════════════════════════════════════════════════════ */}
+      {showAddChoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddChoice(false)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Agregar producto</h2>
+            <p className="text-sm text-gray-500 mb-5">Elige cómo quieres crear el producto</p>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={openAddManual}
+                className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 transition text-center"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-gray-700" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Agregar manualmente</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Llena todos los campos tú mismo</p>
+                </div>
+              </button>
+              <button
+                onClick={() => { setShowAddChoice(false); setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } }); setAiAutoEnhance(true); }}
+                className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition text-center"
+              >
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Agregar con IA</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Sube una foto y la IA autocompleta todo</p>
+                </div>
+              </button>
+            </div>
+            <button
+              onClick={() => setShowAddChoice(false)}
+              className="mt-4 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          WIZARD IA: Paso 1 precios, Paso 2 imágenes (solo PC)
+         ═══════════════════════════════════════════════════════════════ */}
+      {aiWizard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAiWizard(null)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-lg w-full mx-4" onClick={e => e.stopPropagation()}>
+            {/* Progress indicator */}
+            <div className="flex items-center gap-2 mb-5">
+              <div className={`flex items-center gap-2 ${aiWizard.step === 'prices' ? 'text-purple-600' : 'text-gray-400'}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${aiWizard.step === 'prices' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'}`}>1</div>
+                <span className="text-sm font-medium">Precios</span>
+              </div>
+              <div className="flex-1 h-0.5 bg-gray-200 rounded" />
+              <div className={`flex items-center gap-2 ${aiWizard.step === 'images' ? 'text-purple-600' : 'text-gray-400'}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${aiWizard.step === 'images' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
+                <span className="text-sm font-medium">Imágenes</span>
+              </div>
+            </div>
+
+            {aiWizard.step === 'prices' && (
+              <>
+                <h2 className="text-lg font-bold text-gray-900 mb-1">Precios del producto</h2>
+                <p className="text-sm text-gray-500 mb-5">Ingresa los precios básicos. La IA usará estos datos.</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Costo (lo que pagas) <span className="text-red-500">*</span></label>
+                    <input type="number" placeholder="Ej: 5000" value={aiWizard.cost || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
+                      onChange={e => {
+                        const cost = Number(e.target.value) || 0;
+                        setAiWizard(w => {
+                          if (!w) return w;
+                          const updated = { ...w, cost };
+                          if (w.marginPct && cost > 0) {
+                            const pct = Number(w.marginPct);
+                            updated.price = Math.round(cost * (1 + pct / 100));
+                          }
+                          return updated;
+                        });
+                      }}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-emerald-700 mb-1">Margen de ganancia (%)</label>
+                    <div className="flex items-center gap-2">
+                      <input type="number" inputMode="numeric" placeholder="Ej: 100" value={aiWizard.marginPct}
+                        onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
+                        onChange={e => {
+                          const pct = Number(e.target.value);
+                          setAiWizard(w => {
+                            if (!w) return w;
+                            const cost = w.cost;
+                            const updated = { ...w, marginPct: e.target.value };
+                            if (pct !== 0 && cost > 0) {
+                              updated.price = Math.round(cost * (1 + pct / 100));
+                            }
+                            return updated;
+                          });
+                        }}
+                        className="w-24 px-2 py-2 border border-emerald-300 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                      {aiWizard.cost > 0 && aiWizard.price > 0 && (
+                        <span className="text-xs font-semibold text-emerald-600">
+                          Ganancia: ${(aiWizard.price - aiWizard.cost).toLocaleString('es-CL')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio de venta (CLP) <span className="text-red-500">*</span></label>
+                    <input type="number" placeholder="Ej: 10000" value={aiWizard.price || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
+                      onChange={e => setAiWizard(w => w ? { ...w, price: Number(e.target.value) || 0 } : w)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-amber-700 font-bold mb-1">Precio Catálogo (CLP) <span className="text-gray-400 font-normal">— Opcional</span></label>
+                    <div className="flex items-center gap-2">
+                      <input type="number" placeholder="Auto o manual" value={aiWizard.catalogPrice || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
+                        onChange={e => setAiWizard(w => w ? { ...w, catalogPrice: Number(e.target.value) || 0 } : w)}
+                        className="flex-1 px-3 py-2.5 border border-amber-300 bg-amber-50/50 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      <input type="number" inputMode="numeric" placeholder="% sobre costo" value={aiWizard.catalogPct}
+                        onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
+                        onChange={e => {
+                          const pct = Number(e.target.value);
+                          setAiWizard(w => {
+                            if (!w) return w;
+                            const cost = w.cost;
+                            const updated = { ...w, catalogPct: e.target.value };
+                            if (pct !== 0 && cost > 0) {
+                              updated.catalogPrice = Math.round(cost * (1 + pct / 100));
+                            }
+                            return updated;
+                          });
+                        }}
+                        className="w-32 px-2 py-2 border border-amber-300 rounded-xl text-xs bg-white font-semibold text-amber-700 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button onClick={() => setAiWizard(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">Cancelar</button>
+                  <button onClick={aiWizardContinue} disabled={!aiWizard.cost || !aiWizard.price} className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition disabled:opacity-50">Continuar</button>
+                </div>
+              </>
+            )}
+
+            {aiWizard.step === 'images' && (
+              <>
+                <h2 className="text-lg font-bold text-gray-900 mb-1">Imágenes del producto</h2>
+                <p className="text-sm text-gray-500 mb-5">Sube una imagen de referencia y hasta 3 imágenes del producto.</p>
+                {/* Reference image */}
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Imagen de referencia (para que la IA la analice)</label>
+                  <ProductPhotoUploader
+                    imageUrls={aiWizard.refImage ? [aiWizard.refImage] : []}
+                    onChange={urls => setAiWizard(w => w ? { ...w, refImage: urls[0] || '' } : w)}
+                    compact
+                  />
+                </div>
+                {/* Product images */}
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Imágenes del producto (máximo 3)</label>
+                  <ProductPhotoUploader
+                    imageUrls={aiWizard.imgUrls}
+                    onChange={urls => setAiWizard(w => w ? { ...w, imgUrls: urls.slice(0, 3) } : w)}
+                    compact
+                  />
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button onClick={() => setAiWizard(w => w ? { ...w, step: 'prices' } : w)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">Atrás</button>
+                  <button onClick={aiWizardFinish} className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Crear con IA
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════
@@ -2142,6 +2382,15 @@ export default function ProductsPage() {
           <div className="flex gap-2 flex-wrap">
             <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-900 transition shadow-sm">
               <Plus className="w-4 h-4" /> Agregar
+            </button>
+            <button
+              onClick={() => { setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } }); setAiAutoEnhance(true); }}
+              disabled={aiLoading !== null}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-purple-300 text-purple-700 rounded-xl text-sm font-medium hover:bg-purple-50 transition shadow-sm disabled:opacity-50"
+              title="Sube una imagen y la IA autocompleta todo"
+            >
+              {aiLoading !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 animate-pulse" />}
+              IA
             </button>
             <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition shadow-sm" title="Categorizar productos usando IA">
               <Sparkles className="w-4 h-4" /> Kenia
@@ -3404,6 +3653,8 @@ export default function ProductsPage() {
           onStockFilterChange={setStockFilter}
           onEdit={openEdit}
           onAdd={openAdd}
+          onAddWithAI={() => { setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } }); setAiAutoEnhance(true); }}
+          aiLoading={aiLoading !== null}
           onRefresh={() => load(false)}
           currentPage={currentPage}
           hasMore={!!lastCursor}

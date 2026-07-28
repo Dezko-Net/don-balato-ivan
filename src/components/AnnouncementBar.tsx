@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Phone, Mail, MapPin } from 'lucide-react';
@@ -8,9 +8,9 @@ import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { usePathname } from 'next/navigation';
 
 const STORAGE_KEY = 'announcement_dismissed';
-const DEFAULT_TEXT = '🔥 Envío gratis en compras sobre $30.000 — ¡Aprovecha!';
+const DEFAULT_TEXT = 'ðŸ”¥ EnvÃ­o gratis en compras sobre $30.000 â€” Â¡Aprovecha!';
 
-// Función para detectar si un color es claro
+// FunciÃ³n para detectar si un color es claro
 function isLightColor(color: string): boolean {
   // Extraer el color principal del gradiente
   const colors = color.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|rgb\([^)]+\)|rgba\([^)]+\)/g);
@@ -41,7 +41,7 @@ function isLightColor(color: string): boolean {
     }
   }
   
-  // Calcular luminosidad (fórmula estándar)
+  // Calcular luminosidad (fÃ³rmula estÃ¡ndar)
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   
   // Si la luminosidad es mayor a 0.6, considerarlo color claro
@@ -86,10 +86,10 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
 
   const isSadoerBrand = pathname.includes('/marcas/sadoer') || (typeof window !== 'undefined' && window.location.search.includes('brand=SADOER'));
   const settings = sectionCfg ? getSectionSettings(sectionCfg, 'announcement_bar') : {};
-  const text = isSadoerBrand ? "Kevin & Coco te da la bienvenida al apartado de Sadoer." : (settings.title || DEFAULT_TEXT);
+  const text = isSadoerBrand ? "Don Balato Iván te da la bienvenida al apartado de Sadoer." : (settings.title || DEFAULT_TEXT);
   const link = settings.buttonLink || '/productos';
   const enabled = sectionCfg ? isSectionEnabled(sectionCfg, 'announcement_bar') : true;
-  const padding = settings.padding ?? 12; // Usar padding del editor, default 12px (mínimo para botón X)
+  const padding = settings.padding ?? 12; // Usar padding del editor, default 12px (mÃ­nimo para botÃ³n X)
 
   if (!enabled || dismissed) return null;
 
@@ -113,7 +113,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
   // Detectar si el fondo es claro
   const isLight = isLightColor(bgColor);
   
-  // Texto: degradado si textGradientStyle está definido, sino color sólido
+  // Texto: degradado si textGradientStyle estÃ¡ definido, sino color sÃ³lido
   const hasTextGradient = !!settings.textGradientStyle;
   const textColor = settings.textColor || (isLight ? '#1a1a1a' : '#ffffff');
   const textGradient = settings.textGradientStyle || '';
@@ -121,7 +121,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
   const textSize = settings.textSize ?? 13;
   const textHoverEffect = settings.textHoverEffect || 'none';
   
-  // Color para el botón de cerrar
+  // Color para el botÃ³n de cerrar
   const closeButtonColor = isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
 
   const textContent = (
@@ -201,7 +201,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
   );
   const navHasGradient = navbarGradient && navbarGradient.includes('gradient');
 
-  // Decidir background: navbar dorado (máx prioridad) > propio > default
+  // Decidir background: navbar dorado (mÃ¡x prioridad) > propio > default
   let bgStyle: React.CSSProperties;
 
   if (isYellowNavbar && navHasGradient) {
@@ -276,7 +276,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
               {link && !isSadoerBrand && announceButton}
             </div>
 
-            {/* Botón cerrar */}
+            {/* BotÃ³n cerrar */}
             <motion.button
               onClick={dismiss}
               whileHover={{ scale: 1.2, opacity: 1 }}
@@ -291,3 +291,4 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
     </AnimatePresence>
   );
 }
+

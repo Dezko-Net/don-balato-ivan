@@ -1,13 +1,13 @@
 'use client';
-/* ════════════════════════════════════════════════════════════════════
-   PLANTILLA 1 — Shopify "Mi tienda 3" (Tema Venice)
-   ──────────────────────────────────────────────────────────────────
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PLANTILLA 1 â€” Shopify "Mi tienda 3" (Tema Venice)
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Migrada desde public/shopify/index.html (385 KB, ~22 secciones).
    Estrategia: render del HTML body limpio via dangerouslySetInnerHTML
-   + carga dinámica de los CSS/JS originales del tema Venice.
-   Las secciones se irán componentizando a JSX gradualmente para hacerlas
+   + carga dinÃ¡mica de los CSS/JS originales del tema Venice.
+   Las secciones se irÃ¡n componentizando a JSX gradualmente para hacerlas
    editables desde el editor de secciones (sh_navbar, sh_hero, ...).
-   ════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 import '@/templates/plantilla1/theme.css';
 import '@/templates/plantilla1/mobile-responsive.css';
 import { useEffect, useRef, useState } from 'react';
@@ -47,7 +47,7 @@ import './shopify-fix.css';
 import './tpl1-collections-premium.css';
 import './mobile-responsive.css';
 
-/* ── Mapeo: ID de sección en config → ID del elemento en el HTML de Shopify ── */
+/* â”€â”€ Mapeo: ID de secciÃ³n en config â†’ ID del elemento en el HTML de Shopify â”€â”€ */
 const TPL1_SECTION_HTML_MAP: Record<string, string> = {
   // Header group (fixed)
   tpl1_announcement_bar: 'shopify-section-sections--22405132747000__announcement_bar_B8FdRK',
@@ -78,12 +78,12 @@ const TPL1_SECTION_HTML_MAP: Record<string, string> = {
   tpl1_footer: 'shopify-section-sections--22405132714232__footer_pzLNtW',
 };
 
-// Mapeo inverso: HTML ID → config ID (para hover/click en elementos con data-section-id original)
+// Mapeo inverso: HTML ID â†’ config ID (para hover/click en elementos con data-section-id original)
 const HTML_ID_TO_CONFIG_ID = Object.fromEntries(
   Object.entries(TPL1_SECTION_HTML_MAP).map(([configId, htmlId]) => [htmlId, configId])
 );
 
-// Mapeo inverso: data-section-id (Shopify) → config ID
+// Mapeo inverso: data-section-id (Shopify) â†’ config ID
 const SHOPIFY_DATA_SECTION_ID_TO_CONFIG_ID: Record<string, string> = {
   'sections--22405132747000__announcement_bar_B8FdRK': 'tpl1_announcement_bar',
   'template--22405132419320__hero_banner_R6iEJ4': 'tpl1_hero',
@@ -113,9 +113,9 @@ gsap.registerPlugin(ScrollTrigger);
 
 const SHOPIFY_BASE = '/shopify/assets';
 
-/* ── CSS files cargados desde public/shopify/ ──
-   ORDEN CRÍTICO: el inline-1 contiene el CSS extraído de los <style> del head
-   original; sin él la página queda sin estilos (layout, colores, fonts). */
+/* â”€â”€ CSS files cargados desde public/shopify/ â”€â”€
+   ORDEN CRÃTICO: el inline-1 contiene el CSS extraÃ­do de los <style> del head
+   original; sin Ã©l la pÃ¡gina queda sin estilos (layout, colores, fonts). */
 const CSS_FILES = [
   `${SHOPIFY_BASE}/css/inline/index-inline-1.css`,
   `${SHOPIFY_BASE}/css/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/vendor-riji0f.css`,
@@ -123,8 +123,8 @@ const CSS_FILES = [
   `${SHOPIFY_BASE}/css/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/newsletter-validation-lobua.css`,
 ];
 
-/* ── JS files críticos. type="module" => mismo módulo, scope aislado ──
-   page-load es módulo (top-level "let i" colisiona si se carga como classic). */
+/* â”€â”€ JS files crÃ­ticos. type="module" => mismo mÃ³dulo, scope aislado â”€â”€
+   page-load es mÃ³dulo (top-level "let i" colisiona si se carga como classic). */
 type JsFile = { src: string; module?: boolean; inlineScript?: string; postLoad?: () => void };
 const JS_FILES: JsFile[] = [
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/pubsub-lg5xyg.js` },
@@ -153,7 +153,7 @@ const JS_FILES: JsFile[] = [
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/page-load-26tzae.js`, module: true },
 ];
 
-/* ── Fonts preload (DM Sans, Poppins, Smooch) ── */
+/* â”€â”€ Fonts preload (DM Sans, Poppins, Smooch) â”€â”€ */
 const FONT_FACE_CSS = `
 @font-face {
   font-family: "DM Sans";
@@ -185,7 +185,7 @@ const FONT_FACE_CSS = `
 }
 `;
 
-/* ── Mobile Countdown — simple compact version for devices ≤768px ── */
+/* â”€â”€ Mobile Countdown â€” simple compact version for devices â‰¤768px â”€â”€ */
 function MobileCountdown({ title, subtitle, endTimeMs, bgImage, buttonHref }: {
   title: string; subtitle: string; endTimeMs: number | null; bgImage: string; buttonHref: string;
 }) {
@@ -248,7 +248,7 @@ function MobileCountdown({ title, subtitle, endTimeMs, bgImage, buttonHref }: {
         {!expired && endTimeMs && (
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             {[
-              { val: timeLeft.d, label: 'Días' },
+              { val: timeLeft.d, label: 'DÃ­as' },
               { val: timeLeft.h, label: 'Hrs' },
               { val: timeLeft.m, label: 'Min' },
               { val: timeLeft.s, label: 'Seg' },
@@ -301,7 +301,7 @@ function collectionItemHref(item: CollectionItem): string {
 
 export default function HomePage1() {
   const { primaryAddress } = usePrimaryAddress();
-  // usePrimaryAddress calls useAuth internally — get user/isLoggedIn from there
+  // usePrimaryAddress calls useAuth internally â€” get user/isLoggedIn from there
   const { user, isLoggedIn } = useAuth();
   // Refs to use inside useEffect without adding to deps (avoids TDZ issues)
   const primaryAddressRef = useRef(primaryAddress);
@@ -323,7 +323,7 @@ export default function HomePage1() {
   const [countdownProduct, setCountdownProduct] = useState<Product | null>(null);
   const { isEnabled: keniaEnabled } = useKeniaStatus();
 
-  /* ── Mark template attribute on document for CSS scoping ── */
+  /* â”€â”€ Mark template attribute on document for CSS scoping â”€â”€ */
   useEffect(() => {
     document.documentElement.dataset.template = '1';
     return () => { delete document.documentElement.dataset.template; };
@@ -335,7 +335,7 @@ export default function HomePage1() {
 
   // cache wiping logic on visibilitychange removed for performance and cost reduction
 
-  /* Reaplicar visibilidad de secciones (después de otros effects que tocan display) */
+  /* Reaplicar visibilidad de secciones (despuÃ©s de otros effects que tocan display) */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const apply = () => applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
@@ -382,7 +382,7 @@ export default function HomePage1() {
     return () => window.removeEventListener('message', handleEditorMsg);
   }, []);
 
-  /* ── Editor interaction: click + hover on sections (iframe → editor) ── */
+  /* â”€â”€ Editor interaction: click + hover on sections (iframe â†’ editor) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     // Only enable editor interactions when inside the theme editor iframe
@@ -393,15 +393,15 @@ export default function HomePage1() {
       const labels: Record<string, string> = {
         tpl1_announcement_bar: 'Barra de Anuncio', tpl1_hero: 'Hero Banner',
         tpl1_collection_list: 'Colecciones', tpl1_marquee: 'Texto Animado',
-        tpl1_featured_collection: 'Colección Destacada', tpl1_media_gallery: 'Galería de Medios',
+        tpl1_featured_collection: 'ColecciÃ³n Destacada', tpl1_media_gallery: 'GalerÃ­a de Medios',
         tpl1_featured_product: 'Producto Destacado', tpl1_countdown: 'Cuenta Regresiva',
-        tpl1_products_filter: 'Productos con Filtro', tpl1_before_after: 'Antes / Después',
+        tpl1_products_filter: 'Productos con Filtro', tpl1_before_after: 'Antes / DespuÃ©s',
         tpl1_faq: 'Preguntas Frecuentes', tpl1_shop_the_look: 'Shop The Look',
         tpl1_marquee_2: 'Texto Animado 2', tpl1_image_overlay: 'Banner con Texto',
         tpl1_video_text: 'Video con Texto', tpl1_testimonials: 'Testimonios',
         tpl1_brand_logos: 'Logos de Marcas', tpl1_blog: 'Blog / Noticias',
         tpl1_service_icons: 'Iconos de Servicios',
-        tpl1_subscribe_popup: 'Popup de Suscripción', tpl1_footer: 'Footer',
+        tpl1_subscribe_popup: 'Popup de SuscripciÃ³n', tpl1_footer: 'Footer',
       };
       return labels[id] || id;
     };
@@ -461,7 +461,7 @@ export default function HomePage1() {
     };
   }, [bodyHtml]);
 
-  /* ── Load font faces ── */
+  /* â”€â”€ Load font faces â”€â”€ */
   useEffect(() => {
     const styleEl = document.createElement('style');
     styleEl.id = 'tpl1-fontfaces';
@@ -470,7 +470,7 @@ export default function HomePage1() {
     return () => { styleEl.remove(); };
   }, []);
 
-  /* ── Load CSS files dynamically ── */
+  /* â”€â”€ Load CSS files dynamically â”€â”€ */
   useEffect(() => {
     const links: HTMLLinkElement[] = [];
     CSS_FILES.forEach(href => {
@@ -486,7 +486,7 @@ export default function HomePage1() {
     return () => { links.forEach(l => l.remove()); };
   }, []);
 
-  /* ── Fetch the cleaned HTML body content ── */
+  /* â”€â”€ Fetch the cleaned HTML body content â”€â”€ */
   useEffect(() => {
     let aborted = false;
     fetch('/shopify/body-clean.html', { cache: 'no-cache' })
@@ -523,17 +523,17 @@ export default function HomePage1() {
           /<a[^>]*href="[^"]*contact[^"]*"[^>]*>Contacto<\/a>/i,
           '<a href="/cuenta/pedidos" aria-label="Mis Pedidos">Mis Pedidos</a>'
         );
-        // Reducir tamaño del logo del header Shopify — override del style inline del header
+        // Reducir tamaÃ±o del logo del header Shopify â€” override del style inline del header
         processed = processed.replace(
           /#shopify-section-sections--[a-z0-9]+__header_[a-zA-Z0-9]+ \.musk-main-header \.logo-col img \{\s*max-width: \d+px;\s*height: auto;\s*\}/,
           '#shopify-section-sections--22405132747000__header_fYEwWD .musk-main-header .logo-col img { max-width: 50px !important; height: auto !important; }'
         );
-        // Forzar logo pequeño — inyectar al final del style tag del header
+        // Forzar logo pequeÃ±o â€” inyectar al final del style tag del header
         processed = processed.replace(
           'max-width: 80px;\n    }\n  }',
           'max-width: 50px;\n    }\n  }\n  .musk-main-header .logo-col img { max-width:50px!important;max-height:50px!important;height:auto!important;width:auto!important; }'
         );
-        // Force navbar icons to be white — Shopify theme has global svg path{fill:...!important}
+        // Force navbar icons to be white â€” Shopify theme has global svg path{fill:...!important}
         // Only reliable fix: add inline style with !important directly on SVG elements in HTML
         processed = processed.replace(
           /(<button[^>]*class="header-resource-link[^"]*"[^>]*>\s*<svg[^>]*>)([\s\S]*?)(<\/svg>)/g,
@@ -560,7 +560,7 @@ export default function HomePage1() {
   /* Marca por defecto en hero/nav antes de que cargue sectionCfg (evita flash "MUSK") */
   useEffect(() => {
     if (!bodyHtml) return;
-    // Logo text — limpiar referencias a MUSK, no poner marca propia
+    // Logo text â€” limpiar referencias a MUSK, no poner marca propia
     document.querySelectorAll('.light-logo span, .dark-logo span, .logo-col span, .h4.secondary-text, .h4.primary-text').forEach(el => {
       const t = (el.textContent || '').trim();
       if (/musk/i.test(t) || /mi tienda/i.test(t)) el.textContent = '';
@@ -597,16 +597,16 @@ export default function HomePage1() {
     return () => cancelAnimationFrame(id);
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Once body HTML is rendered, load JS scripts to enable carousels/etc.
-        IMPORTANT: idempotente — los scripts del tema declaran clases globales
+  /* â”€â”€ Once body HTML is rendered, load JS scripts to enable carousels/etc.
+        IMPORTANT: idempotente â€” los scripts del tema declaran clases globales
         (CustomElements, etc.) y NO se pueden cargar dos veces. En StrictMode
-        dev, useEffect corre dos veces; saltamos la segunda. ── */
+        dev, useEffect corre dos veces; saltamos la segunda. â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     if ((window as any).__tpl1ScriptsLoaded) return;
     (window as any).__tpl1ScriptsLoaded = true;
 
-    // ── Let Shopify CartDrawer custom element register normally ──
+    // â”€â”€ Let Shopify CartDrawer custom element register normally â”€â”€
     // We patch the instance directly in the cart useEffect below
 
     (window as any).swiperBundleUrl = 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js';
@@ -653,7 +653,7 @@ export default function HomePage1() {
     return () => { (window as any).__tpl1ScriptsLoaded = false; };
   }, [bodyHtml]);
 
-  /* ── is-sticky basic toggle (sin bloquear scrolling_down_header) ── */
+  /* â”€â”€ is-sticky basic toggle (sin bloquear scrolling_down_header) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     let style = document.getElementById('tpl1-sticky-icon-colors') as HTMLStyleElement | null;
@@ -691,14 +691,14 @@ export default function HomePage1() {
       const h = document.querySelector('header.musk-main-header') as HTMLElement | null;
       if (!h) return;
       if ((window.scrollY || 0) > 50) {
-        // Scrolleando: ocultar header Shopify con animación sincronizada
+        // Scrolleando: ocultar header Shopify con animaciÃ³n sincronizada
         h.classList.add('is-sticky', 'scrolling_down_header');
         h.classList.remove('scrolling_upwards_header');
         h.style.setProperty('transform', 'translateY(-100%)', 'important');
         h.style.setProperty('opacity', '0', 'important');
         h.style.setProperty('transition', 'transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s cubic-bezier(0.4,0,0.2,1)', 'important');
       } else {
-        // Arriba: mostrar header Shopify con animación sincronizada
+        // Arriba: mostrar header Shopify con animaciÃ³n sincronizada
         h.classList.remove('is-sticky', 'scrolling_down_header');
         h.classList.add('scrolling_upwards_header');
         h.style.setProperty('transform', 'translateY(0)', 'important');
@@ -714,21 +714,21 @@ export default function HomePage1() {
     return () => { window.removeEventListener('scroll', sync); clearInterval(interval); };
   }, [bodyHtml]);
 
-  /* ── Fix Shopify navbar: ensure Catálogo link exists ── */
+  /* â”€â”€ Fix Shopify navbar: ensure CatÃ¡logo link exists â”€â”€ */
 
   useEffect(() => {
     if (!bodyHtml) return;
     const fixNavbar = () => {
       const navbar = document.querySelector('.musk-navbar');
       if (!navbar) return;
-      // Add Catálogo link if not already present
+      // Add CatÃ¡logo link if not already present
       if (!navbar.querySelector('a[href="/catalogo"]')) {
         const li = document.createElement('li');
         li.className = 'nav_li link_menu_men heading_font';
         const a = document.createElement('a');
         a.href = '/catalogo';
-        a.setAttribute('aria-label', 'Catálogo');
-        a.textContent = 'Catálogo';
+        a.setAttribute('aria-label', 'CatÃ¡logo');
+        a.textContent = 'CatÃ¡logo';
         li.appendChild(a);
         // Insert after Tienda link if exists, else append
         const tiendaLink = navbar.querySelector('.nav_li a[href="/productos"]');
@@ -765,7 +765,7 @@ export default function HomePage1() {
         const addrA = document.createElement('a');
         addrA.href = '/cuenta/direcciones';
         addrA.className = 'tpl1-shopify-addr-link';
-        const addrText = primaryAddressRef.current || (isLoggedInRef.current ? 'Agregar ubicación' : 'Ingresa ubicación');
+        const addrText = primaryAddressRef.current || (isLoggedInRef.current ? 'Agregar ubicaciÃ³n' : 'Ingresa ubicaciÃ³n');
         addrA.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${addrText}</span>`;
         addrLi.appendChild(addrA);
         const ul = navbar.querySelector('ul');
@@ -778,7 +778,7 @@ export default function HomePage1() {
       } else {
         // Update address text if already exists
         const addrSpan = navbar.querySelector('.tpl1-shopify-addr-link span');
-        if (addrSpan) addrSpan.textContent = primaryAddressRef.current || (isLoggedInRef.current ? 'Agregar ubicación' : 'Ingresa ubicación');
+        if (addrSpan) addrSpan.textContent = primaryAddressRef.current || (isLoggedInRef.current ? 'Agregar ubicaciÃ³n' : 'Ingresa ubicaciÃ³n');
       }
     };
     fixNavbar();
@@ -787,7 +787,7 @@ export default function HomePage1() {
     return () => clearTimeout(t);
   }, [bodyHtml]);
 
-  /* ── Hacer funcionales los botones del navbar Shopify (search, user, cart) ── */
+  /* â”€â”€ Hacer funcionales los botones del navbar Shopify (search, user, cart) â”€â”€ */
   const { totalItems, items, subtotal, removeItem, updateQuantity, addItem, getEffectivePrice } = useCart();
   const { unreadCount } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
@@ -801,7 +801,7 @@ export default function HomePage1() {
   useEffect(() => {
     if (!bodyHtml) return;
 
-    // ── Replace theme's cart empty image with Lottie container + translate text ──
+    // â”€â”€ Replace theme's cart empty image with Lottie container + translate text â”€â”€
     const replaceCartImgWithLottie = () => {
       // Replace image with Lottie
       const origCartImg = document.querySelector('.empty-cart-icon img[src*="cart-sidebar-img"]');
@@ -836,9 +836,9 @@ export default function HomePage1() {
       }
       // Translate theme's English text to Spanish
       const titleEl = document.querySelector('.empty-cart-title');
-      if (titleEl && titleEl.textContent?.includes('empty')) titleEl.textContent = 'Tu carrito está vacío';
+      if (titleEl && titleEl.textContent?.includes('empty')) titleEl.textContent = 'Tu carrito estÃ¡ vacÃ­o';
       const descEl = document.querySelector('.empty_cart_drawer p, .empty-cart-wrapper > p');
-      if (descEl && descEl.textContent?.includes('added')) descEl.textContent = 'Aún no has agregado nada a tu carrito';
+      if (descEl && descEl.textContent?.includes('added')) descEl.textContent = 'AÃºn no has agregado nada a tu carrito';
       const shopBtn = document.querySelector('.musk-third-btn[aria-label="shop now"]');
       if (shopBtn) { shopBtn.textContent = 'Ver productos'; shopBtn.setAttribute('aria-label', 'Ver productos'); }
       const shopLink = document.querySelector('.musk-third-btn[href*="collections/all"]');
@@ -846,7 +846,7 @@ export default function HomePage1() {
     };
     replaceCartImgWithLottie();
 
-    // ── Search: redirigir form a /productos?q= ──
+    // â”€â”€ Search: redirigir form a /productos?q= â”€â”€
     const searchForm = document.querySelector('.search-bar-main form[action="/search"]') as HTMLFormElement | null;
     if (searchForm) {
       searchForm.action = '/productos';
@@ -857,7 +857,7 @@ export default function HomePage1() {
       if (hiddenPrefix) hiddenPrefix.remove();
     }
 
-    // ── Search popup: toggle manually (Bootstrap dropdown not loaded) ──
+    // â”€â”€ Search popup: toggle manually (Bootstrap dropdown not loaded) â”€â”€
     const searchToggle = document.querySelector('.fusion-search-trigger') as HTMLElement | null;
     const searchPopup = document.querySelector('.fusion-search-popup') as HTMLElement | null;
     const searchCloseBtn = searchPopup?.querySelector('.close-popup-btn') as HTMLElement | null;
@@ -896,9 +896,9 @@ export default function HomePage1() {
         const popularTitle = searchPopup.querySelector('.popular_search_product_header .search_header_title h5');
         if (popularTitle) popularTitle.textContent = 'Productos populares';
         const collectionTitle = searchPopup.querySelector('.popular_search_collection_header .search_header_title h5');
-        if (collectionTitle) collectionTitle.textContent = 'Categorías';
+        if (collectionTitle) collectionTitle.textContent = 'CategorÃ­as';
         const articlesTitle = searchPopup.querySelector('.popular_search_article_header .search_header_title h5');
-        if (articlesTitle) articlesTitle.textContent = 'Últimos artículos';
+        if (articlesTitle) articlesTitle.textContent = 'Ãšltimos artÃ­culos';
         searchPopup.querySelectorAll('.search_header_title a span').forEach((sp) => {
           sp.textContent = 'Ver todo';
         });
@@ -907,7 +907,7 @@ export default function HomePage1() {
 
       // Add banner image at top of search popup (above search bar)
       const popupForm = searchPopup.querySelector('form') as HTMLFormElement | null;
-      // Logo removed — no longer showing hardcoded brand logo in search popup
+      // Logo removed â€” no longer showing hardcoded brand logo in search popup
 
       let searchCacheReady = false;
       let runSearchLoad: () => void = () => {};
@@ -928,12 +928,12 @@ export default function HomePage1() {
           const newInput = popupQ.cloneNode(true) as HTMLInputElement;
           popupQ.parentNode?.replaceChild(newInput, popupQ);
 
-          // ── Live search with full client-side filtering ──
+          // â”€â”€ Live search with full client-side filtering â”€â”€
           let searchTimeout: ReturnType<typeof setTimeout> | null = null;
           const popularTitle = searchPopup.querySelector('.popular_search_product_header .search_header_title h5');
           const popularViewAll = searchPopup.querySelector('.popular_search_product_header .search_header_title a') as HTMLAnchorElement | null;
 
-          // Hide "Últimos artículos" entirely for now
+          // Hide "Ãšltimos artÃ­culos" entirely for now
           const articlesSection = searchPopup.querySelector('.popular_search_article_header');
           if (articlesSection) (articlesSection as HTMLElement).style.display = 'none';
 
@@ -1054,9 +1054,9 @@ export default function HomePage1() {
               <div style="margin-bottom:14px;">
                 <label style="font-size:11px;color:#6b7280;font-weight:700;letter-spacing:0.3px;margin-bottom:8px;display:block;">RANGO DE PRECIO</label>
                 <div style="display:flex;gap:6px;align-items:center;">
-                  <input type="number" class="tpl1-price-min" value="${priceMin}" min="0" max="${priceMaxLimit}" placeholder="Mín" style="width:100%;padding:7px 9px;border:1.5px solid #f9a8d4;border-radius:8px;font-size:12px;background:#fff;color:#1f2937;outline:none;" />
-                  <span style="color:#9ca3af;font-size:12px;">—</span>
-                  <input type="number" class="tpl1-price-max" value="${priceMax}" min="0" max="${priceMaxLimit}" placeholder="Máx" style="width:100%;padding:7px 9px;border:1.5px solid #f9a8d4;border-radius:8px;font-size:12px;background:#fff;color:#1f2937;outline:none;" />
+                  <input type="number" class="tpl1-price-min" value="${priceMin}" min="0" max="${priceMaxLimit}" placeholder="MÃ­n" style="width:100%;padding:7px 9px;border:1.5px solid #f9a8d4;border-radius:8px;font-size:12px;background:#fff;color:#1f2937;outline:none;" />
+                  <span style="color:#9ca3af;font-size:12px;">â€”</span>
+                  <input type="number" class="tpl1-price-max" value="${priceMax}" min="0" max="${priceMaxLimit}" placeholder="MÃ¡x" style="width:100%;padding:7px 9px;border:1.5px solid #f9a8d4;border-radius:8px;font-size:12px;background:#fff;color:#1f2937;outline:none;" />
                 </div>
                 <input type="range" class="tpl1-price-slider" min="0" max="${priceMaxLimit}" value="${priceMax}" style="width:100%;margin-top:10px;accent-color:#ec4899;" />
               </div>
@@ -1072,7 +1072,7 @@ export default function HomePage1() {
               <button class="tpl1-clear-filters" style="width:100%;padding:9px 12px;background:#fff;border:1.5px solid #f9a8d4;border-radius:10px;font-size:12px;color:#ec4899;font-weight:700;cursor:pointer;transition:all 0.25s;letter-spacing:0.3px;">LIMPIAR FILTROS</button>
             `;
 
-            // Custom select wiring (inline collapsible — no z-index/overflow issues)
+            // Custom select wiring (inline collapsible â€” no z-index/overflow issues)
             const selectBtn = filtersPanel!.querySelector('.tpl1-select-btn') as HTMLElement;
             const selectMenu = filtersPanel!.querySelector('.tpl1-select-menu') as HTMLElement;
             const selectArrow = filtersPanel!.querySelector('.tpl1-select-arrow') as HTMLElement;
@@ -1171,7 +1171,7 @@ export default function HomePage1() {
                   list.style.cssText = 'padding:6px 0 10px 18px;display:flex;flex-direction:column;gap:2px;border-left:2px solid #ec4899;margin:4px 0 8px 18px;';
                   list.innerHTML = subs.map(s => {
                     const isSubActive = activeSubcategoryId === s.$id;
-                    return `<a href="?subcategoria=${s.$id}" data-subcat-id="${s.$id}" style="font-size:12.5px;color:${isSubActive ? '#fff' : '#555'};background:${isSubActive ? '#ec4899' : 'transparent'};text-decoration:none;padding:5px 10px;border-radius:6px;transition:all 0.2s;">› ${s.name || s.NAME || s.$id}</a>`;
+                    return `<a href="?subcategoria=${s.$id}" data-subcat-id="${s.$id}" style="font-size:12.5px;color:${isSubActive ? '#fff' : '#555'};background:${isSubActive ? '#ec4899' : 'transparent'};text-decoration:none;padding:5px 10px;border-radius:6px;transition:all 0.2s;">â€º ${s.name || s.NAME || s.$id}</a>`;
                   }).join('');
                   item.appendChild(list);
                   list.querySelectorAll('a').forEach(a => {
@@ -1196,7 +1196,7 @@ export default function HomePage1() {
             lb.id = 'tpl1-lightbox';
             lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999999;display:flex;align-items:center;justify-content:center;padding:40px;cursor:zoom-out;animation:tpl1LightboxIn 0.3s ease;';
             lb.innerHTML = `
-              <button type="button" style="position:absolute;top:24px;right:24px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);transition:all 0.2s;font-size:24px;line-height:1;" aria-label="Cerrar">×</button>
+              <button type="button" style="position:absolute;top:24px;right:24px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);transition:all 0.2s;font-size:24px;line-height:1;" aria-label="Cerrar">Ã—</button>
               <div style="max-width:90vw;max-height:85vh;display:flex;flex-direction:column;align-items:center;gap:16px;animation:tpl1ZoomIn 0.4s cubic-bezier(0.16,1,0.3,1);" onclick="event.stopPropagation()">
                 <img src="${imgUrl}" alt="${name}" style="max-width:100%;max-height:75vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5);" />
                 <div style="color:#fff;font-size:16px;font-weight:600;text-align:center;max-width:600px;">${name}</div>
@@ -1214,7 +1214,7 @@ export default function HomePage1() {
             if (!productGrid) return;
             if (products.length === 0) {
               productGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#888;font-size:15px;">
-                <div style="font-size:48px;margin-bottom:12px;opacity:0.5;">🔍</div>
+                <div style="font-size:48px;margin-bottom:12px;opacity:0.5;">ðŸ”</div>
                 <div style="font-weight:600;color:#374151;">No se encontraron productos</div>
                 <div style="font-size:13px;color:#9ca3af;margin-top:4px;">Prueba ajustando los filtros</div>
               </div>`;
@@ -1241,7 +1241,7 @@ export default function HomePage1() {
                   </button>
 
                   <!-- Cart bottom-RIGHT (OUTSIDE <a>) -->
-                  <button type="button" class="tpl1-icon-btn tpl1-cart-btn" data-action="cart" style="position:absolute;bottom:14px;right:14px;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ec4899,#db2777);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(236,72,153,0.4);transition:all 0.25s;z-index:10;" aria-label="Añadir al carrito">
+                  <button type="button" class="tpl1-icon-btn tpl1-cart-btn" data-action="cart" style="position:absolute;bottom:14px;right:14px;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ec4899,#db2777);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(236,72,153,0.4);transition:all 0.25s;z-index:10;" aria-label="AÃ±adir al carrito">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                   </button>
 
@@ -1251,7 +1251,7 @@ export default function HomePage1() {
                       ${img2 ? `<img class="tpl1-pc-img-secondary" src="${img2}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s,transform .6s cubic-bezier(.23,1,.32,1);z-index:2;" />` : ''}
                     </div>
                     <div style="padding:14px 70px 14px 14px;background:#fff;">
-                      <div style="font-size:10px;font-weight:700;letter-spacing:0.5px;color:#ec4899;text-transform:uppercase;margin-bottom:4px;">${hasDiscount ? '★ OFERTA' : 'NUEVO'}</div>
+                      <div style="font-size:10px;font-weight:700;letter-spacing:0.5px;color:#ec4899;text-transform:uppercase;margin-bottom:4px;">${hasDiscount ? 'â˜… OFERTA' : 'NUEVO'}</div>
                       <div style="font-size:13.5px;font-weight:700;line-height:1.35;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;color:#1f2937;">${doc.NAME || ''}</div>
                       <div style="display:flex;flex-direction:column;gap:2px;">
                         <span style="background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;font-weight:800;font-size:14px;padding:5px 11px;border-radius:8px;box-shadow:0 2px 8px rgba(236,72,153,0.25);display:inline-block;width:fit-content;">${formatPrice(price)}</span>
@@ -1404,7 +1404,7 @@ export default function HomePage1() {
                 popularTitle.textContent = `${sub?.name || sub?.NAME || 'Productos'} (${filtered.length})`;
               } else if (activeCategoryId) {
                 const cat = allCategories.find(c => c.$id === activeCategoryId);
-                popularTitle.textContent = `${cat?.name || cat?.NAME || 'Categoría'} (${filtered.length})`;
+                popularTitle.textContent = `${cat?.name || cat?.NAME || 'CategorÃ­a'} (${filtered.length})`;
               } else popularTitle.textContent = `Productos populares (${filtered.length})`;
             }
             if (popularViewAll) popularViewAll.href = activeCategoryId ? `/productos?categoria=${activeCategoryId}` : '/productos';
@@ -1424,9 +1424,9 @@ export default function HomePage1() {
             searchTimeout = setTimeout(() => applyFilters(), 200);
           });
 
-          // ── HARD navigation blocker: capture-phase listener on the popup catches ALL link clicks
+          // â”€â”€ HARD navigation blocker: capture-phase listener on the popup catches ALL link clicks
           searchPopup.addEventListener('click', (e) => {
-            // Skip icon buttons (cart, fav, zoom) — they have their own click handlers
+            // Skip icon buttons (cart, fav, zoom) â€” they have their own click handlers
             if ((e.target as HTMLElement).closest('.tpl1-icon-btn')) return;
             const link = (e.target as HTMLElement).closest('a');
             if (!link) return;
@@ -1453,7 +1453,7 @@ export default function HomePage1() {
             }
           }, true);
 
-          // ── DOCUMENT-level capture listener for icon buttons ──
+          // â”€â”€ DOCUMENT-level capture listener for icon buttons â”€â”€
           // Fires BEFORE any Shopify theme handler on lower elements.
           // This is the ONLY reliable way to handle clicks on our custom
           // buttons since the theme's JS intercepts events on the popup.
@@ -1555,7 +1555,7 @@ export default function HomePage1() {
         }
       });
 
-      // ── Populate search-results with real products & categories ──
+      // â”€â”€ Populate search-results with real products & categories â”€â”€
       const populateSearchResults = async () => {
         try {
           // Fetch 4 popular products
@@ -1622,7 +1622,7 @@ export default function HomePage1() {
       document.head.appendChild(ks);
     };
 
-    /** Panel usuario / auth: bottom sheet en móvil, dropdown anclado en desktop */
+    /** Panel usuario / auth: bottom sheet en mÃ³vil, dropdown anclado en desktop */
     const layoutTpl1UserPanel = (anchor: HTMLElement, popup: HTMLElement, panelWidth = 340) => {
       const mobile = window.matchMedia('(max-width: 768px)').matches;
       const pad = 12;
@@ -1675,7 +1675,7 @@ export default function HomePage1() {
       requestAnimationFrame(place);
     };
 
-    // ── Auth popup for non-logged-in users ──
+    // â”€â”€ Auth popup for non-logged-in users â”€â”€
     let authPopupEl: HTMLDivElement | null = null;
     let authOverlayEl: HTMLDivElement | null = null;
     let authPopupJustOpened = false;
@@ -1717,9 +1717,9 @@ export default function HomePage1() {
           <div style="width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,#fef2f8,#fce7f3);display:flex;align-items:center;justify-content:center;color:#ec4899;box-shadow:0 4px 14px rgba(236,72,153,0.15);">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <p style="font-size:18px;font-weight:800;color:#111;margin:0 0 8px;letter-spacing:-0.02em;">Inicia sesión o crea tu cuenta</p>
-          <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.45;">Para realizar pedidos necesitas iniciar sesión o registrarte.</p>
-          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:10px;">Iniciar sesión</a>
+          <p style="font-size:18px;font-weight:800;color:#111;margin:0 0 8px;letter-spacing:-0.02em;">Inicia sesiÃ³n o crea tu cuenta</p>
+          <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.45;">Para realizar pedidos necesitas iniciar sesiÃ³n o registrarte.</p>
+          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:10px;">Iniciar sesiÃ³n</a>
           <a href="/login?tab=register" style="display:block;width:100%;padding:13px;background:#fff;color:#ec4899;border:2px solid #fce7f3;border-radius:14px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;">Crear cuenta</a>
         </div>
       `;
@@ -1753,7 +1753,7 @@ export default function HomePage1() {
         loginBtn.addEventListener('mouseleave', () => { loginBtn.style.transform = ''; loginBtn.style.boxShadow = '0 6px 24px rgba(236,72,153,0.15)'; });
       }
 
-      // Close on outside click (solo desktop; en móvil usa overlay)
+      // Close on outside click (solo desktop; en mÃ³vil usa overlay)
       if (!window.matchMedia('(max-width: 768px)').matches) {
         const onOutside = (ev: MouseEvent) => {
           if (!popup.contains(ev.target as Node) && !anchor.contains(ev.target as Node)) {
@@ -1765,7 +1765,7 @@ export default function HomePage1() {
       }
     };
 
-    // ── User dropdown for logged-in users ──
+    // â”€â”€ User dropdown for logged-in users â”€â”€
     let userDropdownEl: HTMLDivElement | null = null;
     let userOverlayEl: HTMLDivElement | null = null;
     let userDropdownJustOpened = false;
@@ -1860,7 +1860,7 @@ export default function HomePage1() {
           <div style="height:1px;background:#f3f4f6;margin:8px 0;"></div>
           <button id="yaxsel-logout-btn" style="display:flex;align-items:center;gap:12px;padding:12px 20px;color:#ef4444;font-size:14px;font-weight:500;background:none;border:none;cursor:pointer;width:100%;text-align:left;transition:all 0.15s;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Cerrar sesión
+            Cerrar sesiÃ³n
           </button>
         </div>
       `;
@@ -1913,9 +1913,9 @@ export default function HomePage1() {
       setTimeout(() => document.addEventListener('click', closeOnOutside), 0);
     };
 
-    // ── Funciones de abrir/cerrar drawer con GSAP ──
+    // â”€â”€ Funciones de abrir/cerrar drawer con GSAP â”€â”€
     // Create our own overlay outside the drawer (not affected by transforms)
-    // NO backdrop-filter — blur is handled by body.cart-drawer-open class
+    // NO backdrop-filter â€” blur is handled by body.cart-drawer-open class
     let overlayEl = document.getElementById('yaxsel-cart-overlay') as HTMLDivElement | null;
     if (!overlayEl) {
       overlayEl = document.createElement('div');
@@ -1930,7 +1930,7 @@ export default function HomePage1() {
     const openDrawer = () => {
       const drawer = document.querySelector('cart-drawer') as any;
       if (!drawer) return;
-      // .cart-sidebar is the <cart-drawer> element itself, not a child —
+      // .cart-sidebar is the <cart-drawer> element itself, not a child â€”
       // fall back to drawer so GSAP animation always runs.
       const panel = (drawer.querySelector('.cart-sidebar') as HTMLElement | null) ?? drawer as HTMLElement;
       const drawerInner = drawer.querySelector('.drawer__inner');
@@ -1941,7 +1941,7 @@ export default function HomePage1() {
       document.body.classList.add('cart-drawer-open', 'overflow-hidden');
       document.body.style.overflow = 'hidden';
 
-      // Show our overlay — instant
+      // Show our overlay â€” instant
       const ov = document.getElementById('yaxsel-cart-overlay');
       if (ov) { ov.style.opacity = '1'; ov.style.pointerEvents = 'auto'; }
 
@@ -1994,17 +1994,17 @@ export default function HomePage1() {
     const closeDrawer = () => {
       const drawer = document.querySelector('cart-drawer') as HTMLElement | null;
       if (!drawer) return;
-      // .cart-sidebar is the <cart-drawer> element itself, not a child —
+      // .cart-sidebar is the <cart-drawer> element itself, not a child â€”
       // querySelector only searches descendants so it returns null.
       // We fall back to the drawer element so GSAP can still animate it.
       const panel = (drawer.querySelector('.cart-sidebar') as HTMLElement | null) ?? drawer;
 
-      // ── Remove ALL scroll locks IMMEDIATELY ──
+      // â”€â”€ Remove ALL scroll locks IMMEDIATELY â”€â”€
       document.body.classList.remove('cart-drawer-open', 'overflow-hidden');
       document.body.style.overflow = '';
       document.body.style.removeProperty('overflow');
 
-      // ── Hide our overlay INSTANTLY ──
+      // â”€â”€ Hide our overlay INSTANTLY â”€â”€
       const ov = document.getElementById('yaxsel-cart-overlay');
       if (ov) { ov.style.opacity = '0'; ov.style.pointerEvents = 'none'; }
 
@@ -2012,7 +2012,7 @@ export default function HomePage1() {
       const fusionOverlay = document.querySelector('.fusion-overlay-custom');
       if (fusionOverlay) fusionOverlay.classList.remove('overlay-active');
 
-      // ── Safety: keep clearing every 50ms for 600ms in case something re-adds ──
+      // â”€â”€ Safety: keep clearing every 50ms for 600ms in case something re-adds â”€â”€
       const cleanupId = setInterval(() => {
         document.body.classList.remove('cart-drawer-open', 'overflow-hidden');
         document.body.style.removeProperty('overflow');
@@ -2053,8 +2053,8 @@ export default function HomePage1() {
       tl.to(panel, { x: '110%', opacity: 0, duration: 0.4, ease: 'power3.in' }, 0.08);
     };
 
-    // ── MutationObserver: react when theme adds/removes 'active' on <cart-drawer> ──
-    // This is the KEY — we don't need to patch the custom element at all.
+    // â”€â”€ MutationObserver: react when theme adds/removes 'active' on <cart-drawer> â”€â”€
+    // This is the KEY â€” we don't need to patch the custom element at all.
     // The theme's own close/open methods work, we just react to class changes.
     const drawerEl = document.querySelector('cart-drawer');
     if (drawerEl) {
@@ -2064,7 +2064,7 @@ export default function HomePage1() {
             const el = m.target as HTMLElement;
             const isActive = el.classList.contains('active');
             if (isActive && !isAnimating) {
-              // Theme opened the drawer — add our blur, overlay, lottie
+              // Theme opened the drawer â€” add our blur, overlay, lottie
               document.body.classList.add('cart-drawer-open', 'overflow-hidden');
               document.body.style.overflow = 'hidden';
               const ov = document.getElementById('yaxsel-cart-overlay');
@@ -2074,7 +2074,7 @@ export default function HomePage1() {
               setTimeout(replaceCartImgWithLottie, 200);
               setTimeout(replaceCartImgWithLottie, 500);
             } else if (!isActive && !isAnimating) {
-              // Theme closed the drawer — remove everything
+              // Theme closed the drawer â€” remove everything
               document.body.classList.remove('cart-drawer-open', 'overflow-hidden');
               document.body.style.overflow = '';
               const ov = document.getElementById('yaxsel-cart-overlay');
@@ -2088,7 +2088,7 @@ export default function HomePage1() {
       observer.observe(drawerEl, { attributes: true, attributeFilter: ['class'] });
     }
 
-    // ── Direct listeners on close button, overlay, and theme overlay ──
+    // â”€â”€ Direct listeners on close button, overlay, and theme overlay â”€â”€
     const closeBtn = document.querySelector('.cls-btn, .cart-close-btn');
     if (closeBtn) {
       closeBtn.addEventListener('mousedown', (e) => {
@@ -2108,7 +2108,7 @@ export default function HomePage1() {
       }, true);
     }
 
-    // Theme's own overlay — click to close (use mousedown in capture phase)
+    // Theme's own overlay â€” click to close (use mousedown in capture phase)
     const themeOverlay = document.getElementById('CartDrawer-Overlay');
     if (themeOverlay) {
       themeOverlay.addEventListener('mousedown', (e) => {
@@ -2126,7 +2126,7 @@ export default function HomePage1() {
       }, true);
     }
 
-    // ── Click-outside on the <cart-drawer> element itself ──
+    // â”€â”€ Click-outside on the <cart-drawer> element itself â”€â”€
     // <cart-drawer> covers the viewport when active, so clicks outside
     // the sidebar panel land on it or its children (not the sidebar)
     const cartDrawerEl = document.querySelector('cart-drawer');
@@ -2136,17 +2136,17 @@ export default function HomePage1() {
         if (!panel) return;
         // If click is inside the sidebar panel, don't close
         if (panel.contains(e.target as Node)) return;
-        // Click is outside the panel — close
+        // Click is outside the panel â€” close
         closeDrawer();
       });
     }
 
-    // ── Listen for custom event from Navbar to open Shopify cart drawer ──
+    // â”€â”€ Listen for custom event from Navbar to open Shopify cart drawer â”€â”€
     window.addEventListener('yaxsel:open-cart-drawer', () => {
       openDrawer();
     });
 
-    // ── Click-outside: close when clicking anywhere NOT inside the drawer panel ──
+    // â”€â”€ Click-outside: close when clicking anywhere NOT inside the drawer panel â”€â”€
     // This replaces the theme's document click listener that never gets added
     // because we bypass the theme's open() method
     document.addEventListener('click', (e) => {
@@ -2158,11 +2158,11 @@ export default function HomePage1() {
       if (panel.contains(e.target as Node)) return;
       // If click is on the close button, don't close (handled separately)
       if ((e.target as HTMLElement).closest('.cls-btn, .cart-close-btn')) return;
-      // Click is outside — close
+      // Click is outside â€” close
       closeDrawer();
     });
 
-    // ── Event delegation en capture phase ──
+    // â”€â”€ Event delegation en capture phase â”€â”€
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target) return;
@@ -2225,7 +2225,7 @@ export default function HomePage1() {
       }
     }, true); // capture phase = runs before Shopify's handler
 
-    // ── Poblar el cart drawer con items reales del contexto React ──
+    // â”€â”€ Poblar el cart drawer con items reales del contexto React â”€â”€
     const populateCartDrawer = () => {
       const itemsContainer = document.getElementById('CartDrawer-CartItems');
       if (!itemsContainer) return;
@@ -2248,8 +2248,8 @@ export default function HomePage1() {
       if (items.length === 0) {
         itemsContainer.innerHTML = `<div class="empty-cart-wrapper">
           <div class="empty-cart-icon"><div id="lottie-cart-empty" style="width:120px;height:120px;margin:0 auto;"></div></div>
-          <h3 class="empty-cart-title">Tu carrito está vacío</h3>
-          <p>Aún no has agregado nada a tu carrito</p>
+          <h3 class="empty-cart-title">Tu carrito estÃ¡ vacÃ­o</h3>
+          <p>AÃºn no has agregado nada a tu carrito</p>
           <div class="button_tertiary"><a href="/productos" class="musk-third-btn" aria-label="Ver productos">Ver productos</a></div>
         </div>`;
         // Init Lottie immediately after inserting container
@@ -2273,26 +2273,26 @@ export default function HomePage1() {
         const hasDisc = item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 && item.product.CURRENTPRICE < item.product.PRICE;
         html += `<div style="display:flex;gap:16px;padding:18px 0;border-bottom:1px solid #fce7f3;align-items:flex-start;">
           <div class="tpl1-cart-item-img" data-product-id="${item.product.$id}" style="width:72px;height:72px;border-radius:12px;overflow:hidden;background:#fef2f8;flex-shrink:0;border:1px solid #fce7f3;cursor:pointer;position:relative;transition:transform 0.2s ease;">
-            ${item.product.IMAGEURL ? `<img src="${item.product.IMAGEURL}" alt="${item.product.NAME}" style="width:100%;height:100%;object-fit:contain;padding:4px;transition:transform 0.3s ease;">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;">📦</div>'}
+            ${item.product.IMAGEURL ? `<img src="${item.product.IMAGEURL}" alt="${item.product.NAME}" style="width:100%;height:100%;object-fit:contain;padding:4px;transition:transform 0.3s ease;">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;">ðŸ“¦</div>'}
             <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);opacity:0;transition:opacity 0.2s ease;border-radius:12px;" class="tpl1-cart-img-overlay"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg></div>
           </div>
           <div style="flex:1;min-width:0;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px;">
               <a href="/productos/${item.product.$id}" style="font-size:13px;font-weight:600;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;flex:1;min-width:0;" title="${item.product.NAME}">${item.product.NAME}</a>
-              <button type="button" data-cart-action="remove" data-cart-id="${item.product.$id}" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:0;font-size:14px;flex-shrink:0;transition:color 0.2s;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#9ca3af'" title="Eliminar">✕</button>
+              <button type="button" data-cart-action="remove" data-cart-id="${item.product.$id}" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:0;font-size:14px;flex-shrink:0;transition:color 0.2s;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#9ca3af'" title="Eliminar">âœ•</button>
             </div>
             <div style="display:flex;align-items:baseline;gap:6px;margin:4px 0 8px;">
               <span style="font-size:15px;font-weight:800;color:#ec4899;">${formatPrice(price)}</span>
               ${hasDisc ? `<span style="font-size:11px;color:#9ca3af;text-decoration:line-through;">${formatPrice(item.product.PRICE)}</span>` : ''}
-              <span style="font-size:11px;color:#9ca3af;margin-left:auto;">×${item.quantity}</span>
+              <span style="font-size:11px;color:#9ca3af;margin-left:auto;">Ã—${item.quantity}</span>
             </div>
             <div style="display:flex;align-items:center;gap:24px;">
               <div style="display:flex;align-items:center;border:1.5px solid #fce7f3;border-radius:8px;overflow:hidden;background:#fff;gap:8px;padding:0 4px;">
-                <button type="button" data-cart-action="minus" data-cart-id="${item.product.$id}" style="width:36px;height:36px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ec4899;font-size:14px;font-weight:700;transition:background 0.15s;" onmouseover="this.style.background='#fef2f8'" onmouseout="this.style.background='#fff'">−</button>
+                <button type="button" data-cart-action="minus" data-cart-id="${item.product.$id}" style="width:36px;height:36px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ec4899;font-size:14px;font-weight:700;transition:background 0.15s;" onmouseover="this.style.background='#fef2f8'" onmouseout="this.style.background='#fff'">âˆ’</button>
                 <span style="width:36px;text-align:center;font-size:13px;font-weight:700;color:#333;line-height:36px;">${item.quantity}</span>
                 <button type="button" data-cart-action="plus" data-cart-id="${item.product.$id}" style="width:36px;height:36px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ec4899;font-size:14px;font-weight:700;transition:background 0.15s;" onmouseover="this.style.background='#fef2f8'" onmouseout="this.style.background='#fff'">+</button>
               </div>
-              <a href="/productos/${item.product.$id}" style="font-size:11px;color:#ec4899;text-decoration:none;font-weight:600;margin-left:auto;transition:color 0.15s;" onmouseover="this.style.color='#db2777'" onmouseout="this.style.color='#ec4899'">Ver producto →</a>
+              <a href="/productos/${item.product.$id}" style="font-size:11px;color:#ec4899;text-decoration:none;font-weight:600;margin-left:auto;transition:color 0.15s;" onmouseover="this.style.color='#db2777'" onmouseout="this.style.color='#ec4899'">Ver producto â†’</a>
             </div>
           </div>
         </div>`;
@@ -2303,16 +2303,16 @@ export default function HomePage1() {
           <span style="font-size:14px;color:#666;font-weight:500;">Subtotal</span>
           <span style="font-size:20px;font-weight:800;color:#111;">${formatPrice(subtotal)}</span>
         </div>
-        <p style="font-size:11px;color:#9ca3af;margin:0 0 12px;">Envío e impuestos calculados al pagar</p>
-        <a href="/checkout" style="display:block;text-align:center;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;padding:13px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:8px;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 24px rgba(236,72,153,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 6px 20px rgba(236,72,153,0.3)'">Ir al checkout →</a>
+        <p style="font-size:11px;color:#9ca3af;margin:0 0 12px;">EnvÃ­o e impuestos calculados al pagar</p>
+        <a href="/checkout" style="display:block;text-align:center;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;padding:13px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:8px;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 24px rgba(236,72,153,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 6px 20px rgba(236,72,153,0.3)'">Ir al checkout â†’</a>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <a href="/carrito" style="color:#ec4899;font-size:12px;font-weight:600;text-decoration:none;">Ver carrito completo</a>
-          <button type="button" id="tpl1-clear-cart-btn" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:11px;font-weight:500;padding:4px 8px;border-radius:6px;transition:color 0.15s,background 0.15s;" onmouseover="this.style.color='#dc2626';this.style.background='#fef2f2'" onmouseout="this.style.color='#9ca3af';this.style.background='none'">🗑️ Vaciar carrito</button>
+          <button type="button" id="tpl1-clear-cart-btn" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:11px;font-weight:500;padding:4px 8px;border-radius:6px;transition:color 0.15s,background 0.15s;" onmouseover="this.style.color='#dc2626';this.style.background='#fef2f2'" onmouseout="this.style.color='#9ca3af';this.style.background='none'">ðŸ—‘ï¸ Vaciar carrito</button>
         </div>
       </div>`;
       itemsContainer.innerHTML = html;
 
-      // ── Move footer OUT of #CartDrawer-CartItems into .drawer__inner ──
+      // â”€â”€ Move footer OUT of #CartDrawer-CartItems into .drawer__inner â”€â”€
       // This bypasses the 6-level Shopify flex chain that breaks on small screens.
       // Structure: .drawer__inner > [cart-drawer-items(scroll)] + .tpl1-cart-footer(fixed)
       const footerEl = itemsContainer.querySelector('.tpl1-cart-footer') as HTMLElement | null;
@@ -2322,7 +2322,7 @@ export default function HomePage1() {
         const existingFooter = drawerInner.querySelector(':scope > .tpl1-cart-footer');
         if (existingFooter) existingFooter.remove();
         drawerInner.appendChild(footerEl);
-        console.log('[tpl1-cart-debug] Footer hoisted to drawer__inner ✓');
+        console.log('[tpl1-cart-debug] Footer hoisted to drawer__inner âœ“');
       } else {
         // Fallback: try hoisting to cart-drawer or .cart-sidebar directly
         const cartDrawer = document.querySelector('cart-drawer') as HTMLElement | null;
@@ -2333,7 +2333,7 @@ export default function HomePage1() {
           const existingFooter = target.querySelector(':scope > .tpl1-cart-footer');
           if (existingFooter) existingFooter.remove();
           target.appendChild(footerEl);
-          console.log('[tpl1-cart-debug] Footer hoisted to cart-sidebar ✓');
+          console.log('[tpl1-cart-debug] Footer hoisted to cart-sidebar âœ“');
         }
       }
 
@@ -2349,7 +2349,7 @@ export default function HomePage1() {
         });
       });
 
-      // Vincular botón vaciar carrito
+      // Vincular botÃ³n vaciar carrito
       const clearBtn = document.getElementById('tpl1-clear-cart-btn');
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
@@ -2359,7 +2359,7 @@ export default function HomePage1() {
         });
       }
 
-      // Vincular imágenes del carrito: hover overlay + click zoom
+      // Vincular imÃ¡genes del carrito: hover overlay + click zoom
       itemsContainer.querySelectorAll('.tpl1-cart-item-img').forEach(imgEl => {
         const overlay = imgEl.querySelector('.tpl1-cart-img-overlay') as HTMLElement | null;
         // Hover: show overlay
@@ -2375,7 +2375,7 @@ export default function HomePage1() {
 
     populateCartDrawer();
 
-    // ── Init Lottie animation for empty cart ──
+    // â”€â”€ Init Lottie animation for empty cart â”€â”€
     const initLottieCart = () => {
       const container = document.getElementById('lottie-cart-empty');
       if (container && !container.dataset.lottieInit) {
@@ -2391,14 +2391,14 @@ export default function HomePage1() {
     };
     initLottieCart();
 
-    // ── Escuchar cambios del carrito React para repoblar drawer ──
+    // â”€â”€ Escuchar cambios del carrito React para repoblar drawer â”€â”€
     const onCartChange = () => {
       populateCartDrawer();
       initLottieCart();
     };
     window.addEventListener('yaxsel:cart-updated', onCartChange);
 
-    // ── Escuchar acciones de cantidad desde el drawer ──
+    // â”€â”€ Escuchar acciones de cantidad desde el drawer â”€â”€
     const onCartAction = (e: Event) => {
       const { action, id } = (e as CustomEvent).detail;
       if (action === 'clear') {
@@ -2430,7 +2430,7 @@ export default function HomePage1() {
     const hideAllWidgets = () => {
       wrappers.forEach(w => { (w as HTMLElement).style.display = 'none'; });
     };
-    /** En móvil oculta el widget demo del HTML (SVG + "Título del Producto"). */
+    /** En mÃ³vil oculta el widget demo del HTML (SVG + "TÃ­tulo del Producto"). */
     const hidePlaceholderOnMobile = () => {
       if (typeof window === 'undefined' || window.innerWidth > 768) return;
       wrappers.forEach(w => {
@@ -2442,7 +2442,7 @@ export default function HomePage1() {
         const isDemo =
           !hasRealImg ||
           svgOnly ||
-          titleText === 'Título del Producto' ||
+          titleText === 'TÃ­tulo del Producto' ||
           titleText === 'Product Title' ||
           /^\$[\d.,]+$/.test(titleText);
         if (isDemo) el.style.display = 'none';
@@ -2467,7 +2467,7 @@ export default function HomePage1() {
       const price = el.querySelector('.current-price');
       const img = el.querySelector('.product-image img') as HTMLImageElement | null;
       const btn = el.querySelector('.button_primary a') as HTMLAnchorElement | null;
-      if (title) title.textContent = productData.title || 'Título del Producto';
+      if (title) title.textContent = productData.title || 'TÃ­tulo del Producto';
       if (price) price.textContent = productData.price || '$20.00';
       if (img && productData.imageUrl) {
         img.style.transition = 'opacity 0.4s ease';
@@ -2479,7 +2479,7 @@ export default function HomePage1() {
       }
       if (btn) {
         const action = settings.productWidgetButtonAction || 'link';
-        const defaultBtnText = action === 'add_to_cart' ? 'Añadir al carrito' : 'Comprar Ahora';
+        const defaultBtnText = action === 'add_to_cart' ? 'AÃ±adir al carrito' : 'Comprar Ahora';
         btn.textContent = settings.productWidgetButtonText || defaultBtnText;
         // Main button action: always link to product
         btn.onclick = null;
@@ -2697,7 +2697,7 @@ export default function HomePage1() {
     };
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Collection list section ── */
+  /* â”€â”€ Collection list section â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_collection_list');
@@ -2834,7 +2834,7 @@ export default function HomePage1() {
     if (!dynStyle) {
       dynStyle = document.createElement('style');
       dynStyle.id = 'tpl1-collection-card-style';
-      document.body.appendChild(dynStyle); // body, not head — loads after all CSS
+      document.body.appendChild(dynStyle); // body, not head â€” loads after all CSS
     }
     const cBg = settings.cardBgColor || '#ffffff';
     const cTx = settings.cardTextColor || '#1c1917';
@@ -2847,7 +2847,7 @@ export default function HomePage1() {
     const bodyFont = settings.fontFamily || '"DM Sans", system-ui, sans-serif';
     // Use very high specificity: section[data-collection-model] + double class selectors
     dynStyle.textContent = `
-      /* ── Colecciones: tipografía de sección ── */
+      /* â”€â”€ Colecciones: tipografÃ­a de secciÃ³n â”€â”€ */
       [data-template="1"] #shopify-section-template--22405132419320__collection_list_WrFbPe .musk-fancy-sub-head {
         font-family: ${bodyFont} !important;
         letter-spacing: 0.22em !important;
@@ -2870,7 +2870,7 @@ export default function HomePage1() {
         background: linear-gradient(135deg, ${accent} 0%, ${accent}dd 100%) !important;
         color: ${btnTx} !important;
       }
-      /* ── Collection card theming (theme editor) ── */
+      /* â”€â”€ Collection card theming (theme editor) â”€â”€ */
       [data-template="1"] .musk_collection1.musk_collection1 .musk-collection-slide.musk-collection-slide {
         ${isPremium ? '' : `background: ${cBg} !important; box-shadow: ${cSh} !important;`}
         border-radius: ${cR}px !important;
@@ -2999,7 +2999,7 @@ export default function HomePage1() {
       return () => cleanups.forEach(fn => fn());
     };
 
-    // Collection items → update slides
+    // Collection items â†’ update slides
     const bindCollectionLayout = () => {
       layoutCollectionTitles();
       const t1 = window.setTimeout(layoutCollectionTitles, 200);
@@ -3082,7 +3082,7 @@ export default function HomePage1() {
       slides[i].style.display = '';
     }
 
-    // ── Mobile touch: first tap shows overlay, only "Ingresar" navigates ──
+    // â”€â”€ Mobile touch: first tap shows overlay, only "Ingresar" navigates â”€â”€
     const isMobile = () => window.innerWidth <= 768;
     const activeOverlayClass = 'tpl1-collection-overlay-active';
 
@@ -3134,7 +3134,7 @@ export default function HomePage1() {
         footer.style.visibility = 'visible';
         return;
       }
-      // Overlay is active — allow click only on the footer (title link / Ingresar)
+      // Overlay is active â€” allow click only on the footer (title link / Ingresar)
       const target = e.target as HTMLElement;
       if (!footer.contains(target)) {
         e.preventDefault();
@@ -3233,7 +3233,7 @@ export default function HomePage1() {
     return () => { alive = false; };
   }, [sectionCfg]);
 
-  /* ── Aplicar settings de producto destacado (tpl1) ── */
+  /* â”€â”€ Aplicar settings de producto destacado (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_featured_product');
@@ -3299,13 +3299,13 @@ export default function HomePage1() {
       }
       slide.style.display = '';
       if (media.type === 'video') {
-        // Clear entire slide first — remove Shopify's autoplay video
+        // Clear entire slide first â€” remove Shopify's autoplay video
         slide.innerHTML = '';
         // Create a wrapper to center icons on the video area
         const videoWrap = document.createElement('div');
         videoWrap.style.cssText = 'position:relative;width:100%;height:100%;overflow:hidden;border-radius:inherit;';
 
-        // Show poster image — NO video element until user clicks
+        // Show poster image â€” NO video element until user clicks
         const poster = (media as any).poster;
         if (poster) {
           const posterEl = document.createElement('img');
@@ -3459,7 +3459,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg, featuredProduct]);
 
-  /* ── Shop The Look (tpl1): Premium Mobile Grid + Multiple Looks Support ── */
+  /* â”€â”€ Shop The Look (tpl1): Premium Mobile Grid + Multiple Looks Support â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
 
@@ -3888,7 +3888,7 @@ export default function HomePage1() {
               <div class="tpl1-sheet-header">
                 <img src="${product.IMAGEURL}" class="tpl1-sheet-img" alt="${product.NAME}" />
                 <div class="tpl1-sheet-info">
-                  ${hasDisc ? `<span class="tpl1-sheet-badge">¡Oferta! -${discPct}%</span>` : ''}
+                  ${hasDisc ? `<span class="tpl1-sheet-badge">Â¡Oferta! -${discPct}%</span>` : ''}
                   <h3 class="tpl1-sheet-name">${product.NAME}</h3>
                   <div class="tpl1-sheet-price-row">
                     <span class="tpl1-sheet-price">$${price}</span>
@@ -3929,7 +3929,7 @@ export default function HomePage1() {
   }, [bodyHtml, sectionCfg]);
 
 
-  /* ── Aplicar settings de Video con Texto (tpl1) ── */
+  /* â”€â”€ Aplicar settings de Video con Texto (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_video_text');
@@ -3944,7 +3944,7 @@ export default function HomePage1() {
     const contentCol = section.querySelector('.vd-content-col') as HTMLElement | null;
     const rightContent = section.querySelector('.right-content') as HTMLElement | null;
 
-    // 1) Posición media (left/right)
+    // 1) PosiciÃ³n media (left/right)
     if (row && vdCol && contentCol) {
       if (s.vtMediaPosition === 'right') {
         row.style.flexDirection = 'row-reverse';
@@ -3969,7 +3969,7 @@ export default function HomePage1() {
       row.style.flexWrap = 'nowrap';
     }
 
-    // Asegurar que las columnas tengan el tamaño correcto
+    // Asegurar que las columnas tengan el tamaÃ±o correcto
     if (vdCol) {
       vdCol.style.flex = '0 0 auto';
       vdCol.style.minWidth = '400px';
@@ -3992,10 +3992,10 @@ export default function HomePage1() {
       row.style.boxShadow = '0 10px 40px rgba(0,0,0,0.08)';
     }
 
-    // 5) Video URL — reemplazar o inyectar un <video> directo
+    // 5) Video URL â€” reemplazar o inyectar un <video> directo
     const videoContent = section.querySelector('.video-content') as HTMLElement | null;
     if (videoContent) {
-      // Mejorar diseño del contenedor de video/imagen
+      // Mejorar diseÃ±o del contenedor de video/imagen
       videoContent.style.setProperty('width', '100%', 'important');
       videoContent.style.setProperty('max-width', '450px', 'important');
       videoContent.style.setProperty('height', 'auto', 'important');
@@ -4057,7 +4057,7 @@ export default function HomePage1() {
           };
         }
       }
-      // 6) Imagen poster / reemplazo - enfoque directo (con imagen móvil si existe)
+      // 6) Imagen poster / reemplazo - enfoque directo (con imagen mÃ³vil si existe)
       const vtImg = (window.innerWidth <= 768 && s.vtMobilePosterImage) ? s.vtMobilePosterImage : s.vtPosterImage;
       if (vtImg) {
         // Limpiar todo el contenido y poner solo la imagen
@@ -4081,7 +4081,7 @@ export default function HomePage1() {
       }
     }
 
-    // 7) Textos con diseño avanzado
+    // 7) Textos con diseÃ±o avanzado
     if (rightContent) {
       rightContent.style.flex = '1';
       rightContent.style.display = 'flex';
@@ -4171,7 +4171,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de Banner con Texto / Image Overlay (tpl1) ── */
+  /* â”€â”€ Aplicar settings de Banner con Texto / Image Overlay (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_image_overlay');
@@ -4186,7 +4186,7 @@ export default function HomePage1() {
 
     // 1) Imagen de fondo con blur (usar pseudo-elemento separado para no blur el texto)
     const blur = s.overlayBlurAmount ?? 0;
-    // Elegir imagen según tamaño de pantalla (móvil vs PC)
+    // Elegir imagen segÃºn tamaÃ±o de pantalla (mÃ³vil vs PC)
     const isMobileBg = window.innerWidth <= 768;
     const bgImage = (isMobileBg && s.overlayMobileBgImage) ? s.overlayMobileBgImage : s.overlayBgImage;
     if (bgImage) {
@@ -4204,12 +4204,12 @@ export default function HomePage1() {
         blurLayer.style.backgroundPosition = 'center center';
         blurLayer.style.backgroundRepeat = 'no-repeat';
         blurLayer.style.filter = `blur(${blur}px)`;
-        // Asegurar altura mínima
+        // Asegurar altura mÃ­nima
         if (!container.style.minHeight && container.offsetHeight < 200) {
           container.style.setProperty('min-height', '500px', 'important');
         }
       } else {
-        // Sin blur — aplicar directo al contenedor
+        // Sin blur â€” aplicar directo al contenedor
         container.style.setProperty('background-image', `url('${bgImage}')`, 'important');
         container.style.setProperty('background-size', 'cover', 'important');
         container.style.setProperty('background-position', 'center center', 'important');
@@ -4221,11 +4221,11 @@ export default function HomePage1() {
       }
     }
 
-    // 2) Video de fondo — lazy creation, no video until user clicks
+    // 2) Video de fondo â€” lazy creation, no video until user clicks
     let existingVideo = container.querySelector('.tpl1-overlay-video') as HTMLVideoElement | null;
     if (s.overlayVideoUrl) {
       if (!existingVideo && !container.querySelector('.tpl1-video-play-icon')) {
-        // Show play icon only — no video element yet
+        // Show play icon only â€” no video element yet
         const playIcon = document.createElement('div');
         playIcon.className = 'tpl1-video-play-icon';
         playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
@@ -4302,12 +4302,12 @@ export default function HomePage1() {
         updatedOverlay.style.background = hexToRgba(overlayColor, overlayOpacity / 100);
       }
     } else {
-      // Overlay desactivado o opacidad 0 — remover
+      // Overlay desactivado o opacidad 0 â€” remover
       if (existingOverlay) existingOverlay.remove();
     }
     // Neutralizar overlay del template original
     container.style.setProperty('background-color', 'transparent', 'important');
-    // El ::before pseudo-element del container es el overlay — inyectar CSS para matarlo
+    // El ::before pseudo-element del container es el overlay â€” inyectar CSS para matarlo
     if (!document.getElementById('tpl1-overlay-nobefore-style')) {
       const noBefore = document.createElement('style');
       noBefore.id = 'tpl1-overlay-nobefore-style';
@@ -4405,7 +4405,7 @@ export default function HomePage1() {
       if (btnEl && s.overlayBtnLink) btnEl.setAttribute('href', s.overlayBtnLink);
     }
 
-    // 6) Partículas complejas (PC only — skip on mobile for performance)
+    // 6) PartÃ­culas complejas (PC only â€” skip on mobile for performance)
     const isMobileView = window.innerWidth <= 768;
     let particlesContainer = container.querySelector('.tpl1-overlay-particles') as HTMLElement | null;
     if (s.overlayParticlesEnabled && !isMobileView) {
@@ -4548,7 +4548,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de Antes / Después (tpl1) ── */
+  /* â”€â”€ Aplicar settings de Antes / DespuÃ©s (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_before_after');
@@ -4573,7 +4573,7 @@ export default function HomePage1() {
     }
     if (frontImg && settings.beforeAfterAfterImage) {
       frontImg.src = settings.beforeAfterAfterImage;
-      frontImg.alt = settings.beforeAfterAfterLabel || 'Después';
+      frontImg.alt = settings.beforeAfterAfterLabel || 'DespuÃ©s';
     }
 
     const beforeText = section.querySelector('.before-text') as HTMLElement;
@@ -4582,7 +4582,7 @@ export default function HomePage1() {
     if (afterText && settings.beforeAfterAfterLabel) afterText.textContent = settings.beforeAfterAfterLabel;
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Cargar oferta del countdown desde Appwrite si hay ID ── */
+  /* â”€â”€ Cargar oferta del countdown desde Appwrite si hay ID â”€â”€ */
   useEffect(() => {
     const cfg = sectionCfg.find(s => s.id === 'tpl1_countdown');
     const oid = cfg?.settings?.countdownOfferId;
@@ -4616,11 +4616,11 @@ export default function HomePage1() {
     return () => { alive = false; };
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de countdown (tpl1) ── */
+  /* â”€â”€ Aplicar settings de countdown (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || !sectionCfg) return;
 
-    // Countdown (tpl1) — vinculado a TimedOffer
+    // Countdown (tpl1) â€” vinculado a TimedOffer
     const sectionId = 'template--22405132419320__countdown_timer_hYJrNM';
     const section = document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
@@ -4635,14 +4635,14 @@ export default function HomePage1() {
     const settings = countdownCfg.settings || {};
     const countdownOfferId = settings.countdownOfferId;
 
-    // Ocultar sección si no hay oferta vinculada ni configuración manual
+    // Ocultar secciÃ³n si no hay oferta vinculada ni configuraciÃ³n manual
     if (!countdownOfferId && !settings.countdownTitle) {
       section.classList.add('tpl1-section-hidden');
       return;
     }
     section.classList.remove('tpl1-section-hidden');
 
-    // Resolver datos según oferta vinculada o modo manual
+    // Resolver datos segÃºn oferta vinculada o modo manual
     let title = settings.countdownTitle || '';
     let subtitle = settings.countdownSubtitle || '';
     let slideText = settings.countdownSlideText || '';
@@ -4670,10 +4670,10 @@ export default function HomePage1() {
     const nowMs = Date.now();
     if (nowMs >= wholesaleStart && nowMs < wholesaleEnd) {
       section.classList.remove('tpl1-section-hidden');
-      title = '🔥 ¡GRAN PROMOCIÓN MAYORISTA! 🔥';
-      subtitle = 'Lleva 12 o más unidades de cualquier producto y obtén 20% OFF automático.';
+      title = 'ðŸ”¥ Â¡GRAN PROMOCIÃ“N MAYORISTA! ðŸ”¥';
+      subtitle = 'Lleva 12 o mÃ¡s unidades de cualquier producto y obtÃ©n 20% OFF automÃ¡tico.';
       slideText = '20% OFF MAYORISTA';
-      buttonText = 'VER CATÁLOGO';
+      buttonText = 'VER CATÃLOGO';
       buttonHref = '/productos';
       endTimeMs = wholesaleEnd;
     }
@@ -4705,7 +4705,7 @@ export default function HomePage1() {
         wrapper.style.setProperty('background-size', 'cover', 'important');
         wrapper.style.setProperty('background-position', 'center', 'important');
         wrapper.style.setProperty('background-repeat', 'no-repeat', 'important');
-        // Mantener posición relativa y tamaño constante
+        // Mantener posiciÃ³n relativa y tamaÃ±o constante
         wrapper.style.setProperty('position', 'relative', 'important');
         wrapper.style.setProperty('min-height', '100%', 'important');
       }
@@ -4734,7 +4734,7 @@ export default function HomePage1() {
       }
 
       if (settings.countdownHideOverlay) {
-        // Remover la capa oscura completamente pero mantener el tamaño
+        // Remover la capa oscura completamente pero mantener el tamaÃ±o
         styleEl.textContent = `
           .fusion-countdown-wrapper::before {
             display: none !important;
@@ -4778,7 +4778,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg, countdownOffer, countdownProduct]);
 
-  /* ── Tick en vivo del countdown cada segundo ── */
+  /* â”€â”€ Tick en vivo del countdown cada segundo â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     let endTimeMs: number | null = null;
@@ -4803,7 +4803,7 @@ export default function HomePage1() {
       };
       if (ms <= 0) {
         setDigit('days', 0); setDigit('hours', 0); setDigit('minutes', 0); setDigit('seconds', 0);
-        // Deshabilitar botón de compra cuando la oferta caduca
+        // Deshabilitar botÃ³n de compra cuando la oferta caduca
         const btn = section.querySelector('.button_primary a') as HTMLAnchorElement;
         if (btn) {
           btn.textContent = 'OFERTA CADUCADA';
@@ -4822,7 +4822,7 @@ export default function HomePage1() {
     return () => window.clearInterval(interval);
   }, [bodyHtml, countdownOffer]);
 
-  /* ── Aplicar settings de FAQ (tpl1) ── */
+  /* â”€â”€ Aplicar settings de FAQ (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_faq');
@@ -4858,7 +4858,7 @@ export default function HomePage1() {
       }
     }
 
-    // Activar partículas animadas (PC only — skip on mobile for performance)
+    // Activar partÃ­culas animadas (PC only â€” skip on mobile for performance)
     let particlesCleanup: (() => void) | undefined;
     const isMobileFAQ = window.innerWidth <= 768;
     if (settings.faqEnableParticles && !isMobileFAQ) {
@@ -4870,14 +4870,14 @@ export default function HomePage1() {
         const oldStyle = document.getElementById('faq-particles-z-style');
         if (oldStyle) oldStyle.remove();
 
-        // titleBox ya tiene position:relative en CSS original — no tocar overflow
-        // Crear wrapper para el canvas como ÚLTIMO hijo del titleBox (no first-child para no romper reglas)
+        // titleBox ya tiene position:relative en CSS original â€” no tocar overflow
+        // Crear wrapper para el canvas como ÃšLTIMO hijo del titleBox (no first-child para no romper reglas)
         const canvasWrapper = document.createElement('div');
         canvasWrapper.className = 'faq-particles-wrapper';
-        // z-index: 0 = justo encima del ::before (z-index:0 también) pero detrás de los demás hijos
+        // z-index: 0 = justo encima del ::before (z-index:0 tambiÃ©n) pero detrÃ¡s de los demÃ¡s hijos
         canvasWrapper.style.cssText = 'position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; border-radius: inherit;';
 
-        // Crear canvas para partículas (transparente por defecto)
+        // Crear canvas para partÃ­culas (transparente por defecto)
         const canvas = document.createElement('canvas');
         canvas.className = 'faq-particles-canvas';
         canvas.style.cssText = 'display: block; width: 100%; height: 100%; background: transparent;';
@@ -4886,11 +4886,11 @@ export default function HomePage1() {
         // Insertar al final del titleBox (no afecta primer-hijo)
         titleBox.appendChild(canvasWrapper);
 
-        // Aplicar z-index INLINE a la rotate_image y faq-jumbotron para garantizar máxima prioridad
+        // Aplicar z-index INLINE a la rotate_image y faq-jumbotron para garantizar mÃ¡xima prioridad
         const rotateImg = titleBox.querySelector('.rotate_image') as HTMLElement;
         if (rotateImg) {
           rotateImg.style.setProperty('z-index', '3', 'important');
-          rotateImg.dataset.faqParticlesZ = '1'; // marcador para limpiar después
+          rotateImg.dataset.faqParticlesZ = '1'; // marcador para limpiar despuÃ©s
         }
         const jumbotron = titleBox.querySelector('.faq-jumbotron') as HTMLElement;
         if (jumbotron) {
@@ -4904,7 +4904,7 @@ export default function HomePage1() {
           canvasWrapper.remove();
         } else {
 
-          // Configurar tamaño del canvas
+          // Configurar tamaÃ±o del canvas
           const resizeCanvas = () => {
             canvas.width = titleBox.offsetWidth;
             canvas.height = titleBox.offsetHeight;
@@ -4912,7 +4912,7 @@ export default function HomePage1() {
           resizeCanvas();
           window.addEventListener('resize', resizeCanvas);
 
-          // Configurar partículas
+          // Configurar partÃ­culas
           const particles: Array<{ x: number; y: number; vx: number; vy: number; radius: number; alpha: number }> = [];
           const particleCount = 50;
 
@@ -4928,7 +4928,7 @@ export default function HomePage1() {
           }
 
           let rafId = 0;
-          // Animación de partículas
+          // AnimaciÃ³n de partÃ­culas
           const animate = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -4940,7 +4940,7 @@ export default function HomePage1() {
               if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
               if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
-              // Dibujar partícula
+              // Dibujar partÃ­cula
               ctx.beginPath();
               ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
               ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
@@ -4952,7 +4952,7 @@ export default function HomePage1() {
 
           animate();
 
-          // Guardar cleanup para retornar al final del useEffect (NO retornar aquí, romperia el flujo)
+          // Guardar cleanup para retornar al final del useEffect (NO retornar aquÃ­, romperia el flujo)
           particlesCleanup = () => {
             window.removeEventListener('resize', resizeCanvas);
             cancelAnimationFrame(rafId);
@@ -4967,7 +4967,7 @@ export default function HomePage1() {
         } // fin else (ctx existe)
       }
     } else {
-      // Desactivar partículas — remover wrappers y revertir z-index inline
+      // Desactivar partÃ­culas â€” remover wrappers y revertir z-index inline
       section.querySelectorAll('.faq-particles-wrapper').forEach(w => w.remove());
       section.querySelectorAll('[data-faq-particles-z]').forEach(el => {
         (el as HTMLElement).style.removeProperty('z-index');
@@ -4978,14 +4978,14 @@ export default function HomePage1() {
       if (oldStyle) oldStyle.remove();
     }
 
-    // Actualizar preguntas y respuestas del acordeón
+    // Actualizar preguntas y respuestas del acordeÃ³n
     const faqs = settings.faqs || [];
     if (faqs.length > 0) {
       const accordionItems = section.querySelectorAll('.accordion-item') as NodeListOf<HTMLElement>;
       faqs.forEach((faq: { question: string; answer: string }, idx: number) => {
         if (idx < accordionItems.length) {
           const item = accordionItems[idx];
-          // Actualizar título (texto del botón, antes del SVG)
+          // Actualizar tÃ­tulo (texto del botÃ³n, antes del SVG)
           const btn = item.querySelector('.accordion-button') as HTMLElement;
           if (btn) {
             const svg = btn.querySelector('svg');
@@ -5024,7 +5024,7 @@ export default function HomePage1() {
       largeImage.src = settings.faqAvatarLarge;
     }
 
-    // Actualizar imágenes de avatares (avatar-row)
+    // Actualizar imÃ¡genes de avatares (avatar-row)
     const avatarImages = section.querySelectorAll('.avatar-row img') as NodeListOf<HTMLImageElement>;
     if (avatarImages.length >= 4) {
       if (settings.faqAvatar1) {
@@ -5041,11 +5041,11 @@ export default function HomePage1() {
       }
     }
 
-    // Retornar cleanup de partículas (si existe) al final, después de aplicar imágenes
+    // Retornar cleanup de partÃ­culas (si existe) al final, despuÃ©s de aplicar imÃ¡genes
     return particlesCleanup;
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de Productos con Filtro (tpl1) ── */
+  /* â”€â”€ Aplicar settings de Productos con Filtro (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_products_filter');
@@ -5073,13 +5073,13 @@ export default function HomePage1() {
       try {
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
-        // Cargar todas las categorías seleccionadas en 1 sola llamada
+        // Cargar todas las categorÃ­as seleccionadas en 1 sola llamada
         const catBatchRes = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
           Query.equal('$id', catIds),
           Query.limit(100),
         ]).catch(() => ({ documents: [] }));
         const cats = (catBatchRes.documents as unknown as Category[]).filter(Boolean);
-        // Cargar productos de todas las categorías en 1 sola llamada
+        // Cargar productos de todas las categorÃ­as en 1 sola llamada
         const catIdList = cats.map(c => c.$id);
         let allProducts: Product[] = [];
         if (catIdList.length > 0) {
@@ -5090,13 +5090,13 @@ export default function HomePage1() {
           ]).catch(() => ({ documents: [] }));
           allProducts = prodRes.documents as unknown as Product[];
         }
-        // Agrupar productos por categoría en memoria
+        // Agrupar productos por categorÃ­a en memoria
         const productsPerCat = cats.map(c =>
           allProducts.filter(p => p.CATEGORYID === c.$id).slice(0, perCat)
         );
         if (!alive) return;
 
-        // Filtrar solo categorías que tienen productos con stock
+        // Filtrar solo categorÃ­as que tienen productos con stock
         const catsWithProducts = cats.filter((_, i) => productsPerCat[i] && productsPerCat[i].length > 0);
         const productsForCats = catsWithProducts.map((_, i) => productsPerCat[cats.indexOf(catsWithProducts[i])]);
         if (!alive) return;
@@ -5152,12 +5152,12 @@ export default function HomePage1() {
                   <a href="/producto/${p.$id}" class="tpl1-pc-link">
                     <div class="tpl1-pc-img-wrap">
                       <div class="tpl1-pc-img-primary">
-                        ${img1 ? `<img src="${img1}" alt="${escAttr(p.NAME || '')}" loading="lazy" />` : '<span class="tpl1-pc-placeholder">📦</span>'}
+                        ${img1 ? `<img src="${img1}" alt="${escAttr(p.NAME || '')}" loading="lazy" />` : '<span class="tpl1-pc-placeholder">ðŸ“¦</span>'}
                       </div>
                       ${img2 ? `<div class="tpl1-pc-img-secondary"><img src="${img2}" alt="${escAttr(p.NAME || '')}" loading="lazy" /></div>` : ''}
                       <div class="tpl1-pc-badges">
                         ${hasDisc ? `<span class="tpl1-pc-badge tpl1-pc-badge-disc">-${discPct}%</span>` : ''}
-                        ${stock > 0 && stock <= 5 ? `<span class="tpl1-pc-badge tpl1-pc-badge-urg">Últimas ${stock}</span>` : ''}
+                        ${stock > 0 && stock <= 5 ? `<span class="tpl1-pc-badge tpl1-pc-badge-urg">Ãšltimas ${stock}</span>` : ''}
                         ${stock === 0 ? `<span class="tpl1-pc-badge tpl1-pc-badge-out">Agotado</span>` : ''}
                       </div>
                       <div class="tpl1-pc-action-bar">
@@ -5201,7 +5201,7 @@ export default function HomePage1() {
           });
         }
 
-        // Filtrado de tabs por categoría
+        // Filtrado de tabs por categorÃ­a
         const tabs = section.querySelectorAll('#filterOptions a[data-filter]') as NodeListOf<HTMLAnchorElement>;
         tabs.forEach(a => {
           a.onclick = (e) => {
@@ -5226,7 +5226,7 @@ export default function HomePage1() {
     return () => { alive = false; };
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de galería de medios (tpl1) ── */
+  /* â”€â”€ Aplicar settings de galerÃ­a de medios (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_media_gallery');
@@ -5236,7 +5236,7 @@ export default function HomePage1() {
     const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
 
-    // Padding lateral a la sección
+    // Padding lateral a la secciÃ³n
     (section as HTMLElement).style.paddingLeft = '24px';
     (section as HTMLElement).style.paddingRight = '24px';
 
@@ -5326,7 +5326,7 @@ export default function HomePage1() {
       const mediaImg = block.querySelector('.media-img') as HTMLElement;
       if (mediaImg && item.mediaUrl) {
         if (item.mediaType === 'video') {
-          // Don't create video yet — show poster + play icon only
+          // Don't create video yet â€” show poster + play icon only
           // Video is only created when user clicks (prevents browser autoplay)
           mediaImg.innerHTML = '';
           mediaImg.style.position = 'relative';
@@ -5343,14 +5343,14 @@ export default function HomePage1() {
             mediaImg.appendChild(posterImg);
           }
 
-          // Play icon — always visible until video plays
+          // Play icon â€” always visible until video plays
           const playIcon = document.createElement('div');
           playIcon.className = 'tpl1-video-play-icon';
           playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
           playIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white" style="margin-left:3px;"><polygon points="2,0 24,14 2,28"/></svg>`;
           mediaImg.appendChild(playIcon);
 
-          // Pause icon — hidden until video plays
+          // Pause icon â€” hidden until video plays
           const pauseIcon = document.createElement('div');
           pauseIcon.className = 'tpl1-video-pause-icon';
           pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:none;align-items:center;justify-content:center;';
@@ -5371,12 +5371,12 @@ export default function HomePage1() {
               video.setAttribute('muted', '');
               video.preload = 'auto';
               video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;background:#000;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.15s ease;';
-              // Insert video — hidden (opacity:0) until it actually plays
+              // Insert video â€” hidden (opacity:0) until it actually plays
               const posterImg = mediaImg.querySelector('img');
               if (posterImg) posterImg.style.position = 'relative';
               mediaImg.insertBefore(video, playIcon);
               // Set up play/pause event handlers BEFORE calling play
-              // Use onplaying (not onplay) — fires when video actually renders a frame, preventing black flash
+              // Use onplaying (not onplay) â€” fires when video actually renders a frame, preventing black flash
               video.onplaying = () => { video.style.opacity = '1'; playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; if (posterImg && posterImg.parentNode) posterImg.remove(); };
               video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
               video.play().catch(() => { });
@@ -5416,7 +5416,7 @@ export default function HomePage1() {
         if (!notifyBtn) {
           notifyBtn = document.createElement('button');
           notifyBtn.className = 'notify-arrival-btn';
-          notifyBtn.textContent = 'Avísame cuando llegue';
+          notifyBtn.textContent = 'AvÃ­same cuando llegue';
           notifyBtn.style.cssText = `
             position: absolute;
             bottom: 20px;
@@ -5466,24 +5466,24 @@ export default function HomePage1() {
 
               const data = await response.json();
               if (response.ok) {
-                notifyBtn.textContent = '✓ ¡Registrado!';
+                notifyBtn.textContent = 'âœ“ Â¡Registrado!';
                 notifyBtn.style.background = 'rgba(34, 197, 94, 0.25)';
                 notifyBtn.style.color = '#16a34a';
                 setTimeout(() => {
-                  notifyBtn.textContent = 'Avísame cuando llegue';
+                  notifyBtn.textContent = 'AvÃ­same cuando llegue';
                   notifyBtn.style.background = 'rgba(255, 192, 203, 0.3)';
                   notifyBtn.style.color = '#ffffff';
                   notifyBtn.disabled = false;
                 }, 3000);
               } else {
                 alert(data.error || 'Error al registrar voto');
-                notifyBtn.textContent = 'Avísame cuando llegue';
+                notifyBtn.textContent = 'AvÃ­same cuando llegue';
                 notifyBtn.disabled = false;
               }
             } catch (error) {
               console.error('Error voting:', error);
               alert('Error al registrar voto');
-              notifyBtn.textContent = 'Avísame cuando llegue';
+              notifyBtn.textContent = 'AvÃ­same cuando llegue';
               notifyBtn.disabled = false;
             }
           };
@@ -5500,7 +5500,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de testimonios (tpl1) ── */
+  /* â”€â”€ Aplicar settings de testimonios (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_testimonials');
@@ -5513,7 +5513,7 @@ export default function HomePage1() {
     const items = (settings.testimonials || []) as { name: string; text: string; avatar?: string; rating?: number; productId?: string; productImage?: string; productName?: string }[];
     if (items.length === 0) return;
 
-    // Título
+    // TÃ­tulo
     const titleEl = section.querySelector('.musk-h2-head') as HTMLElement;
     if (titleEl && settings.title) titleEl.textContent = settings.title;
 
@@ -5572,7 +5572,7 @@ export default function HomePage1() {
         const starStrokes = slide.querySelectorAll('.rating__star-stroke');
         starStrokes.forEach(stroke => stroke.setAttribute('stroke', '#f59e0b'));
 
-        // Mostrar/ocultar estrellas según rating
+        // Mostrar/ocultar estrellas segÃºn rating
         const ratingSpans = slide.querySelectorAll('.slide-rating .rating');
         ratingSpans.forEach((span, sIdx) => {
           if (sIdx < (item.rating || 5)) {
@@ -5589,7 +5589,7 @@ export default function HomePage1() {
     });
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de colección destacada (tpl1) ── */
+  /* â”€â”€ Aplicar settings de colecciÃ³n destacada (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_featured_collection');
@@ -5599,7 +5599,7 @@ export default function HomePage1() {
     const section = (document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`)) as HTMLElement | null;
     if (!section) return;
 
-    // Ocultar sección si no hay items configurados
+    // Ocultar secciÃ³n si no hay items configurados
     const featuredItems = (settings.featuredCollectionItems || []) as CollectionItem[];
     if (featuredItems.length === 0) {
       section.style.display = 'none';
@@ -5817,7 +5817,7 @@ export default function HomePage1() {
       slides[i].style.display = '';
     }
 
-    // Móvil: grid estático en lugar del carrusel apretado
+    // MÃ³vil: grid estÃ¡tico en lugar del carrusel apretado
     const applyFeaturedMobileLayout = () => {
       const isMobile = window.matchMedia('(max-width: 768px)').matches;
       section.classList.toggle('tpl1-featured-cat-mobile-grid', isMobile);
@@ -5874,7 +5874,7 @@ export default function HomePage1() {
     };
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de marquee (tpl1) ── */
+  /* â”€â”€ Aplicar settings de marquee (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_marquee');
@@ -5950,7 +5950,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de marquee 2 (tpl1) ── */
+  /* â”€â”€ Aplicar settings de marquee 2 (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_marquee_2');
@@ -6026,7 +6026,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Campana de notificaciones en header Shopify (desktop homepage) ── */
+  /* â”€â”€ Campana de notificaciones en header Shopify (desktop homepage) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
 
@@ -6109,7 +6109,7 @@ export default function HomePage1() {
     };
   }, [bodyHtml, isLoggedIn, unreadCount]);
 
-  /* ── Aplicar settings de service icons (tpl1) ── */
+  /* â”€â”€ Aplicar settings de service icons (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_service_icons');
@@ -6141,7 +6141,7 @@ export default function HomePage1() {
       'star': { svg: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>', color: '#eab308' },
     };
 
-    // Título
+    // TÃ­tulo
     if (s.title) {
       const rowDiv = section.querySelector('.row .col-12') as HTMLElement;
       if (rowDiv) {
@@ -6156,7 +6156,7 @@ export default function HomePage1() {
       }
     }
 
-    // Mejorar diseño de service items
+    // Mejorar diseÃ±o de service items
     const wrapper = section.querySelector('.swiper-wrapper') as HTMLElement;
     if (!wrapper) return;
     const slides = Array.from(wrapper.querySelectorAll('.swiper-slide')) as HTMLElement[];
@@ -6179,7 +6179,7 @@ export default function HomePage1() {
       const serviceItem = slide.querySelector('.service-item') as HTMLElement;
       if (!serviceItem) return;
 
-      // Mejorar diseño de la tarjeta
+      // Mejorar diseÃ±o de la tarjeta
       serviceItem.style.cssText = 'border-radius:20px;padding:30px 20px;text-align:center;background:linear-gradient(135deg,#fafafa,#fff);border:1px solid #f0f0f0;box-shadow:0 4px 20px rgba(0,0,0,0.06);transition:all 0.3s ease;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
 
       // Hover effect
@@ -6198,14 +6198,14 @@ export default function HomePage1() {
         imgDiv.style.cssText = 'margin-bottom:8px;display:flex;align-items:center;justify-content:center;';
       }
 
-      // Título
+      // TÃ­tulo
       const titleEl = slide.querySelector('.service-title') as HTMLElement;
       if (titleEl) {
         titleEl.textContent = item.title;
         titleEl.style.cssText = 'font-size:16px;font-weight:700;color:#111;margin:0;';
       }
 
-      // Descripción
+      // DescripciÃ³n
       const descEl = slide.querySelector('.servive-dtl') as HTMLElement;
       if (descEl) {
         descEl.textContent = item.description;
@@ -6214,7 +6214,7 @@ export default function HomePage1() {
     });
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de footer (tpl1) ── */
+  /* â”€â”€ Aplicar settings de footer (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_footer');
@@ -6224,14 +6224,14 @@ export default function HomePage1() {
     const footer = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!footer) return;
 
-    // Defaults para Kevin & Coco Chile
-    const companyName = s.companyName || 'Kevin & Coco Chile';
-    const companyDescription = s.companyDescription || 'Tu tienda de maquillaje y artículos de beauty favoritos. Productos de calidad para realzar tu belleza natural.';
-    const email = s.email || 'kevincocochile2026@gmail.com';
+    // Defaults para Don Balato Iván Chile
+    const companyName = s.companyName || 'Don Balato Iván Chile';
+    const companyDescription = s.companyDescription || 'Tu tienda de maquillaje y artÃ­culos de beauty favoritos. Productos de calidad para realzar tu belleza natural.';
+    const email = s.email || 'donbalatosoporte@gmail.com';
     const col1Title = s.footerCol1Title || 'Comprar';
     const col2Title = s.footerCol2Title || 'Ayuda';
     const col3Title = s.footerCol3Title || 'Contacto';
-    const col4Title = s.footerCol4Title || 'Suscríbete';
+    const col4Title = s.footerCol4Title || 'SuscrÃ­bete';
     const nlText = s.newsletterText || 'Recibe ofertas exclusivas y novedades';
     const col1Links = s.footerCol1Links || [];
     const col2Links = s.footerCol2Links || [];
@@ -6248,7 +6248,7 @@ export default function HomePage1() {
       }
     }
 
-    // Títulos de columnas del footer
+    // TÃ­tulos de columnas del footer
     const colTitles = footer.querySelectorAll('.ftr-support-col .ftr-col-title') as NodeListOf<HTMLElement>;
     if (colTitles.length >= 1) {
       const svg1 = colTitles[0].querySelector('svg');
@@ -6329,11 +6329,11 @@ export default function HomePage1() {
       supportCols[2].appendChild(ul3);
     }
 
-    // Título de la columna de newsletter
+    // TÃ­tulo de la columna de newsletter
     const nlTitle = footer.querySelector('.ftr-signup-col .ftr-col-title') as HTMLElement;
     if (nlTitle) nlTitle.textContent = col4Title;
 
-    // Descripción de la empresa (debajo del logo)
+    // DescripciÃ³n de la empresa (debajo del logo)
     const existingDesc = footer.querySelector('.tpl1-footer-desc') as HTMLElement | null;
     if (existingDesc) existingDesc.remove();
     if (companyDescription) {
@@ -6345,14 +6345,14 @@ export default function HomePage1() {
       if (logoDiv2) logoDiv2.appendChild(descEl);
     }
 
-    // Dirección, email, teléfono, WhatsApp en ftr-addr-info-col
+    // DirecciÃ³n, email, telÃ©fono, WhatsApp en ftr-addr-info-col
     const addrCol = footer.querySelector('.ftr-addr-info-col ul') as HTMLElement;
     if (addrCol) {
       addrCol.innerHTML = '';
 
       if (s.address) {
         const li = document.createElement('li');
-        li.innerHTML = `<strong>Dirección:</strong> ${s.address}`;
+        li.innerHTML = `<strong>DirecciÃ³n:</strong> ${s.address}`;
         addrCol.appendChild(li);
       }
 
@@ -6364,7 +6364,7 @@ export default function HomePage1() {
 
       if (s.phone) {
         const li = document.createElement('li');
-        li.innerHTML = `<strong>Teléfono:</strong> <a href="tel:${s.phone.replace(/\s/g, '')}" style="color:inherit;text-decoration:underline;">${s.phone}</a>`;
+        li.innerHTML = `<strong>TelÃ©fono:</strong> <a href="tel:${s.phone.replace(/\s/g, '')}" style="color:inherit;text-decoration:underline;">${s.phone}</a>`;
         addrCol.appendChild(li);
       }
 
@@ -6447,7 +6447,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de mapa interactivo (tpl1_map) — ARRIBA del footer ── */
+  /* â”€â”€ Aplicar settings de mapa interactivo (tpl1_map) â€” ARRIBA del footer â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const mapCfg = sectionCfg.find(s => s.id === 'tpl1_map');
@@ -6472,7 +6472,7 @@ export default function HomePage1() {
     const mapSection = document.createElement('div');
     mapSection.className = 'tpl1-map-section';
 
-    // Estilos según tema
+    // Estilos segÃºn tema
     const isDark = mapStyle === 'dark';
     const isMinimal = mapStyle === 'minimal';
     const bgColor = isDark ? '#111111' : isMinimal ? '#fafafa' : '#ffffff';
@@ -6498,14 +6498,14 @@ export default function HomePage1() {
         mapSection.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;background:${bgColor};">
             <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:40px;height:40px;border-radius:12px;background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:18px;">📍</div>
+              <div style="width:40px;height:40px;border-radius:12px;background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:18px;">ðŸ“</div>
               <div>
-                <h4 style="color:${textColor};font-size:15px;font-weight:800;margin:0 0 2px;letter-spacing:-0.02em;">Encuéntranos</h4>
+                <h4 style="color:${textColor};font-size:15px;font-weight:800;margin:0 0 2px;letter-spacing:-0.02em;">EncuÃ©ntranos</h4>
                 <p style="color:${subColor};font-size:12px;margin:0;line-height:1.4;">${addr}</p>
               </div>
             </div>
             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;background:${accentColor};color:#fff;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:0.02em;box-shadow:0 2px 8px ${accentColor}44;transition:transform 0.2s,box-shadow 0.2s;">
-              Cómo llegar →
+              CÃ³mo llegar â†’
             </a>
           </div>
           <div style="position:relative;border-top:1px solid ${borderColor};">
@@ -6545,7 +6545,7 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de brand logos (tpl1) ── */
+  /* â”€â”€ Aplicar settings de brand logos (tpl1) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_brand_logos');
@@ -6555,7 +6555,7 @@ export default function HomePage1() {
     const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
 
-    // Título
+    // TÃ­tulo
     if (s.title) {
       const existingTitle = section.querySelector('.brand-logos-title') as HTMLElement;
       if (existingTitle) {
@@ -6680,7 +6680,7 @@ export default function HomePage1() {
             mainBar.style.padding = `${s.padding}px`;
           }
 
-          // Apply custom gradient: blanco → rosa pastel → degradado original (default)
+          // Apply custom gradient: blanco â†’ rosa pastel â†’ degradado original (default)
           // If user selected a custom gradient, use that instead
           const defaultGradient = 'linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.96) 12%, #fbcfe8 34%, #f9a8d4 52%, rgba(251, 244, 202, 1) 68%, rgba(252, 218, 188, 1) 84%, rgba(254, 169, 162, 1) 100%)';
           const activeGradient = s.bgGradient || defaultGradient;
@@ -7127,7 +7127,7 @@ export default function HomePage1() {
           applyLogoImg(darkLogos, scrollLogoUrl);
         }
 
-        // ── Mobile hero logo (centered, visible only on mobile) ──
+        // â”€â”€ Mobile hero logo (centered, visible only on mobile) â”€â”€
         const mobileLogoH = hs.heroStoreLogoMobileHeight ?? 30;
         const desktopLogoH = hs.heroStoreLogoHeight ?? 40;
         if (!document.getElementById('tpl1-hero-mobile-logo')) {
@@ -7495,7 +7495,7 @@ export default function HomePage1() {
           applyHeroMobileLock();
           window.addEventListener('resize', applyHeroMobileLock);
 
-          // Video visibility observer: pause when off-screen, restart when visible (PC only — skip on mobile)
+          // Video visibility observer: pause when off-screen, restart when visible (PC only â€” skip on mobile)
           const heroSection = document.querySelector('[data-section-id="template--22405132419320__hero_banner_R6iEJ4"]') || document.querySelector('.musk-main-banner');
           if (heroSection && !document.getElementById('tpl1-hero-video-observer') && window.innerWidth > 768) {
             const marker = document.createElement('div');
@@ -7704,7 +7704,7 @@ export default function HomePage1() {
       });
     }
 
-    // 0b. Subtle complex particles + hero image movement (PC only — skip on mobile for performance)
+    // 0b. Subtle complex particles + hero image movement (PC only â€” skip on mobile for performance)
     const heroBannerEl = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
     const heroSecForParticles = sectionCfg.find(s => s.id === 'tpl1_hero');
     const hs = heroSecForParticles?.settings || {};
@@ -7745,7 +7745,7 @@ export default function HomePage1() {
         const speed = (i % 5 + 1) * 8;
         speeds.push(speed);
 
-        // No box-shadow/blur — just solid color for performance
+        // No box-shadow/blur â€” just solid color for performance
         particle.style.cssText = isLine
           ? `position:absolute;width:${size}px;height:${size * 3}px;background:${color};border-radius:1px;opacity:0;left:${Math.random() * 100}%;top:${Math.random() * 100}%;`
           : `position:absolute;width:${size}px;height:${size}px;background:${color};border-radius:50%;opacity:0;left:${Math.random() * 100}%;top:${Math.random() * 100}%;`;
@@ -7861,7 +7861,7 @@ export default function HomePage1() {
       }
       heroBannerEl.classList.add('tpl1-hero-ready');
 
-      // ── Auto-height: ajustar contenedor al tamaño de la imagen ──
+      // â”€â”€ Auto-height: ajustar contenedor al tamaÃ±o de la imagen â”€â”€
       const adjustHeroHeight = () => {
         const activeImg = heroBannerEl.querySelector('.swiper-slide-active .slide-image img, .swiper-slide-active .slide-image__img') as HTMLImageElement
           || heroBannerEl.querySelector('.slide-image img, .slide-image__img') as HTMLImageElement;
@@ -7887,7 +7887,7 @@ export default function HomePage1() {
             (el as HTMLElement).style.setProperty('max-height', 'none', 'important');
           }
         });
-        // El slide activo también
+        // El slide activo tambiÃ©n
         heroBannerEl.querySelectorAll('.swiper-slide').forEach(sl => {
           (sl as HTMLElement).style.setProperty('height', `${naturalHeight}px`, 'important');
         });
@@ -7904,12 +7904,12 @@ export default function HomePage1() {
       // Ejecutar en resize y cuando Swiper cambia de slide
       window.addEventListener('resize', adjustHeroHeight);
       heroBannerEl.addEventListener('transitionend', adjustHeroHeight);
-      // Ejecutar después de delays para cuando Swiper JS sobreescriba heights
+      // Ejecutar despuÃ©s de delays para cuando Swiper JS sobreescriba heights
       [300, 800, 1500, 3000].forEach(ms => setTimeout(adjustHeroHeight, ms));
 
       // MutationObserver: vigilar que Swiper JS no sobreescriba los heights
       const heroObserver = new MutationObserver(() => {
-        // Verificar si algún contenedor tiene una altura distinta a la de la imagen
+        // Verificar si algÃºn contenedor tiene una altura distinta a la de la imagen
         const slider = heroBannerEl.querySelector('.musk-banner-slider') as HTMLElement;
         if (slider) {
           const currentH = parseInt(slider.style.height || '0');
@@ -7935,10 +7935,10 @@ export default function HomePage1() {
         <div class="subscribe-popup-content" style="padding:60px 20px;background:#fff;color:#000;font-family:Poppins,sans-serif;">
           <div style="max-width:600px;margin:0 auto;text-align:center;">
             <p style="font-family:'DM Sans',sans-serif;font-size:clamp(14px,1.2vw,16px);letter-spacing:0.15em;text-transform:uppercase;color:rgba(0,0,0,0.45);margin:0 0 12px;font-weight:400;">Newsletter</p>
-            <h3 style="font-family:'DM Sans',sans-serif;font-size:clamp(24px,3vw,36px);font-weight:400;margin:0 0 8px;letter-spacing:-0.02em;line-height:1.2;color:#000;">Únete a nuestra comunidad</h3>
-            <p style="font-size:clamp(13px,1vw,15px);color:rgba(0,0,0,0.55);margin:0 0 32px;line-height:1.6;font-weight:400;">Suscríbete y recibe un <span style="color:#000;font-weight:600;">10% de descuento</span> en tu primera compra + acceso a ofertas exclusivas.</p>
+            <h3 style="font-family:'DM Sans',sans-serif;font-size:clamp(24px,3vw,36px);font-weight:400;margin:0 0 8px;letter-spacing:-0.02em;line-height:1.2;color:#000;">Ãšnete a nuestra comunidad</h3>
+            <p style="font-size:clamp(13px,1vw,15px);color:rgba(0,0,0,0.55);margin:0 0 32px;line-height:1.6;font-weight:400;">SuscrÃ­bete y recibe un <span style="color:#000;font-weight:600;">10% de descuento</span> en tu primera compra + acceso a ofertas exclusivas.</p>
             <form style="display:flex;gap:0;max-width:460px;margin:0 auto;border:1px solid rgba(0,0,0,0.12);border-radius:40px;overflow:hidden;background:rgba(0,0,0,0.03);transition:border-color 0.3s;" onfocusin="this.style.borderColor='rgba(0,0,0,0.35)'" onfocusout="this.style.borderColor='rgba(0,0,0,0.12)'">
-              <input type="email" placeholder="Correo electrónico" style="flex:1;padding:14px 20px;background:transparent;border:none;font-size:14px;color:#000;outline:none;font-family:Poppins,sans-serif;min-width:0;" required>
+              <input type="email" placeholder="Correo electrÃ³nico" style="flex:1;padding:14px 20px;background:transparent;border:none;font-size:14px;color:#000;outline:none;font-family:Poppins,sans-serif;min-width:0;" required>
               <button type="submit" style="padding:14px 28px;background:#000;color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;letter-spacing:0.02em;transition:background 0.2s;" onmouseover="this.style.background='#333'" onmouseout="this.style.background='#000'">Suscribir</button>
             </form>
           </div>
@@ -7975,10 +7975,10 @@ export default function HomePage1() {
     // Hero banner es el primer hijo fijo (no se mueve)
     const heroEl = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
 
-    // Eliminar todos los gestionados de su posición actual
+    // Eliminar todos los gestionados de su posiciÃ³n actual
     orderedEls.forEach(el => el.remove());
 
-    // Reinsertarlos en orden después del hero (o al inicio si no hay hero)
+    // Reinsertarlos en orden despuÃ©s del hero (o al inicio si no hay hero)
     let anchor: ChildNode | null = heroEl && heroEl.parentElement === main
       ? heroEl.nextSibling
       : main.firstChild;
@@ -7989,8 +7989,8 @@ export default function HomePage1() {
     });
   }, [bodyHtml, sectionCfg, keniaEnabled]);
 
-  /* ── Heading split-text scroll animation (#enlarge_heading + #enlarge_subheading).
-        GSAP + ScrollTrigger. Espera a que Swiper termine antes de inicializar. ── */
+  /* â”€â”€ Heading split-text scroll animation (#enlarge_heading + #enlarge_subheading).
+        GSAP + ScrollTrigger. Espera a que Swiper termine antes de inicializar. â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     if (window.innerWidth <= 767) return;
@@ -8115,14 +8115,14 @@ export default function HomePage1() {
     }, 5000);
 
     return () => {
-      console.log('[HEADING-GSAP] ⚠️ USEEFFECT CLEANUP CALLED — animation will be killed!');
+      console.log('[HEADING-GSAP] âš ï¸ USEEFFECT CLEANUP CALLED â€” animation will be killed!');
       if (pollTimer) clearInterval(pollTimer);
       clearTimeout(fallbackTimer);
       ctx.revert();
     };
   }, [bodyHtml]);
 
-  /* ── Smart header: always sticky on scroll, collapses at top ── */
+  /* â”€â”€ Smart header: always sticky on scroll, collapses at top â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     let ticking = false;
@@ -8137,10 +8137,10 @@ export default function HomePage1() {
         const currentY = window.scrollY;
 
         if (currentY < 100) {
-          // Near top — transparent/collapsed style
+          // Near top â€” transparent/collapsed style
           header.classList.remove('is-sticky', 'scrolling_down_header', 'scrolling_upwards_header');
         } else {
-          // Scrolled — sticky expanded with white bg
+          // Scrolled â€” sticky expanded with white bg
           header.classList.add('is-sticky');
           header.classList.remove('scrolling_down_header', 'scrolling_upwards_header');
         }
@@ -8153,7 +8153,7 @@ export default function HomePage1() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [bodyHtml]);
 
-  /* ── Set innerHTML ONCE via ref ── */
+  /* â”€â”€ Set innerHTML ONCE via ref â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || !containerRef.current) return;
     if (containerRef.current.dataset.htmlSet) return; // already set
@@ -8167,7 +8167,7 @@ export default function HomePage1() {
     // Agregar clase para identificar homepage en CSS
     root.classList.add('is-homepage');
 
-    // Reducir tamaño del logo del header Shopify
+    // Reducir tamaÃ±o del logo del header Shopify
     const fixLogo = () => {
       const header = root.querySelector('header.musk-main-header');
       if (!header) return;
@@ -8185,18 +8185,18 @@ export default function HomePage1() {
       });
     };
     fixLogo();
-    // Reintentar por si el header se renderiza después
+    // Reintentar por si el header se renderiza despuÃ©s
     setTimeout(fixLogo, 500);
     setTimeout(fixLogo, 1500);
   }, [bodyHtml, user, isLoggedIn]);
 
-  /* ── Avatar en header Shopify: reintenta tras auth / settings ── */
+  /* â”€â”€ Avatar en header Shopify: reintenta tras auth / settings â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || !settingsApplied) return;
     return scheduleHomeHeaderAvatarSync(user, isLoggedIn);
   }, [bodyHtml, settingsApplied, isLoggedIn, user]);
 
-  /* ── Inject mobile countdown (simple version replacing Shopify section) ── */
+  /* â”€â”€ Inject mobile countdown (simple version replacing Shopify section) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || !containerRef.current) return;
     const isMobile = window.innerWidth <= 768;
@@ -8249,8 +8249,8 @@ export default function HomePage1() {
     let isWholesaleActive = false;
     if (nowMs >= wholesaleStart && nowMs < wholesaleEnd) {
       isWholesaleActive = true;
-      title = '🔥 ¡GRAN PROMOCIÓN MAYORISTA! 🔥';
-      subtitle = 'Lleva 12 o más unidades de cualquier producto y obtén 20% OFF automático.';
+      title = 'ðŸ”¥ Â¡GRAN PROMOCIÃ“N MAYORISTA! ðŸ”¥';
+      subtitle = 'Lleva 12 o mÃ¡s unidades de cualquier producto y obtÃ©n 20% OFF automÃ¡tico.';
       bgImage = ''; // Default to gradient
       buttonHref = '/productos';
       endTimeMs = wholesaleEnd;
@@ -8291,7 +8291,7 @@ export default function HomePage1() {
 
   // Removed redundant static Kenia banner injection as it is now integrated as Slide 2 (herobanner 2)
 
-  /* ── Fetch products with CURRENTPRICE offers for home carousel ── */
+  /* â”€â”€ Fetch products with CURRENTPRICE offers for home carousel â”€â”€ */
   useEffect(() => {
     if (offersProducts.length > 0) return;
     let alive = true;
@@ -8313,7 +8313,7 @@ export default function HomePage1() {
     return () => { alive = false; };
   }, [offersProducts.length]);
 
-  /* ── Inject offers carousel after hero banner ── */
+  /* â”€â”€ Inject offers carousel after hero banner â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || offersProducts.length === 0 || !containerRef.current) return;
 
@@ -8339,7 +8339,7 @@ export default function HomePage1() {
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px 12px' }}>
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 900, color: '#374151', margin: 0, fontFamily: FF }}>🔥 Ofertas del día</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: '#374151', margin: 0, fontFamily: FF }}>ðŸ”¥ Ofertas del dÃ­a</h2>
             <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0', fontFamily: FF }}>Productos en oferta por tiempo limitado</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -8370,7 +8370,7 @@ export default function HomePage1() {
                   {getProductImageUrl(p) ? (
                     <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>🛍️</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>ðŸ›ï¸</div>
                   )}
                 </div>
                 <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -8407,7 +8407,7 @@ export default function HomePage1() {
     );
   }, [bodyHtml, offersProducts]);
 
-  /* ── Inject TPL1 coupon banner before Colecciones ── */
+  /* â”€â”€ Inject TPL1 coupon banner before Colecciones â”€â”€ */
 
 
   useEffect(() => {
@@ -8450,7 +8450,7 @@ export default function HomePage1() {
     return undefined;
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Inject floating buttons (WhatsApp, Chatbot) ── */
+  /* â”€â”€ Inject floating buttons (WhatsApp, Chatbot) â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const whatsappEnabled = isSectionEnabled(sectionCfg, 'tpl1_whatsapp_button');
@@ -8492,7 +8492,7 @@ export default function HomePage1() {
     };
   }, [bodyHtml, sectionCfg, keniaEnabled]);
 
-  /* ── Anular enlaces de WhatsApp de Kenia si está desactivada ── */
+  /* â”€â”€ Anular enlaces de WhatsApp de Kenia si estÃ¡ desactivada â”€â”€ */
   useEffect(() => {
     if (!keniaEnabled) {
       const keniaLinks = document.querySelectorAll('a[href*="56962293893"]');
@@ -8504,7 +8504,7 @@ export default function HomePage1() {
     }
   }, [keniaEnabled, bodyHtml]);
 
-  /* ── Loading state ── */
+  /* â”€â”€ Loading state â”€â”€ */
   if (loadError) {
     return (
       <div style={{ padding: 32, textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
@@ -8538,3 +8538,4 @@ export default function HomePage1() {
     </>
   );
 }
+

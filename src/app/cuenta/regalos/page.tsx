@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import {
@@ -197,14 +197,14 @@ export default function RegalosPage() {
                     marginBottom: 12,
                   }}
                 >
-                  <Star size={12} fill="#fff" /> Kevin & Coco Chile te premia
+                  <Star size={12} fill="#fff" /> Don Balato Iván Chile te premia
                 </span>
 
                 <h2 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-                  ¡Regalo de Primera Compra!
+                  Â¡Regalo de Primera Compra!
                 </h2>
                 <p style={{ margin: '10px auto 0', fontSize: 14, color: 'rgba(255,255,255,0.9)', maxWidth: 340, lineHeight: 1.5, fontWeight: 500 }}>
-                  Activa tu descuento exclusivo del 20% válido solo para tu primer pedido.
+                  Activa tu descuento exclusivo del 20% vÃ¡lido solo para tu primer pedido.
                 </p>
               </div>
             </div>
@@ -268,7 +268,7 @@ export default function RegalosPage() {
                         </div>
                         <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#111827' }}>20% de descuento</p>
                         <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280', lineHeight: 1.45 }}>
-                          Válido en tu primera compra. Se aplicará a toda la tienda al instante.
+                          VÃ¡lido en tu primera compra. Se aplicarÃ¡ a toda la tienda al instante.
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
                           {['Exclusivo', 'Por tiempo limitado', 'Nuevos usuarios'].map((tag) => (
@@ -360,3 +360,4 @@ export default function RegalosPage() {
     </CuentaPageShell>
   );
 }
+

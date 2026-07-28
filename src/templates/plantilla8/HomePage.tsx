@@ -1,32 +1,32 @@
-'use client';
-/* ════════════════════════════════════════════════════════════════════
-   PLANTILLA 8 — Shopify Theme Capturado por FOLLA
-   ──────────────────────────────────────────────────────────────────
-   ⚠️  BOILERPLATE: Requiere revisión manual antes de usar.
-   ──────────────────────────────────────────────────────────────────
-   Estrategia (idéntica a plantilla1):
+﻿'use client';
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PLANTILLA 8 â€” Shopify Theme Capturado por FOLLA
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   âš ï¸  BOILERPLATE: Requiere revisiÃ³n manual antes de usar.
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Estrategia (idÃ©ntica a plantilla1):
    - Render del HTML body limpio via containerRef.innerHTML
-   - Carga dinámica de CSS via <link> tags en <head>
-   - Carga dinámica de JS via <script> tags secuenciales
-   - Scripts de Shopify problemáticos excluidos
-   ════════════════════════════════════════════════════════════════════ */
+   - Carga dinÃ¡mica de CSS via <link> tags en <head>
+   - Carga dinÃ¡mica de JS via <script> tags secuenciales
+   - Scripts de Shopify problemÃ¡ticos excluidos
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 import { useEffect, useRef, useState } from 'react';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { Category, Subcategory } from '@/types';
 import { useCategories } from '@/hooks/useCategories';
 
-// Set window.countdown at module level — runs when module is first imported, before any Shopify scripts
+// Set window.countdown at module level â€” runs when module is first imported, before any Shopify scripts
 if (typeof window !== 'undefined') {
   (window as any).countdown = {
-    long: { day: 'día', hour: 'hora', second: 'segundo', one: { day: 'día', hour: 'hora', second: 'segundo' }, other: { day: 'días', hour: 'horas', second: 'segundos' } },
+    long: { day: 'dÃ­a', hour: 'hora', second: 'segundo', one: { day: 'dÃ­a', hour: 'hora', second: 'segundo' }, other: { day: 'dÃ­as', hour: 'horas', second: 'segundos' } },
     short: { day: 'd', hour: 'h', second: 's', one: { day: 'd', hour: 'h', second: 's' }, other: { day: 'd', hour: 'h', second: 's' } },
   };
 }
 
 const SHOPIFY_BASE = '/shopify/plantilla8/assets';
 
-/* ── CSS files: ORDEN CRÍTICO — inline primero, luego core, luego secciones ── */
+/* â”€â”€ CSS files: ORDEN CRÃTICO â€” inline primero, luego core, luego secciones â”€â”€ */
 const CSS_FILES = [
   `/shopify/plantilla8/assets/css/inline/index-inline-1.css`,
   `/shopify/plantilla8/assets/css/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/swiper-bundle.min.css`,
@@ -75,7 +75,7 @@ const CSS_FILES = [
   `/shopify/plantilla8/assets/css/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/split-hero.css`
 ];
 
-/* ── JS files: solo los críticos del tema ── */
+/* â”€â”€ JS files: solo los crÃ­ticos del tema â”€â”€ */
 type JsFile = { src: string; module?: boolean };
 const JS_FILES: JsFile[] = [
   { src: `/shopify/plantilla8/assets/js/cdn/gsap.min.js` },
@@ -131,7 +131,7 @@ const JS_FILES: JsFile[] = [
   { src: `/shopify/plantilla8/assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/button-to-top.js` },
 ];
 
-/* ── Font faces ── */
+/* â”€â”€ Font faces â”€â”€ */
 const FONT_FACE_CSS = `
 @font-face {
   font-family: Montserrat;
@@ -190,7 +190,7 @@ export default function HomePage8() {
   const { categories } = useCategories();
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
 
-  /* ── Mark template attribute on document for CSS scoping ── */
+  /* â”€â”€ Mark template attribute on document for CSS scoping â”€â”€ */
   useEffect(() => {
     document.documentElement.dataset.template = '8';
     const previousScrollRestoration = window.history.scrollRestoration;
@@ -201,7 +201,7 @@ export default function HomePage8() {
     };
   }, []);
 
-  /* ── Load font faces ── */
+  /* â”€â”€ Load font faces â”€â”€ */
   useEffect(() => {
     const styleEl = document.createElement('style');
     styleEl.id = 'tpl8-fontfaces';
@@ -210,9 +210,9 @@ export default function HomePage8() {
     return () => { styleEl.remove(); };
   }, []);
 
-  /* ── Force hide page-loader & layout overrides ── */
+  /* â”€â”€ Force hide page-loader & layout overrides â”€â”€ */
   useEffect(() => {
-    // Use insertRule instead of textContent — Shopify's JS truncates style.textContent
+    // Use insertRule instead of textContent â€” Shopify's JS truncates style.textContent
     const sheet = document.createElement('style');
     sheet.id = 'tpl8-overrides';
     document.head.appendChild(sheet);
@@ -312,7 +312,7 @@ export default function HomePage8() {
     return () => { sheet.remove(); containerMo.disconnect(); mainMo.disconnect(); window.removeEventListener('scroll', onScroll); };
   }, []);
 
-  /* ── Load CSS files dynamically ── */
+  /* â”€â”€ Load CSS files dynamically â”€â”€ */
   useEffect(() => {
     const links: HTMLLinkElement[] = [];
     CSS_FILES.forEach(href => {
@@ -328,7 +328,7 @@ export default function HomePage8() {
     return () => { links.forEach(l => l.remove()); };
   }, []);
 
-  /* ── Fetch the cleaned HTML body content and Categories ── */
+  /* â”€â”€ Fetch the cleaned HTML body content and Categories â”€â”€ */
   useEffect(() => {
     let aborted = false;
 
@@ -358,16 +358,16 @@ export default function HomePage8() {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        // 1. Replace Logo YESBELLA with Image Logo KEVIN & COCO
+        // 1. Replace Logo YESBELLA with Image Logo Don Balato Iván
         const logoUrl = "https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/1779087644982-pegada-1779087644061.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=PPeyi%2BvN0%2B62TLw7qyFMesh00OphZaWOazNAsjn90cANf5ob9tPgJu1KOv8ICB%2FwEfnyhPGFRdqyk%2FUY7ZyuNnWuQLDi9cFL3ntbzNVJkYHj0HEibiG%2FpQ7yUDelDFO8onHfWEZtrRSWbiEx%2FN9eTwvtLrSNoBbKnunkQrS98HqLEn%2BtZPaG4O8l%2Frf%2BR61G6Cd3y0k9gtTHoas2CDDR91hQQZ32eInhg6mMwUraWyKuTX%2FcbeQZnxcNWJrLAEwY0Lyyv6SalTqU4gtZB%2FP83u4Vvo%2FBagcexcn5T6H910iFP4QEiDX%2BiFK9iLZtbZh0l2%2FmT4opjJqhPCjuQKcxXg%3D%3D";
         const logoWrappers = doc.querySelectorAll('.logo-wrapper');
         logoWrappers.forEach(wrapper => {
-          wrapper.setAttribute('aria-label', 'KEVIN & COCO');
+          wrapper.setAttribute('aria-label', 'Don Balato Iván');
           const h2 = wrapper.querySelector('h2.logo');
           if (h2) {
-            h2.outerHTML = `<img src="${logoUrl}" alt="KEVIN & COCO" style="max-height: 48px; width: auto; object-fit: contain; margin: 0 auto;" />`;
+            h2.outerHTML = `<img src="${logoUrl}" alt="Don Balato Iván" style="max-height: 48px; width: auto; object-fit: contain; margin: 0 auto;" />`;
           } else {
-            wrapper.innerHTML = `<img src="${logoUrl}" alt="KEVIN & COCO" style="max-height: 48px; width: auto; object-fit: contain; margin: 0 auto;" />`;
+            wrapper.innerHTML = `<img src="${logoUrl}" alt="Don Balato Iván" style="max-height: 48px; width: auto; object-fit: contain; margin: 0 auto;" />`;
           }
         });
 
@@ -433,7 +433,7 @@ export default function HomePage8() {
         `;
 
         sortedCats.forEach(cat => {
-          const name = cat.name || 'Categoría';
+          const name = cat.name || 'CategorÃ­a';
           const link = `/productos?categoria=${encodeURIComponent(name)}`;
           const catSubs = subcats.filter(sc => sc.categoryId === cat.$id);
 
@@ -443,7 +443,7 @@ export default function HomePage8() {
               <ul class="menu menu--dropdown menu-parent-wrapper px-5 py-3 z-10 absolute invisible opacity-0 top-full left-0 translate-y-6 text-left min-w-[180px] w-max group-hover:translate-y-0 group-hover:visible group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 duration-300 ease-in-out transition-all" data-tier="2" role="list">
             `;
             catSubs.forEach(sub => {
-              const subName = sub.name || 'Subcategoría';
+              const subName = sub.name || 'SubcategorÃ­a';
               const subLink = `/productos?categoria=${encodeURIComponent(name)}&subcategoria=${encodeURIComponent(subName)}`;
               dropdownHtml += `
                 <li class="py-2">
@@ -508,7 +508,7 @@ export default function HomePage8() {
     return () => { aborted = true; };
   }, []);
 
-  /* ── Set innerHTML ONCE via ref ── */
+  /* â”€â”€ Set innerHTML ONCE via ref â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || !containerRef.current) return;
     if (containerRef.current.dataset.htmlSet) return;
@@ -586,7 +586,7 @@ export default function HomePage8() {
       }
     });
 
-    // (removed scrollTo(0,0) — it fights with ScrollMagic pin positioning)
+    // (removed scrollTo(0,0) â€” it fights with ScrollMagic pin positioning)
 
     // IntersectionObserver to add .in-view to .animation-element elements
     // (original theme uses .animation-wrapper but split-hero has them directly)
@@ -612,7 +612,7 @@ export default function HomePage8() {
     containerRef.current.querySelectorAll('.animation-element').forEach(el => animObserver.observe(el));
   }, [bodyHtml]);
 
-  /* ── Inject window.Shopify stub + block problematic scripts ── */
+  /* â”€â”€ Inject window.Shopify stub + block problematic scripts â”€â”€ */
   useEffect(() => {
     (window as any).shopUrl = 'https://0wq643cy0nlo7vfe-97367883849.shopifypreview.com';
     (window as any).routes = {
@@ -708,7 +708,7 @@ export default function HomePage8() {
     return () => observer.disconnect();
   }, []);
 
-  /* ── Load JS scripts sequentially after HTML is rendered ── */
+  /* â”€â”€ Load JS scripts sequentially after HTML is rendered â”€â”€ */
   useEffect(() => {
     if (!bodyHtml) return;
     if ((window as any).__tpl8ScriptsLoaded) return;
@@ -738,13 +738,13 @@ export default function HomePage8() {
         const s = (el as HTMLElement).style;
         if (s.filter && s.filter.includes('blur(0')) s.removeProperty('filter');
       });
-      // (removed setTimeout scrollTo(0,0) — breaks ScrollMagic pin spacer calculation)
+      // (removed setTimeout scrollTo(0,0) â€” breaks ScrollMagic pin spacer calculation)
     })();
 
     return () => { (window as any).__tpl8ScriptsLoaded = false; };
   }, [bodyHtml]);
 
-  /* ── Loading/error states ── */
+  /* â”€â”€ Loading/error states â”€â”€ */
   if (loadError) {
     return (
       <div style={{ padding: 32, textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
@@ -770,3 +770,4 @@ export default function HomePage8() {
     />
   );
 }
+

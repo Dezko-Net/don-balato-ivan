@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import { getCachedAllProducts } from '@/lib/catalog-cache';
 
@@ -7,14 +7,14 @@ const ProductosClient = dynamic(() => import('./ProductosClient'));
 const BASE = 'https://www.donbalatoivan.cl';
 
 export const metadata: Metadata = {
-  title: 'Catálogo de Productos | Cosmética, Maquillaje y Skincare',
+  title: 'CatÃ¡logo de Productos | CosmÃ©tica, Maquillaje y Skincare',
   description:
-    'Explora nuestro catálogo completo de cosmética, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen. Envíos a todo Chile.',
+    'Explora nuestro catÃ¡logo completo de cosmÃ©tica, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen. EnvÃ­os a todo Chile.',
   alternates: { canonical: `${BASE}/productos` },
   openGraph: {
-    title: 'Catálogo de Productos | Don Balato Iván',
+    title: 'CatÃ¡logo de Productos | Don Balato IvÃ¡n',
     description:
-      'Explora nuestro catálogo completo de cosmética, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen.',
+      'Explora nuestro catÃ¡logo completo de cosmÃ©tica, maquillaje y skincare en Chile. Compra al detalle o por mayor con precios por volumen.',
     url: `${BASE}/productos`,
     type: 'website',
   },
@@ -26,23 +26,23 @@ export default async function ProductosPage() {
     const all = (await getCachedAllProducts()) as any[];
     products = all.filter(p => p.STOCK == null || p.STOCK > 0).slice(0, 24);
   } catch {
-    // Si no hay catálogo, igual mostramos la página
+    // Si no hay catÃ¡logo, igual mostramos la pÃ¡gina
   }
 
   return (
     <>
-      {/* Contenido estático para SEO - visible para crawlers y usuarios sin JS */}
+      {/* Contenido estÃ¡tico para SEO - visible para crawlers y usuarios sin JS */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0, width: 1, height: 1, overflow: 'hidden' }}>
-        <h1>Catálogo de Productos de Cosmética y Belleza - Kevin & Coco</h1>
+        <h1>CatÃ¡logo de Productos de CosmÃ©tica y Belleza - Don Balato Iván</h1>
         <p>
-          Tienda online de cosmética, maquillaje y skincare en Chile. Compra al detalle o por mayor
-          con precios por volumen: mientras más llevas, menos pagas. Envíos a todo Chile.
+          Tienda online de cosmÃ©tica, maquillaje y skincare en Chile. Compra al detalle o por mayor
+          con precios por volumen: mientras mÃ¡s llevas, menos pagas. EnvÃ­os a todo Chile.
         </p>
         <ul>
           {products.map(p => (
             <li key={p.$id}>
               <a href={`${BASE}/productos/${p.$id}`}>{p.NAME}</a>
-              {p.BRAND && ` — ${p.BRAND}`}
+              {p.BRAND && ` â€” ${p.BRAND}`}
             </li>
           ))}
         </ul>
@@ -53,3 +53,4 @@ export default async function ProductosPage() {
     </>
   );
 }
+

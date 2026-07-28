@@ -140,6 +140,42 @@ function priceOf(p: any): number {
   return cur > 0 && (base === 0 || cur < base) ? cur : (base || cur);
 }
 
+/** Reemplazar iconos demo (driver, bluetooth, etc) por iconos genéricos de tienda */
+function replaceDemoIcons(root: HTMLElement): void {
+  const iconContainers = root.querySelectorAll<HTMLElement>('.product-card__icons[is="icons-carousel"]');
+  const genericIcons = [
+    {
+      label: 'Calidad garantizada', sub: 'Producto premium',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg>',
+    },
+    {
+      label: 'Envío rápido', sub: 'Despacho inmediato',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+    },
+    {
+      label: 'Mejor precio', sub: 'Oferta exclusiva',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+    },
+    {
+      label: 'Soporte 24/7', sub: 'Atención al cliente',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    },
+  ];
+  iconContainers.forEach(container => {
+    container.innerHTML = genericIcons.map(ic => `
+      <div class="product-card__icon shrink-0">
+        <div class="flex flex-col items-center md:flex-row md:items-start gap-2">
+          <figure class="shrink-0 media media--transparent relative inline-block">${ic.svg}</figure>
+          <div class="flex flex-col items-center md:items-start gap-1 text-center md:text-left text-sm font-medium leading-none">
+            ${esc(ic.label)}
+            <p class="text-opacity font-normal text-xs leading-tight">${esc(ic.sub)}</p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
 /**
  * Búsqueda EN VIVO dentro del drawer del tema, contra el catálogo real.
  * Sustituye al predictive-search de Shopify (que aquí no tiene backend).
@@ -328,6 +364,9 @@ export function enhanceConceptHeader(root: HTMLElement | Document, data: Enhance
       });
     }
   } catch { /* noop */ }
+
+  // Reemplazar iconos demo (driver, bluetooth, etc) por iconos genéricos
+  try { replaceDemoIcons(root as HTMLElement); } catch { /* noop */ }
 
   const { categories, subcategories, catCounts, subCounts, logoUrl, storeName, featuredProduct, onFeaturedAddToCart } = data;
 
@@ -1005,6 +1044,18 @@ export function enhanceConceptHeader(root: HTMLElement | Document, data: Enhance
             targetMedia.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
           } catch { /* noop */ }
         }
+
+        // 4. Fallback directo: cambiar el src de la imagen visible del visor principal
+        // (los web components del theme pueden no estar listos al inicio)
+        const mainMedia = mediaItems[0];
+        if (mainMedia) {
+          const mainImg = mainMedia.querySelector<HTMLImageElement>('img');
+          if (mainImg && mainImg.src !== productImages[index]) {
+            mainImg.src = productImages[index];
+            mainImg.removeAttribute('srcset');
+            mainImg.alt = fp.NAME;
+          }
+        }
       };
 
       thumbItems.forEach((thumb, i) => {
@@ -1481,7 +1532,337 @@ export interface ComboRealHydrationData {
     PRICE: number;
     CURRENTPRICE?: number;
     IMAGEURL?: string;
+    IMAGEURL2?: string;
+    IMAGEURL3?: string;
+    IMAGEURL4?: string;
+    IMAGEURL5?: string;
+    DESCRIPTION?: string;
+    FEATURES?: string;
+    TAGS?: string | string[];
+    SKU?: string;
+    BRAND?: string;
+    STOCK?: number;
+    PACKQTY?: number;
   }>;
+}
+
+/* ── DRAWER PERSONALIZADO: Detalle del producto del combo ── */
+function openProductDetailDrawer(prod: {
+  $id: string;
+  NAME: string;
+  PRICE: number;
+  CURRENTPRICE?: number;
+  IMAGEURL?: string;
+  IMAGEURL2?: string;
+  IMAGEURL3?: string;
+  IMAGEURL4?: string;
+  IMAGEURL5?: string;
+  DESCRIPTION?: string;
+  FEATURES?: string;
+  TAGS?: string | string[];
+  SKU?: string;
+  BRAND?: string;
+  STOCK?: number;
+  PACKQTY?: number;
+}): void {
+  document.getElementById('yaxsell-product-detail-drawer')?.remove();
+  document.getElementById('yaxsell-product-detail-overlay')?.remove();
+
+  const realPrice = prod.CURRENTPRICE || prod.PRICE;
+  const hasDiscount = prod.CURRENTPRICE && prod.PRICE && prod.CURRENTPRICE < prod.PRICE;
+  const discountPct = hasDiscount ? Math.round((1 - prod.CURRENTPRICE! / prod.PRICE) * 100) : 0;
+
+  const images = [prod.IMAGEURL2, prod.IMAGEURL3]
+    .filter(Boolean) as string[];
+  const uniqueImages = Array.from(new Set(images));
+  const hasMultipleImages = uniqueImages.length > 0;
+
+  const featuresStr = Array.isArray(prod.FEATURES) ? prod.FEATURES.join('\n') : (prod.FEATURES || '');
+  const tags = Array.isArray(prod.TAGS) ? prod.TAGS.join(', ') : (prod.TAGS || '');
+  const inStock = prod.STOCK == null || prod.STOCK > 0;
+
+  // Parsear CustomTabs desde FEATURES (formato: CustomTabs: {"details":"...","usage":"...","ingredients":"..."})
+  let customTabs: { details?: string; usage?: string; ingredients?: string } | null = null;
+  const ctMatch = featuresStr.match(/CustomTabs:\s*(\{.*\})/i);
+  if (ctMatch) {
+    try { customTabs = JSON.parse(ctMatch[1]); } catch { /* noop */ }
+  }
+
+  // Filtrar líneas de features que son metadata interna (SKU, Barcode, Section, LiveLogic, CustomTabs, etc.)
+  const internalPrefixes = ['SKU:', 'Barcode:', 'Section:', 'LiveLogic:', 'CustomTabs:', 'ExactWholesale:', 'DisableDiscounts:'];
+  const featureLines = featuresStr
+    .split('\n')
+    .map((l: string) => l.trim())
+    .filter((l: string) => l && !internalPrefixes.some(p => l.startsWith(p)));
+
+  const formatCLP = (n: number) => '$' + Number(n).toLocaleString('es-CL');
+
+  const drawer = document.createElement('div');
+  drawer.id = 'yaxsell-product-detail-drawer';
+  drawer.style.cssText = `
+    position: fixed; bottom: 0; left: 0; width: 100%; max-width: 100%; height: 85vh;
+    background: #ffffff; z-index: 99990; overflow-y: auto;
+    transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.15); will-change: transform;
+    border-radius: 20px 20px 0 0;
+  `;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'yaxsell-product-detail-overlay';
+  overlay.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5); z-index: 99989; opacity: 0;
+    transition: opacity 0.3s ease; backdrop-filter: blur(4px);
+  `;
+
+  // Construir secciones de ficha técnica
+  const specsHTML: string[] = [];
+
+  // Detalles técnicos desde CustomTabs
+  if (customTabs?.details) {
+    specsHTML.push(`
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 4px; height: 16px; background: #0f172a; border-radius: 2px;"></span>
+          Detalles Técnicos
+        </h3>
+        <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+          ${customTabs.details.split('\n').filter((l: string) => l.trim()).map((line: string, i: number, arr: string[]) => {
+            const colonIdx = line.indexOf(':');
+            if (colonIdx > 0) {
+              const key = line.slice(0, colonIdx).trim();
+              const val = line.slice(colonIdx + 1).trim();
+              return `<div style="display: flex; padding: 10px 14px; border-bottom: ${i < arr.length - 1 ? '1px solid #f1f5f9' : 'none'}; background: ${i % 2 === 0 ? '#fafafa' : '#fff'};">
+                <span style="font-size: 13px; font-weight: 600; color: #64748b; min-width: 130px; flex-shrink: 0;">${esc(key)}</span>
+                <span style="font-size: 13px; color: #1e293b; flex: 1;">${esc(val)}</span>
+              </div>`;
+            }
+            return `<div style="padding: 10px 14px; font-size: 13px; color: #475569; border-bottom: ${i < arr.length - 1 ? '1px solid #f1f5f9' : 'none'}; background: ${i % 2 === 0 ? '#fafafa' : '#fff'};">${esc(line)}</div>`;
+          }).join('')}
+        </div>
+      </div>
+    `);
+  }
+
+  // Modo de uso
+  if (customTabs?.usage) {
+    specsHTML.push(`
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 4px; height: 16px; background: #0f172a; border-radius: 2px;"></span>
+          Modo de Uso
+        </h3>
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0; padding: 12px 14px; background: #fafafa; border-radius: 12px; border: 1px solid #e2e8f0;">${esc(customTabs.usage)}</p>
+      </div>
+    `);
+  }
+
+  // Ingredientes
+  if (customTabs?.ingredients) {
+    specsHTML.push(`
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 4px; height: 16px; background: #0f172a; border-radius: 2px;"></span>
+          Ingredientes
+        </h3>
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0; padding: 12px 14px; background: #fafafa; border-radius: 12px; border: 1px solid #e2e8f0;">${esc(customTabs.ingredients)}</p>
+      </div>
+    `);
+  }
+
+  // Features adicionales (no internas)
+  if (featureLines.length > 0) {
+    specsHTML.push(`
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 4px; height: 16px; background: #0f172a; border-radius: 2px;"></span>
+          Especificaciones
+        </h3>
+        <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+          ${featureLines.map((line: string, i: number) => {
+            const colonIdx = line.indexOf(':');
+            if (colonIdx > 0) {
+              const key = line.slice(0, colonIdx).trim();
+              const val = line.slice(colonIdx + 1).trim();
+              return `<div style="display: flex; padding: 10px 14px; border-bottom: ${i < featureLines.length - 1 ? '1px solid #f1f5f9' : 'none'}; background: ${i % 2 === 0 ? '#fafafa' : '#fff'};">
+                <span style="font-size: 13px; font-weight: 600; color: #64748b; min-width: 130px; flex-shrink: 0;">${esc(key)}</span>
+                <span style="font-size: 13px; color: #1e293b; flex: 1;">${esc(val)}</span>
+              </div>`;
+            }
+            return `<div style="padding: 10px 14px; font-size: 13px; color: #475569; border-bottom: ${i < featureLines.length - 1 ? '1px solid #f1f5f9' : 'none'}; background: ${i % 2 === 0 ? '#fafafa' : '#fff'};">${esc(line)}</div>`;
+          }).join('')}
+        </div>
+      </div>
+    `);
+  }
+
+  // Construir HTML de las imágenes pequeñas (IMAGEURL2 y IMAGEURL3)
+  const imagesColumnHTML = hasMultipleImages ? `
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      ${uniqueImages.map((img) => `
+        <div class="yaxsell-drawer-img" data-img="${esc(img)}" style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; cursor: pointer; flex-shrink: 0; transition: border-color 0.2s; background: #f8fafc;">
+          <img src="${esc(img)}" alt="${esc(prod.NAME)}" style="width:100%;height:100%;object-fit:cover;" />
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  // HTML del detalle (columna izquierda o completa)
+  const detailsHTML = `
+    ${prod.BRAND ? `<p style="font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px;">${esc(prod.BRAND)}</p>` : ''}
+    <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 12px; line-height: 1.25;">${esc(prod.NAME)}</h1>
+
+    <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px;">
+      <span style="font-size: 28px; font-weight: 800; color: #0f172a;">${formatCLP(realPrice)}</span>
+      ${hasDiscount ? `<span style="font-size: 16px; color: #94a3b8; text-decoration: line-through;">${formatCLP(prod.PRICE)}</span><span style="font-size: 12px; font-weight: 700; color: #ef4444; background: #fee2e2; padding: 2px 8px; border-radius: 12px;">-${discountPct}%</span>` : ''}
+    </div>
+
+    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 20px;
+      background: ${inStock ? '#dcfce7' : '#fee2e2'}; color: ${inStock ? '#166534' : '#991b1b'};">
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: ${inStock ? '#22c55e' : '#ef4444'};"></span>
+      ${inStock ? 'En stock' : 'Agotado'}
+    </div>
+
+    ${prod.SKU ? `<p style="font-size: 12px; color: #94a3b8; font-family: monospace; margin: 0 0 20px;">SKU: ${esc(prod.SKU)}</p>` : ''}
+
+    ${prod.DESCRIPTION ? `
+      <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 8px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 4px; height: 16px; background: #0f172a; border-radius: 2px;"></span>
+          Descripción
+        </h3>
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0;">${esc(prod.DESCRIPTION)}</p>
+      </div>
+    ` : ''}
+
+    ${specsHTML.join('')}
+
+    ${tags ? `
+      <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 8px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 4px; height: 16px; background: #0f172a; border-radius: 2px;"></span>
+          Etiquetas
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          ${tags.split(',').map((t: string) => `<span style="padding: 4px 12px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 500; border-radius: 20px;">${esc(t.trim())}</span>`).join('')}
+        </div>
+      </div>
+    ` : ''}
+  `;
+
+  drawer.innerHTML = `
+    <div style="position: sticky; top: 0; z-index: 10; background: #fff; border-radius: 20px 20px 0 0; border-bottom: 1px solid #f1f5f9; padding: 16px 20px; display: flex; align-items: center; gap: 12px;">
+      <div style="position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; border-radius: 2px; background: #cbd5e1;"></div>
+      <button id="yaxsell-drawer-close" style="width: 32px; height: 32px; border-radius: 50%; border: none; background: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #ffffff; transition: all 0.2s; flex-shrink: 0;">✕</button>
+      <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Detalle del Pack</h3>
+    </div>
+
+    <div style="padding: 24px 20px 80px;">
+      ${hasMultipleImages ? `
+        <div style="margin-bottom: 20px;">${imagesColumnHTML}</div>
+      ` : ''}
+      ${detailsHTML}
+
+      <a href="/productos/${esc(prod.$id)}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 20px; background: #0f172a; color: #fff; font-size: 15px; font-weight: 700; border-radius: 14px; text-decoration: none; transition: background 0.2s; margin-top: 8px;">
+        Ver página del producto →
+      </a>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+
+  // Animar entrada
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    drawer.style.transform = 'translateY(0)';
+  });
+
+  // Cerrar
+  const close = () => {
+    drawer.style.transform = 'translateY(100%)';
+    overlay.style.opacity = '0';
+    // Limpiar clases que el theme.js pudo haber añadido al body
+    document.body.classList.remove('modal-open', 'drawer-open', 'modal-open-active', 'has-modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('touch-action');
+    setTimeout(() => {
+      drawer.remove();
+      overlay.remove();
+      // Doble check: remover cualquier overlay residual huérfano
+      document.getElementById('yaxsell-product-detail-drawer')?.remove();
+      document.getElementById('yaxsell-product-detail-overlay')?.remove();
+    }, 400);
+  };
+
+  // Usar addEventListener con capture:true para interceptar ANTES que el theme.js
+  const closeBtn = drawer.querySelector('#yaxsell-drawer-close');
+  if (closeBtn) {
+    (closeBtn as HTMLElement).addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      close();
+    }, { capture: true });
+  }
+  overlay.addEventListener('click', (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    close();
+  }, { capture: true });
+
+  // Click en imágenes pequeñas → abrir lightbox fullscreen
+  drawer.querySelectorAll<HTMLElement>('.yaxsell-drawer-img').forEach(imgEl => {
+    imgEl.onclick = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const imgSrc = imgEl.getAttribute('data-img');
+      if (!imgSrc) return;
+
+      const lightbox = document.createElement('div');
+      lightbox.id = 'yaxsell-lightbox';
+      lightbox.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.92); z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        cursor: zoom-out; opacity: 0; transition: opacity 0.3s ease;
+        backdrop-filter: blur(8px);
+      `;
+      lightbox.innerHTML = `
+        <img src="${esc(imgSrc)}" alt="${esc(prod.NAME)}" style="max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,0.5);" />
+        <button style="position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; border: none; background: #0f172a; color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      `;
+      document.body.appendChild(lightbox);
+      requestAnimationFrame(() => { lightbox.style.opacity = '1'; });
+
+      const closeLightbox = () => {
+        lightbox.style.opacity = '0';
+        setTimeout(() => lightbox.remove(), 300);
+      };
+      lightbox.onclick = (ev: MouseEvent) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeLightbox();
+      };
+      const lbEsc = (ev: KeyboardEvent) => {
+        if (ev.key === 'Escape') {
+          closeLightbox();
+          document.removeEventListener('keydown', lbEsc);
+        }
+      };
+      document.addEventListener('keydown', lbEsc);
+    };
+  });
+
+  // ESC para cerrar
+  const escHandler = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      close();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
 }
 
 export function enhanceConceptCombos(
@@ -1513,16 +1894,21 @@ export function enhanceConceptCombos(
 
     section.style.display = '';
 
+    // Actualizar título y descripción del sidebar dinámicamente
+    section.querySelectorAll<HTMLElement>('.product-bundle__sidebar .split-words').forEach(el => {
+      el.textContent = 'Detalle del Pack Emprendedor';
+    });
+    section.querySelectorAll<HTMLElement>('.product-bundle__sidebar .rte p').forEach(el => {
+      el.textContent = 'Compra este pack completo y obtén un precio especial. Productos seleccionados para que emprendas tu negocio al mejor costo.';
+    });
+
     // 1. Inyectar productos en las tarjetas del grid izquierdo
     const cards = Array.from(section.querySelectorAll<HTMLElement>('.product-card'));
+    const wireFns = new Map<HTMLElement, () => void>();
     
-    // Mapa de productos actualmente seleccionados en la barra lateral
+    // Mapa de productos del pack (todos seleccionados, el cliente compra el pack completo)
     const selectedItemsMap = new Map<string, any>();
-    // Pre-seleccionar los primeros productos (hasta 3 o todos los del combo)
-    const initialCount = Math.min(3, allProducts.length);
-    for (let i = 0; i < initialCount; i++) {
-      selectedItemsMap.set(allProducts[i].$id, allProducts[i]);
-    }
+    allProducts.forEach(p => selectedItemsMap.set(p.$id, p));
 
     cards.forEach((card, idx) => {
       const prod = allProducts[idx];
@@ -1569,28 +1955,69 @@ export function enhanceConceptCombos(
         el.style.display = 'none';
       });
 
+      // Ocultar botón de quick-view (ojito) visualmente
+      card.querySelectorAll<HTMLElement>('.quick-view__button').forEach(el => {
+        el.style.display = 'none';
+      });
+
+      // Cambiar texto del botón "Añadir al paquete" → "Ver detalle"
+      card.querySelectorAll<HTMLElement>('.product-form__submit .btn-text').forEach(btn => {
+        btn.textContent = 'Ver detalle';
+      });
+
       // Badge flotante
       const badgesEl = card.querySelector('.badges');
       if (badgesEl) {
         badgesEl.innerHTML = `<span class="badge rounded-full font-bold text-xs" style="background:#0f172a;color:#fff;padding:4px 10px;">${esc(comboData.badge || 'PACK DESTACADO')}</span>`;
       }
 
-      // Botón "Añadir al paquete"
-      const handleAdd = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        selectedItemsMap.set(prod.$id, prod);
-        renderSidebar();
+      // Botón "Ver detalle" — reemplazar el form por un div simple para evitar
+      // que el theme.js (ProductBundle custom element) intercepte el submit
+      const wireCardButtons = () => {
+        const form = card.querySelector('form');
+        if (form) {
+          // Crear un div que reemplaza el form
+          const replacement = document.createElement('div');
+          replacement.className = form.className;
+          replacement.innerHTML = form.innerHTML;
+          // Quitar el botón quick-view del reemplazo
+          replacement.querySelectorAll('.quick-view__button').forEach(el => el.remove());
+          // Encontrar el botón de submit y convertirlo en botón simple
+          replacement.querySelectorAll('button').forEach(btn => {
+            if (btn.classList.contains('quick-view__button')) return;
+            btn.type = 'button';
+            (btn as HTMLElement).onclick = (e: MouseEvent) => {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              openProductDetailDrawer(prod);
+            };
+          });
+          form.parentNode?.replaceChild(replacement, form);
+        } else {
+          // Si no hay form, conectar botones directamente
+          card.querySelectorAll('button').forEach(btn => {
+            if (btn.classList.contains('quick-view__button')) return;
+            (btn as HTMLElement).onclick = (e: MouseEvent) => {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              openProductDetailDrawer(prod);
+            };
+          });
+        }
       };
-
-      const form = card.querySelector('form');
-      if (form) {
-        form.onsubmit = handleAdd;
-      }
-      card.querySelectorAll('button').forEach(btn => {
-        btn.onclick = handleAdd;
-      });
+      wireCardButtons();
+      wireFns.set(card, wireCardButtons);
     });
+
+    // Re-aplicar handlers después de que el theme.js cargue
+    const rewireCards = () => {
+      cards.forEach(card => {
+        const fn = wireFns.get(card);
+        if (fn) fn();
+      });
+    };
+    setTimeout(rewireCards, 600);
+    setTimeout(rewireCards, 1200);
 
     // 2. Función de renderizado de la barra lateral ("Tu paquete")
     const renderSidebar = () => {
@@ -1598,28 +2025,32 @@ export function enhanceConceptCombos(
       const itemsList = Array.from(selectedItemsMap.values());
 
       if (sidebarBody) {
-        sidebarBody.innerHTML = itemsList.map(item => {
+        sidebarBody.innerHTML = itemsList.map((item, idx) => {
           const itemPrice = item.CURRENTPRICE || item.PRICE;
           return `
-            <div class="horizontal-product flex items-center gap-3 py-2 border-b border-gray-100" data-id="${item.$id}">
-              <picture class="horizontal-product__media media media--square relative overflow-hidden shrink-0 rounded-lg" style="width:56px;height:56px;background:#f8fafc;">
+            <div class="horizontal-product flex items-center gap-3" data-product-bundle-variant data-id="${item.$id}" available>
+              <figure class="horizontal-product__media media media--square aspect-square relative overflow-hidden shrink-0" data-product-bundle-variant-media>
                 <img src="${item.IMAGEURL || ''}" alt="${esc(item.NAME)}" style="width:100%;height:100%;object-fit:cover;opacity:1;visibility:visible;" />
-              </picture>
-              <div class="horizontal-product__details grow flex flex-col justify-start gap-1 min-w-0">
-                <p class="horizontal-product__title font-semibold text-sm leading-tight text-gray-900 truncate">${esc(item.NAME)}</p>
-                <p class="text-xs font-mono font-bold text-gray-700">$${itemPrice.toLocaleString('es-CL')}</p>
+              </figure>
+              <div class="horizontal-product__details grow flex flex-col justify-start gap-2d5" data-product-bundle-variant-content>
+                <p class="horizontal-product__title font-medium text-base leading-tight">${esc(item.NAME)}</p>
+                <div class="price text-sm flex flex-wrap gap-1d5" data-product-bundle-variant-price>
+                  <span class="price__regular">$${itemPrice.toLocaleString('es-CL')}</span>
+                </div>
               </div>
-              <div class="horizontal-product__quantity shrink-0 text-xs">
-                <button type="button" class="btn-remove text-red-500 hover:text-red-700 font-semibold cursor-pointer underline text-xs">
-                  Eliminar
-                </button>
+              <div class="horizontal-product__quantity shrink-0 text-sm sm:block">
+                <div class="grid gap-3">
+                  <div class="text-xs text-right relative">
+                    <product-bundle-remove-button class="link cursor-pointer" aria-controls="ProductBundle-template--27619508257049__product-bundle" data-id="${item.$id}">Eliminar</product-bundle-remove-button>
+                  </div>
+                </div>
               </div>
             </div>
           `;
         }).join('');
 
         // Listener de eliminación
-        sidebarBody.querySelectorAll('.btn-remove').forEach(btn => {
+        sidebarBody.querySelectorAll('product-bundle-remove-button, .btn-remove, [data-id]').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const row = (e.target as HTMLElement).closest('[data-id]');
             const id = row?.getAttribute('data-id');
@@ -1653,12 +2084,67 @@ export function enhanceConceptCombos(
     // Render inicial
     renderSidebar();
 
+    // 2.5 Toggle del bundle: reemplazar custom elements por divs
+    //     El theme.js usa custom elements que interceptan clicks. Los reemplazamos.
+    const wireToggle = () => {
+      const bundle = section.querySelector<HTMLElement>('.product-bundle');
+      if (!bundle) return;
+      // Reemplazar product-bundle-toggle-button (custom element) por un div
+      const oldToggle = bundle.querySelector<HTMLElement>('product-bundle-toggle-button, .product-bundle__toggle');
+      if (oldToggle && oldToggle.tagName.toLowerCase().startsWith('product-bundle')) {
+        const div = document.createElement('div');
+        div.className = oldToggle.className + ' product-bundle__toggle';
+        div.style.cssText = oldToggle.style.cssText + ';cursor:pointer;';
+        div.innerHTML = oldToggle.innerHTML;
+        oldToggle.parentNode?.replaceChild(div, oldToggle);
+        div.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const isActive = bundle.classList.toggle('active');
+          if (isActive) {
+            selectedItemsMap.clear();
+            allProducts.forEach(p => selectedItemsMap.set(p.$id, p));
+            renderSidebar();
+          }
+          const chevron = div.querySelector('svg');
+          if (chevron) {
+            chevron.style.transform = isActive ? 'rotate(180deg)' : '';
+            chevron.style.transition = 'transform 0.3s ease';
+          }
+        }, { capture: true });
+      } else if (oldToggle) {
+        // Ya es div, solo asegurar handler
+        (oldToggle as HTMLElement).style.cursor = 'pointer';
+        (oldToggle as HTMLElement).onclick = (e: MouseEvent) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const isActive = bundle.classList.toggle('active');
+          if (isActive) {
+            selectedItemsMap.clear();
+            allProducts.forEach(p => selectedItemsMap.set(p.$id, p));
+            renderSidebar();
+          }
+          const chevron = oldToggle.querySelector('svg');
+          if (chevron) {
+            chevron.style.transform = isActive ? 'rotate(180deg)' : '';
+            chevron.style.transition = 'transform 0.3s ease';
+          }
+        };
+      }
+    };
+    wireToggle();
+    setTimeout(wireToggle, 600);
+    setTimeout(wireToggle, 1200);
+
     // 3. Botón final "Añadir al carrito" en la barra lateral
     const finalSubmitBtn = section.querySelector<HTMLElement>('[data-product-bundle-submit], .product-bundle__footer button');
-    if (finalSubmitBtn && !finalSubmitBtn.getAttribute('data-wired-cart')) {
-      finalSubmitBtn.setAttribute('data-wired-cart', '1');
-      finalSubmitBtn.onclick = (e) => {
+    if (finalSubmitBtn) {
+      // Clonar para limpiar handlers del theme.js
+      const newFinalBtn = finalSubmitBtn.cloneNode(true) as HTMLElement;
+      finalSubmitBtn.parentNode?.replaceChild(newFinalBtn, finalSubmitBtn);
+      newFinalBtn.addEventListener('click', (e: Event) => {
         e.preventDefault();
+        e.stopImmediatePropagation();
         const itemsToAdd = Array.from(selectedItemsMap.values()).map(item => ({
           id: item.$id,
           name: item.NAME,
@@ -1669,7 +2155,7 @@ export function enhanceConceptCombos(
         if (onAddToCart && itemsToAdd.length > 0) {
           onAddToCart(itemsToAdd);
         }
-      };
+      }, { capture: true });
     }
   } catch { /* noop */ }
 
@@ -1680,9 +2166,9 @@ export function enhanceConceptCombos(
       const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            entry.target.classList.add('in-view');
+            entry.target.classList.add('animated');
           } else {
-            entry.target.classList.remove('in-view');
+            entry.target.classList.remove('animated');
           }
         }
       }, { threshold: 0.15 });

@@ -32,7 +32,7 @@ export async function generateMetadata(
   }
 
   const desc = plainText(p.DESCRIPTION || '').slice(0, 160) ||
-    `Compra ${p.NAME} al detalle o por mayor en Kevin & Coco. Envíos a todo Chile.`;
+    `Compra ${p.NAME} al detalle o por mayor en Don Balato Iván. Envíos a todo Chile.`;
   const img = p.IMAGEURL ? resolveStorageImageUrl(p.IMAGEURL) : undefined;
 
   return {
@@ -63,7 +63,7 @@ export default async function ProductDetailPage(
     description: plainText(p.DESCRIPTION || '').slice(0, 300) || p.NAME,
     image: p.IMAGEURL ? [resolveStorageImageUrl(p.IMAGEURL)] : undefined,
     sku: p.SKU || undefined,
-    brand: { '@type': 'Brand', name: p.BRAND || 'Kevin & Coco' },
+    brand: { '@type': 'Brand', name: p.BRAND || 'Don Balato Iván' },
     offers: {
       '@type': 'Offer',
       url: `${BASE}/productos/${p.$id}`,

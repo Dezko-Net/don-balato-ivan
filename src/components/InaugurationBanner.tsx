@@ -198,7 +198,7 @@ export default function InaugurationBanner({ compact = false, href = '/ofertas' 
               <Sparkles size={12} /> Gran inauguración
             </span>
             <span style={{ fontSize: compact ? 10 : 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
-              KEVIN&amp;COCO CHILE
+              DON BALATO IVÁN CHILE
             </span>
           </div>
 
