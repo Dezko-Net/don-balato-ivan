@@ -1303,11 +1303,11 @@ export function enhanceConceptHeader(root: HTMLElement | Document, data: Enhance
       if (slides.length > 0) {
         if (slides[0]) {
           const p1 = slides[0].querySelector<HTMLElement>('.announcement-text, p');
-          if (p1) p1.textContent = '📦 MONTO MÍNIMO DE COMPRA: $50.000 CLP';
+          if (p1) p1.textContent = '✨ Productos premium a precios mayoristas — sin sorpresas';
         }
         if (slides[1]) {
           const p2 = slides[1].querySelector<HTMLElement>('.announcement-text, p');
-          if (p2) p2.textContent = 'ENVIOS A TODO CHILE • SE PAGA CONTRAENTREGA';
+          if (p2) p2.textContent = '🚀 Verificamos cada pedido antes de enviar — cero riesgos';
         }
       }
     }

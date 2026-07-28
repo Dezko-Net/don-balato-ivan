@@ -280,6 +280,25 @@ async function saveCustomCategories(cats) {
 }
 
 function getMinPurchase() { return _settings.minPurchase || 50000; }
+
+// Extract leading emoji from a string (handles surrogate pairs + variation selectors)
+function extractEmoji(name) {
+  if (!name) return '';
+  // Regex: emoji ranges including surrogate pairs, ZWJ sequences, variation selectors, skin tones
+  const emojiRegex = /^(\p{Extended_Pictographic}(?:\u200d\p{Extended_Pictographic})*[\uFE0E\uFE0F]?)/u;
+  const m = name.match(emojiRegex);
+  return m ? m[1] : '';
+}
+
+// Remove leading emoji + trailing whitespace from a name
+function stripEmoji(name) {
+  if (!name) return '';
+  const emoji = extractEmoji(name);
+  return emoji ? name.slice(emoji.length).trim() : name.trim();
+}
+
+// Generic SVG icon for categories/subcategories without emoji or image
+const FALLBACK_CAT_SVG = '<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 7l-1-1m0 0l-3-3m3 3l-3-3m3 3v10a2 2 0 01-2 2H7a2 2 0 01-2-2V4m0 0l3-3m-3 3l3-3m0 0h7a2 2 0 012 2v0M7 10h10M7 14h6"/></svg>';
 async function saveSettings(newSettings) {
   _settings = { ..._settings, ...newSettings };
   localStorage.setItem('db_settings', JSON.stringify(_settings));
@@ -897,9 +916,9 @@ function renderHome() {
             return `
             <a href="${categoryUrl([cat])}" class="cat-card cat-g${idx % 4} card-shadow card-shadow-hover">
               <div class="cat-icon-wrap">
-                ${icon ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(cat)}">` : `<span class="text-blue-500 font-bold text-xl">${escapeHtml(cat[0] || '?')}</span>`}
+                ${icon ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(stripEmoji(cat))}">` : (() => { const em = extractEmoji(cat); return em ? `<span class="text-2xl">${em}</span>` : `<span class="text-blue-500">${FALLBACK_CAT_SVG}</span>`; })()}
               </div>
-              <div class="font-display font-extrabold text-blue-800 text-sm leading-tight relative">${escapeHtml(cat)}</div>
+              <div class="font-display font-extrabold text-blue-800 text-sm leading-tight relative">${escapeHtml(stripEmoji(cat))}</div>
               <div class="text-[11px] text-blue-500/80 mt-0.5 font-semibold relative">${counts[cat]} productos</div>
             </a>`;
           }).join('')}
@@ -956,9 +975,9 @@ function renderCategory(prefixEncoded) {
           return `
             <a href="${categoryUrl([...prefix, c])}" class="cat-card cat-g${idx % 4} card-shadow card-shadow-hover">
               <div class="cat-icon-wrap">
-                ${icon ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(c)}">` : `<span class="text-blue-500 font-bold text-xl">${escapeHtml(c[0] || '?')}</span>`}
+                ${icon ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(stripEmoji(c))}">` : (() => { const em = extractEmoji(c); return em ? `<span class="text-2xl">${em}</span>` : `<span class="text-blue-500">${FALLBACK_CAT_SVG}</span>`; })()}
               </div>
-              <div class="font-display font-extrabold text-blue-800 text-sm leading-tight relative">${escapeHtml(c)}</div>
+              <div class="font-display font-extrabold text-blue-800 text-sm leading-tight relative">${escapeHtml(stripEmoji(c))}</div>
               <div class="text-[11px] text-blue-500/80 mt-0.5 font-semibold relative">${subCount} productos</div>
             </a>`;
         }).join('')}

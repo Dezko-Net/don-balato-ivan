@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, Suspense, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, Suspense, useRef, type CSSProperties } from 'react';
 import useSWR from 'swr';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -31,6 +31,30 @@ import { extractBrand, HOUSE_BRAND } from '@/lib/brands';
 import { getVolumeTiers } from '@/lib/volume-pricing';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
+
+// Extract leading emoji from a string (handles surrogate pairs + variation selectors)
+function extractEmoji(name: string): string {
+  if (!name) return '';
+  const emojiRegex = /^(\p{Extended_Pictographic}(?:\u200d\p{Extended_Pictographic})*[\uFE0E\uFE0F]?)/u;
+  const m = name.match(emojiRegex);
+  return m ? m[1] : '';
+}
+
+// Remove leading emoji + trailing whitespace from a name
+function stripEmoji(name: string): string {
+  if (!name) return '';
+  const emoji = extractEmoji(name);
+  return emoji ? name.slice(emoji.length).trim() : name.trim();
+}
+
+// Generic SVG icon for subcategories without emoji or image
+function FallbackIcon({ size = 20, color = '#0284c7' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} fill="none" stroke={color} viewBox="0 0 24 24" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </svg>
+  );
+}
 
 function getExpiresAtEpochSeconds(offer: TimedOffer): number | null {
   if (offer.timeType === 'endDateTime' && offer.endDateTime) {
@@ -566,7 +590,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         {!lockCategoryId && categories.length > 0 && (
           <div className="pk-catband pk-h-scroll" style={{ display: 'flex', gap: 14, overflowX: 'auto', padding: '6px 2px 14px', marginBottom: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
             <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }} className="pk-catband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70, fontFamily: 'inherit', padding: 0 }}>
-              <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 900, color: !selectedCat ? '#fff' : '#2563eb', background: !selectedCat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#eff6ff', border: !selectedCat ? '2.5px solid #3b82f6' : '2.5px solid #dbeafe', boxShadow: !selectedCat ? '0 6px 16px rgba(59,130,246,0.35)' : 'none', transition: 'all 0.2s' }}>✦</span>
+              <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 900, color: !selectedCat ? '#fff' : '#2563eb', background: !selectedCat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#eff6ff', border: !selectedCat ? '2.5px solid #3b82f6' : '2.5px solid #dbeafe', boxShadow: !selectedCat ? '0 6px 16px rgba(59,130,246,0.35)' : 'none', transition: 'all 0.2s' }}><FallbackIcon size={24} color={!selectedCat ? '#fff' : '#2563eb'} /></span>
               <span style={{ fontSize: 11, fontWeight: !selectedCat ? 800 : 600, color: !selectedCat ? '#2563eb' : '#6b7280', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>Todos</span>
             </button>
             {categories.map(c => {
@@ -586,11 +610,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     {c.iconUrl ? (
                       <img src={c.iconUrl} alt={c.name} style={{ width: 58, height: 58, borderRadius: '50%', objectFit: 'cover', border: active ? '2.5px solid #3b82f6' : '2.5px solid #f3f4f6', boxShadow: active ? '0 6px 16px rgba(59,130,246,0.35)' : '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.2s', display: 'block' }} />
                     ) : (
-                      <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 900, color: active ? '#fff' : '#2563eb', background: active ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#eff6ff', border: active ? '2.5px solid #3b82f6' : '2.5px solid #dbeafe', transition: 'all 0.2s' }}>{(c.name || 'C').charAt(0).toUpperCase()}</span>
+                      <span style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 900, color: active ? '#fff' : '#2563eb', background: active ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#eff6ff', border: active ? '2.5px solid #3b82f6' : '2.5px solid #dbeafe', transition: 'all 0.2s' }}>{(() => { const em = extractEmoji(c.name); return em ? em : <FallbackIcon size={24} color={active ? '#fff' : '#2563eb'} />; })()}</span>
                     )}
                     <span style={{ position: 'absolute', top: -3, right: -5, background: active ? '#2563eb' : '#2563eb', color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: '2px 6px', border: '2px solid #fff', lineHeight: 1.2 }}>{count}</span>
                   </span>
-                  <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600, color: active ? '#2563eb' : '#6b7280', textAlign: 'center', maxWidth: 78, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>{c.name}</span>
+                  <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600, color: active ? '#2563eb' : '#6b7280', textAlign: 'center', maxWidth: 78, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>{stripEmoji(c.name)}</span>
                 </button>
               );
             })}
@@ -602,7 +626,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           <div className={`pk-subcatband-wrap${!subcatExpanded ? ' pk-subcatband-collapsed' : ''}`}>
           <div className="pk-subcatband pk-h-scroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '4px 2px 12px', marginBottom: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
             <button onClick={() => setSelectedSubcat('')} className="pk-subcatband-item" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 68, maxWidth: 74, width: 68, fontFamily: 'inherit', padding: 0, flexShrink: 0 }}>
-              <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: !selectedSubcat ? '#fff' : '#0284c7', background: !selectedSubcat ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: !selectedSubcat ? '2px solid #38bdf8' : '2px solid #bae6fd', transition: 'all 0.2s' }}>✦</span>
+              <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: !selectedSubcat ? '#fff' : '#0284c7', background: !selectedSubcat ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: !selectedSubcat ? '2px solid #38bdf8' : '2px solid #bae6fd', transition: 'all 0.2s' }}><FallbackIcon size={20} color={!selectedSubcat ? '#fff' : '#0284c7'} /></span>
               <span style={{ fontSize: 10, fontWeight: !selectedSubcat ? 800 : 600, color: !selectedSubcat ? '#0284c7' : '#6b7280', textAlign: 'center', maxWidth: 68, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>Todas</span>
             </button>
             {subcategories.map(sc => {
@@ -615,11 +639,11 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     {sc.ICON_URL ? (
                       <img src={sc.ICON_URL} alt={sc.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: subActive ? '2.5px solid #38bdf8' : '2.5px solid #e0f2fe', boxShadow: subActive ? '0 4px 12px rgba(56,189,248,0.3)' : '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s', display: 'block' }} />
                     ) : (
-                      <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, color: subActive ? '#fff' : '#0284c7', background: subActive ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: subActive ? '2.5px solid #38bdf8' : '2.5px solid #bae6fd', transition: 'all 0.2s' }}>{(sc.name || 'S').charAt(0).toUpperCase()}</span>
+                      <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 900, color: subActive ? '#fff' : '#0284c7', background: subActive ? 'linear-gradient(135deg,#38bdf8,#0284c7)' : '#f0f9ff', border: subActive ? '2.5px solid #38bdf8' : '2.5px solid #bae6fd', transition: 'all 0.2s' }}>{(() => { const em = extractEmoji(sc.name); return em ? em : <FallbackIcon size={20} color={subActive ? '#fff' : '#0284c7'} />; })()}</span>
                     )}
                     <span style={{ position: 'absolute', top: -2, right: -4, background: '#0284c7', color: '#fff', fontSize: 8.5, fontWeight: 800, borderRadius: 999, padding: '1px 5px', border: '1.5px solid #fff', lineHeight: 1.2 }}>{scCount}</span>
                   </span>
-                  <span style={{ fontSize: 10, fontWeight: subActive ? 800 : 600, color: subActive ? '#0284c7' : '#6b7280', textAlign: 'center', maxWidth: 68, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>{sc.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: subActive ? 800 : 600, color: subActive ? '#0284c7' : '#6b7280', textAlign: 'center', maxWidth: 68, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>{stripEmoji(sc.name)}</span>
                 </button>
               );
             })}
@@ -678,7 +702,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', minHeight: 36 }}>{p.NAME}</p>
                       </Link>
-                      {p.PACKQTY && p.PACKQTY > 1 ? (
+                      {(p.PACKQTY ?? 0) > 1 ? (
                         <span style={{ fontSize: 11, fontWeight: 800, color: '#0ea5e9' }}>{p.PACKQTY} UNIDADES / PAQUETE</span>
                       ) : null}
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
@@ -919,64 +943,64 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const lowStock = limitedStock && effectiveStock <= 10;
                   const added = !!justAdded[p.$id];
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: 'linear-gradient(180deg,#f0f9ff 0%,#e0f2fe 100%)', borderRadius: 18, overflow: 'hidden', border: '1px solid #bae6fd', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 12px rgba(37,99,235,0.07)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
+                    <div key={p.$id} className={`pk-card${outOfStock ? ' is-oos' : ''}`} style={{ '--pk-accent': primaryColor } as CSSProperties}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: 'linear-gradient(135deg,#e0f2fe,#ffffff)', overflow: 'hidden' }}>
+                        <div className="pk-card-image">
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
-                          {p.PACKQTY && p.PACKQTY > 1 && (
-                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#1e40af', background: 'rgba(255,255,255,0.95)', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>{p.PACKQTY} un/paquete</span>
+                          {(p.PACKQTY ?? 0) > 1 && (
+                            <span className="pk-pack-pill">{p.PACKQTY} un/paquete</span>
                           )}
                           <button
                             type="button"
                             className="pk-card-fav"
                             aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                             onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
-                            style={{ position: 'absolute', top: 8, right: 8, zIndex: 4, width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', color: primaryColor, boxShadow: '0 2px 8px rgba(37,99,235,0.15)' }}
                           >
                             <AnimHeart filled={fav} size={18} />
                           </button>
                           {outOfStock && (
-                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                              <span style={{ padding: '6px 14px', background: '#fff', color: '#2563eb', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #dbeafe' }}>Sin stock</span>
-                            </div>
+                            <div className="pk-oos-veil"><span>Sin stock</span></div>
                           )}
                         </div>
                       </div>
-                      <div className="pk-card-body" style={{ padding: '12px 12px 14px', display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0, fontSize: 10.5, color: '#9ca3af', fontWeight: 700 }}>
-                          {pBrand && (
-                            <span style={{ fontSize: 9.5, fontWeight: 800, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>
-                              {pBrand}
-                            </span>
-                          )}
-                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span style={{ fontSize: 9.5, fontWeight: 800, color: '#fff', background: '#3b82f6', padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{cat.name}</span> : null; })()}
-                          {cardSku && <span className="pk-card-sku" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>SKU {cardSku}</span>}
+                      <div className="pk-card-body">
+                        {/* Fila de señal: categoría + distintivos. La letra chica
+                            (marca y SKU) baja bajo el título para que el nombre
+                            del producto gane la jerarquía. */}
+                        <div className="pk-card-meta">
+                          {(() => { const cat = categories.find(c => c.$id === p.CATEGORYID); return cat ? <span className="pk-cat-pill">{cat.name}</span> : null; })()}
                           <ProductBadges product={p} />
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}${modeQueryParam}`} style={{ textDecoration: 'none' }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
-                            {p.NAME}
-                          </p>
+                          <p className="pk-card-title">{p.NAME}</p>
                         </Link>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, color: outOfStock ? '#9ca3af' : lowStock ? '#d97706' : '#059669' }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                        {(pBrand || cardSku) && (
+                          <div className="pk-card-subline">
+                            {pBrand && (
+                              <span className="pk-brand-pill" style={{ color: badgeColor, background: badgeBg }}>{pBrand}</span>
+                            )}
+                            {cardSku && <span className="pk-card-sku">SKU {cardSku}</span>}
+                          </div>
+                        )}
+                        <div className={`pk-card-stock ${outOfStock ? 'is-out' : lowStock ? 'is-low' : 'is-ok'}`}>
+                          <span className="pk-stock-dot" />
                           {outOfStock ? 'Sin stock' : lowStock ? `Quedan ${effectiveStock} unidades` : 'Stock disponible'}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 'auto', flexWrap: 'wrap' }}>
+                        <div className="pk-card-price-row">
                           {price > 0 ? (
                             <>
-                              <span className="pk-price" style={{ fontSize: 20, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{isPackModeCard ? 'por paquete' : 'c/u'}</span>
+                              <span className="pk-price">{formatPrice(price)}</span>
+                              <span className="pk-price-unit">{isPackModeCard ? 'por paquete' : 'c/u'}</span>
                             </>
                           ) : (
-                            <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
+                            <span className="pk-price-ask">Consultar precio</span>
                           )}
                         </div>
                         {volTiers.length > 0 && (
-                          <div className="pk-vol-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                          <div className="pk-vol-chips">
                             {volTiers.map(t => (
-                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#6366f1', background: '#ffffff', border: '1px solid #bae6fd', borderRadius: 999, padding: '3px 8px', lineHeight: 1.1 }}>
-                                {t.minQty}+ un&nbsp;<span style={{ color: '#2563eb', fontWeight: 900 }}>{formatPrice(t.unitPrice)}</span>
+                              <span key={t.key} title={`Llevando ${t.minQty} o más unidades pagas ${formatPrice(t.unitPrice)} por unidad`}>
+                                {t.minQty}+ un&nbsp;<strong>{formatPrice(t.unitPrice)}</strong>
                               </span>
                             ))}
                           </div>
@@ -987,9 +1011,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           const overridePrice = isPackModeCard ? (p.WHOLESALEPRICE || p.PRICE) : undefined;
                           addItem(p, qtyToAdd, undefined, undefined, overridePrice, isPackModeCard);
                           flashAdded(p.$id);
-                        }} disabled={outOfStock} className="pk-add-btn"
-                          style={{ marginTop: 4, padding: '11px 12px', minHeight: 42, borderRadius: 12, border: 'none', background: outOfStock ? '#f3f4f6' : (added ? '#059669' : gradientColor), color: outOfStock ? '#9ca3af' : buttonTextColor, fontSize: 12.5, fontWeight: 800, cursor: outOfStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: outOfStock ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'filter 0.2s ease, transform 0.1s ease', fontFamily: 'inherit' }}>
-                          <ShoppingCart size={14} /> {outOfStock ? 'Sin stock' : added ? '✓ Añadido' : (isPackModeCard ? 'Comprar paquete' : 'Agregar')}
+                        }} disabled={outOfStock} className={`pk-add-btn${added ? ' is-added' : ''}`}
+                          style={outOfStock ? undefined : { background: added ? 'linear-gradient(135deg,#10b981,#059669)' : gradientColor, color: buttonTextColor }}>
+                          <span className="pk-add-btn__label"><ShoppingCart size={14} /> {outOfStock ? 'Sin stock' : added ? '✓ Añadido' : (isPackModeCard ? 'Comprar paquete' : 'Agregar')}</span>
                         </button>
                       </div>
                     </div>
@@ -1045,10 +1069,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                   const effectiveStockL = (catalogMode === 'paquetes' || catalogMode === 'embalajes') ? packStockAvailable(p) : (p.STOCK || 0);
                   const outOfStockL = effectiveStockL <= 0;
                   return (
-                    <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
-                      <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 14, overflow: 'hidden', background: '#f7f7f8', flexShrink: 0 }}>
+                    <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#faf9f7', borderRadius: 16, border: '1px solid #f0f0f0', display: 'flex', gap: 16, padding: 14, transition: 'all 0.2s', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)' }}>
+                      <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 12, overflow: 'hidden', background: '#f5f4f2', flexShrink: 0 }}>
                         <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} sizes="110px" compact />
-                        {p.PACKQTY && p.PACKQTY > 1 && (
+                        {(p.PACKQTY ?? 0) > 1 && (
                           <span style={{ position: 'absolute', top: 6, left: 6, zIndex: 4, fontSize: 9, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '2px 7px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paq</span>
                         )}
                       </div>
@@ -1285,43 +1309,233 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           border: none !important;
         }
 
-        /* Card Hover/Touch Reset: completely disable any hover state changes */
+        /* ══════════════════════════════════════════════════════════
+           TARJETA DE PRODUCTO — sistema por capas
+           Superficie (gradiente + sombra escalonada), media (zoom
+           contenido), contenido (jerarquía tipográfica) y CTA.
+           Las interacciones ricas viven sólo en punteros finos; en
+           táctil la tarjeta queda plana para que el tap no deje
+           estados "pegados".
+           ══════════════════════════════════════════════════════════ */
+        .pk-card {
+          --pk-accent: #3b82f6;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          border-radius: 18px;
+          overflow: hidden;
+          isolation: isolate;
+          background: linear-gradient(180deg, #fff 0%, #fdfcfb 45%, #f9f7f4 100%);
+          border: 1px solid rgba(17,24,39,.07);
+          box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 6px 14px -10px rgba(16,24,40,.14);
+          transition: transform .34s cubic-bezier(.2,.7,.3,1), box-shadow .34s cubic-bezier(.2,.7,.3,1), border-color .34s ease;
+        }
+        /* Rail de marca: firma visual que se despliega al enfocar */
+        .pk-card::before {
+          content: '';
+          position: absolute; top: 0; left: 0; right: 0; height: 3px;
+          background: linear-gradient(90deg, var(--pk-accent), #60a5fa 55%, #38bdf8);
+          transform: scaleX(0); transform-origin: left;
+          transition: transform .45s cubic-bezier(.2,.7,.3,1);
+          z-index: 5; pointer-events: none;
+        }
+
+        /* ── Media ── */
+        .pk-card-image {
+          position: relative; overflow: hidden; background: #fff;
+          border-bottom: 1px solid rgba(17,24,39,.05);
+        }
+        /* viñeta inferior: asienta el producto sobre la superficie */
+        .pk-card-image::after {
+          content: ''; position: absolute; inset: auto 0 0 0; height: 34%;
+          background: linear-gradient(180deg, rgba(255,255,255,0), rgba(17,24,39,.05));
+          pointer-events: none; z-index: 3;
+        }
+        .pk-card-image img { transition: transform .6s cubic-bezier(.2,.7,.3,1); }
+        /* las miniaturas no participan del zoom */
+        .pk-card-image button img { transform: none !important; }
+        /* miniaturas alineadas al color de la tienda (el componente trae amarillo) */
+        .pk-card-image [role="group"] button { border-color: #e8eaed !important; transition: all .2s ease !important; }
+        .pk-card-image [role="group"] button[aria-pressed="true"] {
+          border-color: var(--pk-accent) !important;
+          box-shadow: 0 0 0 2.5px rgba(59,130,246,.16) !important;
+        }
+
+        .pk-pack-pill {
+          position: absolute; top: 9px; left: 9px; z-index: 4;
+          font-size: 10px; font-weight: 800; color: #1e40af;
+          background: rgba(255,255,255,.94);
+          border: 1px solid rgba(30,64,175,.14); border-radius: 999px;
+          padding: 3.5px 9px; white-space: nowrap;
+          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+          box-shadow: 0 2px 8px rgba(16,24,40,.08);
+        }
+
+        .pk-card-fav {
+          position: absolute; top: 9px; right: 9px; z-index: 4;
+          width: 33px; height: 33px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; color: var(--pk-accent);
+          background: rgba(255,255,255,.9);
+          border: 1px solid rgba(17,24,39,.06);
+          backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+          box-shadow: 0 2px 10px rgba(16,24,40,.10);
+          transition: transform .22s cubic-bezier(.2,.7,.3,1), box-shadow .22s ease, background .22s ease;
+        }
+
+        .pk-oos-veil {
+          position: absolute; inset: 0; z-index: 3;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(250,250,249,.72);
+          backdrop-filter: blur(2.5px); -webkit-backdrop-filter: blur(2.5px);
+        }
+        .pk-oos-veil span {
+          padding: 7px 15px; background: #fff; color: #6b7280;
+          border-radius: 999px; font-size: 12px; font-weight: 800;
+          border: 1px solid #e5e7eb; box-shadow: 0 3px 10px rgba(16,24,40,.08);
+        }
+        .pk-card.is-oos .pk-card-image img { filter: saturate(.35); }
+
+        /* ── Cuerpo ── */
+        .pk-card-body {
+          padding: 13px 13px 15px; display: flex; flex-direction: column;
+          flex: 1; gap: 7px; position: relative; z-index: 2;
+        }
+        .pk-card-meta {
+          display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+          min-width: 0; font-size: 10px; font-weight: 700; color: #9ca3af;
+        }
+        .pk-brand-pill {
+          font-size: 9.5px; font-weight: 800; padding: 2.5px 8px;
+          border-radius: 999px; white-space: nowrap;
+          border: 1px solid rgba(17,24,39,.05);
+        }
+        .pk-cat-pill {
+          font-size: 9.5px; font-weight: 800; color: #fff; white-space: nowrap;
+          background: linear-gradient(135deg, var(--pk-accent), #2563eb);
+          padding: 2.5px 8px; border-radius: 999px;
+          box-shadow: 0 2px 6px rgba(37,99,235,.22);
+        }
+        .pk-card-subline {
+          display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+          min-width: 0; margin-top: -1px;
+        }
+        .pk-card-sku {
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          letter-spacing: .02em; color: #a3a8b0;
+          font-size: 10px; font-weight: 700;
+        }
+        .pk-card-title {
+          font-size: 13.5px; font-weight: 650; color: #1f2937; margin: 0;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+          overflow: hidden; min-height: 38px; line-height: 1.4;
+          letter-spacing: -.005em; transition: color .22s ease;
+        }
+        .pk-card-stock {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 10.5px; font-weight: 700;
+        }
+        .pk-card-stock .pk-stock-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: currentColor; flex-shrink: 0;
+        }
+        .pk-card-stock.is-ok { color: #059669; }
+        .pk-card-stock.is-ok .pk-stock-dot { box-shadow: 0 0 0 3px rgba(5,150,105,.14); }
+        .pk-card-stock.is-low { color: #d97706; }
+        .pk-card-stock.is-low .pk-stock-dot { box-shadow: 0 0 0 3px rgba(217,119,6,.15); }
+        .pk-card-stock.is-out { color: #9ca3af; }
+
+        .pk-card-price-row {
+          display: flex; align-items: baseline; gap: 6px;
+          margin-top: auto; flex-wrap: wrap; padding-top: 2px;
+        }
+        .pk-price {
+          font-size: 20px; font-weight: 900; color: #0f172a;
+          letter-spacing: -.025em; font-variant-numeric: tabular-nums;
+        }
+        .pk-price-unit { font-size: 11px; color: #9ca3af; font-weight: 600; }
+        .pk-price-ask { font-size: 12px; color: #9ca3af; font-weight: 500; }
+
+        .pk-vol-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+        .pk-vol-chips span {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 10px; font-weight: 700; color: #6366f1;
+          background: linear-gradient(180deg,#f8f7ff,#f2f0fe);
+          border: 1px solid #e4e2fb; border-radius: 999px;
+          padding: 3px 8px; line-height: 1.1;
+        }
+        .pk-vol-chips strong { color: #4f46e5; font-weight: 900; }
+
+        /* ── CTA ── */
+        .pk-add-btn {
+          position: relative; overflow: hidden;
+          margin-top: 4px; padding: 11px 12px; min-height: 42px;
+          border: none; border-radius: 12px;
+          font-size: 12.5px; font-weight: 800; font-family: inherit;
+          cursor: pointer; display: flex; align-items: center; justify-content: center;
+          color: #fff;
+          box-shadow: 0 4px 14px rgba(37,99,235,.20), inset 0 1px 0 rgba(255,255,255,.22);
+          transition: transform .16s cubic-bezier(.2,.7,.3,1), box-shadow .24s ease, filter .2s ease;
+        }
+        .pk-add-btn__label { display: inline-flex; align-items: center; gap: 6px; position: relative; z-index: 2; }
+        /* barrido de luz al pasar el cursor */
+        .pk-add-btn::after {
+          content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%;
+          background: linear-gradient(100deg, transparent, rgba(255,255,255,.38), transparent);
+          transform: skewX(-18deg); opacity: 0; z-index: 1;
+        }
+        .pk-add-btn:disabled {
+          background: #f2f3f5 !important; color: #a1a6ae !important;
+          cursor: not-allowed; box-shadow: none;
+        }
+        .pk-add-btn.is-added { box-shadow: 0 4px 14px rgba(5,150,105,.24), inset 0 1px 0 rgba(255,255,255,.22); }
+        .pk-add-btn:active:not(:disabled) { transform: scale(.975); }
+
+        /* ── Interacciones: sólo punteros finos (desktop) ── */
+        @media (hover: hover) and (pointer: fine) {
+          .pk-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59,130,246,.22);
+            box-shadow: 0 2px 4px rgba(16,24,40,.04), 0 18px 34px -18px rgba(37,99,235,.34), 0 8px 18px -12px rgba(16,24,40,.16);
+          }
+          .pk-card:hover::before { transform: scaleX(1); }
+          .pk-card:hover .pk-card-image img { transform: scale(1.055); }
+          .pk-card:hover .pk-card-image button img { transform: none !important; }
+          .pk-card:hover .pk-card-title { color: var(--pk-accent); }
+          .pk-card-fav:hover { transform: scale(1.1); background: #fff; box-shadow: 0 4px 14px rgba(16,24,40,.16); }
+          .pk-add-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 22px rgba(37,99,235,.30), inset 0 1px 0 rgba(255,255,255,.26);
+          }
+          .pk-add-btn:hover:not(:disabled)::after { opacity: 1; animation: pkSheen .75s cubic-bezier(.2,.7,.3,1); }
+        }
+        @keyframes pkSheen { from { left: -60%; } to { left: 115%; } }
+
+        /* ── Táctil: sin estados pegados tras el tap ── */
+        @media (hover: none), (pointer: coarse) {
+          .pk-card:hover, .pk-card-list:hover { transform: none; }
+          .pk-card:hover::before { transform: scaleX(0); }
+          .pk-card:hover .pk-card-image img { transform: none; }
+          .pk-card:hover .pk-card-title { color: #1f2937; }
+        }
+
         .pk-card, .pk-card *, .pk-card-list, .pk-card-list * {
-          -webkit-tap-highlight-color: transparent !important;
-          -webkit-focus-ring-color: transparent !important;
-          outline: none !important;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .pk-card a, .pk-card-list a { text-decoration: none !important; }
+        .pk-card :focus-visible, .pk-card-list :focus-visible {
+          outline: 2px solid var(--pk-accent); outline-offset: 2px; border-radius: 8px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .pk-card, .pk-card *, .pk-add-btn, .pk-add-btn::after { transition: none !important; animation: none !important; }
+          .pk-card:hover { transform: none; }
         }
 
-        .pk-card a, .pk-card-list a {
-          outline: none !important;
-          text-decoration: none !important;
-        }
-
-        .pk-card:hover, .pk-card-list:hover {
-          transform: none !important;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.03) !important;
-          border-color: rgba(229,231,235,0.6) !important;
-        }
-
-        .pk-card:hover *, .pk-card-list:hover * {
-          transform: none !important;
-          box-shadow: none !important;
-          text-shadow: none !important;
-          outline: none !important;
-        }
-
-        .pk-card:hover .pk-card-sku,
-        .pk-card-list:hover .pk-card-sku,
         .pk-card .pk-card-sku:hover,
-        .pk-card-list .pk-card-sku:hover {
-          color: #9ca3af !important;
-        }
-
-        .pk-card:hover .pk-price-old,
-        .pk-card-list:hover .pk-price-old,
+        .pk-card-list .pk-card-sku:hover,
         .pk-card .pk-price-old:hover,
         .pk-card-list .pk-price-old:hover {
-          color: #9ca3af !important;
+          color: #9ca3af;
         }
 
         /* Direct and parent-hover resets for badges to prevent any change or highlights */
@@ -1681,15 +1895,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
         @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
-          /* 🎀 Hover: lift + glow rosa pastel de marca */
-          .pk-card:hover {
-            box-shadow: 0 18px 42px rgba(37,99,235,0.16) !important;
-            transform: translateY(-3px);
-            border-color: #dbeafe !important;
-          }
-          .pk-card:hover .pk-price { color: #2563eb !important; }
-          .pk-add-btn:hover:not(:disabled) { filter: brightness(0.94); }
-          .pk-add-btn:active:not(:disabled) { transform: scale(0.97); }
+          /* El lift, la sombra y el borde los define el bloque de la tarjeta
+             (elevación azul de marca); aquí sólo el matiz del precio. */
+          .pk-card:hover .pk-price { color: #2563eb; }
         }
 
         @media (max-width: 1024px) {
@@ -1988,15 +2196,17 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
           .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
           .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+          /* 📱 Misma identidad que en desktop, con radios y sombras
+             calibrados para dos columnas: la profundidad se nota sin
+             comerse el poco ancho disponible. */
           .pk-card {
-            border-radius: 16px !important;
+            border-radius: 15px !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            background: linear-gradient(180deg,#f0f9ff 0%,#e0f2fe 100%) !important;
-            box-shadow: 0 3px 12px rgba(37,99,235,0.07) !important;
-            border: 1px solid #bae6fd !important;
-            transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+            box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 5px 12px -9px rgba(16,24,40,.16) !important;
+            border: 1px solid rgba(17,24,39,.07) !important;
           }
+          .pk-card::before { height: 2.5px; }
           /* 📱 Comodidad táctil: buscador sin zoom iOS, botones de 42px+, chips legibles */
           .pk-toolbar-search input { font-size: 16px !important; }
           .pk-card-body { padding: 10px 10px 12px !important; gap: 5px !important; }
@@ -2004,14 +2214,19 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-add-btn { min-height: 42px !important; font-size: 12px !important; border-radius: 11px !important; }
           .pk-vol-chips span { font-size: 9.5px !important; padding: 3px 7px !important; }
           .pk-card-list-desc { display: none !important; }
+          /* en 2 columnas las píldoras compiten con el nombre: se acotan */
+          .pk-card-meta { gap: 4px !important; }
+          .pk-brand-pill, .pk-cat-pill { font-size: 9px !important; padding: 2px 6.5px !important; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+          .pk-card-sku { font-size: 9px !important; }
+          .pk-card-stock { font-size: 10px !important; }
           .pk-card-fav {
             display: flex !important;
-            width: 28px !important;
-            height: 28px !important;
+            width: 30px !important;
+            height: 30px !important;
             top: 6px !important;
             right: 6px !important;
-            background: rgba(255, 255, 255, 0.9) !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+            background: rgba(255,255,255,.92) !important;
+            box-shadow: 0 2px 8px rgba(16,24,40,.10) !important;
           }
           .pk-card-fav svg {
             width: 15px !important;

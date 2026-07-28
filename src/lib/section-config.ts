@@ -796,7 +796,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     order: -3,
     locked: true,
     settings: {
-      title: 'Â¡EnvÃ­o gratis en pedidos sobre $50!',
+      title: '✨ Productos premium a precios mayoristas — sin sorpresas',
       bgColor: '',
       textColor: '#ffffff',
       bgGradient: 'linear-gradient(90deg,#111111,#ffffff)',

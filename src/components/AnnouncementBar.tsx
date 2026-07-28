@@ -8,7 +8,7 @@ import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { usePathname } from 'next/navigation';
 
 const STORAGE_KEY = 'announcement_dismissed';
-const DEFAULT_TEXT = 'ðŸ”¥ EnvÃ­o gratis en compras sobre $30.000 â€” Â¡Aprovecha!';
+const DEFAULT_TEXT = '✨ Productos premium a precios mayoristas — sin sorpresas'
 
 // FunciÃ³n para detectar si un color es claro
 function isLightColor(color: string): boolean {
@@ -135,7 +135,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
         ease: 'linear',
       }}
       style={{
-        fontSize: `clamp(${Math.max(textSize - 2, 10)}px, 1.3vw, ${textSize + 2}px)`,
+        fontSize: `clamp(${Math.max(textSize - 2, 12)}px, 3.2vw, ${textSize + 2}px)`,
         fontWeight: 800,
         fontFamily: 'Syne, sans-serif',
         ...(hasTextGradient ? {
@@ -168,8 +168,9 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
         repeat: Infinity,
         ease: 'linear',
       }}
+      className="announcement-bar__cta"
       style={{
-        fontSize: 'clamp(11px, 1.1vw, 13px)',
+        fontSize: 'clamp(10px, 2.5vw, 13px)',
         fontWeight: 700,
         fontFamily: 'Syne, sans-serif',
         color: '#ffffff',
@@ -236,6 +237,11 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
               50% { background-position: 100% 50%; }
               100% { background-position: 0% 50%; }
             }
+            @media screen and (max-width: 640px) {
+              .announcement-bar__cta { display: none !important; }
+              .announcement-bar__store-info { display: none !important; }
+              .announcement-bar__message { flex: 1 !important; }
+            }
           `}</style>
           {/* Noise overlay for texture */}
           <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundSize: '128px 128px', pointerEvents: 'none' }} />
@@ -245,7 +251,7 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
             
             {/* Datos de empresa (izquierda) */}
             {storeInfo?.showInAnnouncementBar && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: 'clamp(10px, 1vw, 12px)', color: isLight ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)', flexShrink: 0 }}>
+              <div className="announcement-bar__store-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: 'clamp(10px, 1vw, 12px)', color: isLight ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)', flexShrink: 0 }}>
                 {storeInfo.storeName && (
                   <span style={{ fontWeight: 700 }}>{storeInfo.storeName}</span>
                 )}

@@ -787,21 +787,21 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const badgeBg = isSadoer ? '#e0f2fe' : '#f3f4f6';
                   const badgeColor = isSadoer ? '#1e40af' : '#4b5563';
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', border: '1px solid #dbeafe', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 28px rgba(37,99,235,0.10)', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: '#faf9f7', borderRadius: 16, overflow: 'hidden', border: '1px solid #f0f0f0', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)', transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease' }}>
                       <div className="pk-card-media-link" style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <div className="pk-card-image" style={{ position: 'relative', background: '#fff', overflow: 'hidden' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', background: '#f5f4f2', overflow: 'hidden' }}>
                           <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} />
                           {p.PACKQTY != null && p.PACKQTY > 1 && (
-                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap' }}>{p.PACKQTY} un/paquete</span>
+                            <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 4, fontSize: 10, fontWeight: 800, color: '#1e40af', background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>{p.PACKQTY} un/paquete</span>
                           )}
                           {p.STOCK === 0 && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                              <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
+                              <span style={{ padding: '6px 14px', background: '#fff', color: '#9ca3af', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #e5e7eb' }}>Sin stock</span>
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="pk-card-body" style={{ padding: '16px 16px 17px', display: 'flex', flexDirection: 'column', flex: 1, background: 'linear-gradient(180deg, #fff 0%, #f0f9ff 100%)' }}>
+                      <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1, background: '#faf9f7' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                           <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             {cardSku && <span className="pk-card-sku">SKU: {cardSku}</span>}
@@ -820,16 +820,16 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                             style={{
                               width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: '#fff7fb',
+                              background: 'rgba(255,255,255,0.92)',
                               color: '#d979a8',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
                             }}
                           >
                             <AnimHeart filled={fav} size={20} />
                           </button>
                         </div>
                         <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 2px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
+                          <p style={{ fontSize: 13.5, fontWeight: 600, color: '#1f2937', margin: '0 0 2px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 38, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
                         </Link>
@@ -837,7 +837,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#2563eb' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
+                              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#6b7280', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
                               {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
                             </>
@@ -846,7 +846,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           )}
                         </div>
                         <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
-                          style={{ marginTop: 12, padding: '10px 12px', borderRadius: 999, border: '1px solid #dbeafe', background: p.STOCK === 0 ? '#f8fafc' : '#dbeafe', color: p.STOCK === 0 ? '#9ca3af' : '#2563eb', fontSize: 12, fontWeight: 800, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 5px 14px rgba(37,99,235,0.14)', fontFamily: 'inherit' }}>
+                          style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : (added ? '#059669' : 'linear-gradient(135deg,#3b82f6,#2563eb)'), color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12.5, fontWeight: 800, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'filter 0.2s ease, transform 0.1s ease', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(59,130,246,0.18)', fontFamily: 'inherit' }}>
                           <ShoppingCart size={13} /> {p.STOCK === 0 ? 'Sin stock' : 'Agregar'}
                         </button>
                       </div>
@@ -871,13 +871,13 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   const badgeColor = isSadoer ? '#1e40af' : '#4b5563';
 
                   return (
-                    <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
+                    <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#faf9f7', borderRadius: 16, border: '1px solid #f0f0f0', display: 'flex', gap: 16, padding: 14, transition: 'all 0.2s', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)' }}>
                       {hasDisc && (
                         <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3 }}>
                           <AperturaDiscountBadge percent={disc} size="sm" />
                         </div>
                       )}
-                      <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 14, overflow: 'hidden', background: '#eff6ff', flexShrink: 0 }}>
+                      <div className="pk-card-list-media" style={{ position: 'relative', width: 110, borderRadius: 12, overflow: 'hidden', background: '#f5f4f2', flexShrink: 0 }}>
                         <ProductImageGallery product={p} alt={p.NAME} onImageClick={(imgSrc) => handleCardImageClick(p, imgSrc)} sizes="110px" compact />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -978,8 +978,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
 
         .pk-card:hover, .pk-card-list:hover {
           transform: none !important;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.03) !important;
-          border-color: rgba(229,231,235,0.6) !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) !important;
+          border-color: #f0f0f0 !important;
         }
 
         .pk-card:hover *, .pk-card-list:hover * {
@@ -1083,7 +1083,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
         .pk-mobile-only { display: none; }
         .pk-filters-btn { display: none; }
 
-        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
+        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
         .pk-h-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
         .pk-filters-drawer {
@@ -1233,9 +1233,9 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
             border-radius: 0 0 18px 18px !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            background: #ffffff !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
-            border: 1px solid rgba(229, 231, 235, 0.6) !important;
+            background: #faf9f7 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) !important;
+            border: 1px solid #f0f0f0 !important;
             transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
           }
           .pk-card-fav {

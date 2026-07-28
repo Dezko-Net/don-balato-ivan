@@ -504,90 +504,38 @@ export default function HomePage25() {
       .find(element => element.querySelector('motion-list.card-grid .card.media-card'));
     if (!slider) return;
 
+    // ── FIX SCROLL LATERAL CATEGORÍAS (móvil) ──
+    // El <slider-element> del tema es display:grid (clase "grid") y sólo actúa
+    // como slider en desktop/tablet. En móvil, su hijo (el card-grid) queda
+    // encajado en la celda del grid: el ancho de las tarjetas se vuelve "ink
+    // overflow" NO scrollable, por eso sólo scrolleaba "un poquititio".
+    // Solución: convertir el slider en un contenedor de scroll block normal y
+    // el card-grid en un flex horizontal con tarjetas de ancho fijo → overflow
+    // real scrollable + swipe táctil nativo + snap a cada categoría.
+    slider.style.setProperty('display', 'block', 'important');
     slider.style.setProperty('overflow-x', 'auto', 'important');
+    slider.style.setProperty('overflow-y', 'hidden', 'important');
     slider.style.setProperty('overscroll-behavior-x', 'contain', 'important');
-    slider.style.setProperty('touch-action', 'pan-y', 'important');
-    slider.style.setProperty('scroll-snap-type', 'x proximity', 'important');
+    slider.style.setProperty('touch-action', 'pan-x pan-y', 'important');
+    slider.style.setProperty('-webkit-overflow-scrolling', 'touch');
+    slider.style.setProperty('scroll-snap-type', 'x mandatory', 'important');
+
+    const grid = slider.querySelector<HTMLElement>('motion-list.card-grid');
+    if (grid) {
+      grid.style.setProperty('display', 'flex', 'important');
+      grid.style.setProperty('flex-wrap', 'nowrap', 'important');
+      grid.style.setProperty('width', 'max-content', 'important');
+      grid.style.setProperty('max-width', 'none', 'important');
+      grid.style.setProperty('align-items', 'stretch', 'important');
+      grid.style.setProperty('gap', '12px', 'important');
+    }
     slider.querySelectorAll<HTMLElement>('.card.media-card').forEach(card => {
+      // ~85vw deja asomar la siguiente categoría (indica que se puede deslizar)
+      card.style.setProperty('flex', '0 0 85vw', 'important');
+      card.style.setProperty('width', '85vw', 'important');
+      card.style.setProperty('max-width', '85vw', 'important');
       card.style.setProperty('scroll-snap-align', 'start', 'important');
     });
-
-    const DRAG_DAMPING = 0.65;
-    const ACTIVATE_THRESHOLD = 10;
-    const ACTIVATE_RATIO = 1.3;
-    const CLICK_BLOCK_THRESHOLD = 18;
-
-    let pointerId: number | null = null;
-    let startX = 0;
-    let startY = 0;
-    let startScrollLeft = 0;
-    let horizontal = false;
-    let moved = false;
-    let lastDeltaX = 0;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType !== 'touch') return;
-      pointerId = event.pointerId;
-      startX = event.clientX;
-      startY = event.clientY;
-      startScrollLeft = slider.scrollLeft;
-      horizontal = false;
-      moved = false;
-      lastDeltaX = 0;
-    };
-    const onPointerMove = (event: PointerEvent) => {
-      if (event.pointerId !== pointerId) return;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      if (!horizontal && Math.abs(dx) > ACTIVATE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * ACTIVATE_RATIO) {
-        horizontal = true;
-        slider.setPointerCapture?.(event.pointerId);
-      }
-      if (!horizontal) return;
-      event.preventDefault();
-      event.stopPropagation();
-      moved = moved || Math.abs(dx) > CLICK_BLOCK_THRESHOLD;
-      lastDeltaX = dx;
-      slider.scrollLeft = startScrollLeft - dx * DRAG_DAMPING;
-    };
-    const onPointerEnd = (event: PointerEvent) => {
-      if (event.pointerId !== pointerId) return;
-      if (slider.hasPointerCapture?.(event.pointerId)) slider.releasePointerCapture(event.pointerId);
-      // Inertia: continuar el scroll con momentum decreciente
-      if (horizontal && Math.abs(lastDeltaX) > 5) {
-        let velocity = lastDeltaX * DRAG_DAMPING * 0.3;
-        const decel = 0.92;
-        const step = () => {
-          if (Math.abs(velocity) < 0.5) return;
-          slider.scrollLeft -= velocity;
-          velocity *= decel;
-          requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-      }
-      pointerId = null;
-      horizontal = false;
-    };
-    const onClick = (event: MouseEvent) => {
-      if (!moved) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      moved = false;
-    };
-
-    slider.addEventListener('pointerdown', onPointerDown, { capture: true });
-    slider.addEventListener('pointermove', onPointerMove, { capture: true });
-    slider.addEventListener('pointerup', onPointerEnd, { capture: true });
-    slider.addEventListener('pointercancel', onPointerEnd, { capture: true });
-    slider.addEventListener('click', onClick, { capture: true });
-
-    return () => {
-      slider.removeEventListener('pointerdown', onPointerDown, { capture: true });
-      slider.removeEventListener('pointermove', onPointerMove, { capture: true });
-      slider.removeEventListener('pointerup', onPointerEnd, { capture: true });
-      slider.removeEventListener('pointercancel', onPointerEnd, { capture: true });
-      slider.removeEventListener('click', onClick, { capture: true });
-    };
   }, [bodyHtml]);
 
   /* ── Inject window.Shopify + window.theme stubs BEFORE loading JS ── */
@@ -740,13 +688,11 @@ export default function HomePage25() {
           }
         }
 
-        // ── SLIDER-ELEMENT TOUCH FIX: Remove pan-y lock to allow horizontal swiping ──
+        // ── SLIDER-ELEMENT TOUCH FIX: permitir swipe horizontal nativo en todos
+        //    los sliders móviles, incluido el de categorías (antes bloqueado en pan-y). ──
         if (window.matchMedia('(max-width: 767px)').matches) {
           document.querySelectorAll<HTMLElement>('slider-element, .slider, .card-grid, .media-card, .media-card__link, .media-card .media').forEach(el => {
-            const categorySlider = el.matches('slider-element')
-              ? el
-              : el.closest<HTMLElement>('slider-element');
-            el.style.touchAction = categorySlider?.querySelector('motion-list.card-grid .card.media-card') ? 'pan-y' : 'pan-x pan-y';
+            el.style.setProperty('touch-action', 'pan-x pan-y', 'important');
           });
         }
 
