@@ -429,13 +429,13 @@ function ConfirmadoInner() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ margin: 0, fontSize: 11, color: '#16a34a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Número registrado</p>
-              <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700, color: '#111' }}>{order.CUSTOMERPHONE || 'No registrado'}</p>
+              <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700, color: '#111' }}>{order?.CUSTOMERPHONE || 'No registrado'}</p>
             </div>
           </div>
 
           {/* Verify button */}
           <a
-            href={`https://wa.me/56936599658?text=Hola%20Kenia,%20quiero%20verificar%20mi%20número%20para%20el%20pedido%20${order.$id}%20(${order.ORDERCODE}).%20Mi%20número%20registrado%20es%20${order.CUSTOMERPHONE}`}
+            href={`https://wa.me/56936599658?text=Hola%20Kenia,%20quiero%20verificar%20mi%20número%20para%20el%20pedido%20${order?.$id}%20(${order?.ORDERCODE}).%20Mi%20número%20registrado%20es%20${order?.CUSTOMERPHONE}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#25D366', color: '#fff', borderRadius: 14, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(37,211,102,0.2)', transition: 'all 0.2s' }}
