@@ -202,6 +202,14 @@ function ConfirmarPedidoContent() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+        {/* Cliente */}
+        {order?.CUSTOMERNAME && (
+          <div className="flex items-center gap-2 text-xs text-gray-500 bg-white rounded-xl px-3 py-2 border border-gray-100">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <span className="font-semibold text-gray-700">{order.CUSTOMERNAME}</span>
+            {order.CUSTOMERPHONE && <><span>·</span><span>{order.CUSTOMERPHONE}</span></>}
+          </div>
+        )}
         {/* Progreso */}
         <div className="flex items-center gap-2 text-[11px] font-semibold">
           <span className="flex items-center gap-1.5 text-green-600"><span className="w-4 h-4 rounded-full bg-green-500 text-white flex items-center justify-center text-[9px]">✓</span>Stock confirmado</span>

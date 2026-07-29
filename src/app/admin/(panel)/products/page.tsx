@@ -1039,11 +1039,12 @@ export default function ProductsPage() {
       const { databaseId } = getAppwriteConfig();
       const payload: Record<string, any> = {
         NAME: d.NAME, DESCRIPTION: d.DESCRIPTION || '',
-        PRICE: Math.round(Number(d.PRICE)) || 0, STOCK: Math.round(Number(d.STOCK)) || 0,
+        PRICE: Math.round(Number(d.PRICE)) || Math.round(Number(d.CATALOGPRICE)) || 0,
+        STOCK: (d.STOCK === undefined || d.STOCK === null || Number(d.STOCK) === 0) ? 99999 : Math.round(Number(d.STOCK)),
         COST: Math.round(Number(d.COST)) || 0,
         CURRENTPRICE: d.CURRENTPRICE ? Math.round(Number(d.CURRENTPRICE)) : null,
         WHOLESALEPRICE: Math.round(Number(d.WHOLESALEPRICE)) || 0,
-        CATALOGPRICE: Math.round(Number(d.CATALOGPRICE || d.WHOLESALEPRICE)) || 0,
+        CATALOGPRICE: Math.round(Number(d.CATALOGPRICE)) || Math.round(Number(d.PRICE)) || 0,
         WHOLESALEMINQUANTITY: Math.round(Number(d.WHOLESALEMINQUANTITY)) || 0,
         PACKQTY: Math.round(Number(d.PACKQTY)) || 0,
         BOXPRICE: Math.round(Number(d.BOXPRICE)) || 0,
@@ -2000,7 +2001,7 @@ export default function ProductsPage() {
                       <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">✓ Stock Ilimitado (vender sin stock)</p>
                     )}
                     {Number(modal.data.STOCK) === 0 && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠ Stock en 0 — agotado</p>
+                      <p className="text-xs text-indigo-500 mt-1 flex items-center gap-1">Se guardara como Ilimitado automaticamente</p>
                     )}
                     {Number(modal.data.STOCK) > 0 && Number(modal.data.STOCK) <= 5 && (
                       <p className="text-xs text-amber-500 mt-1">⚠ Stock bajo ({modal.data.STOCK} un.)</p>
@@ -3732,6 +3733,8 @@ export default function ProductsPage() {
           onEdit={openEdit}
           onEnhanceProduct={enhanceProductWithAI}
           onAdd={openAdd}
+          onDelete={remove}
+          deleteId={deleteId}
           aiLoading={aiLoading !== null}
           onRefresh={() => load(false)}
           currentPage={currentPage}

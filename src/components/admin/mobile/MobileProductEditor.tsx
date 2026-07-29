@@ -722,7 +722,7 @@ export default function MobileProductEditor({
                   value={d.STOCK || ''}
                   onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
                   onChange={e => update({ STOCK: Number(e.target.value) || 0 })}
-                  placeholder="0"
+                  placeholder="Vacío = Ilimitado"
                   className={`${inputCls} flex-1 text-lg font-bold`}
                 />
                 <button type="button" onClick={() => update({ STOCK: 99999 })}
@@ -731,7 +731,7 @@ export default function MobileProductEditor({
                 </button>
               </div>
               {Number(d.STOCK) === 0 && (
-                <p className="text-[11px] font-semibold text-red-500 mt-1.5">⚠️ Con stock 0 el producto aparecerá agotado</p>
+                <p className="text-[11px] font-semibold text-indigo-500 mt-1.5">Se guardara como Ilimitado automaticamente</p>
               )}
             </div>
           </div>

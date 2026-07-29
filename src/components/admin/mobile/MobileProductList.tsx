@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, X, Plus, Package, ChevronRight, ChevronLeft, RefreshCw, ChevronDown, Sparkles, Loader2 } from 'lucide-react';
+import { Search, X, Plus, Package, ChevronRight, ChevronLeft, RefreshCw, ChevronDown, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Product, Category } from '@/types/admin';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 
@@ -22,6 +22,8 @@ interface Props {
   onEdit: (p: Product) => void;
   onEnhanceProduct: (p: Product) => void;
   onAdd: () => void;
+  onDelete: (id: string) => void;
+  deleteId: string | null;
   aiLoading?: boolean;
   onRefresh: () => void;
   currentPage: number;
@@ -34,10 +36,12 @@ const fmt = (n: number) =>
   new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
 function StockBadge({ stock }: { stock: number }) {
+  if (stock === 99999)
+    return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Ilimitado</span>;
   if (stock <= 0)
     return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Agotado</span>;
   if (stock <= 10)
-    return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Quedan {stock}</span>;
+    return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{stock} un.</span>;
   return <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{stock} un.</span>;
 }
 
@@ -46,7 +50,7 @@ export default function MobileProductList({
   search, onSearchChange, onSearchSubmit, onSearchClear,
   categories, catFilter, onCatChange,
   stockFilter, onStockFilterChange,
-  onEdit, onEnhanceProduct, onAdd, aiLoading, onRefresh,
+  onEdit, onEnhanceProduct, onAdd, onDelete, deleteId, aiLoading, onRefresh,
   currentPage, hasMore, onNextPage, onPrevPage,
 }: Props) {
   const counts: Record<StockFilter, number> = {
@@ -176,6 +180,14 @@ export default function MobileProductList({
                 title="Mejorar con IA"
               >
                 {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 animate-pulse" />}
+              </button>
+              <button
+                onClick={() => onDelete(p.$id)}
+                disabled={deleteId === p.$id}
+                className="w-9 h-9 flex items-center justify-center bg-red-50 rounded-xl hover:bg-red-100 transition-colors border border-red-200 text-red-600 shrink-0 disabled:opacity-50"
+                title="Eliminar"
+              >
+                {deleteId === p.$id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               </button>
               <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" onClick={() => onEdit(p)} />
             </div>

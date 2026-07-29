@@ -9,7 +9,8 @@ if (pathSegments.length > 0 && pathSegments[0] !== 'index.html' && !pathSegments
 }
 
 let WHATSAPP_CONTACTS = [
-  { name: 'Test', number: '56992139185' }
+  { name: 'Lizzy', number: '56962293893' },
+  { name: 'Fernanda', number: '56967294975' }
 ];
 const PASSWORDS = { admin: 'Flavia273@' }; // TODO: Move to firebase
 const STORAGE_KEYS = { cart: `db_cart_${CLIENT_ID}`, adminAuth: `db_admin_auth_${CLIENT_ID}` };
@@ -574,15 +575,44 @@ function renderCart() {
     warn.className = 'text-xs text-center mb-2 px-3 py-1.5 rounded-full font-semibold bg-green-50 text-green-700 border border-green-200';
   }
 }
+let selectedAttendant = null;
 function sendWhatsApp() {
-  if (cart.length === 0) { showToast('Carrito vacío'); return; }
+  if (cart.length === 0) { showToast('Carrito vacio'); return; }
   if (cartTotal() < getMinPurchase()) {
-    showToast(`Compra mínima: $${getMinPurchase().toLocaleString('es-CL')}`);
+    showToast(`Compra minima: $${getMinPurchase().toLocaleString('es-CL')}`);
     return;
   }
-  // Show phone form modal
+  // Render attendant options
+  selectedAttendant = null;
+  var container = document.getElementById('attendantOptions');
+  if (container) {
+    container.innerHTML = WHATSAPP_CONTACTS.map(function(c, idx) {
+      return '<button type="button" data-idx="' + idx + '" onclick="selectAttendant(' + idx + ')" class="attendant-btn px-4 py-3 rounded-2xl border-2 border-blue-100 text-blue-700 font-bold text-sm transition active:scale-95 flex flex-col items-center gap-1">' +
+        '<span>' + c.name + '</span>' +
+        '</button>';
+    }).join('');
+  }
+  // Clear fields
+  var nameInput = document.getElementById('custName');
+  var phoneInput = document.getElementById('custPhone');
+  if (nameInput) nameInput.value = '';
+  if (phoneInput) phoneInput.value = '';
+  // Show modal
   const modal = document.getElementById('customerFormModal');
   if (modal) { modal.classList.remove('hidden'); return; }
+}
+function selectAttendant(idx) {
+  selectedAttendant = idx;
+  var buttons = document.querySelectorAll('.attendant-btn');
+  buttons.forEach(function(btn, i) {
+    if (i === idx) {
+      btn.classList.remove('border-blue-100', 'text-blue-700');
+      btn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-800');
+    } else {
+      btn.classList.add('border-blue-100', 'text-blue-700');
+      btn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-800');
+    }
+  });
 }
 function closeCustomerFormModal() {
   const modal = document.getElementById('customerFormModal');
@@ -621,9 +651,15 @@ function normalizeChileanPhone(raw) {
   return '56' + digits;
 }
 async function submitCustomerOrder() {
+  if (selectedAttendant === null) { showToast('Selecciona quien te atiende'); return; }
+  var rawName = (document.getElementById('custName') || {}).value || '';
+  var customerName = rawName.trim();
+  if (!customerName) { showToast('Por favor ingresa tu nombre'); return; }
   var rawPhone = (document.getElementById('custPhone') || {}).value || '';
   var normalizedPhone = normalizeChileanPhone(rawPhone);
   if (!normalizedPhone) { showToast('Numero de telefono invalido. Ej: 9 1234 5678 o 56912345678'); return; }
+
+  var attendant = WHATSAPP_CONTACTS[selectedAttendant];
 
   var apiBase = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
@@ -644,7 +680,7 @@ async function submitCustomerOrder() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        customerName: '',
+        customerName: customerName,
         customerPhone: normalizedPhone,
         items: orderItems,
         total: total
@@ -666,9 +702,12 @@ async function submitCustomerOrder() {
   var siteUrl = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
     : 'https://www.donbalatomayorista.cl';
-  var waMsg = '*Nuevo pedido del catalogo*\n\n';
+  var waMsg = '*Hola, soy ' + customerName + '*\n\n';
+  waMsg += 'Mira, tengo un pedido del catalogo.\n\n';
   waMsg += '_Ignora el enlace del final, es solo para uso interno._\n\n';
   waMsg += '----------------------------------------\n';
+  waMsg += '*Cliente:* ' + customerName + '\n';
+  waMsg += '*Telefono:* ' + normalizedPhone + '\n';
   waMsg += '*Codigo:* ' + (orderCode ? orderCode : '') + '\n\n';
   waMsg += '*Productos:*\n';
   cart.forEach(function(i) {
@@ -679,7 +718,7 @@ async function submitCustomerOrder() {
   waMsg += '*Total: ' + formatPrice(total) + '*\n\n';
   waMsg += siteUrl + '/verificar-stock?code=' + orderCode;
 
-  var waUrl = 'https://wa.me/56992139185?text=' + encodeURIComponent(waMsg);
+  var waUrl = 'https://wa.me/' + attendant.number + '?text=' + encodeURIComponent(waMsg);
 
   // Limpiar carrito
   cart = [];
@@ -687,7 +726,7 @@ async function submitCustomerOrder() {
   updateCartCount();
 
   // Mostrar modal de confirmación
-  showOrderConfirmation(orderCode, '', saveError, waUrl);
+  showOrderConfirmation(orderCode, customerName, saveError, waUrl);
 }
 
 function showOrderConfirmation(orderCode, customerName, hasError, waUrl) {
@@ -2893,5 +2932,6 @@ window.modalQtyChange = modalQtyChange;
 window.modalQtyUpdate = modalQtyUpdate;
 window.modalAddToCart = modalAddToCart;
 window.flyToCart = flyToCart;
+window.selectAttendant = selectAttendant;
 
 // Script cleanup complete
