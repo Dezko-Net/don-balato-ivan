@@ -701,7 +701,8 @@ function CheckoutInner() {
           }
         }
       } catch (err: any) {
-        setError('Error al consultar disponibilidad de productos. Intenta de nuevo.');
+        console.error('[checkout] Error consultando disponibilidad:', err);
+        setError('Error al consultar disponibilidad de productos. ' + (err?.message || 'Intenta de nuevo.'));
         setSubmitting(false);
         return;
       }
