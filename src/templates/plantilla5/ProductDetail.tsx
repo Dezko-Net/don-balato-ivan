@@ -795,7 +795,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
               background: ${isActive ? 'linear-gradient(160deg, #eff6ff, #ffffff)' : '#ffffff'};
               border: ${isActive ? '2px solid #2563eb' : '1.5px solid #e5e7eb'};
-              box-shadow: ${isActive ? '0 8px 18px rgba(219,39,119,0.14)' : '0 1px 3px rgba(0,0,0,0.04)'};
+              box-shadow: ${isActive ? '0 8px 18px rgba(59,130,246,0.14)' : '0 1px 3px rgba(0,0,0,0.04)'};
               transform: ${isActive ? 'translateY(-3px)' : 'none'};
             ">
               ${isActive ? `<span style="position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: #2563eb; color: #fff; font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; padding: 2.5px 8px; border-radius: 999px; text-transform: uppercase; white-space: nowrap;">Tu precio</span>` : ''}
@@ -1472,52 +1472,52 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 <div class="promo1-mega-pack" style="padding: 40px 16px; background: #fff; text-align: center;">
   <h2 style="font-size: 26px; font-weight: 900; color: #2563eb; margin-bottom: 30px; line-height: 1.2;">🎁 Mega Pack Favoritos<br><span style="font-size: 16px; font-weight: 600; color: #666;">Incluye estos 10 productos en tu pedido</span></h2>
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; max-width: 1200px; margin: 0 auto;">
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1307.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Base Raspberry Tart</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $2.760</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1636.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Iluminador Don Balato</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $1.620</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/B10123A.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Polvo Suelto</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $1.620</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1328.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Paleta 4 Rubores</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $3.000</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1068.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Corrector e Iluminador</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $3.420</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC1817.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Paleta Ghost Music</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $4.308</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/KC12823.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Toallitas Desmaquillantes</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $1.068</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/KEVIN%26COCO/285850.jpg" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:12px; background: #fff;" />
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Set Brocha + Atomizador</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Precio Orig. $2.160</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <div style="width:100%; aspect-ratio:1; background: #dbeafe; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">✨</div>
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Brillos Labial 6 Colores x3</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Incluido</p>
     </div>
-    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(219,39,119,0.05);">
+    <div style="background: #eff6ff; border-radius: 16px; padding: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.05);">
       <div style="width:100%; aspect-ratio:1; background: #dbeafe; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; font-size: 32px;">💖</div>
       <h4 style="font-size: 13px; font-weight: 700; color: #111; margin: 0 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Brillos Love Color x4</h4>
       <p style="font-size: 13px; font-weight: 800; color: #2563eb; margin: 0;">Incluido</p>
@@ -1694,20 +1694,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       shareText.textContent = 'Compartir:';
     }
 
-    // 13f. Configurar el botón "¿Necesitas ayuda?" para WhatsApp
+    // 13f. Ocultar el botón "¿Necesitas ayuda?" — ya existe botón flotante de WhatsApp
     const helpBtn = root.querySelector('.help-desk-link');
     if (helpBtn) {
-      helpBtn.setAttribute('href', 'https://wa.me/56999149712');
+      (helpBtn as HTMLElement).style.display = 'none';
       helpBtn.setAttribute('target', '_blank');
       helpBtn.setAttribute('rel', 'noopener noreferrer');
-      helpBtn.innerHTML = `
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAZfIMxTRshRuJdTJu-mi52yWPxiF3ghQsSw&s" 
-             style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; margin-right: 8px; display: inline-block; vertical-align: middle;" 
-             alt="WhatsApp" />
-        <span style="vertical-align: middle;">¿Necesitas ayuda?</span>
-      `;
-      (helpBtn as HTMLElement).style.display = 'inline-flex';
-      (helpBtn as HTMLElement).style.alignItems = 'center';
+      // Botón oculto — el WhatsApp flotante ya está disponible
       (helpBtn as HTMLElement).style.justifyContent = 'center';
     }
 
@@ -2439,7 +2432,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .tpl5-page-wrapper quantity-selector-component:focus-within,
         .tpl5-page-wrapper .quantity-selector:focus-within {
           border-color: #2563eb !important;
-          box-shadow: 0 0 0 3px rgba(219,39,119,0.1) !important;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;
         }
         
         /* Minus / Plus buttons */
@@ -2736,7 +2729,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .quantity-selector button:hover,
         quantity-selector-component .quantity-button:hover,
         .quantity-selector .quantity-button:hover {
-          color: #2563eb !important; /* Cambia a rosa Yaxsell al pasar el cursor */
+          color: #2563eb !important; /* Azul del tema al pasar el cursor */
           background-color: transparent !important;
           border: none !important;
           transform: scale(1.15) !important;
