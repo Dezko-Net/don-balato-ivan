@@ -175,8 +175,8 @@ export default function HomePage() {
               {activeBanner?.DESCRIPTION || 'Los mejores productos con envío rápido a todo Chile. Paga fácil con transferencia bancaria.'}
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/productos" className="gradient-bg text-white px-8 py-4 rounded-2xl font-semibold text-lg flex items-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/25">
-                Ver productos <ArrowRight size={20} />
+              <Link href={activeBanner?.LINKURL || '/productos'} className="gradient-bg text-white px-8 py-4 rounded-2xl font-semibold text-lg flex items-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/25">
+                {activeBanner?.LINKURL ? 'Ver producto' : 'Ver productos'} <ArrowRight size={20} />
               </Link>
               {offers.length > 0 && (
                 <Link href="/ofertas" className="glass text-gray-900 px-8 py-4 rounded-2xl font-semibold text-lg flex items-center gap-2 hover:bg-white transition-colors">
