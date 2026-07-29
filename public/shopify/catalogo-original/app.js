@@ -580,7 +580,7 @@ function sendWhatsApp() {
     showToast(`Compra mínima: $${getMinPurchase().toLocaleString('es-CL')}`);
     return;
   }
-  // Show customer form modal
+  // Show phone form modal
   const modal = document.getElementById('customerFormModal');
   if (modal) { modal.classList.remove('hidden'); return; }
 }
@@ -588,10 +588,42 @@ function closeCustomerFormModal() {
   const modal = document.getElementById('customerFormModal');
   if (modal) modal.classList.add('hidden');
 }
+// Normaliza cualquier formato de telefono chileno a 56 + 9 + 8 digitos
+function normalizeChileanPhone(raw) {
+  if (!raw) return '';
+  // Quitar todo lo que no sea digito
+  var digits = raw.replace(/\D/g, '');
+  // Si esta vacio
+  if (!digits) return '';
+  // Si empieza con 56, quitarlo para trabajar limpio
+  if (digits.indexOf('56') === 0) {
+    digits = digits.substring(2);
+  }
+  // Si empieza con 0, quitarlo
+  if (digits.indexOf('0') === 0) {
+    digits = digits.substring(1);
+  }
+  // Si tiene 8 digitos (sin el 9), agregar el 9 adelante
+  if (digits.length === 8) {
+    digits = '9' + digits;
+  }
+  // Si tiene 9 digitos y no empieza con 9, agregar 9
+  if (digits.length === 9 && digits.charAt(0) !== '9') {
+    digits = '9' + digits;
+  }
+  // Si tiene mas de 9 digitos, tomar los ultimos 9
+  if (digits.length > 9) {
+    digits = digits.substring(digits.length - 9);
+  }
+  // Si tiene menos de 9, no se puede usar
+  if (digits.length < 9) return '';
+  // Retornar con 56 adelante
+  return '56' + digits;
+}
 async function submitCustomerOrder() {
-  var name = (document.getElementById('custName') || {}).value || '';
-  var phone = (document.getElementById('custPhone') || {}).value || '';
-  if (!name.trim() || !phone.trim()) { showToast('Completa nombre y teléfono'); return; }
+  var rawPhone = (document.getElementById('custPhone') || {}).value || '';
+  var normalizedPhone = normalizeChileanPhone(rawPhone);
+  if (!normalizedPhone) { showToast('Numero de telefono invalido. Ej: 9 1234 5678 o 56912345678'); return; }
 
   var apiBase = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
@@ -606,14 +638,14 @@ async function submitCustomerOrder() {
   var orderId = '';
   var saveError = false;
 
-  // Guardar en Appwrite (wholesale_orders con STATUS pending_stock)
+  // Guardar en Appwrite (orders con STATUS pending_stock)
   try {
     var res = await fetch(apiBase + '/api/catalogo/order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        customerName: name.trim(),
-        customerPhone: phone.trim(),
+        customerName: '',
+        customerPhone: normalizedPhone,
         items: orderItems,
         total: total
       })
@@ -630,25 +662,22 @@ async function submitCustomerOrder() {
     saveError = true;
   }
 
-  // Cerrar modal de formulario
-  closeCustomerFormModal();
-
-  // Construir mensaje de WhatsApp con el detalle del pedido
+  // Construir mensaje de WhatsApp para la cajera con link de verificar stock
   var siteUrl = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
     : 'https://www.donbalatomayorista.cl';
-  var waMsg = '*PEDIDO WHATSAPP* ' + (orderCode ? orderCode : '') + '\n';
-  waMsg += 'Nombre: ' + name.trim() + '\n';
-  waMsg += 'Teléfono: ' + phone.trim() + '\n\n';
+  var waMsg = '*Nuevo pedido del catalogo*\n\n';
+  waMsg += '_Ignora el enlace del final, es solo para uso interno._\n\n';
+  waMsg += '----------------------------------------\n';
+  waMsg += '*Codigo:* ' + (orderCode ? orderCode : '') + '\n\n';
   waMsg += '*Productos:*\n';
   cart.forEach(function(i) {
-    waMsg += '• ' + i.name + ' (SKU: ' + i.sku + ')\n';
-    waMsg += '  Cantidad: ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
+    waMsg += '\n- ' + i.name + '\n';
+    waMsg += '  ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
   });
-  waMsg += '\n*Total: ' + formatPrice(total) + '*\n\n';
-  waMsg += '_Los links a continuación son para uso interno de nuestra equipo. Por favor ignóralos, te avisaremos cuando todo esté listo._\n\n';
-  waMsg += '🔗 Verificar stock: ' + siteUrl + '/verificar-stock?code=' + orderCode + '\n';
-  waMsg += '🔗 Subir comprobante: ' + siteUrl + '/comprobante?code=' + orderCode;
+  waMsg += '\n----------------------------------------\n';
+  waMsg += '*Total: ' + formatPrice(total) + '*\n\n';
+  waMsg += siteUrl + '/verificar-stock?code=' + orderCode;
 
   var waUrl = 'https://wa.me/56992139185?text=' + encodeURIComponent(waMsg);
 
@@ -658,7 +687,7 @@ async function submitCustomerOrder() {
   updateCartCount();
 
   // Mostrar modal de confirmación
-  showOrderConfirmation(orderCode, name.trim(), saveError, waUrl);
+  showOrderConfirmation(orderCode, '', saveError, waUrl);
 }
 
 function showOrderConfirmation(orderCode, customerName, hasError, waUrl) {

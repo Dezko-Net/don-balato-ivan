@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       total: number;
     };
 
-    if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Faltan datos del pedido' }, { status: 400 });
     }
 
