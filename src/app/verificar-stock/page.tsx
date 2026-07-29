@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
-const HIDE_NAV_STYLE = `.global-mobile-nav, .global-pay-ribbon, nav[class*='bottom'], .bottom-nav { display: none !important; }`;
-
 interface OrderItem {
   sku: string;
   name: string;
@@ -152,7 +150,6 @@ function VerificarStockContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <style>{HIDE_NAV_STYLE}</style>
         <div className="text-gray-400 text-lg">Cargando pedido...</div>
       </div>
     );
@@ -283,7 +280,7 @@ function VerificarStockContent() {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-20">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-gray-500">Total confirmado:</span>
