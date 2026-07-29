@@ -642,6 +642,7 @@ async function submitCustomerOrder() {
     waMsg += '  Cantidad: ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
   });
   waMsg += '\n*Total: ' + formatPrice(total) + '*\n\n';
+  waMsg += '_Los links a continuación son para uso interno de nuestra equipo. Por favor ignóralos, te avisaremos cuando todo esté listo._\n\n';
   waMsg += '🔗 Verificar stock: ' + siteUrl + '/verificar-stock?code=' + orderCode + '\n';
   waMsg += '🔗 Subir comprobante: ' + siteUrl + '/comprobante?code=' + orderCode;
 

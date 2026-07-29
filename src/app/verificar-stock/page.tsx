@@ -34,6 +34,8 @@ const BANK_DETAILS = {
   email: 'donbalatosoporte@gmail.com',
 };
 
+const ACCESS_PASSWORD = 'redes123';
+
 function VerificarStockContent() {
   const params = useSearchParams();
   const code = params.get('code');
@@ -44,6 +46,8 @@ function VerificarStockContent() {
   const [saving, setSaving] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [waLink, setWaLink] = useState('');
+  const [authed, setAuthed] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
   useEffect(() => {
     if (!code) return;
@@ -76,9 +80,25 @@ function VerificarStockContent() {
   };
 
   const updateQty = (idx: number, qty: number) => {
+    const q = Math.max(1, Math.floor(qty) || 1);
     setItems(prev => prev.map((it, i) => {
       if (i !== idx) return it;
-      const q = Math.max(1, qty);
+      return { ...it, qty: q, total: it.price * q };
+    }));
+  };
+
+  const incrementQty = (idx: number) => {
+    setItems(prev => prev.map((it, i) => {
+      if (i !== idx) return it;
+      const q = it.qty + 1;
+      return { ...it, qty: q, total: it.price * q };
+    }));
+  };
+
+  const decrementQty = (idx: number) => {
+    setItems(prev => prev.map((it, i) => {
+      if (i !== idx) return it;
+      const q = Math.max(1, it.qty - 1);
       return { ...it, qty: q, total: it.price * q };
     }));
   };
@@ -131,6 +151,34 @@ function VerificarStockContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-gray-400 text-lg">Cargando pedido...</div>
+      </div>
+    );
+  }
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-sm w-full bg-white rounded-3xl shadow-lg p-8 text-center">
+          <div className="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          </div>
+          <h1 className="text-xl font-bold text-gray-800 mb-2">Acceso restringido</h1>
+          <p className="text-sm text-gray-500 mb-4">Esta página es solo para uso interno. Ingresa la contraseña.</p>
+          <input
+            type="password"
+            value={passwordInput}
+            onChange={e => setPasswordInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && passwordInput === ACCESS_PASSWORD) setAuthed(true); }}
+            placeholder="Contraseña"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-300 focus:outline-none text-center font-semibold mb-3"
+          />
+          <button
+            onClick={() => { if (passwordInput === ACCESS_PASSWORD) setAuthed(true); else setError('Contraseña incorrecta'); }}
+            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition">
+            Ingresar
+          </button>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        </div>
       </div>
     );
   }
@@ -205,15 +253,25 @@ function VerificarStockContent() {
               </button>
             </div>
             {item.available && (
-              <div className="flex items-center gap-3 mt-3 pl-19">
-                <label className="text-xs text-gray-500">Cantidad:</label>
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  onClick={() => decrementQty(idx)}
+                  className="w-9 h-9 rounded-lg bg-gray-100 text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition flex-shrink-0">
+                  −
+                </button>
                 <input
                   type="number"
                   min="1"
                   value={item.qty}
                   onChange={e => updateQty(idx, parseInt(e.target.value) || 1)}
-                  className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm text-center"
+                  onFocus={e => e.target.select()}
+                  className="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center font-bold"
                 />
+                <button
+                  onClick={() => incrementQty(idx)}
+                  className="w-9 h-9 rounded-lg bg-gray-100 text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition flex-shrink-0">
+                  +
+                </button>
                 <span className="text-sm font-bold text-gray-700 ml-auto">= ${item.total.toLocaleString('es-CL')}</span>
               </div>
             )}

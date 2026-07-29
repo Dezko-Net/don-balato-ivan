@@ -23,6 +23,8 @@ const FALLBACK_AGENCIES: AgencyOption[] = [
   { name: 'RETIRO EN TIENDA', color: '#7c3aed', bg: '#f5f3ff', desc: 'Retiro en tienda - Toesca 2537, Santiago', logo: '', active: true },
 ];
 
+const ACCESS_PASSWORD = 'redes123';
+
 function DatosEnvioContent() {
   const params = useSearchParams();
   const code = params.get('code');
@@ -31,6 +33,8 @@ function DatosEnvioContent() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [authed, setAuthed] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
   const [region, setRegion] = useState('');
   const [comuna, setComuna] = useState('');
@@ -87,6 +91,34 @@ function DatosEnvioContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-gray-400 text-lg">Cargando...</div>
+      </div>
+    );
+  }
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-sm w-full bg-white rounded-3xl shadow-lg p-8 text-center">
+          <div className="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          </div>
+          <h1 className="text-xl font-bold text-gray-800 mb-2">Acceso restringido</h1>
+          <p className="text-sm text-gray-500 mb-4">Esta página es solo para uso interno. Ingresa la contraseña.</p>
+          <input
+            type="password"
+            value={passwordInput}
+            onChange={e => setPasswordInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && passwordInput === ACCESS_PASSWORD) setAuthed(true); }}
+            placeholder="Contraseña"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-300 focus:outline-none text-center font-semibold mb-3"
+          />
+          <button
+            onClick={() => { if (passwordInput === ACCESS_PASSWORD) setAuthed(true); else setError('Contraseña incorrecta'); }}
+            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition">
+            Ingresar
+          </button>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        </div>
       </div>
     );
   }
