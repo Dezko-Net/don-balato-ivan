@@ -2697,7 +2697,78 @@ export default function HomePage1() {
     };
   }, [bodyHtml, sectionCfg]);
 
-  /* â”€â”€ Collection list section â”€â”€ */
+  /* ── Mobile: banner image + animated 'CATEGORÍAS' title above collection list ── */
+  useEffect(() => {
+    if (!bodyHtml) return;
+    const collection = document.getElementById('shopify-section-template--22405132419320__collection_list_WrFbPe');
+    if (!collection) return;
+
+    const BANNER_ID = 'tpl1-mobile-cat-banner';
+    // Remove previous insert
+    document.getElementById(BANNER_ID)?.remove();
+
+    const banner = document.createElement('div');
+    banner.id = BANNER_ID;
+    banner.style.cssText = `
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 16px 0;
+      background: #fff;
+    `;
+
+    banner.innerHTML = `
+      <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1785356616648-pegada-1785356614330.png"
+           alt="Banner categorías"
+           style="width: 100%; max-width: 420px; border-radius: 16px; object-fit: cover; aspect-ratio: 16/9;" />
+      <style>
+        @keyframes tpl1CatUnderline {
+          0% { stroke-dashoffset: 800; }
+          100% { stroke-dashoffset: 0; }
+        }
+      </style>
+      <h2 style="
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-size: 28px;
+        font-weight: 800;
+        color: #1a1a1a;
+        margin: 0;
+        text-align: center;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      ">
+        CATEGORÍAS
+        <svg viewBox="-400 -55 730 60" stroke="#f59e0b" fill="none" xmlns="http://www.w3.org/2000/svg"
+             style="position: absolute; bottom: -8px; left: 0; width: 100%; height: 20px; overflow: visible;">
+          <path stroke-linecap="round" stroke-width="30" pathLength="1"
+                d="m -383.25 -6 c 55.25 -22 130.75 -33.5 293.25 -38 c 54.5 -0.5 195 -2.5 401 15"
+                style="stroke-dasharray: 800; stroke-dashoffset: 0; animation: tpl1CatUnderline 1.5s ease-out forwards;" />
+        </svg>
+      </h2>
+    `;
+
+    // Only show on mobile
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const updateVisibility = () => {
+      banner.style.display = mediaQuery.matches ? 'flex' : 'none';
+    };
+    updateVisibility();
+    mediaQuery.addEventListener('change', updateVisibility);
+
+    collection.parentNode?.insertBefore(banner, collection);
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateVisibility);
+      banner.remove();
+    };
+  }, [bodyHtml, sectionCfg]);
+
+  /* ── Collection list section ── */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_collection_list');
