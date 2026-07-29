@@ -50,6 +50,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // CORS para sync-firebase-products (catálogo Firebase → Appwrite)
+  if (pathname === '/api/admin/sync-firebase-products') {
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      });
+    }
+    const response = NextResponse.next();
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    return response;
+  }
+
   const isBot = BOT_KEYWORDS.some(keyword => ua.includes(keyword)) &&
                 !ALLOWED_KEYWORDS.some(allowed => ua.includes(allowed));
 
