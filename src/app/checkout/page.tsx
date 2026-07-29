@@ -685,55 +685,40 @@ function CheckoutInner() {
         };
       });
 
-      // ── Carga de documentos en lote para validación y descuento ──
-      const allProductDocs: Record<string, any> = {};
-      const productIds = items.map(it => it.product.$id);
-      
+      // ── Payload de stock para el servidor ──
+      // La colección `products` NO es legible/escribible desde el navegador en
+      // este proyecto (permisos sin rol anónimo). Antes el checkout la leía con
+      // el cliente crudo: Appwrite respondía 200 con `{}`, `res.documents` era
+      // undefined y el for...of reventaba ("... .documents is not iterable").
+      // Ahora la validación y el descuento de stock van server-side con API key
+      // y datos frescos (ver src/app/api/checkout/stock/route.ts).
+      const stockPayload = items.map(it => ({
+        id: it.product.$id,
+        qty: it.quantity,
+        name: it.product.NAME,
+        sku: (it.product as any).SKU || (it.product as any).sku || '',
+      }));
+
+      // ── Validación de stock antes de crear el pedido (evita oversell) ──
+      // Regla: STOCK = 99999 = sentinel de "ilimitado", nunca se valida ni
+      // descuenta (la lógica vive en el endpoint).
       try {
-        for (let i = 0; i < productIds.length; i += 100) {
-          const chunk = productIds.slice(i, i + 100);
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.equal('$id', chunk),
-            Query.limit(100)
-          ]);
-          for (const doc of res.documents) {
-            allProductDocs[doc.$id] = doc;
-          }
+        const vr = await fetch('/api/checkout/stock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'validate', items: stockPayload }),
+        });
+        const vd = await vr.json().catch(() => null);
+        if (!vr.ok || !vd?.ok) {
+          setError(vd?.error || 'Error al consultar disponibilidad de productos. Intenta de nuevo.');
+          setSubmitting(false);
+          return;
         }
       } catch (err: any) {
         console.error('[checkout] Error consultando disponibilidad:', err);
         setError('Error al consultar disponibilidad de productos. ' + (err?.message || 'Intenta de nuevo.'));
         setSubmitting(false);
         return;
-      }
-
-      // ── Validación de stock antes de crear pedido (evita oversell) ──
-      // Regla: STOCK = 99999 = sentinel de "ilimitado", nunca se valida ni descuenta.
-      // Si el admin puso un stock real (< 99999), siempre se valida y descuenta,
-      // incluso en modo unlimitedStock de la tienda.
-      for (const it of items) {
-        // Bundle virtual products (e.g. Mega Pack) don't exist in DB, skip validation
-        if (it.product.SKU === 'PROMO1' || it.product.$id.startsWith('bundle-')) {
-          continue;
-        }
-        const productDoc = allProductDocs[it.product.$id];
-        if (!productDoc) {
-          setError(`El producto "${it.product.NAME}" ya no está disponible en la tienda. Por favor, elimínalo de tu carrito para continuar.`);
-          setSubmitting(false);
-          return;
-        }
-        
-        const currentStock = Number(productDoc.STOCK ?? 0);
-        // Producto con stock ilimitado (sentinel 99999) → no validar
-        if (currentStock === 99999) {
-          continue;
-        }
-        // Producto con stock real asignado → validar aunque sea modo sin-stock
-        if (currentStock < it.quantity) {
-          setError(`Stock insuficiente para "${productDoc.NAME || it.product.NAME}". Disponible: ${currentStock}, necesitas: ${it.quantity}.`);
-          setSubmitting(false);
-          return;
-        }
       }
 
       const finalAddress = (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && !form.address.startsWith('[SUCURSAL]'))
@@ -760,38 +745,21 @@ function CheckoutInner() {
       // Notify admin about new order
       notifyNewOrder(orderCode, form.name, total, items.length).catch(() => {});
 
-      // ── Descontar stock reservado (con rollback si falla) ──
-      // Solo se descuenta si el producto tiene stock real asignado (< 99999).
-      // STOCK = 99999 = sentinel de ilimitado, se salta el descuento siempre.
-      const stockRollback: { productId: string; prevStock: number }[] = [];
+      // ── Descontar stock reservado (server-side, API key + rollback) ──
+      // El servidor descuenta el stock fresco y revierte lo ya descontado si
+      // algún ítem falla. Si el descuento falla en conjunto, cancelamos el
+      // pedido recién creado para no dejar una reserva fantasma.
       try {
-        for (const item of items) {
-          // Bundle virtual products don't exist in DB, skip stock discount
-          if (item.product.SKU === 'PROMO1' || item.product.$id.startsWith('bundle-')) {
-            continue;
-          }
-          const productDoc = allProductDocs[item.product.$id];
-          if (!productDoc) {
-             throw new Error(`El producto "${item.product.NAME}" ya no está disponible en la tienda.`);
-          }
-          const currentStock = Number(productDoc.STOCK ?? 0);
-          
-          // Stock ilimitado → no descontar
-          if (currentStock === 99999) {
-            continue;
-          }
-          // Stock real → siempre descontar (incluso en modo unlimitedStock de la tienda)
-          if (currentStock < item.quantity) {
-            throw new Error(`Stock insuficiente para "${productDoc.NAME || item.product.NAME}". Disponible: ${currentStock}, necesitas: ${item.quantity}.`);
-          }
-          stockRollback.push({ productId: item.product.$id, prevStock: currentStock });
-          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id, { STOCK: currentStock - item.quantity });
+        const dr = await fetch('/api/checkout/stock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'decrement', orderId, items: stockPayload }),
+        });
+        const dd = await dr.json().catch(() => null);
+        if (!dr.ok || !dd?.ok) {
+          throw new Error(dd?.error || 'No se pudo reservar el stock del pedido.');
         }
       } catch (err: any) {
-        // Revertir stock ya descontado
-        for (const r of stockRollback) {
-          try { await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, r.productId, { STOCK: r.prevStock }); } catch {}
-        }
         // Cancelar el pedido recién creado para no dejar reserva fantasma
         try {
           await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
