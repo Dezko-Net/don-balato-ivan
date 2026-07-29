@@ -52,6 +52,10 @@ const displayStatusLabel = (status: string, agency?: string): string => {
 
 const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
+// Clave normalizada por nombre de producto (sin acentos/mayúsculas/espacios extra)
+// para emparejar los items del pedido con el catálogo cuando no traen id.
+const normNameKey = (s?: string) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+
 const fmtDate = (ts: number) => {
   const d = new Date(ts);
   return d.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -83,6 +87,10 @@ export default function OrderDetailPage() {
   const [productStocks, setProductStocks] = useState<Record<string, number>>({});
   const [productLocations, setProductLocations] = useState<Record<string, ProductWarehouseLocation>>({});
   const [productSkus, setProductSkus] = useState<Record<string, string>>({});
+  // Imágenes de producto por id / sku / nombre, tomadas del catálogo público
+  // cacheado. Necesario porque los pedidos del flujo de catálogo/WhatsApp guardan
+  // los items SIN id ni img (solo sku y name), así que la foto se empareja aquí.
+  const [itemImages, setItemImages] = useState<{ byId: Record<string, string>; bySku: Record<string, string>; byName: Record<string, string> }>({ byId: {}, bySku: {}, byName: {} });
   const [productPrices, setProductPrices] = useState<Record<string, number>>({});
   const [productBarcodes, setProductBarcodes] = useState<Record<string, string>>({});
   const [proofOpen, setProofOpen] = useState(false);
@@ -1024,6 +1032,31 @@ export default function OrderDetailPage() {
       // Fetch product stocks
       let items: { id?: string }[] = [];
       try { items = JSON.parse(o.ITEMS || '[]'); } catch {}
+
+      // Mapa de imágenes por id / sku / nombre desde el catálogo público (cacheado,
+      // legible — a diferencia de la colección products directa). Resuelve la foto
+      // de los items que no guardan img (pedidos del flujo de catálogo/WhatsApp).
+      if (items.length > 0) {
+        try {
+          const pr = await fetch('/api/public-data/products?limit=1000');
+          if (pr.ok) {
+            const prods = ((await pr.json()).products || []) as any[];
+            const byId: Record<string, string> = {};
+            const bySku: Record<string, string> = {};
+            const byName: Record<string, string> = {};
+            for (const p of prods) {
+              const img = p.IMAGEURL || p.IMAGEURL2 || '';
+              if (!img) continue;
+              if (p.$id) byId[p.$id] = img;
+              const sku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+              if (sku) bySku[String(sku).toLowerCase().trim()] = img;
+              if (p.NAME) byName[normNameKey(p.NAME)] = img;
+            }
+            setItemImages({ byId, bySku, byName });
+          }
+        } catch { /* si falla, se muestra el placeholder */ }
+      }
+
       const productIds = items.map(it => it.id).filter((id): id is string => Boolean(id));
       if (productIds.length > 0) {
         const stocks: Record<string, number> = {};
@@ -1064,6 +1097,26 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Resuelve la imagen de un item: primero la que trae guardada; si no, la empareja
+  // con el catálogo por id, luego por sku y por último por nombre. Devuelve URL lista
+  // para <img>. Con absolute=true la vuelve absoluta (para el PDF que abre otra ventana).
+  const itemImage = useCallback((it: any, absolute = false): string => {
+    let img = '';
+    const direct = it?.img || it?.imageUrl;
+    if (direct) img = resolveStorageImageUrl(direct);
+    if (!img && it?.id && itemImages.byId[it.id]) img = itemImages.byId[it.id];
+    if (!img) {
+      const sku = it?.sku ? String(it.sku).toLowerCase().trim() : '';
+      if (sku && itemImages.bySku[sku]) img = itemImages.bySku[sku];
+    }
+    if (!img) {
+      const nm = normNameKey(it?.name);
+      if (nm && itemImages.byName[nm]) img = itemImages.byName[nm];
+    }
+    if (absolute && img.startsWith('/') && typeof window !== 'undefined') img = window.location.origin + img;
+    return img;
+  }, [itemImages]);
 
   // Reverse-geocode de las coords GPS del cliente → dirección detectada (región/comuna)
   useEffect(() => {
@@ -2031,9 +2084,9 @@ export default function OrderDetailPage() {
             <tr key={i} style={{ borderBottom: '1px solid #e0f2fe', background: i % 2 ? '#f0f9ff' : '#fff' }}>
               <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                 <div style={{ width: 44, height: 44, borderRadius: 6, border: '1px solid #bae6fd', background: '#f0f9ff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {(it as any).img ? (
-                    <img src={resolveStorageImageUrl((it as any).img)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { const t = e.target as HTMLImageElement; t.style.display = 'none'; (t.parentElement as HTMLElement).innerHTML = '<span style="font-size:8px;color:#7dd3fc;font-weight:700;">S/F</span>'; }} />
-                  ) : <span style={{ fontSize: 8, color: '#7dd3fc', fontWeight: 700 }}>S/F</span>}
+                  {(() => { const im = itemImage(it); return im ? (
+                    <img src={im} style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { const t = e.target as HTMLImageElement; t.style.display = 'none'; (t.parentElement as HTMLElement).innerHTML = '<span style="font-size:8px;color:#7dd3fc;font-weight:700;">S/F</span>'; }} />
+                  ) : <span style={{ fontSize: 8, color: '#7dd3fc', fontWeight: 700 }}>S/F</span>; })()}
                 </div>
               </td>
               <td style={{ padding: '5px 8px', fontFamily: 'monospace', color: '#1d4ed8', fontWeight: 600 }}>{(it.id ? productSkus[it.id] : '') || (it as any).sku || '—'}</td>
@@ -2107,7 +2160,9 @@ export default function OrderDetailPage() {
           </button>
           <button
             onClick={() => {
-              generateOrderPdf(order as any, items as any, Object.fromEntries(
+              // El PDF se abre en otra ventana → la imagen debe ser URL absoluta.
+              const itemsForPdf = items.map(it => ({ ...it, img: itemImage(it, true) || (it as any).img }));
+              generateOrderPdf(order as any, itemsForPdf as any, Object.fromEntries(
                 Object.entries(productSkus).map(([id, sku]) => [id, { sku, location: productLocations[id] || null }])
               ));
             }}
@@ -2329,7 +2384,7 @@ export default function OrderDetailPage() {
                 <div key={idx} className="py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap sm:flex-nowrap">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-8 h-8 rounded bg-gray-50 border overflow-hidden shrink-0 flex items-center justify-center">
-                      {it.img ? <img src={it.img} className="w-full h-full object-contain" /> : <Package className="w-3 h-3 text-gray-300" />}
+                      {(() => { const im = itemImage(it); return im ? <img src={im} className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <Package className="w-3 h-3 text-gray-300" />; })()}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-800 truncate">{it.name}</p>
@@ -2932,9 +2987,9 @@ export default function OrderDetailPage() {
               <div key={i} className={`flex flex-col gap-2 px-3 sm:px-5 py-3 sm:py-3.5 hover:bg-gray-50/50 transition border-b border-gray-100 last:border-0 ${isMissing ? 'bg-red-50/80 border-l-4 border-l-red-500' : isReplaced ? 'bg-emerald-50/40 border-l-4 border-l-emerald-400' : ''}`}>
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    {(it.img || (it as any).image)
-                      ? <img src={resolveStorageImageUrl(it.img || (it as any).image)} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
-                      : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />}
+                    {(() => { const im = itemImage(it); return im
+                      ? <img src={im} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />; })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
