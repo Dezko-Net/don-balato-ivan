@@ -11,7 +11,7 @@ import { generateOrderPdf } from '@/lib/generateOrderPdf';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'pending_stock', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 // BluExpress no requiere paso extra (etiqueta se imprime antes); retiro en tienda termina antes.
 const isBluexpress = (agency?: string) => !!agency && agency.toUpperCase().replace(/\s/g, '').includes('BLUEXPRESS');

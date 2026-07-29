@@ -30,7 +30,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'pending_stock', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 // Colores hex por estado (para gradientes/glows del rediseño)
 const STATUS_HEX: Record<string, string> = {
@@ -1344,7 +1344,7 @@ export default function OrderDetailPage() {
   const isGift = (order as any).ISGIFT;
   const isLive = (order as any).PURCHASEDFROMLIVE;
 
-  const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
+  const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS);
   const isCancelled = order.STATUS === 'cancelled';
 
   const rawAdditionalInfo = order.ADDITIONALINFO || '';
@@ -2175,6 +2175,7 @@ export default function OrderDetailPage() {
               {STATUS_FLOW.map((step, i) => {
                 const STEP_ICON_PATHS: Record<string, string> = {
                   pending:          'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67V7z',
+                  pending_stock:    'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67V7z',
                   processing:       'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z',
                   paid:             'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
                   payment_confirmed:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
@@ -2753,12 +2754,25 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              {/* Comprobante de envío / voucher de la agencia (no BluExpress) */}
-              {(order.SHIPPINGPROOFURL || (['paid', 'shipped', 'delivered'].includes(order.STATUS) && !orderIsPickup && !orderIsBluexpress)) && (
-                <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
-                  {order.SHIPPINGPROOFURL ? (
-                    <div className="flex gap-2 w-full no-print">
-                      <button onClick={() => {
+              {/* Comprobante de envío movido a su propia sección abajo */}
+            </div>
+          </div>
+
+          {/* Comprobante de envío (para Embalado / Entregado a Agencia) */}
+          {['shipped', 'delivered'].includes(order.STATUS) && !orderIsPickup && (
+            <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-violet-500" />
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Comprobante de envío</p>
+                {order.SHIPPINGPROOFURL && (
+                  <span className="ml-auto text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full">Subido</span>
+                )}
+              </div>
+              <div className="p-3 sm:p-5 space-y-3">
+                {order.SHIPPINGPROOFURL ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
                         const url = order.SHIPPINGPROOFURL!;
                         if (isPdfUrl(url) || shippingProofIsPdf) {
                           window.open(url, '_blank');
@@ -2766,84 +2780,39 @@ export default function OrderDetailPage() {
                           setShippingProofOpen(true);
                         }
                       }}
-                        className="flex-1 flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl hover:bg-violet-100 transition group text-left">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
-                          <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] sm:text-xs font-semibold text-violet-700">Comprobante de envío</p>
-                          <p className="text-[9px] sm:text-[10px] text-violet-500">Click para ver</p>
-                        </div>
-                        <ExternalLink className="w-3 h-3 text-violet-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                      </button>
-                      <button
-                        onClick={handleAdminDeleteShippingProof}
-                        title="Eliminar comprobante de envío"
-                        className="p-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg sm:rounded-xl text-red-600 transition flex items-center justify-center shrink-0"
-                      >
-                        <Ban className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-violet-100 transition group">
-                      <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadShippingProof} className="hidden" disabled={uploadingShippingProof} />
-                      {uploadingShippingProof ? (
-                        <>
-                          <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                          <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subiendo comprobante de envío...</p>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-500 flex-shrink-0 group-hover:text-violet-600" />
-                          <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subir comprobante de envío</p>
-                        </>
-                      )}
-                    </label>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Fotos de las cajas (registro antes de despachar) */}
-          {showBoxPhotos && (
-            <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-cyan-500" />
-                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Fotos de las cajas</p>
-                <span className="ml-auto text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full">{boxPhotos.length} foto{boxPhotos.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="p-3 sm:p-5 space-y-3">
-                <p className="text-[10px] sm:text-xs text-gray-400">Registro fotográfico de las cajas antes del despacho (opcional).</p>
-                {boxPhotos.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {boxPhotos.map((url) => (
-                      <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                        <a href={url} target="_blank" rel="noreferrer">
-                          <img src={url} alt="Caja" className="w-full h-full object-cover" />
-                        </a>
-                        <button onClick={() => handleDeleteBoxPhoto(url)} title="Eliminar"
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                          <XCircle className="w-4 h-4" />
-                        </button>
+                      className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl hover:bg-violet-100 transition group flex-1 text-left">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                        <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
                       </div>
-                    ))}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] sm:text-xs font-semibold text-violet-700">Ver comprobante de envío</p>
+                        <p className="text-[9px] sm:text-[10px] text-violet-500">Click para ver</p>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-violet-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                    </button>
+                    <button
+                      onClick={handleAdminDeleteShippingProof}
+                      title="Eliminar comprobante de envío"
+                      className="p-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg sm:rounded-xl text-red-600 transition flex items-center justify-center shrink-0">
+                      <Ban className="w-5 h-5" />
+                    </button>
                   </div>
+                ) : (
+                  <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-violet-100 transition group">
+                    <input type="file" accept="image/*,application/pdf" onChange={handleAdminUploadShippingProof} className="hidden" disabled={uploadingShippingProof} />
+                    {uploadingShippingProof ? (
+                      <>
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                        <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subiendo comprobante de envío...</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-500 flex-shrink-0 group-hover:text-violet-600" />
+                        <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subir comprobante de envío</p>
+                      </>
+                    )}
+                  </label>
                 )}
-                <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-cyan-50 border border-cyan-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-cyan-100 transition group">
-                  <input type="file" accept="image/*" multiple onChange={handleUploadBoxPhotos} className="hidden" disabled={uploadingBoxPhoto} />
-                  {uploadingBoxPhoto ? (
-                    <>
-                      <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                      <p className="text-[10px] sm:text-xs text-cyan-700 font-medium">Subiendo fotos...</p>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-500 flex-shrink-0 group-hover:text-cyan-600" />
-                      <p className="text-[10px] sm:text-xs text-cyan-700 font-medium">Subir foto(s) de las cajas</p>
-                    </>
-                  )}
-                </label>
               </div>
             </div>
           )}
@@ -2955,8 +2924,8 @@ export default function OrderDetailPage() {
               <div key={i} className={`flex flex-col gap-2 px-3 sm:px-5 py-3 sm:py-3.5 hover:bg-gray-50/50 transition border-b border-gray-100 last:border-0 ${isMissing ? 'bg-red-50/80 border-l-4 border-l-red-500' : isReplaced ? 'bg-emerald-50/40 border-l-4 border-l-emerald-400' : ''}`}>
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    {it.img
-                      ? <img src={it.img} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
+                    {(it.img || (it as any).image)
+                      ? <img src={resolveStorageImageUrl(it.img || (it as any).image)} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
                       : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />}
                   </div>
                   <div className="flex-1 min-w-0">

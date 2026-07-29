@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       qty: i.qty,
       price: i.price,
       total: i.price * i.qty,
-      image: i.image || '',
+      img: i.image || '',
     }));
 
     // Get next order index
