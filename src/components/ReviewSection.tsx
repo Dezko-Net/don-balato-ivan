@@ -100,7 +100,7 @@ export default function ReviewSection({ productId, rating, numReviews }: Props) 
       const { databaseId } = getAppwriteConfig();
       const now = Math.floor(Date.now() / 1000);
 
-      await databases.createDocument(databaseId, REVIEWS_COLLECTION, ID.unique(), {
+      const created = await databases.createDocument(databaseId, REVIEWS_COLLECTION, ID.unique(), {
         PRODUCTID: productId,
         USERID: user.id,
         USERNAME: user.name || 'Usuario',
@@ -124,7 +124,12 @@ export default function ReviewSection({ productId, rating, numReviews }: Props) 
       setShowForm(false);
       setFormRating(0);
       setFormComment('');
-      loadReviews();
+      // Append optimista en vez de recargar: 'reviews' se sirve del proxy
+      // cacheado (24h), así que un loadReviews() devolvería la lista sin esta
+      // reseña y parecería que no se guardó.
+      const mine = created as unknown as Review;
+      setReviews(prev => [mine, ...prev]);
+      setUserReview(mine);
     } catch (err: any) {
       setSubmitMsg(err?.message || 'Error al enviar reseña');
     } finally {

@@ -11,7 +11,9 @@ export async function POST(req: NextRequest) {
     revalidateTag('subcategories');
     revalidateTag('home');     // el home cachea productos/categorías propios
     revalidateTag('settings');
-    
+    // Reseñas/preguntas y demás colecciones públicas leídas vía /api/appwrite-proxy
+    revalidateTag('appwrite-proxy');
+
     return NextResponse.json({ revalidated: true, now: Date.now() });
   } catch (err: any) {
     return NextResponse.json({ revalidated: false, message: err.message }, { status: 500 });

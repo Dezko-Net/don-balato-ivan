@@ -16,10 +16,12 @@ const client = new Client()
 
 const databases = new Databases(client);
 
-// Module-level in-memory cache (secondary layer)
+// Guard anti-estampida de 2s SOLAMENTE (con 60s la purga del tag
+// 'apertura_settings' se envenenaba: la función re-ejecutada devolvía memoria
+// stale y unstable_cache la re-guardaba). Ver nota en catalog-cache.ts.
 let memoryCacheApertura: any = null;
 let memoryCacheAperturaTime = 0;
-const MEMORY_CACHE_TTL = 60000; // 60 seconds
+const MEMORY_CACHE_TTL = 2000;
 
 const DEFAULT_SETTINGS = {
   isActive: true,

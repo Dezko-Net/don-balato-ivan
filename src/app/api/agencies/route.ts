@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Databases, Query, ID } from 'node-appwrite';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache, revalidateTag } from 'next/cache';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = 'donbalatoivan';
@@ -17,15 +17,18 @@ const client = new Client()
 
 const databases = new Databases(client);
 
-// GET /api/agencies — fetch all active agencies for checkout
-export async function GET() {
-  try {
+// Las agencias de envío las edita el admin y cambian casi nunca, pero este GET
+// hacía un listDocuments crudo (100 docs) en CADA request del checkout y de
+// /pedido/[id], protegido solo por el header de CDN. Cacheado con tag propio:
+// el POST/PUT de más abajo lo purga para que un alta se vea al instante.
+const getCachedAgencies = unstable_cache(
+  async () => {
     const res = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [
       Query.limit(100),
     ]);
 
     // Filter active agencies in JS — avoids relying on Appwrite index on 'active' field
-    const agencies = res.documents
+    return res.documents
       .filter(doc => doc.active !== false) // include active:true and undefined (default true)
       .map(doc => ({
         id: doc.$id,
@@ -36,6 +39,15 @@ export async function GET() {
         logo: doc.logo || '',
         active: doc.active ?? true,
       }));
+  },
+  ['shipping-agencies-cache-v1'],
+  { revalidate: 86400, tags: ['agencies'] }
+);
+
+// GET /api/agencies — fetch all active agencies for checkout
+export async function GET() {
+  try {
+    const agencies = await getCachedAgencies();
 
     return NextResponse.json({ agencies }, {
       headers: {
@@ -102,6 +114,8 @@ export async function POST(req: NextRequest) {
 
     // Invalidate Vercel CDN + Next.js route cache so checkout sees the new agencies immediately
     try { revalidatePath('/api/agencies'); } catch {}
+    // Purga el unstable_cache del GET para que el alta/edición se vea al instante
+    try { revalidateTag('agencies'); } catch {}
 
     return NextResponse.json({ success: true, agencies: results });
   } catch (e: any) {

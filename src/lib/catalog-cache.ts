@@ -60,6 +60,6 @@ export const getCachedAllProducts = unstable_cache(
     memoryCacheAllProductsTime = Date.now();
     return normalized;
   },
-  ['all-public-products-cache-v5'],
-  { revalidate: 3600, tags: ['products'] }
+  ['all-public-products-cache-v6'],
+  { revalidate: 86400, tags: ['products'] }
 );

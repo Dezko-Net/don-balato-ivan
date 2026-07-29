@@ -5,13 +5,18 @@ import { unstable_cache } from 'next/cache';
 
 // force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
+// ⚠️ Guard anti-estampida de 2s SOLAMENTE. Antes era 1 HORA y envenenaba la
+// purga: al revalidar el tag, unstable_cache re-ejecuta esta función, pero ella
+// devolvía el caché en memoria viejo → unstable_cache re-guardaba datos stale
+// por otra hora. Es la misma trampa ya documentada en catalog-cache.ts y
+// public-data/home; aquí se había quedado sin corregir.
 let memoryCacheSubcategories: Record<string, { data: any[]; timestamp: number }> = {};
 
 const getCachedSubcategories = (categoryId: string) => unstable_cache(
   async () => {
     const now = Date.now();
     const cached = memoryCacheSubcategories[categoryId];
-    if (cached && (now - cached.timestamp < 3600000)) {
+    if (cached && (now - cached.timestamp < 2000)) {
       return cached.data;
     }
 

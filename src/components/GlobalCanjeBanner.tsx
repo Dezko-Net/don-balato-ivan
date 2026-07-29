@@ -12,6 +12,16 @@ export default function GlobalCanjeBanner() {
   const pathname = usePathname();
   const [canjeCredit, setCanjeCredit] = useState<number | null>(null);
 
+  // ⚠️ Un SOLO efecto a propósito. Antes había un segundo useEffect con
+  // dependencia [pathname, user] que refetcheaba en cada navegación y, como los
+  // efectos también corren al montar, disparaba DOS peticiones simultáneas en
+  // t=0. Sumado al poll de 30s con cache:'no-store' (que anula el
+  // ClientFetchCache) contra un endpoint sin caché de servidor, una pestaña
+  // logueada abierta todo el día costaba ~8.600 lecturas de Appwrite.
+  //
+  // Ahora: sin no-store (el ClientFetchCache lo dedupe 10 min), poll de 10 min,
+  // y el endpoint cachea las órdenes 5 min. Para que el banner aparezca al
+  // instante tras pasar una orden a 'negotiation', purga el tag 'canje'.
   useEffect(() => {
     if (!user) {
       setCanjeCredit(null);
@@ -21,8 +31,7 @@ export default function GlobalCanjeBanner() {
     const fetchCredit = async () => {
       try {
         const res = await fetch(
-          `/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}&lightweight=1`,
-          { cache: 'no-store' }
+          `/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}&lightweight=1`
         );
         if (res.ok) {
           const data = await res.json();
@@ -35,21 +44,9 @@ export default function GlobalCanjeBanner() {
       }
     };
     fetchCredit();
-    // Poll every 30 seconds so the banner appears quickly after an order
-    // enters negotiation status, without requiring a page reload.
-    const interval = setInterval(fetchCredit, 30_000);
+    const interval = setInterval(fetchCredit, 600_000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [user]);
-
-  // Re-fetch immediately when the user navigates to a new page
-  useEffect(() => {
-    if (user) {
-      fetch(`/api/public-data/canje-info?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}&lightweight=1`, { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data) setCanjeCredit(data.hasCredit ? data.creditAmount : null); })
-        .catch(() => {});
-    }
-  }, [pathname, user]);
 
   if (!canjeCredit || canjeCredit <= 0) return null;
   

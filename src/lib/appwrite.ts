@@ -174,6 +174,7 @@ export const HOTSPOT_PANELS_COLLECTION           = 'hotspot_panels';
 export const PRODUCT_VOTES_COLLECTION            = 'product_votes';
 export const SUBCATEGORIES_COLLECTION            = 'subcategories';
 export const REVIEWS_COLLECTION                  = 'reviews';
+export const PRODUCT_QUESTIONS_COLLECTION        = 'product_questions';
 export const CLIPS_COLLECTION                    = 'clips';
 export const FAVORITES_COLLECTION                = 'favorites';
 export const RAFFLES_COLLECTION                  = 'live_raffles';
@@ -196,6 +197,12 @@ export const PUBLIC_CACHEABLE_COLLECTIONS = [
   SUBCATEGORIES_COLLECTION,
   THEME_CONFIG_COLLECTION,
   APERTURA_SETTINGS_COLLECTION,
+  // Reseñas y preguntas: se leen desde el navegador en CADA vista de detalle de
+  // producto (plantilla5/ProductDetail). Fuera de esta lista iban directas a
+  // Appwrite sin caché; dentro, pasan por /api/appwrite-proxy (cacheado 24h).
+  // Al publicar una reseña/pregunta hay que purgar el tag 'appwrite-proxy'.
+  REVIEWS_COLLECTION,
+  PRODUCT_QUESTIONS_COLLECTION,
   'store_settings'
 ];
 export const ADMIN_CHAT_COLLECTION                = 'admin_chat'; // Admin-user chat collection

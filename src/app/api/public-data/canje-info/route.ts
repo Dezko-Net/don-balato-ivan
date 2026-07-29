@@ -2,21 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, ORDERS_COLLECTION } from '@/lib/appwrite';
 import { WHOLESALE_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Query } from 'appwrite';
+import { unstable_cache } from 'next/cache';
 import { normalizeProductImages } from '@/lib/product-images';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-    const email = searchParams.get('email');
-    const lightweight = searchParams.get('lightweight') === '1';
-
-    if (!userId && !email) {
-      return NextResponse.json({ error: 'userId or email required' }, { status: 400 });
-    }
-
+// 🩸 Este endpoint era la fuga #1 del proyecto: GlobalCanjeBanner (montado en
+// StoreShell, o sea en toda la tienda) lo pollea cada 30s por usuario logueado
+// y cada llamada hacía 2-3 listDocuments SIN caché de ningún tipo. Una pestaña
+// abierta todo el día quemaba ~8.600 lecturas.
+//
+// Ahora las órdenes en negotiation se cachean 5 min por (userId, email). Cuando
+// el admin mueve una orden a 'negotiation' debe purgar el tag 'canje' para que
+// el banner aparezca al instante en vez de esperar los 5 min.
+const getCachedNegotiationOrders = (userId: string, email: string) => unstable_cache(
+  async () => {
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
 
@@ -24,7 +24,6 @@ export async function GET(req: NextRequest) {
     const queries: string[] = [Query.equal('STATUS', 'negotiation'), Query.limit(50)];
     if (userId) queries.unshift(Query.equal('USERID', userId));
 
-    let creditAmount = 0;
     let negotiationOrders: any[] = [];
 
     try {
@@ -51,6 +50,48 @@ export async function GET(req: NextRequest) {
         negotiationOrders = emailOrders.documents;
       } catch {}
     }
+
+    return negotiationOrders;
+  },
+  ['canje-negotiation-orders-v1', userId, email],
+  { revalidate: 300, tags: ['orders', 'canje'] }
+)();
+
+// Productos elegibles para canje: los mismos para TODOS los usuarios, así que
+// se cachean una sola vez (antes eran 500 documentos por cada llamada al poll).
+const getCachedCanjeProducts = unstable_cache(
+  async () => {
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
+    try {
+      const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+        Query.limit(500),
+      ]);
+      return prodRes.documents
+        .map((p: any) => normalizeProductImages(p))
+        .filter((p: any) => p.PRICE && p.PRICE > 0);
+    } catch (e) {
+      console.error('Error fetching products for canje:', e);
+      return [];
+    }
+  },
+  ['canje-eligible-products-v1'],
+  { revalidate: 86400, tags: ['products'] }
+);
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+    const email = searchParams.get('email');
+    const lightweight = searchParams.get('lightweight') === '1';
+
+    if (!userId && !email) {
+      return NextResponse.json({ error: 'userId or email required' }, { status: 400 });
+    }
+
+    let creditAmount = 0;
+    const negotiationOrders = await getCachedNegotiationOrders(userId || '', email || '');
 
     // Calculate credit from missing items
     for (const order of negotiationOrders) {
@@ -92,17 +133,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Fetch ALL products - canje applies flat 20% off from unit 1
-    let eligibleProducts: any[] = [];
-    try {
-      const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-        Query.limit(500),
-      ]);
-      eligibleProducts = prodRes.documents
-        .map((p: any) => normalizeProductImages(p))
-        .filter((p: any) => p.PRICE && p.PRICE > 0);
-    } catch (e) {
-      console.error('Error fetching products for canje:', e);
-    }
+    const eligibleProducts = await getCachedCanjeProducts();
 
     return NextResponse.json({
       hasCredit: true,

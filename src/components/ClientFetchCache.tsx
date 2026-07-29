@@ -11,6 +11,11 @@ const CACHE_RULES: Record<string, number> = {
   '/api/public-data/subcategories': 600000,  // 10 minutes
   '/api/public-data/product-detail': 120000, // 2 minutes
   '/api/public-data/apertura': 600000,       // 10 minutes
+  '/api/public-data/combos': 600000,         // 10 minutes
+  // Endpoints por usuario: la key del caché es la URL completa (incluye userId),
+  // así que no hay riesgo de servirle a un usuario los datos de otro.
+  '/api/public-data/my-orders-status': 300000, // 5 minutes
+  '/api/public-data/canje-info': 600000,     // 10 minutes
   '/api/store-settings': 600000,             // 10 minutes
   '/api/ofertas': 300000,                    // 5 minutes
   '/api/theme-config': 300000,               // 5 minutes

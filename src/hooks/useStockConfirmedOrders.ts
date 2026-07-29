@@ -2,20 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION } from '@/lib/appwrite';
-import { Query } from 'appwrite';
 
 /**
  * Hook que devuelve el número de pedidos del usuario con estado 'paid'
  * (Stock confirmado — esperando transferencia bancaria).
  * También retorna el $id del primer pedido para enlace directo.
- * Refresca cada 60 segundos.
+ * Refresca cada 5 minutos.
  *
  * NOTA: los pedidos se pueden crear con USERID = 'guest' (checkout sin sesión)
- * o con un id distinto, pero siempre guardan CUSTOMEREMAIL. Por eso se replica
- * la misma cadena de fallback que usa /cuenta/pedidos: USERID -> CUSTOMEREMAIL
- * -> userId (minúsculas). Sin este fallback el conteo queda en 0 para pedidos
- * hechos como invitado.
+ * o con un id distinto, pero siempre guardan CUSTOMEREMAIL. Por eso la API
+ * replica la misma cadena de fallback que usa /cuenta/pedidos: USERID ->
+ * CUSTOMEREMAIL -> userId (minúsculas). Sin este fallback el conteo queda en 0
+ * para pedidos hechos como invitado.
+ *
+ * ⚠️ Este hook se monta en GlobalMobileNav, que vive en el ROOT LAYOUT: corre en
+ * TODAS las páginas. Antes consultaba 'orders' con el SDK del navegador —una
+ * colección fuera de PUBLIC_CACHEABLE_COLLECTIONS, o sea sin caché de ningún
+ * tipo— cada 60s y hasta 3 veces por ciclo. Ahora pega a una API cacheada 5 min
+ * (ver src/app/api/public-data/my-orders-status/route.ts) y el ClientFetchCache
+ * deduplica entre navegaciones. NO le pongas cache: 'no-store' al fetch: eso
+ * anula el interceptor y revive la fuga.
  */
 export function useStockConfirmedOrders() {
   const { user, isLoggedIn, isLoading } = useAuth();
@@ -35,45 +41,17 @@ export function useStockConfirmedOrders() {
 
     const fetchOrders = async () => {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-
-        const statusFilter = [
-          Query.equal('STATUS', ['paid', 'payment_review', 'payment_confirmed']),
-          Query.orderDesc('$createdAt'),
-          Query.limit(100),
-        ];
-
-        // 1) Por USERID (caso normal: pedido hecho con sesión iniciada)
-        let res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-          Query.equal('USERID', user.id),
-          ...statusFilter,
-        ]);
-
-        // 2) Fallback por CUSTOMEREMAIL (pedido hecho como invitado)
-        if (res.total === 0 && user.email) {
-          try {
-            res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-              Query.equal('CUSTOMEREMAIL', user.email),
-              ...statusFilter,
-            ]);
-          } catch { /* atributo puede no existir/indexar */ }
-        }
-
-        // 3) Fallback por userId en minúsculas (esquema antiguo)
-        if (res.total === 0) {
-          try {
-            res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-              Query.equal('userId', user.id),
-              ...statusFilter,
-            ]);
-          } catch { /* atributo puede no existir */ }
-        }
+        const res = await fetch(
+          `/api/public-data/my-orders-status?userId=${encodeURIComponent(user.id)}` +
+          `&email=${encodeURIComponent(user.email || '')}`
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
 
         if (active) {
-          setStockConfirmedCount(res.total);
-          setFirstOrderId(res.documents.length > 0 ? (res.documents[0] as any).$id : null);
-          setFirstOrderStatus(res.documents.length > 0 ? (res.documents[0] as any).STATUS : null);
+          setStockConfirmedCount(data.count || 0);
+          setFirstOrderId(data.firstOrderId ?? null);
+          setFirstOrderStatus(data.firstOrderStatus ?? null);
         }
       } catch {
         if (active) {
@@ -85,7 +63,7 @@ export function useStockConfirmedOrders() {
     };
 
     fetchOrders();
-    const interval = setInterval(fetchOrders, 60000);
+    const interval = setInterval(fetchOrders, 300000);
 
     return () => {
       active = false;

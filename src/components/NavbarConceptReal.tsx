@@ -153,11 +153,16 @@ export default function NavbarConceptReal() {
   /* â”€â”€ CategorÃ­as + conteos (con reintentos, misma fuente que el navbar original) â”€â”€ */
   useEffect(() => {
     let active = true;
-    const getJSON = async (url: string, isValid?: (d: any) => boolean, tries = 5): Promise<any | null> => {
+    // Este navbar se monta en TODAS las páginas que no son el home (template 25).
+    // Con cache:'no-store' se anulaba el ClientFetchCache y cada navegación
+    // forzaba 2 peticiones de red; los 5 reintentos podían además estampidar el
+    // origen justo tras una purga del tag 'products'. Sin no-store el
+    // interceptor las sirve de memoria (TTL 5-10 min) y 3 reintentos bastan.
+    const getJSON = async (url: string, isValid?: (d: any) => boolean, tries = 3): Promise<any | null> => {
       let last: any = null;
       for (let i = 0; i < tries; i++) {
         try {
-          const r = await fetch(url, { cache: 'no-store' });
+          const r = await fetch(url);
           if (r.ok) { const d = await r.json(); last = d; if (!isValid || isValid(d)) return d; }
         } catch { /* retry */ }
         await new Promise(res => setTimeout(res, 600));

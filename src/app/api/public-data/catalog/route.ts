@@ -5,8 +5,23 @@ import { unstable_cache } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
+// Guard anti-estampida de 2s (ver nota en catalog-cache.ts): evita que N
+// requests concurrentes tras una purga de tag disparen N veces las 3 consultas.
+// TTL corto a propósito: uno largo envenenaría la purga (la función re-ejecutada
+// devolvería memoria stale y unstable_cache la re-guardaría por 24h).
+let memoryCacheCatalog: any = null;
+let memoryCacheCatalogTime = 0;
+
+// 24h como el resto del catálogo: cada edición de categoría/subcategoría/oferta
+// ya invalida su tag on-demand, así que un TTL de 1h solo costaba ~3.000
+// lecturas/día de reconstrucciones sin aportar frescura.
 const getCachedCatalogData = unstable_cache(
   async () => {
+    const now = Date.now();
+    if (memoryCacheCatalog && (now - memoryCacheCatalogTime < 2000)) {
+      return memoryCacheCatalog;
+    }
+
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
 
@@ -22,10 +37,12 @@ const getCachedCatalogData = unstable_cache(
       offers: offDocs.documents
     };
 
+    memoryCacheCatalog = result;
+    memoryCacheCatalogTime = Date.now();
     return result;
   },
-  ['public-catalog-cache-v3'],
-  { revalidate: 3600, tags: ['catalog', 'categories', 'offers'] }
+  ['public-catalog-cache-v4'],
+  { revalidate: 86400, tags: ['catalog', 'categories', 'offers'] }
 );
 
 export async function GET() {

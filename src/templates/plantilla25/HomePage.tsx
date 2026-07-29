@@ -753,11 +753,13 @@ export default function HomePage25() {
   /* ── Fetch categories + product counts from API ── */
   useEffect(() => {
     let active = true;
+    // Sin cache:'no-store': eso anulaba el ClientFetchCache (ver bypassCache en
+    // ClientFetchCache.tsx) y forzaba red en cada carga del home.
     const getJSON = async (url: string, isValid?: (d: any) => boolean, tries = 3): Promise<any | null> => {
       let last: any = null;
       for (let i = 0; i < tries; i++) {
         try {
-          const r = await fetch(url, { cache: 'no-store' });
+          const r = await fetch(url);
           if (r.ok) { const d = await r.json(); last = d; if (!isValid || isValid(d)) return d; }
         } catch { /* retry */ }
         await new Promise(res => setTimeout(res, 300));
@@ -765,15 +767,18 @@ export default function HomePage25() {
       return last;
     };
     (async () => {
-      const [catData, prodData, featData] = await Promise.all([
+      // Una sola petición a products: antes se pedía la MISMA url dos veces en
+      // paralelo (una para los conteos, otra para el destacado) con validadores
+      // distintos. Ahora un validador combinado cubre ambos usos.
+      const [catData, prodData] = await Promise.all([
         getJSON('/api/public-data/catalog', d => (d?.categories?.length || 0) > 0),
-        getJSON('/api/public-data/products?limit=1', d => Object.keys(d?.categoryCounts || {}).length > 0),
-        getJSON('/api/public-data/products?limit=1', d => (d?.products?.length || 0) > 0),
+        getJSON('/api/public-data/products?limit=1',
+          d => Object.keys(d?.categoryCounts || {}).length > 0 && (d?.products?.length || 0) > 0),
       ]);
       if (!active) return;
       if (catData) { setCats((catData.categories || []) as EnhCategory[]); setSubs((catData.subcategories || []) as EnhSubcategory[]); }
       if (prodData) { setCatCounts(prodData.categoryCounts || {}); setSubCounts(prodData.subcategoryCounts || {}); }
-      if (featData?.products?.[0]) { setFeaturedProd(featData.products[0] as EnhFeaturedProduct); }
+      if (prodData?.products?.[0]) { setFeaturedProd(prodData.products[0] as EnhFeaturedProduct); }
     })();
     return () => { active = false; };
   }, []);

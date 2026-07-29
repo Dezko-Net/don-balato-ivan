@@ -2,11 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, Send, ChevronDown } from 'lucide-react';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCT_QUESTIONS_COLLECTION } from '@/lib/appwrite';
 import { Query, ID } from 'appwrite';
 import { useAuth } from '@/hooks/useAuth';
 
-const QUESTIONS_COLLECTION = 'product_questions';
+// Colección en PUBLIC_CACHEABLE_COLLECTIONS: las lecturas van por
+// /api/appwrite-proxy (cacheado 24h) en vez de pegar directo a Appwrite en cada
+// vista de producto. Por eso tras publicar NO se recarga la lista (devolvería la
+// versión cacheada, sin la pregunta recién creada): se hace append optimista.
+const QUESTIONS_COLLECTION = PRODUCT_QUESTIONS_COLLECTION;
 
 interface Question {
   $id: string;
@@ -52,7 +56,7 @@ export default function ProductQuestions({ productId }: { productId: string }) {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.createDocument(databaseId, QUESTIONS_COLLECTION, ID.unique(), {
+      const created = await databases.createDocument(databaseId, QUESTIONS_COLLECTION, ID.unique(), {
         PRODUCTID: productId,
         USERID: user.id,
         USERNAME: user.name || user.email.split('@')[0] || 'Usuario',
@@ -64,7 +68,9 @@ export default function ProductQuestions({ productId }: { productId: string }) {
         `delete("user:${user.id}")`,
       ]);
       setNewQuestion('');
-      await load();
+      // Append optimista en vez de recargar: la lista se sirve del proxy
+      // cacheado, así que un load() devolvería datos sin esta pregunta.
+      setQuestions(prev => [created as unknown as Question, ...prev]);
     } catch (e) { console.warn('Error submitting question (handled gracefully):', e); }
     finally { setSubmitting(false); }
   }

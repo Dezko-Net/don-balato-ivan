@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import fs from 'fs';
 import path from 'path';
 import { Client, Databases, Query } from 'node-appwrite';
@@ -54,8 +55,11 @@ async function readLocalConfig(): Promise<ComboItemConfig[]> {
   return [];
 }
 
-export async function GET() {
-  try {
+// Se llama en CADA carga del home (plantilla25/HomePage). Sin caché hacía un
+// getDocument de la config + un listDocuments de hasta 50 productos por visita.
+// Los combos los define el admin, así que 24h con purga por tag es de sobra.
+const getCachedCombos = unstable_cache(
+  async () => {
     const rawConfigs = await readLocalConfig();
     const activeConfigs = rawConfigs.filter(c => c.isActive);
 
@@ -116,6 +120,16 @@ export async function GET() {
         bundleProducts: bundleProds,
       };
     });
+
+    return combos;
+  },
+  ['public-combos-cache-v1'],
+  { revalidate: 86400, tags: ['combos', 'products'] }
+);
+
+export async function GET() {
+  try {
+    const combos = await getCachedCombos();
 
     return NextResponse.json({
       success: true,

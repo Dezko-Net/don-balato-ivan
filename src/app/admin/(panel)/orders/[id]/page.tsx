@@ -1194,6 +1194,15 @@ export default function OrderDetailPage() {
         UPDATEDAT: Date.now(),
       });
       setOrder(prev => prev ? { ...prev, STATUS: newStatus as OrderStatus } : prev);
+
+      // Purgar los cachés de pedidos del cliente (5 min de TTL) para que el
+      // badge "esperando pago" del nav móvil y el banner de canje reaccionen al
+      // instante en vez de esperar la revalidación.
+      fetch('/api/revalidate?tag=orders').catch(() => {});
+      if (newStatus === 'negotiation' || prevStatus === 'negotiation') {
+        fetch('/api/revalidate?tag=canje').catch(() => {});
+      }
+
       const { notifyOrderStatusChange } = await import('@/services/notificationService');
       await notifyOrderStatusChange(order, prevStatus, newStatus).catch(() => {});
     } catch (e: any) {

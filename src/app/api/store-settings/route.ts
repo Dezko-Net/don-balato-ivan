@@ -16,10 +16,13 @@ const client = new Client()
 
 const databases = new Databases(client);
 
-// Module-level in-memory cache as secondary layer
+// Guard anti-estampida de 2s SOLAMENTE. Con 5 minutos, una purga del tag
+// 'store_settings' re-ejecutaba esta función pero devolvía memoria stale, y
+// unstable_cache la re-guardaba por otra hora: el admin cambiaba los datos de la
+// tienda y no se reflejaban. Ver la misma nota en catalog-cache.ts.
 let memoryCacheSettings: any = null;
 let memoryCacheSettingsTime = 0;
-const MEMORY_CACHE_TTL = 300000; // 5 minutes
+const MEMORY_CACHE_TTL = 2000;
 
 const getCachedStoreSettings = unstable_cache(
   async () => {

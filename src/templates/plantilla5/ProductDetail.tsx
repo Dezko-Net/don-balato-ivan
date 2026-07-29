@@ -227,29 +227,19 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     });
   }, []);
 
-  /* ── Check for pending stock requests ── */
+  /* ── Check for pending stock requests ──
+     Antes esto era un listDocuments directo a Appwrite (colección fuera de
+     PUBLIC_CACHEABLE_COLLECTIONS = sin caché posible) en CADA vista de detalle
+     de producto de un usuario logueado. El dato solo cambia cuando el propio
+     usuario pulsa "solicitar stock" en este mismo navegador, así que se lee de
+     localStorage: cero lecturas y misma UX. */
   useEffect(() => {
     if (!user || !product) return;
-    async function checkPendingRequest() {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, STOCK_REQUESTS_COLLECTION, [
-          Query.equal('productId', product!.$id),
-          Query.equal('userId', user!.id),
-          Query.equal('status', 'pending')
-        ]);
-        if (res.total > 0) {
-          setHasPendingRequest(true);
-        }
-      } catch (err: any) {
-        // Silently ignore if collection doesn't exist yet
-        if (!err?.message?.includes('could not be found')) {
-          console.error('Error checking stock requests:', err);
-        }
-      }
-    }
-    checkPendingRequest();
+    try {
+      setHasPendingRequest(
+        localStorage.getItem(`stockreq_${user.id}_${product.$id}`) === '1'
+      );
+    } catch { /* localStorage no disponible */ }
   }, [user, product]);
 
   /* ── Fetch the cleaned HTML body content ── */
@@ -2298,6 +2288,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           status: 'pending',
         }
       );
+      // Persistir para que el efecto de arriba lo detecte sin consultar Appwrite
+      try { localStorage.setItem(`stockreq_${user.id}_${product.$id}`, '1'); } catch {}
       setHasPendingRequest(true);
       setIsStockRequestModalOpen(false);
       alert('Tu solicitud ha sido enviada con éxito. Te notificaremos cuando tengamos más stock.');
