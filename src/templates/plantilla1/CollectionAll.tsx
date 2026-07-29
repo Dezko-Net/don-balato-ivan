@@ -998,16 +998,23 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             ))}
                           </div>
                         )}
+                        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                        <Link prefetch={false} href={`/productos/${p.$id}`} className="pk-add-btn"
+                          style={{ flex: 1, padding: '11px 12px', minHeight: 42, borderRadius: 12, border: 'none', background: gradientColor, color: buttonTextColor, fontSize: 12.5, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, textDecoration: 'none', boxShadow: '0 4px 14px rgba(37,99,235,.20)', fontFamily: 'inherit' }}>
+                          Ver detalles
+                        </Link>
                         <button onClick={() => {
                           if (outOfStock) return;
                           const qtyToAdd = isPackModeCard && p.PACKQTY ? p.PACKQTY : 1;
                           const overridePrice = isPackModeCard ? (p.WHOLESALEPRICE || p.PRICE) : undefined;
                           addItem(p, qtyToAdd, undefined, undefined, overridePrice, isPackModeCard);
                           flashAdded(p.$id);
-                        }} disabled={outOfStock} className={`pk-add-btn${added ? ' is-added' : ''}`}
-                          style={outOfStock ? undefined : { background: added ? 'linear-gradient(135deg,#10b981,#059669)' : gradientColor, color: buttonTextColor }}>
-                          <span className="pk-add-btn__label"><ShoppingCart size={14} /> {outOfStock ? 'Sin stock' : added ? '✓ Añadido' : (isPackModeCard ? 'Comprar paquete' : 'Agregar')}</span>
+                        }} disabled={outOfStock} className="pk-cart-btn"
+                          style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: outOfStock ? '#f3f4f6' : (added ? '#10b981' : '#fff'), color: outOfStock ? '#9ca3af' : (added ? '#fff' : '#2563eb'), cursor: outOfStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: outOfStock ? 'none' : '0 2px 8px rgba(59,130,246,0.12)' }}
+                          aria-label="Agregar al carrito">
+                          <ShoppingCart size={16} />
                         </button>
+                        </div>
                       </div>
                     </div>
                     )}
@@ -2312,6 +2319,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-card-body { padding: 10px 10px 12px !important; gap: 5px !important; }
           .pk-card-body .pk-price { font-size: 17px !important; }
           .pk-add-btn { min-height: 42px !important; font-size: 12px !important; border-radius: 11px !important; }
+          .pk-cart-btn { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
           .pk-vol-chips span { font-size: 9.5px !important; padding: 3px 7px !important; }
           .pk-card-list-desc { display: none !important; }
           /* en 2 columnas las píldoras compiten con el nombre: se acotan */
