@@ -2543,6 +2543,8 @@ $('#lightbox').onclick = (e) => { if (e.target.id === 'lightbox') $('#lightbox')
 function showProductModal(sku) {
   const p = getProducts().find(x => x.sku === sku);
   if (!p) return;
+  const nav = document.getElementById('bottomNav');
+  if (nav) nav.style.display = 'none';
   const price = getPrice(p);
   const path = getProductPath(p);
   const outOfStock = p.stock <= 0;
@@ -2637,6 +2639,8 @@ function modalAddToCart(sku) {
 }
 function closeProductModal() {
   $('#productModal').classList.add('hidden');
+  const nav = document.getElementById('bottomNav');
+  if (nav) nav.style.display = '';
 }
 
 // === Init ===
