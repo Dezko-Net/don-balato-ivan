@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
             IMAGEURL2: p.image2 || '',
             CATEGORYID: categoryId,
             SUBCATEGORYID: '',
-            FEATURES: features,
+            FEATURES: features.split('\n').filter(Boolean),
             TAGS: [catName.toLowerCase().replace(/\s+/g, '-')],
           };
 
