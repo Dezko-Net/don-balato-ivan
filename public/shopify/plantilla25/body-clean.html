@@ -1742,82 +1742,118 @@
 
 <!-- ══════ DBI: Últimas Novedades + título Categorías (bloque a medida) ══════ -->
 <style>
-  .dbi-block { padding: 8px 0 4px; }
-  .dbi-nov__head { text-align:center; margin: 0 auto 22px; max-width: 720px; }
-  .dbi-eyebrow {
-    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:800;
-    letter-spacing:2px; text-transform:uppercase; color:#2563eb; background:#eff6ff;
-    border:1px solid #dbeafe; padding:6px 14px; border-radius:999px;
-  }
-  .dbi-nov__head h2 { margin:14px 0 6px; }
-  .dbi-nov__sub { color:#6b7280; font-size:15px; line-height:1.5; margin:0; }
-  .dbi-banner {
-    display:block; position:relative; margin: 0 auto; max-width: 1100px;
-    border-radius: 22px; overflow:hidden; text-decoration:none;
-    box-shadow: 0 22px 55px rgba(15,23,42,.16);
-    transform: translateY(24px); opacity:0;
-    animation: dbiUp .8s cubic-bezier(.16,1,.3,1) forwards;
-    transition: transform .45s cubic-bezier(.16,1,.3,1), box-shadow .45s;
-  }
-  .dbi-banner:hover { transform: translateY(-4px); box-shadow: 0 30px 65px rgba(15,23,42,.24); }
-  .dbi-banner img { display:block; width:100%; height:auto; }
-  .dbi-banner::after {
-    content:''; position:absolute; inset:0; pointer-events:none;
-    background: linear-gradient(to top, rgba(2,6,23,.30), transparent 42%);
-  }
-  .dbi-banner__badge {
-    position:absolute; top:14px; left:14px; z-index:2;
-    display:inline-flex; align-items:center; gap:7px;
-    background: linear-gradient(135deg,#2563eb,#0ea5e9); color:#fff;
-    font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
-    padding:7px 14px; border-radius:999px; box-shadow:0 6px 16px rgba(37,99,235,.4);
-  }
-  .dbi-banner__badge .dbi-dot { width:7px; height:7px; border-radius:50%; background:#fff; animation: dbiPulse 1.4s ease-in-out infinite; }
-  .dbi-banner__cta {
-    position:absolute; right:16px; bottom:16px; z-index:2;
-    display:inline-flex; align-items:center; gap:7px;
-    background:#fff; color:#0f172a; font-weight:800; font-size:14px;
-    padding:11px 20px; border-radius:999px; box-shadow:0 8px 22px rgba(0,0,0,.20);
-    transition: gap .25s ease, background .25s ease, color .25s ease;
-  }
-  .dbi-banner:hover .dbi-banner__cta { gap:12px; background:#2563eb; color:#fff; }
-  .dbi-banner__cta svg { width:16px; height:16px; }
+  .dbi-block { padding: 8px 0 6px; }
+  .dbi-nov__head { text-align:center; margin: 0 auto 22px; max-width: 760px; }
+  /* Kicker elaborado (reemplaza la etiqueta simple) */
+  .dbi-kicker { display:inline-flex; align-items:center; gap:10px; margin-bottom:6px;
+    font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; }
+  .dbi-kicker__line { width:26px; height:2px; border-radius:2px; }
+  .dbi-kicker__line--l { background:linear-gradient(90deg,transparent,#2563eb); }
+  .dbi-kicker__line--r { background:linear-gradient(90deg,#0ea5e9,transparent); }
+  .dbi-kicker__spark { color:#0ea5e9; font-size:12px; animation:dbiSpark 2.4s ease-in-out infinite; }
+  .dbi-kicker__spark--b { animation-delay:1.2s; }
+  .dbi-kicker__txt { background:linear-gradient(90deg,#2563eb,#0ea5e9); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:#2563eb; }
+  .dbi-nov__head h2 { margin:12px 0 8px; }
+  .dbi-nov__sub { color:#6b7280; font-size:15px; line-height:1.5; margin:0 auto; max-width:520px; }
+  /* Banner (imagen sin nada encima que tape precios) */
+  .dbi-banner { display:block; position:relative; margin:0 auto; max-width:1100px;
+    border-radius:22px; overflow:hidden; text-decoration:none;
+    box-shadow:0 22px 55px rgba(15,23,42,.16);
+    transition: transform .45s cubic-bezier(.16,1,.3,1), box-shadow .45s; }
+  .dbi-banner:hover { transform: translateY(-5px); box-shadow:0 30px 65px rgba(15,23,42,.24); }
   .dbi-banner .dbi-pic { display:block; width:100%; }
-  .dbi-cat { text-align:center; margin: 46px auto 6px; }
-  .dbi-cat__eyebrow { display:block; font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#94a3b8; margin-bottom:2px; }
+  .dbi-banner img { display:block; width:100%; height:auto; }
+  .dbi-banner__badge { position:absolute; top:14px; left:14px; z-index:2;
+    display:inline-flex; align-items:center; gap:7px;
+    background:linear-gradient(135deg,#2563eb,#0ea5e9); color:#fff;
+    font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+    padding:7px 14px; border-radius:999px; box-shadow:0 6px 16px rgba(37,99,235,.4); }
+  .dbi-banner__badge .dbi-dot { width:7px; height:7px; border-radius:50%; background:#fff; animation:dbiPulse 1.4s ease-in-out infinite; }
+  /* Botón "Ver todo" AFUERA del banner (debajo, no tapa precios) */
+  .dbi-actions { text-align:center; margin-top:18px; }
+  .dbi-btn { display:inline-flex; align-items:center; gap:9px;
+    background:linear-gradient(135deg,#1d4ed8,#2563eb); color:#fff;
+    font-weight:800; font-size:15px; text-decoration:none;
+    padding:13px 26px; border-radius:999px; box-shadow:0 10px 26px rgba(37,99,235,.38);
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s, gap .25s; }
+  .dbi-btn:hover { transform:translateY(-2px); box-shadow:0 14px 32px rgba(37,99,235,.5); gap:13px; }
+  .dbi-btn:active { transform:translateY(0) scale(.97); }
+  .dbi-btn svg { width:17px; height:17px; transition:transform .25s; }
+  .dbi-btn:hover svg { transform:translateX(3px); }
+  /* Título categorías */
+  .dbi-cat { text-align:center; margin: 48px auto 6px; }
+  .dbi-cat__eyebrow { display:block; font-size:11px; font-weight:800; letter-spacing:4px; text-transform:uppercase; color:#94a3b8; margin-bottom:4px; }
   .dbi-cat h2 { display:inline-block; margin:0; }
-  @keyframes dbiUp { to { transform:translateY(0); opacity:1; } }
+  /* Animaciones de scroll — se activan cuando el JS añade .dbi-js; sin JS todo visible */
+  .dbi-block.dbi-js .dbi-word { display:inline-block; opacity:0; transform:translateY(26px) rotate(2deg);
+    transition:opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1); }
+  .dbi-block.dbi-js .dbi-anim.dbi-in .dbi-word { opacity:1; transform:none; }
+  .dbi-block.dbi-js .dbi-anim.dbi-in .dbi-word:nth-child(1){transition-delay:.02s}
+  .dbi-block.dbi-js .dbi-anim.dbi-in .dbi-word:nth-child(2){transition-delay:.12s}
+  .dbi-block.dbi-js .dbi-anim.dbi-in .dbi-word:nth-child(3){transition-delay:.22s}
+  .dbi-block.dbi-js .dbi-anim.dbi-in .dbi-word:nth-child(4){transition-delay:.32s}
+  .dbi-block.dbi-js .dbi-fade { opacity:0; transform:translateY(16px);
+    transition:opacity .7s ease, transform .7s cubic-bezier(.16,1,.3,1); }
+  .dbi-block.dbi-js .dbi-fade.dbi-in { opacity:1; transform:none; }
+  .dbi-block.dbi-js .dbi-reveal { opacity:0; transform:translateY(34px) scale(.975);
+    transition:opacity .8s ease, transform .9s cubic-bezier(.16,1,.3,1); }
+  .dbi-block.dbi-js .dbi-reveal.dbi-in { opacity:1; transform:none; }
+  @keyframes dbiSpark { 0%,100%{opacity:.35; transform:scale(.75) rotate(0)} 50%{opacity:1; transform:scale(1.25) rotate(90deg)} }
   @keyframes dbiPulse { 0%,100%{ transform:scale(1); opacity:1;} 50%{ transform:scale(1.7); opacity:.4;} }
   @media (min-width: 768px) {
     .dbi-banner { border-radius:28px; }
     .dbi-nov__sub { font-size:16px; }
+    .dbi-btn { font-size:16px; padding:14px 30px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .dbi-banner { animation:none; transform:none; opacity:1; }
-    .dbi-banner__badge .dbi-dot { animation:none; }
+    .dbi-block.dbi-js .dbi-word,
+    .dbi-block.dbi-js .dbi-fade,
+    .dbi-block.dbi-js .dbi-reveal { opacity:1 !important; transform:none !important; transition:none !important; }
+    .dbi-kicker__spark, .dbi-banner__badge .dbi-dot { animation:none; }
   }
 </style>
 <div class="dbi-block section">
   <div class="page-width relative">
     <div class="dbi-nov__head">
-      <span class="dbi-eyebrow">✨ Recién llegado</span>
-      <h2 class="heading title-md">Las últimas <em is="highlighted-text" class="highlighted-text not-italic relative inline-block" data-style="scribble">novedades<svg class="icon icon-basic-underline" viewBox="-400 -55 730 60" stroke="currentColor" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation"><path stroke-linecap="round" stroke-width="30" pathLength="1" d="m -383.25 -6 c 55.25 -22 130.75 -33.5 293.25 -38 c 54.5 -0.5 195 -2.5 401 15"/></svg></em></h2>
-      <p class="dbi-nov__sub">Lo más nuevo de nuestro catálogo, seleccionado para ti.</p>
+      <span class="dbi-kicker dbi-fade">
+        <span class="dbi-kicker__line dbi-kicker__line--l"></span>
+        <span class="dbi-kicker__spark">✦</span>
+        <span class="dbi-kicker__txt">Recién llegado</span>
+        <span class="dbi-kicker__spark dbi-kicker__spark--b">✦</span>
+        <span class="dbi-kicker__line dbi-kicker__line--r"></span>
+      </span>
+      <h2 class="heading title-md dbi-anim"><span class="dbi-word">Las</span> <span class="dbi-word">últimas</span> <span class="dbi-word"><em is="highlighted-text" class="highlighted-text not-italic relative inline-block" data-style="scribble">novedades<svg class="icon icon-basic-underline" viewBox="-400 -55 730 60" stroke="currentColor" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation"><path stroke-linecap="round" stroke-width="30" pathLength="1" d="m -383.25 -6 c 55.25 -22 130.75 -33.5 293.25 -38 c 54.5 -0.5 195 -2.5 401 15"/></svg></em></span></h2>
+      <p class="dbi-nov__sub dbi-fade">Lo más nuevo de nuestro catálogo, seleccionado para ti.</p>
     </div>
-    <a href="/productos" class="dbi-banner" aria-label="Ver las últimas novedades">
+    <a href="/productos" class="dbi-banner dbi-reveal" aria-label="Ver las últimas novedades">
       <span class="dbi-banner__badge"><span class="dbi-dot"></span> Nuevo</span>
       <picture class="dbi-pic">
         <source media="(min-width: 768px)" srcset="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1785357824719-pegada-1785357821625.png" />
         <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1785356616648-pegada-1785356614330.png" alt="Últimas novedades" loading="lazy" decoding="async" />
       </picture>
-      <span class="dbi-banner__cta">Ver todo <svg viewBox="0 0 21 20" stroke="currentColor" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10H18M18 10L12.1667 4.16675M18 10L12.1667 15.8334"></path></svg></span>
     </a>
+    <div class="dbi-actions dbi-fade">
+      <a href="/productos" class="dbi-btn">Ver todas las novedades <svg viewBox="0 0 21 20" stroke="currentColor" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10H18M18 10L12.1667 4.16675M18 10L12.1667 15.8334"></path></svg></a>
+    </div>
     <div class="dbi-cat">
-      <span class="dbi-cat__eyebrow">Explora nuestras</span>
-      <h2 class="heading title-md"><em is="highlighted-text" class="highlighted-text not-italic relative inline-block" data-style="scribble">CATEGORÍAS<svg class="icon icon-basic-underline" viewBox="-400 -55 730 60" stroke="currentColor" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation"><path stroke-linecap="round" stroke-width="30" pathLength="1" d="m -383.25 -6 c 55.25 -22 130.75 -33.5 293.25 -38 c 54.5 -0.5 195 -2.5 401 15"/></svg></em></h2>
+      <span class="dbi-cat__eyebrow dbi-fade">Explora nuestras</span>
+      <h2 class="heading title-md dbi-anim"><span class="dbi-word"><em is="highlighted-text" class="highlighted-text not-italic relative inline-block" data-style="scribble">CATEGORÍAS<svg class="icon icon-basic-underline" viewBox="-400 -55 730 60" stroke="currentColor" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation"><path stroke-linecap="round" stroke-width="30" pathLength="1" d="m -383.25 -6 c 55.25 -22 130.75 -33.5 293.25 -38 c 54.5 -0.5 195 -2.5 401 15"/></svg></em></span></h2>
     </div>
   </div>
 </div>
+<script>
+(function(){
+  var block = document.querySelector('.dbi-block');
+  if(!block) return;
+  block.classList.add('dbi-js');
+  var els = block.querySelectorAll('.dbi-anim,.dbi-fade,.dbi-reveal');
+  if(!('IntersectionObserver' in window)){ els.forEach(function(e){ e.classList.add('dbi-in'); }); return; }
+  var io = new IntersectionObserver(function(ents){
+    ents.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('dbi-in'); io.unobserve(en.target); } });
+  }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+  els.forEach(function(e){ io.observe(e); });
+})();
+</script>
 <!-- ══════ /DBI ══════ -->
 
 <div id="shopify-section-template--27619508257049__ef807058-6610-4581-89ab-9325098bd616" class="shopify-section"><style>
