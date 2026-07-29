@@ -1698,10 +1698,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const helpBtn = root.querySelector('.help-desk-link');
     if (helpBtn) {
       (helpBtn as HTMLElement).style.display = 'none';
-      helpBtn.setAttribute('target', '_blank');
-      helpBtn.setAttribute('rel', 'noopener noreferrer');
-      // Botón oculto — el WhatsApp flotante ya está disponible
-      (helpBtn as HTMLElement).style.justifyContent = 'center';
+    }
+    // También ocultar por CSS por si el JS se ejecuta antes de que el HTML esté disponible
+    if (!document.querySelector('#help-desk-hide-style')) {
+      const style = document.createElement('style');
+      style.id = 'help-desk-hide-style';
+      style.textContent = '.help-desk-link { display: none !important; }';
+      document.head.appendChild(style);
     }
 
 
@@ -2599,14 +2602,14 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             background: #ffffff !important;
             visibility: visible !important;
           }
-          /* Highlight active slide with pink color matching template aesthetic */
+          /* Highlight active slide with blue color matching theme */
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide-active,
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail.is-active,
           .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail:hover {
             border-color: #2563eb !important;
             transform: scale(1.1) !important;
             opacity: 1 !important;
-            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.35) !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35) !important;
           }
         }
 
@@ -2733,6 +2736,27 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           background-color: transparent !important;
           border: none !important;
           transform: scale(1.15) !important;
+        }
+
+        /* Forzar color azul en SVGs del quantity selector */
+        quantity-selector-component button svg path,
+        .quantity-selector button svg path,
+        quantity-selector-component .quantity-button svg path,
+        .quantity-selector .quantity-button svg path {
+          stroke: currentColor !important;
+        }
+        quantity-selector-component button:hover svg path,
+        .quantity-selector button:hover svg path,
+        quantity-selector-component .quantity-button:hover svg path,
+        .quantity-selector .quantity-button:hover svg path {
+          stroke: #2563eb !important;
+        }
+
+        /* Forzar borde azul en el contenedor del quantity selector al hacer focus */
+        quantity-selector-component:focus-within,
+        .quantity-selector:focus-within {
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
         }
 
         quantity-selector-component .quantity-button span,
