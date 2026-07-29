@@ -1964,40 +1964,46 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-    {/* ───────── HOJA DE IMPRESIÓN (1 página): cliente, agencia y productos sin imágenes ───────── */}
-    <div className="hidden print:block" style={{ color: '#111', fontSize: 12, lineHeight: 1.4, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as React.CSSProperties}>
-      {/* Encabezado */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#db2777', color: '#fff', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
+    {/* ───────── HOJA DE IMPRESIÓN (1 página): cliente, agencia y productos con imágenes ───────── */}
+    <div className="hidden print:block" style={{ color: '#0f172a', fontSize: 12, lineHeight: 1.4, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as React.CSSProperties}>
+      {/* Encabezado (azul → celeste, tema de la tienda) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, background: 'linear-gradient(135deg,#1d4ed8 0%,#2563eb 50%,#0ea5e9 100%)', color: '#fff', borderRadius: 12, padding: '16px 20px', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.7 }}>Orden de preparación</div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>{order.ORDERCODE || '#' + order.$id.slice(-6)}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.20)', border: '1px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800 }}>DB</div>
+            <div style={{ lineHeight: 1.1 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.4 }}>DON BALATO IVÁN</div>
+              <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.85 }}>Orden de preparación</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.5 }}>{order.ORDERCODE || '#' + order.$id.slice(-6)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ display: 'inline-block', border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: 999, padding: '3px 12px', fontWeight: 700, fontSize: 12 }}>{displayStatusLabel(order.STATUS, order.SHIPPINGAGENCY)}</div>
-          <div style={{ fontSize: 11, marginTop: 5, opacity: 0.85 }}>{fmtDate(date.getTime())} · {fmtTime(date.getTime())}</div>
-          <div style={{ fontSize: 11, opacity: 0.85 }}>{totalItems} uds · {items.length} productos</div>
+          <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.22)', border: '1.5px solid rgba(255,255,255,0.55)', borderRadius: 999, padding: '4px 14px', fontWeight: 700, fontSize: 12 }}>{displayStatusLabel(order.STATUS, order.SHIPPINGAGENCY)}</div>
+          <div style={{ fontSize: 11, marginTop: 6, opacity: 0.9 }}>{fmtDate(date.getTime())} · {fmtTime(date.getTime())}</div>
+          <div style={{ fontSize: 11, opacity: 0.9 }}>{totalItems} uds · {items.length} productos</div>
         </div>
       </div>
 
       {/* Cliente / Envío */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-        <div style={{ flex: 1, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ background: '#f3f4f6', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#374151' }}>Cliente</div>
+        <div style={{ flex: 1, border: '1px solid #bae6fd', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ background: '#eff6ff', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#1e40af', borderBottom: '1px solid #dbeafe' }}>Cliente</div>
           <div style={{ padding: '8px 12px' }}>
-            <div style={{ fontWeight: 700, fontSize: 13 }}>{order.CUSTOMERNAME}</div>
-            {order.CUSTOMERRUT && <div>RUT: {order.CUSTOMERRUT}</div>}
-            {order.CUSTOMERPHONE && <div>Tel: {order.CUSTOMERPHONE}</div>}
-            {order.CUSTOMEREMAIL && <div style={{ color: '#4b5563' }}>{order.CUSTOMEREMAIL}</div>}
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{order.CUSTOMERNAME}</div>
+            {order.CUSTOMERRUT && <div style={{ color: '#475569' }}>RUT: {order.CUSTOMERRUT}</div>}
+            {order.CUSTOMERPHONE && <div style={{ color: '#475569' }}>Tel: {order.CUSTOMERPHONE}</div>}
+            {order.CUSTOMEREMAIL && <div style={{ color: '#475569' }}>{order.CUSTOMEREMAIL}</div>}
           </div>
         </div>
-        <div style={{ flex: 1, border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ background: '#f3f4f6', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#374151' }}>Envío</div>
+        <div style={{ flex: 1, border: '1px solid #bae6fd', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ background: '#eff6ff', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#1e40af', borderBottom: '1px solid #dbeafe' }}>Envío</div>
           <div style={{ padding: '8px 12px' }}>
-            <div style={{ fontWeight: 700, fontSize: 13 }}>{order.SHIPPINGAGENCY || 'Sin agencia'}</div>
-            <div>{order.ADDRESS || '—'}</div>
-            <div style={{ color: '#4b5563' }}>{[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</div>
-            {displayAdditionalInfo && <div style={{ color: '#4b5563', fontStyle: 'italic' }}>{displayAdditionalInfo}</div>}
-            <div style={{ marginTop: 2 }}>N° Seguimiento: <strong>{(order as any).TRACKINGNUMBER || '—'}</strong></div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{order.SHIPPINGAGENCY || 'Sin agencia'}</div>
+            <div style={{ color: '#334155' }}>{order.ADDRESS || '—'}</div>
+            <div style={{ color: '#475569' }}>{[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</div>
+            {displayAdditionalInfo && <div style={{ color: '#475569', fontStyle: 'italic' }}>{displayAdditionalInfo}</div>}
+            <div style={{ marginTop: 2, color: '#334155' }}>N° Seguimiento: <strong>{(order as any).TRACKINGNUMBER || '—'}</strong></div>
           </div>
         </div>
       </div>
@@ -2009,49 +2015,51 @@ export default function OrderDetailPage() {
       )}
 
       {/* Productos (con imágenes) */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, border: '1px solid #fbcfe8', borderRadius: 10, overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, border: '1px solid #bae6fd', borderRadius: 10, overflow: 'hidden' }}>
         <thead>
-          <tr style={{ background: '#db2777', color: '#fff', textAlign: 'left' }}>
-            <th style={{ padding: '6px 8px', width: 50 }}></th>
-            <th style={{ padding: '6px 8px', width: 90 }}>SKU</th>
-            <th style={{ padding: '6px 8px' }}>Producto</th>
-            <th style={{ padding: '6px 8px', textAlign: 'center', width: 44 }}>Cant.</th>
-            <th style={{ padding: '6px 8px', textAlign: 'right', width: 70 }}>Precio</th>
-            <th style={{ padding: '6px 8px', textAlign: 'right', width: 80 }}>Total</th>
+          <tr style={{ background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', textAlign: 'left' }}>
+            <th style={{ padding: '7px 8px', width: 54 }}>Foto</th>
+            <th style={{ padding: '7px 8px', width: 90 }}>SKU</th>
+            <th style={{ padding: '7px 8px' }}>Producto</th>
+            <th style={{ padding: '7px 8px', textAlign: 'center', width: 44 }}>Cant.</th>
+            <th style={{ padding: '7px 8px', textAlign: 'right', width: 70 }}>Precio</th>
+            <th style={{ padding: '7px 8px', textAlign: 'right', width: 80 }}>Total</th>
           </tr>
         </thead>
         <tbody>
           {items.map((it, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #fce7f3', background: i % 2 ? '#fdf2f8' : '#fff' }}>
+            <tr key={i} style={{ borderBottom: '1px solid #e0f2fe', background: i % 2 ? '#f0f9ff' : '#fff' }}>
               <td style={{ padding: '4px 6px', textAlign: 'center' }}>
-                {(it as any).img ? (
-                  <img src={(it as any).img} style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 4, border: '1px solid #e5e7eb', background: '#fff' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                ) : ''}
+                <div style={{ width: 44, height: 44, borderRadius: 6, border: '1px solid #bae6fd', background: '#f0f9ff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {(it as any).img ? (
+                    <img src={resolveStorageImageUrl((it as any).img)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { const t = e.target as HTMLImageElement; t.style.display = 'none'; (t.parentElement as HTMLElement).innerHTML = '<span style="font-size:8px;color:#7dd3fc;font-weight:700;">S/F</span>'; }} />
+                  ) : <span style={{ fontSize: 8, color: '#7dd3fc', fontWeight: 700 }}>S/F</span>}
+                </div>
               </td>
-              <td style={{ padding: '5px 8px', fontFamily: 'monospace', color: '#be185d' }}>{(it.id ? productSkus[it.id] : '') || (it as any).sku || '—'}</td>
-              <td style={{ padding: '5px 8px' }}>
+              <td style={{ padding: '5px 8px', fontFamily: 'monospace', color: '#1d4ed8', fontWeight: 600 }}>{(it.id ? productSkus[it.id] : '') || (it as any).sku || '—'}</td>
+              <td style={{ padding: '5px 8px', color: '#0f172a' }}>
                 {it.name}{(it as any).missing ? <strong style={{ color: '#b91c1c' }}> (FALTANTE)</strong> : ''}
                 {(it as any).note && <div style={{ fontSize: 10, color: '#d97706', marginTop: 2, background: '#fffbeb', padding: '2px 6px', borderRadius: 4, display: 'inline-block', border: '1px solid #fef3c7' }}>Nota: {(it as any).note}</div>}
               </td>
-              <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 700 }}>{it.qty}</td>
-              <td style={{ padding: '5px 8px', textAlign: 'right' }}>{fmt(it.price)}</td>
-              <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>{fmt(it.total || it.price * it.qty)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 700, color: '#0f172a' }}>{it.qty}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right', color: '#475569' }}>{fmt(it.price)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{fmt(it.total || it.price * it.qty)}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
       {/* Totales */}
-      <div style={{ marginTop: 12, marginLeft: 'auto', width: 260, fontSize: 12, border: '1px solid #fbcfe8', borderRadius: 10, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px' }}><span style={{ color: '#6b7280' }}>Subtotal</span><span>{fmt(order.SUBTOTAL || order.TOTAL)}</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px' }}><span style={{ color: '#6b7280' }}>Envío</span><span>{order.SHIPPINGCOST > 0 ? fmt(order.SHIPPINGCOST) : 'Contraentrega'}</span></div>
+      <div style={{ marginTop: 12, marginLeft: 'auto', width: 260, fontSize: 12, border: '1px solid #bae6fd', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 12px' }}><span style={{ color: '#64748b' }}>Subtotal</span><span style={{ color: '#0f172a', fontWeight: 600 }}>{fmt(order.SUBTOTAL || order.TOTAL)}</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 12px' }}><span style={{ color: '#64748b' }}>Envío</span><span style={{ color: '#0f172a', fontWeight: 600 }}>{order.SHIPPINGCOST > 0 ? fmt(order.SHIPPINGCOST) : 'Contraentrega'}</span></div>
         {order.DISCOUNTAMOUNT && order.DISCOUNTAMOUNT > 0 ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px', color: '#15803d' }}><span>Descuento {order.COUPONCODE ? `(${order.COUPONCODE})` : ''}</span><span>-{fmt(order.DISCOUNTAMOUNT)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 12px', color: '#059669' }}><span>Descuento {order.COUPONCODE ? `(${order.COUPONCODE})` : ''}</span><span style={{ fontWeight: 700 }}>-{fmt(order.DISCOUNTAMOUNT)}</span></div>
         ) : null}
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: '#db2777', color: '#fff', fontWeight: 800, fontSize: 14 }}><span>TOTAL</span><span>{fmt(order.TOTAL)}</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'linear-gradient(135deg,#1d4ed8,#2563eb)', color: '#fff', fontWeight: 800, fontSize: 14 }}><span>TOTAL</span><span>{fmt(order.TOTAL)}</span></div>
       </div>
 
-      <div style={{ marginTop: 16, paddingTop: 8, borderTop: '1px dashed #d1d5db', fontSize: 9, color: '#9ca3af', textAlign: 'center' }}>
+      <div style={{ marginTop: 16, paddingTop: 8, borderTop: '1px dashed #bae6fd', fontSize: 9, color: '#94a3b8', textAlign: 'center' }}>
         Documento interno de preparación · {order.ORDERCODE} · Generado el {new Date().toLocaleDateString('es-CL')}
       </div>
     </div>
