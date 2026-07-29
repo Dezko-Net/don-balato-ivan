@@ -3735,6 +3735,7 @@ export default function ProductsPage() {
           onAdd={openAdd}
           onDelete={remove}
           deleteId={deleteId}
+          globalTotal={globalStats?.total}
           aiLoading={aiLoading !== null}
           onRefresh={() => load(false)}
           currentPage={currentPage}

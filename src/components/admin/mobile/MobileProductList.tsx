@@ -25,6 +25,7 @@ interface Props {
   onDelete: (id: string) => void;
   deleteId: string | null;
   aiLoading?: boolean;
+  globalTotal?: number;
   onRefresh: () => void;
   currentPage: number;
   hasMore: boolean;
@@ -50,7 +51,7 @@ export default function MobileProductList({
   search, onSearchChange, onSearchSubmit, onSearchClear,
   categories, catFilter, onCatChange,
   stockFilter, onStockFilterChange,
-  onEdit, onEnhanceProduct, onAdd, onDelete, deleteId, aiLoading, onRefresh,
+  onEdit, onEnhanceProduct, onAdd, onDelete, deleteId, aiLoading, globalTotal, onRefresh,
   currentPage, hasMore, onNextPage, onPrevPage,
 }: Props) {
   const counts: Record<StockFilter, number> = {
@@ -67,7 +68,7 @@ export default function MobileProductList({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Productos</h1>
-          <p className="text-xs text-gray-500">{allProducts.length} en total · página {currentPage}</p>
+          <p className="text-xs text-gray-500">{globalTotal ? `${globalTotal.toLocaleString('es-CL')} en total` : `${allProducts.length} en total`} · página {currentPage}</p>
         </div>
         <button onClick={onRefresh} disabled={isLoading}
           className="p-2.5 rounded-full bg-white border border-gray-200 text-gray-600 shadow-sm active:scale-95 transition">
