@@ -141,7 +141,7 @@
 
     /* Filter / sort pills */
     .filter-bar {
-      position: sticky; top: var(--hdr-h, 0px); z-index: 20; margin: 0 -16px 16px; padding: 10px 16px;
+      position: sticky; top: var(--hdr-h, 0px); z-index: 55; margin: 0 -16px 16px; padding: 10px 16px;
       display: flex; align-items: center; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
       scrollbar-width: none; -ms-overflow-style: none;
       background: linear-gradient(180deg, rgba(247,251,255,.96) 70%, rgba(247,251,255,0));
@@ -361,7 +361,7 @@
     /* === Bottom nav === */
     .nav-bottom {
       position: fixed; left: 50%; transform: translateX(-50%);
-      bottom: 14px; z-index: 45; width: calc(100% - 28px); max-width: 30rem;
+      bottom: 14px; z-index: 60; width: calc(100% - 28px); max-width: 30rem;
       display: flex; justify-content: space-around; align-items: center;
       padding: 9px 8px; border-radius: 24px;
       background: rgba(255,255,255,.82);
@@ -379,7 +379,7 @@
 <body class="text-rose-700">
 
   <!-- Header sticky -->
-  <header class="glass sticky top-0 z-40">
+  <header class="glass sticky top-0 z-[60]">
     <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
       <button id="backBtn" class="hidden p-2 -ml-1 rounded-full hover:bg-white/20 active:scale-95">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>

@@ -2624,9 +2624,24 @@ async function fetchAppwriteProducts() {
   }
   return raw.map(function(p) {
     var img = resolveAppwriteImage(p.IMAGEURL || p.image || '', apiBase);
+    // Resolve SKU same way as web: SKU field > FEATURES > TAGS > jumpseller_id > $id
+    var resolvedSku = p.SKU || '';
+    if (!resolvedSku) {
+      var feats = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : (p.FEATURES || '');
+      var m = feats.match(/SKU:\s*(.+)/i);
+      if (m) resolvedSku = m[1].trim().split('\n')[0];
+    }
+    if (!resolvedSku && p.TAGS) {
+      var tags = typeof p.TAGS === 'string' ? p.TAGS.split(',') : p.TAGS;
+      for (var t = 0; t < tags.length; t++) {
+        var tag = tags[t].trim();
+        if (/^[A-Z0-9]{4,}$/i.test(tag)) { resolvedSku = tag; break; }
+      }
+    }
+    if (!resolvedSku) resolvedSku = p.jumpseller_id || p.$id || '';
     return {
       id: p.$id || '',
-      sku: p.SKU || p.$id || '',
+      sku: resolvedSku,
       name: p.NAME || '',
       priceA: p.PRICE || 0,
       priceB: p.WHOLESALEPRICE || p.PRICE || 0,
