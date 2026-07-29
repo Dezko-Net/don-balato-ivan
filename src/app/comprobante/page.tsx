@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
+const HIDE_NAV_STYLE = `.global-mobile-nav, .global-pay-ribbon, nav[class*='bottom'], .bottom-nav { display: none !important; }`;
+
 const ACCESS_PASSWORD = 'redes123';
 
 function ComprobanteContent() {
@@ -59,6 +61,7 @@ function ComprobanteContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <style>{HIDE_NAV_STYLE}</style>
         <div className="text-gray-400 text-lg">Cargando...</div>
       </div>
     );
