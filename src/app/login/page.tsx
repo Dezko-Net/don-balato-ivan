@@ -261,6 +261,7 @@ function LoginInner() {
                         <button 
                           type="submit" disabled={submitting}
                           className="mt-4 w-full group relative flex items-center justify-center gap-2 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-sm transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_8px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                          style={{ background: '#0f172a', color: '#fff' }}
                         >
                           {submitting ? (
                             <><Loader2 size={18} className="animate-spin" /> Ingresando...</>
@@ -375,6 +376,7 @@ function LoginInner() {
                         <button 
                           type="submit" disabled={submitting}
                           className="mt-4 w-full group relative flex items-center justify-center gap-2 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-sm transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_8px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                          style={{ background: '#0f172a', color: '#fff' }}
                         >
                           {submitting ? (
                             <><Loader2 size={18} className="animate-spin" /> Creando cuenta...</>

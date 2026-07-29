@@ -15,6 +15,16 @@ const items = [
   { label: 'Cuenta', href: '/cuenta', icon: User },
 ];
 
+// Pestaña activa según la ruta. "Cuenta" no debe activarse en /cuenta/favoritos
+// (que es su propia pestaña).
+function isItemActive(href: string, pathname: string): boolean {
+  if (href === '/') return pathname === '/';
+  if (href === '/cuenta') {
+    return pathname === '/cuenta' || (pathname.startsWith('/cuenta/') && !pathname.startsWith('/cuenta/favoritos'));
+  }
+  return pathname === href || pathname.startsWith(href + '/');
+}
+
 export default function GlobalMobileNav() {
   const pathname = usePathname();
   const { totalItems } = useCart();
@@ -92,15 +102,22 @@ export default function GlobalMobileNav() {
               </Link>
             );
           }
+          const active = isItemActive(href, pathname || '/');
           return (
-            <Link key={label} className="global-mobile-nav__item" href={href}>
-              <span style={{ position: 'relative', display: 'inline-flex' }}>
-                <Icon aria-hidden="true" size={20} strokeWidth={1.8} />
+            <Link
+              key={label}
+              className={`global-mobile-nav__item${active ? ' is-active' : ''}`}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+            >
+              <span className="global-mobile-nav__icon">
+                <Icon aria-hidden="true" size={20} strokeWidth={active ? 2.4 : 1.8} />
                 {label === 'Carrito' && totalItems > 0 && (
-                  <span className="global-mobile-nav__badge">{totalItems > 99 ? '99+' : totalItems}</span>
+                  // key={totalItems} → el badge re-monta y hace "pop" cada vez que cambia la cantidad
+                  <span key={totalItems} className="global-mobile-nav__badge">{totalItems > 99 ? '99+' : totalItems}</span>
                 )}
               </span>
-              <span>{label}</span>
+              <span className="global-mobile-nav__label">{label}</span>
             </Link>
           );
         })}
@@ -117,17 +134,66 @@ export default function GlobalMobileNav() {
           align-items: stretch !important; justify-content: space-around !important;
           padding: 8px 6px max(8px, env(safe-area-inset-bottom)) !important;
           margin: 0 !important; background: #fff !important;
-          border-top: 1px solid rgba(0,0,0,.1) !important;
-          box-shadow: 0 -4px 18px rgba(0,0,0,.08) !important; box-sizing: border-box !important;
+          border-top: 1px solid rgba(0,0,0,.06) !important;
+          border-radius: 20px 20px 0 0 !important;
+          box-shadow: 0 -6px 24px rgba(15,23,42,.10) !important; box-sizing: border-box !important;
+          animation: navSlideUp .45s cubic-bezier(.16,1,.3,1) both !important;
         }
+        @keyframes navSlideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .global-mobile-nav__item {
+          position: relative !important;
           display: flex !important; flex: 1 1 0 !important; flex-direction: column !important;
           align-items: center !important; justify-content: center !important; min-width: 0 !important;
-          gap: 4px !important; color: #111827 !important; text-decoration: none !important;
+          gap: 3px !important; color: #9ca3af !important; text-decoration: none !important;
           font-size: 10px !important; font-weight: 500 !important; line-height: 1 !important;
           background: transparent !important; border: 0 !important; padding: 0 !important;
+          -webkit-tap-highlight-color: transparent !important;
+          transition: color .25s ease, transform .12s ease !important;
         }
-        .global-mobile-nav__item svg { display: block !important; width: 20px !important; height: 20px !important; }
+        /* Barra indicadora superior que crece en la pestaña activa */
+        .global-mobile-nav__item::before {
+          content: '' !important; position: absolute !important; top: -1px !important; left: 50% !important;
+          width: 0 !important; height: 3px !important; border-radius: 999px !important;
+          background: linear-gradient(90deg,#2563eb,#0ea5e9) !important;
+          transform: translateX(-50%) !important;
+          transition: width .35s cubic-bezier(.34,1.56,.64,1) !important;
+          pointer-events: none !important;
+        }
+        .global-mobile-nav__item.is-active::before { width: 26px !important; }
+        /* Destello tipo ripple al presionar */
+        .global-mobile-nav__item::after {
+          content: '' !important; position: absolute !important; top: 4px !important; left: 50% !important;
+          width: 46px !important; height: 34px !important; margin-left: -23px !important; border-radius: 14px !important;
+          background: radial-gradient(circle, rgba(37,99,235,.20), transparent 70%) !important;
+          opacity: 0 !important; transform: scale(.4) !important;
+          transition: opacity .35s ease, transform .35s ease !important; pointer-events: none !important;
+        }
+        .global-mobile-nav__item:active::after { opacity: 1 !important; transform: scale(1) !important; transition: none !important; }
+        .global-mobile-nav__item:active { transform: scale(.9) !important; }
+        .global-mobile-nav__item svg { display: block !important; width: 20px !important; height: 20px !important; transition: color .25s ease !important; }
+        /* Contenedor del ícono: pill que aparece detrás cuando está activo */
+        .global-mobile-nav__icon {
+          position: relative !important; display: inline-flex !important;
+          align-items: center !important; justify-content: center !important;
+          width: 46px !important; height: 30px !important; border-radius: 12px !important;
+          background: transparent !important;
+          transition: transform .3s cubic-bezier(.34,1.56,.64,1), background .25s ease !important;
+        }
+        .global-mobile-nav__label { transition: color .25s ease !important; }
+        /* Estado ACTIVO */
+        .global-mobile-nav__item.is-active { color: #2563eb !important; }
+        .global-mobile-nav__item.is-active .global-mobile-nav__label { color: #2563eb !important; font-weight: 700 !important; }
+        .global-mobile-nav__item.is-active svg { color: #2563eb !important; }
+        .global-mobile-nav__item.is-active .global-mobile-nav__icon {
+          background: #eff6ff !important;
+          transform: translateY(-3px) scale(1.05) !important;
+          animation: navIconPop .45s cubic-bezier(.34,1.56,.64,1) !important;
+        }
+        @keyframes navIconPop {
+          0%   { transform: translateY(0) scale(.8); }
+          55%  { transform: translateY(-6px) scale(1.2); }
+          100% { transform: translateY(-3px) scale(1.05); }
+        }
         /* Botón de pago dentro del navbar inferior (móvil) */
         .global-mobile-nav__pay {
           display: flex !important; flex: 1.9 1 0 !important; flex-direction: row !important;
@@ -139,7 +205,17 @@ export default function GlobalMobileNav() {
           background: linear-gradient(135deg,#f59e0b,#d97706) !important;
           transition: transform .15s ease !important;
         }
-        .global-mobile-nav__pay:active { transform: scale(0.97) !important; }
+        .global-mobile-nav__pay:active { transform: scale(0.95) !important; }
+        .global-mobile-nav__pay { animation: navPayPulse 2.2s ease-in-out infinite !important; }
+        @keyframes navPayPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.5) !important; }
+          50%      { box-shadow: 0 0 0 7px rgba(245,158,11,0) !important; }
+        }
+        .global-mobile-nav__pay--review { animation: navPayPulseBlue 2.2s ease-in-out infinite !important; }
+        @keyframes navPayPulseBlue {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,.5) !important; }
+          50%      { box-shadow: 0 0 0 7px rgba(37,99,235,0) !important; }
+        }
         .global-mobile-nav__pay--review {
           background: linear-gradient(135deg,#2563eb,#1d4ed8) !important;
         }
@@ -149,11 +225,18 @@ export default function GlobalMobileNav() {
         .global-mobile-nav__pay svg { flex-shrink: 0 !important; }
         .global-mobile-nav__pay span { white-space: normal !important; }
         .global-mobile-nav__badge {
-          position: absolute !important; top: -6px !important; right: -8px !important;
+          position: absolute !important; top: -4px !important; right: -2px !important;
           min-width: 16px !important; height: 16px !important; padding: 0 4px !important;
-          border-radius: 999px !important; background: #3b82f6 !important; color: #fff !important;
-          font-size: 10px !important; font-weight: 700 !important; line-height: 16px !important;
-          text-align: center !important; box-shadow: 0 1px 4px rgba(59,130,246,0.4) !important;
+          border-radius: 999px !important; background: linear-gradient(135deg,#2563eb,#0ea5e9) !important; color: #fff !important;
+          font-size: 10px !important; font-weight: 800 !important; line-height: 16px !important;
+          text-align: center !important; box-shadow: 0 2px 6px rgba(37,99,235,0.45) !important;
+          border: 1.5px solid #fff !important;
+          animation: navBadgePop .4s cubic-bezier(.34,1.56,.64,1) !important;
+        }
+        @keyframes navBadgePop {
+          0%   { transform: scale(0); }
+          60%  { transform: scale(1.35); }
+          100% { transform: scale(1); }
         }
         /* Cinta de pago (PC) — oculta en móvil, visible >= 900px */
         .global-pay-ribbon {
@@ -192,6 +275,20 @@ export default function GlobalMobileNav() {
         @media (min-width: 900px) {
           .global-mobile-nav { display: none !important; }
           .global-pay-ribbon { display: flex !important; }
+        }
+        /* Accesibilidad: sin animaciones si el usuario lo pide */
+        @media (prefers-reduced-motion: reduce) {
+          .global-mobile-nav,
+          .global-mobile-nav__item,
+          .global-mobile-nav__icon,
+          .global-mobile-nav__badge,
+          .global-mobile-nav__pay,
+          .global-mobile-nav__pay--review,
+          .global-mobile-nav__item::before,
+          .global-mobile-nav__item::after {
+            animation: none !important;
+            transition: color .2s ease, background .2s ease !important;
+          }
         }
       `}</style>
     </>

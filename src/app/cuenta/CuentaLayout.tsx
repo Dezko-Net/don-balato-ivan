@@ -67,7 +67,8 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
 
   if (!isLoggedIn || !user) {
     return (
-      <div style={{ minHeight: '100vh', fontFamily: FF }}>
+      <div style={{ minHeight: '100vh', fontFamily: FF, background: '#ffffff' }}>
+        <style>{`body { background-color: #ffffff !important; }`}</style>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 12px 80px', boxSizing: 'border-box' }}>
           {children}
         </div>
