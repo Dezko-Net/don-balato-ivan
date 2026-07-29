@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig } from '@/lib/appwrite';
+import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { serverListDocuments } from '@/lib/appwrite-server';
 import { ID } from 'appwrite';
 
 export const dynamic = 'force-dynamic';
 
-const WHOLESALE_ORDERS_COLLECTION = 'wholesale_orders';
+export async function GET(request: NextRequest) {
+  try {
+    const code = request.nextUrl.searchParams.get('code');
+    if (!code) {
+      return NextResponse.json({ error: 'Falta código de pedido' }, { status: 400 });
+    }
+
+    const qEqual = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [code] });
+    const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+    const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qEqual, qLimit1]);
+
+    if (!res.documents || res.documents.length === 0) {
+      return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json({ order: res.documents[0] }, {
+      headers: { 'Cache-Control': 'private, no-store, max-age=0' }
+    });
+  } catch (error: any) {
+    console.error('[API catalogo/order GET] Error:', error);
+    return NextResponse.json({ error: error.message || 'Error al obtener pedido' }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +36,7 @@ export async function POST(request: NextRequest) {
     const { customerName, customerPhone, items, total } = body as {
       customerName: string;
       customerPhone: string;
-      items: Array<{ sku: string; name: string; qty: number; price: number }>;
+      items: Array<{ id?: string; sku: string; name: string; qty: number; price: number; image?: string }>;
       total: number;
     };
 
@@ -24,28 +48,48 @@ export async function POST(request: NextRequest) {
     const { databaseId } = getAppwriteConfig();
 
     const now = Date.now();
-    const reqCode = `CAT-${String(now).slice(-8)}`;
+    const reqCode = `WA-${String(now).slice(-8)}`;
 
     const itemsData = items.map(i => ({
-      sku: i.sku,
+      id: i.id || '',
+      sku: i.sku || '',
       name: i.name,
       qty: i.qty,
       price: i.price,
       total: i.price * i.qty,
+      image: i.image || '',
     }));
 
-    const doc = await databases.createDocument(databaseId, WHOLESALE_ORDERS_COLLECTION, ID.unique(), {
+    // Get next order index
+    let orderIndex = now;
+    try {
+      const { Query } = await import('appwrite');
+      const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
+        Query.orderDesc('ORDERINDEX'),
+        Query.limit(1)
+      ]);
+      if (res.documents.length > 0) {
+        orderIndex = (res.documents[0].ORDERINDEX || res.total || 0) + 1;
+      }
+    } catch {}
+
+    const doc = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
       USERID: 'catalogo-guest',
       ITEMS: JSON.stringify(itemsData),
       CUSTOMERNAME: customerName,
       CUSTOMERPHONE: customerPhone || '',
       CUSTOMEREMAIL: '',
       ORDERCODE: reqCode,
-      ORDERINDEX: now,
+      ORDERINDEX: orderIndex,
       SUBTOTAL: total,
       TOTAL: total,
       STATUS: 'pending_stock',
       CREATEDAT: now,
+      PAYMENTMETHOD: 'WhatsApp',
+      SHIPPINGAGENCY: '',
+      REGION: '',
+      COMUNA: '',
+      ADDRESS: '',
     });
 
     return NextResponse.json({

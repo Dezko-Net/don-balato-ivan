@@ -448,7 +448,7 @@ function addToCart(sku, qty = 1) {
   if (room <= 0) { showToast('Sin más stock disponible'); return; }
   const add = Math.min(qty, room);
   if (existing) existing.qty += add;
-  else cart.push({ sku, qty: add, mode: currentMode, price: getPrice(p), name: p.name });
+  else cart.push({ sku, id: p.id || '', image: p.image || '', qty: add, mode: currentMode, price: getPrice(p), name: p.name });
   saveCart();
   showToast(add > 1 ? `${add} agregados al carrito` : 'Agregado al carrito');
   flyToCart(sku);
@@ -586,14 +586,15 @@ function closeCustomerFormModal() {
 }
 async function submitCustomerOrder() {
   var name = (document.getElementById('custName') || {}).value || '';
-  if (!name.trim()) { showToast('Completa tu nombre'); return; }
+  var phone = (document.getElementById('custPhone') || {}).value || '';
+  if (!name.trim() || !phone.trim()) { showToast('Completa nombre y teléfono'); return; }
 
   var apiBase = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
     : window.location.origin;
 
   var orderItems = cart.map(function(i) {
-    return { sku: i.sku, name: i.name, qty: i.qty, price: i.price };
+    return { id: i.id || '', sku: i.sku, name: i.name, qty: i.qty, price: i.price, image: i.image || '' };
   });
   var total = cartTotal();
 
@@ -608,7 +609,7 @@ async function submitCustomerOrder() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         customerName: name.trim(),
-        customerPhone: '',
+        customerPhone: phone.trim(),
         items: orderItems,
         total: total
       })
@@ -629,15 +630,20 @@ async function submitCustomerOrder() {
   closeCustomerFormModal();
 
   // Construir mensaje de WhatsApp con el detalle del pedido
-  var waMsg = '*PEDIDO CATÁLOGO* ' + (orderCode ? orderCode : '') + '\n';
-  waMsg += 'Nombre: ' + name.trim() + '\n\n';
+  var siteUrl = window.location.origin.indexOf('localhost') >= 0
+    ? 'http://localhost:3000'
+    : 'https://www.donbalatomayorista.cl';
+  var waMsg = '*PEDIDO WHATSAPP* ' + (orderCode ? orderCode : '') + '\n';
+  waMsg += 'Nombre: ' + name.trim() + '\n';
+  waMsg += 'Teléfono: ' + phone.trim() + '\n\n';
   waMsg += '*Productos:*\n';
   cart.forEach(function(i) {
     waMsg += '• ' + i.name + ' (SKU: ' + i.sku + ')\n';
     waMsg += '  Cantidad: ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
   });
   waMsg += '\n*Total: ' + formatPrice(total) + '*\n\n';
-  waMsg += 'Mi número de WhatsApp es el que aparece en este chat.';
+  waMsg += '🔗 Verificar stock: ' + siteUrl + '/verificar-stock?code=' + orderCode + '\n';
+  waMsg += '🔗 Subir comprobante: ' + siteUrl + '/comprobante?code=' + orderCode;
 
   var waUrl = 'https://wa.me/56992139185?text=' + encodeURIComponent(waMsg);
 
@@ -664,7 +670,7 @@ function showOrderConfirmation(orderCode, customerName, hasError, waUrl) {
     if (waBtn) waBtn.classList.add('hidden');
   } else {
     if (titleEl) titleEl.textContent = '¡Pedido enviado!';
-    if (msgEl) msgEl.innerHTML = 'Gracias <strong>' + escapeHtml(customerName) + '</strong>.<br>Tu pedido fue registrado. <strong>Envíanos el mensaje de WhatsApp</strong> para confirmar tu número y recibir el detalle.';
+    if (msgEl) msgEl.innerHTML = 'Gracias <strong>' + escapeHtml(customerName) + '</strong>.<br>Tu pedido fue registrado. Envíanos el mensaje de WhatsApp para que la cajera verifique el stock.';
     if (codeEl) codeEl.textContent = orderCode ? 'Código: ' + orderCode : '';
     if (waBtn && waUrl) {
       waBtn.href = waUrl;
@@ -2619,6 +2625,7 @@ async function fetchAppwriteProducts() {
   return raw.map(function(p) {
     var img = resolveAppwriteImage(p.IMAGEURL || p.image || '', apiBase);
     return {
+      id: p.$id || '',
       sku: p.SKU || p.$id || '',
       name: p.NAME || '',
       priceA: p.PRICE || 0,
@@ -2647,6 +2654,20 @@ async function init() {
   }
   await loadFirestoreData();
   
+  // Migrate cart items: fill id and image from allProducts if missing
+  var productsById = {};
+  allProducts.forEach(function(p) { productsById[p.sku] = p; });
+  cart.forEach(function(i) {
+    if (!i.id || !i.image) {
+      var p = productsById[i.sku];
+      if (p) {
+        if (!i.id) i.id = p.id || '';
+        if (!i.image) i.image = p.image || '';
+      }
+    }
+  });
+  saveCart();
+
   const minPurchEl = document.getElementById('minPurchaseDisplay');
   if (minPurchEl) minPurchEl.textContent = `Compra mínima • $${getMinPurchase().toLocaleString('es-CL')}`;
 

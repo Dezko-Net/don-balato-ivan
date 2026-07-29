@@ -685,21 +685,21 @@ export async function POST(req: NextRequest) {
     // ── Deep Linking / Auto-Linking Interceptors ──
     const userTextLower = userText.toLowerCase().trim();
 
-    // Auto-link catalog orders: detect CAT-XXXX code in message and link phone
-    const catMatch = userText.match(/CAT-\d{6,8}/i);
+    // Auto-link catalog orders: detect WA-XXXX code in message and link phone
+    const catMatch = userText.match(/WA-\d{6,8}/i);
     if (catMatch) {
       try {
         const { serverListDocuments, serverUpdateDocument } = await import('@/lib/appwrite-server');
-        const WHOLESALE_ORDERS_COLLECTION = 'wholesale_orders';
+        const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
         const qEqual = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [catMatch[0]] });
         const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
-        const res = await serverListDocuments(WHOLESALE_ORDERS_COLLECTION, [qEqual, qLimit1]);
+        const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qEqual, qLimit1]);
         if (res.documents && res.documents.length > 0) {
           const order = res.documents[0] as any;
           const currentPhone = String(order.CUSTOMERPHONE || '');
           const cleanCurrent = currentPhone.replace(/\D/g, '');
           if (cleanCurrent !== cleanedFrom) {
-            await serverUpdateDocument(WHOLESALE_ORDERS_COLLECTION, order.$id, {
+            await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
               CUSTOMERPHONE: `+${cleanedFrom}`
             });
           }
