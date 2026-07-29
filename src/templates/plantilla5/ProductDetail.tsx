@@ -2780,7 +2780,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           background: transparent !important;
         }
 
-        /* Selector de cantidad: stepper circular ( - ) N ( + ), rosa pastel */
+        /* Selector de cantidad: stepper circular ( - ) N ( + ), azul del tema */
         .tpl5-page-wrapper quantity-selector-component,
         .tpl5-page-wrapper .quantity-selector {
           display: inline-flex !important;
@@ -2848,10 +2848,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           flex-shrink: 0 !important;
           padding: 0 !important;
           margin: 0 !important;
-          border: 1.5px solid #f2c6da !important;
+          border: 1.5px solid #bfdbfe !important;
           border-radius: 50% !important;
           background: #eff6ff !important;
-          color: #c0547a !important;
+          color: #2563eb !important;
           cursor: pointer !important;
           box-shadow: none !important;
           transition: background 0.18s ease, border-color 0.18s ease !important;
@@ -2878,7 +2878,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           font-size: 16px !important;
           font-weight: 800 !important;
           line-height: 1 !important;
-          color: #c0547a !important;
+          color: #2563eb !important;
           transition: color 0.18s ease !important;
         }
         .tpl5-page-wrapper quantity-selector-component > button[name="minus"]::after,
@@ -2890,19 +2890,19 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         .tpl5-page-wrapper .quantity-selector > button:hover,
         .tpl5-page-wrapper quantity-selector-component .quantity-button:hover,
         .tpl5-page-wrapper .quantity-selector .quantity-button:hover {
-          background: #f7d3e3 !important;
-          border-color: #e8b4cd !important;
+          background: #dbeafe !important;
+          border-color: #93c5fd !important;
           box-shadow: none !important;
         }
         .tpl5-page-wrapper quantity-selector-component > button:active,
-        .tpl5-page-wrapper .quantity-selector > button:active { background: #efb9d3 !important; }
+        .tpl5-page-wrapper .quantity-selector > button:active { background: #bfdbfe !important; }
 
         /* Botón "Añadir al carrito": ancho ajustado (no se estira a full-width) */
         .tpl5-page-wrapper add-to-cart-component,
         .tpl5-page-wrapper .add-to-cart-component {
           flex: 0 1 auto !important;
         }
-        /* Añadir al carrito: ROSA suave (rosa de marca), sin neón */
+        /* Añadir al carrito: azul del tema */
         .tpl5-page-wrapper add-to-cart-component button.add-to-cart-button,
         .tpl5-page-wrapper .add-to-cart-component button.add-to-cart-button {
           width: auto !important;
