@@ -518,10 +518,12 @@ function cartTotal() {
 }
 function openCart() {
   $('#cartDrawer').classList.remove('hidden');
+  $('#bottomNav').style.display = 'none';
   renderCart();
 }
 function closeCart() {
   $('#cartDrawer').classList.add('hidden');
+  $('#bottomNav').style.display = '';
 }
 function renderCart() {
   const wrap = $('#cartItems');
