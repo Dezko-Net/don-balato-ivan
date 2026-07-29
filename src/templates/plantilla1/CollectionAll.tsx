@@ -1391,7 +1391,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
         /* ── Media: integrada dentro de la tarjeta ── */
         .pk-card-image {
           position: relative; overflow: hidden;
-          border-radius: 0;
+          border-radius: 20px 20px 0 0;
           background: #fff;
           border-bottom: 1px solid rgba(17,24,39,.06);
         }
