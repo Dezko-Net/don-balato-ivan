@@ -1529,6 +1529,38 @@ export default function ProductsPage() {
     }
   };
 
+  const exportCompareCSV = async () => {
+    try {
+      const allProducts = await fetchAllProductsForExport();
+      if (allProducts.length === 0) {
+        alert('No se encontraron productos para exportar.');
+        return;
+      }
+      const headers = ['SKU', 'Nombre', 'Precio', 'Stock', 'Categoria', 'Imagen'];
+      let csv = headers.join(';') + '\n';
+      allProducts.forEach(p => {
+        const row = [
+          getSku(p) || '',
+          (p.NAME || '').replace(/;/g, ',').replace(/\n/g, ' '),
+          p.PRICE || 0,
+          p.STOCK ?? 0,
+          catName(p.CATEGORYID).replace(/;/g, ','),
+          (p.IMAGEURL || '').replace(/;/g, ',')
+        ];
+        csv += row.join(';') + '\n';
+      });
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `appwrite-productos-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert('Error al exportar: ' + e.message);
+    }
+  };
+
   const fetchAllProductsForExport = async (): Promise<Product[]> => {
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
@@ -2551,6 +2583,9 @@ export default function ProductsPage() {
                     </button>
                     <button id="btn-export-shopify" onClick={() => { setToolsOpen(false); exportShopifyCSV(); }} disabled={products.length === 0} className={menuItem}>
                       <ShoppingBag className="w-4 h-4 text-gray-400" /> Shopify CSV
+                    </button>
+                    <button onClick={() => { setToolsOpen(false); exportCompareCSV(); }} className={menuItem}>
+                      <FileSpreadsheet className="w-4 h-4 text-blue-500" /> CSV Comparador
                     </button>
 
                     <div className="my-1.5 border-t border-gray-100" />

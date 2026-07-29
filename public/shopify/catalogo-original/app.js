@@ -1827,12 +1827,13 @@ function renderAdmin(rest) {
       <div class="section-title mb-3 !text-base">Datos y respaldo</div>
       <button onclick="migrateLocalToFirebase()" class="w-full bg-yellow-100 text-yellow-700 font-bold py-3 rounded-xl active:scale-95 mb-3 border border-yellow-300">⚠️ Rescatar datos locales a la nube</button>
       <div class="grid grid-cols-2 gap-2">
-        <button onclick="exportAdminData()" class="bg-blue-100 text-blue-600 font-bold py-3 rounded-xl active:scale-95">📥 Exportar</button>
-        <label class="block">
-          <span class="block w-full bg-blue-100 text-blue-600 font-bold py-3 rounded-xl active:scale-95 text-center cursor-pointer">📤 Importar</span>
-          <input type="file" accept=".json" onchange="importAdminData(event)" class="hidden">
-        </label>
+        <button onclick="exportAdminData()" class="bg-blue-100 text-blue-600 font-bold py-3 rounded-xl active:scale-95">📥 Exportar JSON</button>
+        <button onclick="exportCatalogExcel()" class="bg-green-100 text-green-700 font-bold py-3 rounded-xl active:scale-95">📊 Exportar Excel</button>
       </div>
+      <label class="block mt-2">
+        <span class="block w-full bg-blue-100 text-blue-600 font-bold py-3 rounded-xl active:scale-95 text-center cursor-pointer">📤 Importar</span>
+        <input type="file" accept=".json" onchange="importAdminData(event)" class="hidden">
+      </label>
       <div class="text-xs text-blue-400 mt-2">Exporta tus cambios para respaldarlos o moverlos a otro dispositivo.</div>
     </div>
     ` : ''}
@@ -2291,6 +2292,35 @@ function exportAdminData() {
   a.download = `yesbella-admin-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function exportCatalogExcel() {
+  const products = getProducts();
+  const headers = ['SKU', 'Nombre', 'Precio A', 'Precio B', 'Precio Final', 'Stock', 'Categoria', 'Subcategoria', 'Imagen'];
+  let csv = headers.join(';') + '\n';
+  products.forEach(p => {
+    const row = [
+      p.sku || '',
+      (p.name || '').replace(/;/g, ',').replace(/\n/g, ' '),
+      p.priceA || 0,
+      p.priceB || 0,
+      getPrice(p),
+      p.stock || 0,
+      (p.category || '').replace(/;/g, ','),
+      (p.subcategory || '').replace(/;/g, ','),
+      (p.image || '').replace(/;/g, ',')
+    ];
+    csv += row.join(';') + '\n';
+  });
+  // BOM for Excel UTF-8
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `catalogo-web-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Excel exportado: ' + products.length + ' productos');
 }
 
 function importAdminData(ev) {
@@ -2909,6 +2939,7 @@ window.clearImgBox = clearImgBox;
 window.switchModalImg = switchModalImg;
 window.updateImgPreview = updateImgPreview;
 window.exportAdminData = exportAdminData;
+window.exportCatalogExcel = exportCatalogExcel;
 window.importAdminData = importAdminData;
 window.openLightbox = openLightbox;
 window.showProductModal = showProductModal;
