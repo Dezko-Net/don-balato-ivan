@@ -115,4 +115,20 @@ export function fixCloneBehaviour(root: HTMLElement | Document): void {
 
   root.addEventListener('click', onPick, true);
   root.addEventListener('change', onPick, true);
+
+  // Handler global para links #footer → scroll al final de la página
+  if (!document.querySelector('[data-footer-scroll-handler]')) {
+    const sentinel = document.createElement('div');
+    sentinel.setAttribute('data-footer-scroll-handler', '1');
+    sentinel.style.display = 'none';
+    document.body.appendChild(sentinel);
+    document.addEventListener('click', (ev: Event) => {
+      const t = ev.target as HTMLElement;
+      const link = t?.closest?.('a[href="#footer"]') as HTMLAnchorElement | null;
+      if (link) {
+        ev.preventDefault();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+    });
+  }
 }

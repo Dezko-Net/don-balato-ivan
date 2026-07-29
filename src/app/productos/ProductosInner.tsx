@@ -34,6 +34,25 @@ import GlobalCatalogLoader from '@/components/GlobalCatalogLoader';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
+const CATEGORY_COLORS = [
+  { main: '#3b82f6', light: '#eff6ff', border: '#dbeafe', shadow: 'rgba(59,130,246,0.2)' },
+  { main: '#10b981', light: '#ecfdf5', border: '#d1fae5', shadow: 'rgba(16,185,129,0.2)' },
+  { main: '#f59e0b', light: '#fffbeb', border: '#fef3c7', shadow: 'rgba(245,158,11,0.2)' },
+  { main: '#ef4444', light: '#fef2f2', border: '#fee2e2', shadow: 'rgba(239,68,68,0.2)' },
+  { main: '#8b5cf6', light: '#f5f3ff', border: '#ede9fe', shadow: 'rgba(139,92,246,0.2)' },
+  { main: '#ec4899', light: '#fdf2f8', border: '#fce7f3', shadow: 'rgba(236,72,153,0.2)' },
+  { main: '#14b8a6', light: '#f0fdfa', border: '#ccfbf1', shadow: 'rgba(20,184,166,0.2)' },
+  { main: '#f97316', light: '#fff7ed', border: '#ffedd5', shadow: 'rgba(249,115,22,0.2)' },
+  { main: '#6366f1', light: '#eef2ff', border: '#e0e7ff', shadow: 'rgba(99,102,241,0.2)' },
+  { main: '#84cc16', light: '#f7fee7', border: '#ecfccb', shadow: 'rgba(132,204,22,0.2)' },
+];
+
+function getCatColor(catId: string, categories: Category[]): typeof CATEGORY_COLORS[0] {
+  const idx = categories.findIndex(c => c.$id === catId);
+  if (idx === -1) return CATEGORY_COLORS[0];
+  return CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+}
+
 export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?: string; lockBrand?: string } = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -387,15 +406,17 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           return (
             <div key={c.$id}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 4 }}>
+                {(() => { const cc = getCatColor(c.$id, categories); return (
                 <button onClick={() => {
                   setSelectedCat(c.$id); setSelectedSubcat(''); setSelectedSubSubcat(''); updateCategoryUrl(c.$id);
                   if (hasSubs) { setExpandedCats(prev => { const n = new Set(prev); n.has(c.$id) ? n.delete(c.$id) : n.add(c.$id); return n; }); }
                 }}
-                  style={{ flex: 1, textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? '#3b82f6' : '#6b7280', background: selectedCat === c.$id ? '#eff6ff' : 'transparent', border: 'none', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedCat === c.$id ? '#3b82f6' : '#d1d5db', flexShrink: 0 }} />
+                  style={{ flex: 1, textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? cc.main : '#6b7280', background: selectedCat === c.$id ? cc.light : 'transparent', border: 'none', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedCat === c.$id ? cc.main : '#d1d5db', flexShrink: 0 }} />
                   <span style={{ flex: 1 }}>{c.name}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedCat === c.$id ? '#dbeafe' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{count}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedCat === c.$id ? cc.border : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{count}</span>
                 </button>
+                ); })()}
                 {hasSubs && (
                   <button onClick={() => setExpandedCats(prev => { const n = new Set(prev); n.has(c.$id) ? n.delete(c.$id) : n.add(c.$id); return n; })}
                     style={{ width: 24, height: 24, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', flexShrink: 0 }}>
@@ -408,10 +429,11 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                   {catSubs.map(sc => {
                     const scCount = serverSubcategoryCounts[sc.$id] || 0;
                     if (scCount === 0) return null;
+                    const cc = getCatColor(c.$id, categories);
                     return (
                       <button key={sc.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(sc.$id); setSelectedSubSubcat(''); }}
-                        style={{ width: '100%', textAlign: 'left', padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id ? 700 : 500, color: selectedSubcat === sc.$id ? '#3b82f6' : '#9ca3af', background: selectedSubcat === sc.$id ? '#eff6ff' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: selectedSubcat === sc.$id ? '#3b82f6' : '#d1d5db', flexShrink: 0 }} />
+                        style={{ width: '100%', textAlign: 'left', padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id ? 700 : 500, color: selectedSubcat === sc.$id ? cc.main : '#9ca3af', background: selectedSubcat === sc.$id ? cc.light : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: selectedSubcat === sc.$id ? cc.main : '#d1d5db', flexShrink: 0 }} />
                         <span style={{ flex: 1 }}>{sc.name}</span>
                         <span style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '1px 6px', borderRadius: 999 }}>{scCount}</span>
                       </button>
@@ -571,6 +593,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
               {categories.map(c => {
                 const count = catCountMap[c.$id] || 0;
                 if (count === 0) return null;
+                const cc = getCatColor(c.$id, categories);
                 return (
                   <button
                     key={c.$id}
@@ -583,11 +606,11 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                       borderRadius: 999,
                       fontSize: 12,
                       fontWeight: 700,
-                      background: selectedCat === c.$id ? 'linear-gradient(135deg,#3b82f6,#3b82f6)' : '#fff',
+                      background: selectedCat === c.$id ? `linear-gradient(135deg,${cc.main},${cc.main})` : '#fff',
                       color: selectedCat === c.$id ? '#fff' : '#6b7280',
                       border: '1px solid ' + (selectedCat === c.$id ? 'transparent' : '#e5e7eb'),
                       cursor: 'pointer',
-                      boxShadow: selectedCat === c.$id ? '0 4px 10px rgba(59,130,246,0.2)' : 'none',
+                      boxShadow: selectedCat === c.$id ? `0 4px 10px ${cc.shadow}` : 'none',
                       fontFamily: 'inherit'
                     }}
                   >
@@ -847,10 +870,17 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
                           )}
                         </div>
-                        <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
-                          style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#3b82f6,#2563eb)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12.5, fontWeight: 800, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'filter 0.2s ease, transform 0.1s ease', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(59,130,246,0.18)', fontFamily: 'inherit' }}>
-                          <ShoppingCart size={13} /> {p.STOCK === 0 ? 'Sin stock' : 'Agregar'}
+                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                        <Link prefetch={false} href={`/productos/${p.$id}`} className="pk-add-btn"
+                          style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', fontSize: 12.5, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'filter 0.2s ease, transform 0.1s ease', boxShadow: '0 4px 14px rgba(59,130,246,0.18)', fontFamily: 'inherit', textDecoration: 'none' }}>
+                          Ver detalles
+                        </Link>
+                        <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-cart-btn"
+                          style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : '#fff', color: p.STOCK === 0 ? '#9ca3af' : '#2563eb', fontSize: 12.5, fontWeight: 800, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'filter 0.2s ease, transform 0.1s ease', boxShadow: p.STOCK === 0 ? 'none' : '0 2px 8px rgba(59,130,246,0.12)', fontFamily: 'inherit', flexShrink: 0 }}
+                          aria-label="Agregar al carrito">
+                          <ShoppingCart size={16} />
                         </button>
+                        </div>
                       </div>
                     </div>
                     )}
@@ -973,6 +1003,17 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           -webkit-tap-highlight-color: transparent !important;
           -webkit-focus-ring-color: transparent !important;
           outline: none !important;
+        }
+
+        /* Fix: product card images must be square and fill container on PC */
+        .pk-card .pk-card-image {
+          aspect-ratio: 1 / 1 !important;
+          width: 100% !important;
+        }
+        .pk-card .pk-card-image img {
+          object-fit: cover !important;
+          width: 100% !important;
+          height: 100% !important;
         }
 
         .pk-card a, .pk-card-list a {
@@ -1276,6 +1317,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
           .pk-card .pk-card-body p { font-size: 11px !important; min-height: 28px !important; line-height: 1.3 !important; margin-bottom: 4px !important; }
           .pk-card .pk-price { font-size: 14px !important; }
           .pk-card .pk-add-btn { padding: 6px 8px !important; font-size: 10px !important; border-radius: 8px !important; margin-top: 6px !important; }
+          .pk-card .pk-cart-btn { width: 32px !important; height: 32px !important; border-radius: 8px !important; }
 
           /* Redesigned horizontal list card on mobile */
           .pk-card-list {
