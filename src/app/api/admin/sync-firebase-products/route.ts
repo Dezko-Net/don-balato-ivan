@@ -125,10 +125,8 @@ export async function POST(request: NextRequest) {
           PACKQTY: 0,
           IMAGEURL: p.image || '',
           IMAGEURL2: p.image2 || '',
-          IMAGEURL3: '',
           CATEGORYID: categoryId,
           SUBCATEGORYID: '',
-          SUBSUBCATEGORYID: '',
           FEATURES: features,
           TAGS: [catName.toLowerCase().replace(/\s+/g, '-')],
         };
