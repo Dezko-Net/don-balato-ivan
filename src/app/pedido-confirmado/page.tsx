@@ -55,14 +55,16 @@ function loadBankDetails(): BankField[] {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  pending:          { label: 'Recibido',      color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  pending_stock:    { label: 'Recibido',      color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  processing:       { label: 'En revisión',   color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  paid:             { label: 'Confirmado',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  negotiation:      { label: 'Negociando',    color: '#7b1fa2', bg: '#faf5ff', border: '#e9d5ff' },
-  shipped:          { label: 'Enviado',       color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
-  delivered:        { label: 'Entregado',     color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  cancelled:        { label: 'Cancelado',     color: '#991b1b', bg: '#fef2f2', border: '#fecaca' },
+  pending:          { label: 'Recibido',         color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  pending_stock:    { label: 'Recibido',         color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  processing:       { label: 'Comprobando Stock', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  paid:             { label: 'Stock confirmado', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  payment_review:   { label: 'Revisando Pago',   color: '#1d4ed8', bg: '#eff6ff', border: '#93c5fd' },
+  payment_confirmed:{ label: 'Pago confirmado',  color: '#1b5e20', bg: '#e8f5e9', border: '#a5d6a7' },
+  negotiation:      { label: 'Negociando',       color: '#7b1fa2', bg: '#faf5ff', border: '#e9d5ff' },
+  shipped:          { label: 'Embalado',         color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
+  delivered:        { label: 'Entregado a agencia', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  cancelled:        { label: 'Cancelado',        color: '#991b1b', bg: '#fef2f2', border: '#fecaca' },
 };
 
 function Countdown({ expiresAt }: { expiresAt: number }) {
@@ -119,7 +121,7 @@ function ConfirmadoInner() {
         } catch { setItems([]); }
       }
       setUploaded(!!o.PROOFURL);
-      if (o.STATUS === 'pending' || o.STATUS === 'pending_stock' || o.STATUS === 'processing' || o.STATUS === 'negotiation') {
+      if (o.STATUS === 'pending' || o.STATUS === 'pending_stock' || o.STATUS === 'processing' || o.STATUS === 'paid' || o.STATUS === 'negotiation') {
         setShowConfetti(true);
       }
     } catch (e) {
@@ -141,12 +143,13 @@ function ConfirmadoInner() {
       const created = await storage.createFile(bucketId || MEDIA_BUCKET_ID, ID.unique(), file);
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const proofUrl = `${endpoint}/storage/buckets/${bucketId || MEDIA_BUCKET_ID}/files/${created.$id}/view?project=${projectId}&ext=${ext}`;
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION, order.$id, {
-        PROOFURL: proofUrl,
-        STATUS: 'processing',
-      });
+      const shouldChangeStatus = order.STATUS === 'pending' || order.STATUS === 'pending_stock';
+      const updateData: Record<string, any> = { PROOFURL: proofUrl };
+      if (shouldChangeStatus) updateData.STATUS = 'processing';
+      else if (order.STATUS === 'paid') updateData.STATUS = 'payment_review';
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION, order.$id, updateData);
       setUploaded(true);
-      setOrder(prev => prev ? { ...prev, PROOFURL: proofUrl, STATUS: 'processing' } : null);
+      setOrder(prev => prev ? { ...prev, PROOFURL: proofUrl, ...(shouldChangeStatus ? { STATUS: 'processing' } : order.STATUS === 'paid' ? { STATUS: 'payment_review' } : {}) } : null);
     } catch (err) {
       console.error(err);
       alert('Error al subir el comprobante. Por favor intenta de nuevo.');
@@ -205,10 +208,11 @@ function ConfirmadoInner() {
 
   const isPending = order.STATUS === 'pending';
   const isStockPending = order.STATUS === 'pending_stock';
-  const isSuccess = uploaded || (order.STATUS !== 'pending' && order.STATUS !== 'cancelled' && order.STATUS !== 'pending_stock' && order.STATUS !== 'negotiation');
+  const isStockConfirmed = order.STATUS === 'paid';
+  const isSuccess = uploaded || (order.STATUS !== 'pending' && order.STATUS !== 'cancelled' && order.STATUS !== 'pending_stock' && order.STATUS !== 'processing' && order.STATUS !== 'payment_review' && order.STATUS !== 'negotiation');
   const BANK = loadBankDetails();
   const status = STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#374151', bg: '#f3f4f6', border: '#e5e7eb' };
-  const showTimer = isPending && order.EXPIRESAT && !uploaded;
+  const showTimer = isStockConfirmed && order.EXPIRESAT && !uploaded;
 
   return (
     <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#eef4ff 0%,#f6f9ff 46%,#f8fafc 100%)', position: 'relative' }}>
@@ -257,14 +261,16 @@ function ConfirmadoInner() {
         {/* ── Timeline ── */}
         {order.STATUS !== 'cancelled' && (() => {
           const steps = [
-            { key: 'pending',    label: 'Recibido',   icon: <Clock size={14} /> },
-            { key: 'processing', label: 'En revisión', icon: <Upload size={14} /> },
-            { key: 'paid',       label: 'Confirmado',  icon: <CheckCircle2 size={14} /> },
-            { key: 'shipped',    label: 'Enviado',    icon: <Truck size={14} /> },
-            { key: 'delivered',  label: 'Entregado',  icon: <Package size={14} /> },
+            { key: 'pending',    label: 'Recibido',         icon: <Clock size={14} /> },
+            { key: 'processing', label: 'Comprobando Stock', icon: <Upload size={14} /> },
+            { key: 'paid',       label: 'Stock Confirmado', icon: <CheckCircle2 size={14} /> },
+            { key: 'payment_review', label: 'Revisando Pago', icon: <Upload size={14} /> },
+            { key: 'payment_confirmed', label: 'Pago Confirmado', icon: <CheckCircle2 size={14} /> },
+            { key: 'shipped',    label: 'Embalado',         icon: <Package size={14} /> },
+            { key: 'delivered',  label: 'Entregado',        icon: <Truck size={14} /> },
           ];
-          const statusOrder = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
-          const currentIdx = statusOrder.indexOf(order.STATUS);
+          const statusOrder = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+          const currentIdx = statusOrder.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
           return (
             <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 20px', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>
@@ -298,7 +304,7 @@ function ConfirmadoInner() {
         })()}
 
         {/* ── Stock pending message ── */}
-        {isStockPending && (
+        {(isStockPending || isPending || order.STATUS === 'processing') && !isStockConfirmed && (
           <div className="pk-cc-card" style={{ borderRadius: 20, padding: '28px 24px', marginBottom: 16, textAlign: 'center' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: '#eff6ff', marginBottom: 14 }}>
               <Clock size={28} color="#2563eb" />
@@ -327,7 +333,7 @@ function ConfirmadoInner() {
         )}
 
         {/* ── Bank details ── */}
-        {isPending && !isStockPending && !uploaded && (
+        {isStockConfirmed && !uploaded && (
           <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 22px', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
@@ -368,7 +374,7 @@ function ConfirmadoInner() {
         )}
 
         {/* ── Upload proof ── */}
-        {(isPending || order.STATUS === 'processing') && !isStockPending && (
+        {(isStockConfirmed || order.STATUS === 'processing' || order.STATUS === 'payment_review') && (
           <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: `1.5px solid ${uploaded ? '#bbf7d0' : '#dbeafe'}`, marginBottom: 16 }}>
             <h2 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
               <Upload size={18} color={uploaded ? '#16a34a' : '#2563eb'} /> Comprobante de pago

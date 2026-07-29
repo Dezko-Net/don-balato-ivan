@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       total: number;
     };
 
-    if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
+    if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Faltan datos del pedido' }, { status: 400 });
     }
 
@@ -38,11 +38,12 @@ export async function POST(request: NextRequest) {
       USERID: 'catalogo-guest',
       ITEMS: JSON.stringify(itemsData),
       CUSTOMERNAME: customerName,
-      CUSTOMERPHONE: customerPhone,
+      CUSTOMERPHONE: customerPhone || '',
       CUSTOMEREMAIL: '',
+      ORDERCODE: reqCode,
+      ORDERINDEX: now,
       SUBTOTAL: total,
       TOTAL: total,
-      REQCODE: reqCode,
       STATUS: 'pending_stock',
       CREATEDAT: now,
     });

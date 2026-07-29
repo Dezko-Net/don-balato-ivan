@@ -586,8 +586,7 @@ function closeCustomerFormModal() {
 }
 async function submitCustomerOrder() {
   var name = (document.getElementById('custName') || {}).value || '';
-  var phone = (document.getElementById('custPhone') || {}).value || '';
-  if (!name.trim() || !phone.trim()) { showToast('Completa nombre y teléfono'); return; }
+  if (!name.trim()) { showToast('Completa tu nombre'); return; }
 
   var apiBase = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
@@ -609,7 +608,7 @@ async function submitCustomerOrder() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         customerName: name.trim(),
-        customerPhone: phone.trim(),
+        customerPhone: '',
         items: orderItems,
         total: total
       })
@@ -629,29 +628,48 @@ async function submitCustomerOrder() {
   // Cerrar modal de formulario
   closeCustomerFormModal();
 
+  // Construir mensaje de WhatsApp con el detalle del pedido
+  var waMsg = '*PEDIDO CATÁLOGO* ' + (orderCode ? orderCode : '') + '\n';
+  waMsg += 'Nombre: ' + name.trim() + '\n\n';
+  waMsg += '*Productos:*\n';
+  cart.forEach(function(i) {
+    waMsg += '• ' + i.name + ' (SKU: ' + i.sku + ')\n';
+    waMsg += '  Cantidad: ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
+  });
+  waMsg += '\n*Total: ' + formatPrice(total) + '*\n\n';
+  waMsg += 'Mi número de WhatsApp es el que aparece en este chat.';
+
+  var waUrl = 'https://wa.me/56992139185?text=' + encodeURIComponent(waMsg);
+
   // Limpiar carrito
   cart = [];
   saveCart();
   updateCartCount();
 
   // Mostrar modal de confirmación
-  showOrderConfirmation(orderCode, name.trim(), saveError);
+  showOrderConfirmation(orderCode, name.trim(), saveError, waUrl);
 }
 
-function showOrderConfirmation(orderCode, customerName, hasError) {
+function showOrderConfirmation(orderCode, customerName, hasError, waUrl) {
   var modal = document.getElementById('orderConfirmModal');
   var titleEl = document.getElementById('ocTitle');
   var msgEl = document.getElementById('ocMessage');
   var codeEl = document.getElementById('ocCode');
+  var waBtn = document.getElementById('ocWhatsAppBtn');
 
   if (hasError) {
     if (titleEl) titleEl.textContent = 'Hubo un problema';
     if (msgEl) msgEl.innerHTML = 'No pudimos registrar tu pedido. Intenta nuevamente.';
     if (codeEl) codeEl.textContent = '';
+    if (waBtn) waBtn.classList.add('hidden');
   } else {
     if (titleEl) titleEl.textContent = '¡Pedido enviado!';
-    if (msgEl) msgEl.innerHTML = 'Gracias <strong>' + escapeHtml(customerName) + '</strong>.<br>Estamos verificando la disponibilidad de los productos. Te avisaremos pronto.';
+    if (msgEl) msgEl.innerHTML = 'Gracias <strong>' + escapeHtml(customerName) + '</strong>.<br>Tu pedido fue registrado. <strong>Envíanos el mensaje de WhatsApp</strong> para confirmar tu número y recibir el detalle.';
     if (codeEl) codeEl.textContent = orderCode ? 'Código: ' + orderCode : '';
+    if (waBtn && waUrl) {
+      waBtn.href = waUrl;
+      waBtn.classList.remove('hidden');
+    }
   }
 
   if (modal) modal.classList.remove('hidden');

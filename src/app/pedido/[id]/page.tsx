@@ -48,32 +48,44 @@ function getBankDetails(): Record<string, string> {
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   pending:            { label: 'Recibido',            color: '#b45309', bg: '#fffbeb' },
   pending_stock:      { label: 'Recibido',            color: '#b45309', bg: '#fffbeb' },
-  processing:         { label: 'En revisión',         color: '#1558b0', bg: '#e8f0fe' },
-  paid:               { label: 'Confirmado',          color: '#166534', bg: '#f0fdf4' },
+  processing:         { label: 'Comprobando Stock',   color: '#1558b0', bg: '#e8f0fe' },
+  paid:               { label: 'Stock confirmado',    color: '#166534', bg: '#f0fdf4' },
+  payment_review:     { label: 'Revisando Pago',      color: '#1d4ed8', bg: '#eff6ff' },
+  payment_confirmed:  { label: 'Pago confirmado',     color: '#1b5e20', bg: '#e8f5e9' },
   negotiation:        { label: 'Negociando',          color: '#2563eb', bg: '#eff6ff' },
-  shipped:            { label: 'Enviado',             color: '#6b21a8', bg: '#faf5ff' },
-  delivered:          { label: 'Entregado',           color: '#166534', bg: '#f0fdf4' },
+  shipped:            { label: 'Embalado',            color: '#6b21a8', bg: '#faf5ff' },
+  delivered:          { label: 'Entregado a agencia', color: '#166534', bg: '#f0fdf4' },
   cancelled:          { label: 'Cancelado',           color: '#991b1b', bg: '#fff5f5' },
 };
 
 const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertType: 'warning' | 'info' | 'success' | 'indigo' | 'danger' }> = {
   pending: {
     title: 'Pedido Recibido',
-    desc: 'Tu pedido ha sido recibido. Para comenzar a procesarlo, realiza la transferencia bancaria con los datos indicados abajo y sube tu comprobante de pago.',
+    desc: 'Hemos recibido tu pedido. Nuestro equipo está revisando el stock de los productos. Te avisaremos en cuanto esté confirmado.',
     alertType: 'warning'
   },
   pending_stock: {
     title: 'Pedido Recibido',
-    desc: 'Estamos revisando el stock de tu pedido. Te confirmaremos en unos momentos por WhatsApp y en esta página.',
+    desc: 'Hemos recibido tu pedido. Nuestro equipo está revisando el stock de los productos. Te avisaremos en cuanto esté confirmado.',
     alertType: 'info'
   },
   processing: {
-    title: 'En Revisión',
-    desc: 'Hemos recibido tu comprobante de pago. Nuestro equipo administrativo validará la transferencia a la brevedad para confirmar tu compra.',
+    title: 'Comprobando Stock',
+    desc: 'Estamos revisando el stock de tu pedido. Te confirmaremos en unos momentos por WhatsApp y en esta página.',
     alertType: 'info'
   },
   paid: {
-    title: 'Confirmado',
+    title: 'Stock Confirmado',
+    desc: '¡Buenas noticias! El stock de tu pedido está confirmado. Realiza la transferencia bancaria con los datos indicados abajo y sube tu comprobante de pago.',
+    alertType: 'success'
+  },
+  payment_review: {
+    title: 'Revisando Pago',
+    desc: 'Hemos recibido tu comprobante de pago. Nuestro equipo administrativo validará la transferencia a la brevedad para confirmar tu compra.',
+    alertType: 'info'
+  },
+  payment_confirmed: {
+    title: 'Pago Confirmado',
     desc: '¡Excelente! Tu pago ha sido verificado con éxito. Tu pedido pasará a nuestra área de preparación en bodega en las próximas horas.',
     alertType: 'success'
   },
@@ -83,13 +95,13 @@ const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertTy
     alertType: 'warning'
   },
   shipped: {
-    title: 'Enviado',
-    desc: '¡Tu pedido ya está en camino! Ha sido entregado a la empresa de transporte. Puedes ver y descargar el comprobante de envío abajo para realizar el seguimiento.',
-    alertType: 'success'
+    title: 'Embalado',
+    desc: 'Tu pedido ha sido embalado y está listo para ser entregado a la empresa de transporte.',
+    alertType: 'indigo'
   },
   delivered: {
-    title: 'Entregado',
-    desc: 'El pedido ha sido entregado correctamente en la dirección de destino. ¡Muchas gracias por tu compra y por confiar en nosotros!',
+    title: 'Entregado a Agencia',
+    desc: '¡Tu pedido ya fue entregado a la agencia de transporte! Puedes ver y descargar el comprobante de envío abajo para realizar el seguimiento.',
     alertType: 'success'
   },
   cancelled: {
@@ -526,7 +538,15 @@ export default function PedidoPage() {
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
       const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
       try {
-        await databases.updateDocument(databaseId, coll, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
+        const updateData: Record<string, any> = { PAYMENTPROOFURL: url };
+        // Solo cambiar a processing si el pedido está en pending/pending_stock
+        // Si ya está en paid (stock confirmado) o posterior, NO retroceder el status
+        if (order.STATUS === 'pending' || order.STATUS === 'pending_stock') {
+          updateData.STATUS = 'processing';
+        } else if (order.STATUS === 'paid') {
+          updateData.STATUS = 'payment_review';
+        }
+        await databases.updateDocument(databaseId, coll, id, updateData);
       } catch (updateErr: any) {
         // Si falla con STATUS (schema diferente), intentar solo con PAYMENTPROOFURL
         console.warn('[handleUpload] updateDocument with STATUS failed, retrying without STATUS:', updateErr);
@@ -908,51 +928,76 @@ export default function PedidoPage() {
   }
 
   const isPending = order.STATUS === 'pending' || order.STATUS === 'pending_stock';
+  const isStockConfirmed = order.STATUS === 'paid';
   const BANK = getBankDetails();
   const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-  const isReadyRetiro = order.STATUS === 'paid' && isRetiro;
+  const isReadyRetiro = (order.STATUS === 'payment_confirmed' || order.STATUS === 'paid') && isRetiro;
   const status = isReadyRetiro
     ? { label: 'Listo para retirar', color: '#a21caf', bg: '#fae8ff' }
     : (STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#333', bg: '#f5f5f5' });
-  const showTimer = isPending && order.EXPIRESAT && !uploaded;
-  const isSuccess = uploaded || order.STATUS !== 'pending';
+  const showTimer = isStockConfirmed && order.EXPIRESAT && !uploaded;
+  const isSuccess = uploaded || (order.STATUS !== 'pending' && order.STATUS !== 'pending_stock' && order.STATUS !== 'processing' && order.STATUS !== 'payment_review');
   const customerEditCount = getCustomerEditCount(order);
-  const canCustomerModify = !['paid', 'negotiation', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS) && order.STATUS !== 'pending_stock';
+  const canCustomerModify = !['paid', 'payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS) && order.STATUS !== 'pending_stock';
   // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
   const hasMissingItems = items.some(it => !!(it as any).missing);
-  const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);
+  const canChooseReplacement = hasMissingItems && !['payment_confirmed', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
 
   return (
-    <div className="bg-gradient-to-br from-blue-50/80 via-white to-sky-50/50 min-h-screen py-8 px-4 sm:px-6 lg:px-8 pb-24">
+    <div className="bg-white min-h-screen py-6 px-4 sm:px-6 lg:px-8 pb-24">
       <div className="max-w-2xl mx-auto space-y-6">
 
+        {/* ── Back to profile ── */}
+        <Link
+          href="/cuenta"
+          className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors"
+          aria-label="Volver a mi perfil"
+        >
+          <span className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 group-hover:bg-blue-50 border border-gray-200 group-hover:border-blue-200 transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 group-hover:text-blue-600 transition-colors group-hover:-translate-x-0.5 duration-200">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </span>
+          Volver a mi perfil
+        </Link>
+
         {/* ── Header success banner ── */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-blue-100/40 text-center relative overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600" />
-          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4 border border-blue-100/50 shadow-inner">
-            {isSuccess
-              ? <CheckCircle size={32} className="text-blue-600" />
-              : <Clock size={32} className="text-blue-600" />}
+        <div className="rounded-3xl p-6 md:p-8 shadow-[0_8px_30px_rgba(37,99,235,0.08)] border border-blue-100 text-center relative overflow-hidden bg-gradient-to-b from-blue-50/60 to-white">
+          {/* decorative SVG blobs */}
+          <svg className="absolute -top-10 -right-10 w-40 h-40 text-blue-100/70 pointer-events-none" viewBox="0 0 200 200" fill="currentColor" aria-hidden="true">
+            <path d="M42.7,-62.9C54.3,-53.2,62,-39.5,66.8,-24.9C71.6,-10.3,73.4,5.2,69.2,19.2C65,33.1,54.8,45.5,42.1,54.8C29.4,64.1,14.7,70.3,-0.9,71.5C-16.5,72.7,-33,68.9,-45.9,59.5C-58.8,50.1,-68.1,35.1,-71.8,18.9C-75.5,2.7,-73.6,-14.7,-66.1,-28.9C-58.6,-43.1,-45.5,-54.1,-31.6,-63C-17.7,-71.9,-3,-78.7,10.6,-76.1C24.2,-73.5,31.1,-72.6,42.7,-62.9Z" transform="translate(100 100)" />
+          </svg>
+          <svg className="absolute -bottom-12 -left-12 w-40 h-40 text-sky-100/60 pointer-events-none" viewBox="0 0 200 200" fill="currentColor" aria-hidden="true">
+            <path d="M39.5,-58.6C50.6,-51.1,58.7,-39.3,64.4,-25.9C70.1,-12.5,73.4,2.6,69.9,16.1C66.4,29.6,56.1,41.5,43.7,50.9C31.3,60.3,16.7,67.2,0.9,66C-14.9,64.8,-29.8,55.5,-42.3,45.1C-54.8,34.7,-64.9,23.2,-68.4,9.4C-71.9,-4.4,-68.8,-20.5,-60.5,-33.1C-52.2,-45.7,-38.7,-54.8,-24.9,-61.4C-11.1,-68,3,-72.1,15.9,-70C28.8,-67.9,28.4,-66.1,39.5,-58.6Z" transform="translate(100 100)" />
+          </svg>
+
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-[0_6px_20px_rgba(37,99,235,0.15)]">
+              {isSuccess
+                ? <CheckCircle size={38} className="text-blue-600" strokeWidth={2.2} />
+                : <Clock size={38} className="text-blue-600" strokeWidth={2.2} />}
+            </div>
+            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
+              {isSuccess ? '¡Pedido confirmado!' : '¡Pedido recibido!'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1.5">Código: <strong className="text-gray-900 font-bold">{order.ORDERCODE}</strong></p>
+            <div className="mt-3">
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm" style={{ background: status.bg, color: status.color }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: status.color }} />
+                {status.label}
+              </span>
+            </div>
+            {order.CUSTOMERNAME && (
+              <p className="text-sm text-gray-500 mt-4">
+                Hola <strong className="text-gray-900 font-semibold">{order.CUSTOMERNAME}</strong>, gracias por tu compra.
+              </p>
+            )}
           </div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-            {isSuccess ? '¡Pedido confirmado!' : '¡Pedido recibido!'}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Código: <strong className="text-gray-900 font-bold">{order.ORDERCODE}</strong></p>
-          <div className="mt-3">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100/30">
-              {status.label}
-            </span>
-          </div>
-          {order.CUSTOMERNAME && (
-            <p className="text-sm text-gray-500 mt-4">
-              Hola <strong className="text-gray-900 font-semibold">{order.CUSTOMERNAME}</strong>, gracias por tu compra.
-            </p>
-          )}
         </div>
 
         {(() => {
           const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-          const isReadyRetiro = order.STATUS === 'paid' && isRetiro;
+          const isReadyRetiro = (order.STATUS === 'paid' || order.STATUS === 'payment_confirmed') && isRetiro;
           const infoRaw = STATUS_DESCRIPTIONS[order.STATUS] || { title: 'Estado del pedido', desc: 'Tu pedido está siendo procesado.', alertType: 'info' };
           const info = isReadyRetiro 
             ? {
@@ -985,9 +1030,11 @@ export default function PedidoPage() {
                 {order.STATUS === 'pending_stock' && <Clock size={24} />}
                 {order.STATUS === 'processing' && <Upload size={24} />}
                 {order.STATUS === 'paid' && <CheckCircle size={24} />}
+                {order.STATUS === 'payment_review' && <Upload size={24} />}
+                {order.STATUS === 'payment_confirmed' && <CheckCircle size={24} />}
                 {order.STATUS === 'negotiation' && <MessageSquare size={24} />}
-                {order.STATUS === 'shipped' && <Truck size={24} />}
-                {order.STATUS === 'delivered' && <CheckCircle size={24} />}
+                {order.STATUS === 'shipped' && <Package size={24} />}
+                {order.STATUS === 'delivered' && <Truck size={24} />}
                 {order.STATUS === 'cancelled' && <AlertTriangle size={24} />}
               </div>
               <div className="flex-1">
@@ -1005,19 +1052,23 @@ export default function PedidoPage() {
           const steps = useWholesaleTimeline
             ? [
                 { key: 'pending',            label: 'Recibido',          icon: <Clock size={15} /> },
-                { key: 'processing',         label: 'En Revisión',       icon: <Upload size={15} /> },
-                { key: 'paid',               label: 'Confirmado',        icon: <CheckCircle size={15} /> },
-                { key: 'shipped',            label: 'Enviado',           icon: <Truck size={15} /> },
-                { key: 'delivered',          label: 'Entregado',         icon: <CheckCircle size={15} /> },
+                { key: 'processing',         label: 'Comprobando Stock', icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Stock Confirmado',  icon: <CheckCircle size={15} /> },
+                { key: 'payment_review',     label: 'Revisando Pago',    icon: <Upload size={15} /> },
+                { key: 'payment_confirmed',  label: 'Pago Confirmado',   icon: <CheckCircle size={15} /> },
+                { key: 'shipped',            label: 'Embalado',          icon: <Package size={15} /> },
+                { key: 'delivered',          label: 'Entregado',         icon: <Truck size={15} /> },
               ]
             : [
                 { key: 'pending',            label: 'Recibido',            icon: <Clock size={15} /> },
-                { key: 'processing',         label: 'En Revisión',         icon: <Upload size={15} /> },
-                { key: 'paid',               label: 'Confirmado',          icon: <CheckCircle size={15} /> },
-                { key: 'shipped',            label: 'Enviado',             icon: <Truck size={15} /> },
-                { key: 'delivered',          label: 'Entregado',           icon: <CheckCircle size={15} /> },
+                { key: 'processing',         label: 'Comprobando Stock',   icon: <Upload size={15} /> },
+                { key: 'paid',               label: 'Stock Confirmado',    icon: <CheckCircle size={15} /> },
+                { key: 'payment_review',     label: 'Revisando Pago',      icon: <Upload size={15} /> },
+                { key: 'payment_confirmed',  label: 'Pago Confirmado',     icon: <CheckCircle size={15} /> },
+                { key: 'shipped',            label: 'Embalado',            icon: <Package size={15} /> },
+                { key: 'delivered',          label: 'Entregado',           icon: <Truck size={15} /> },
               ];
-          const statusOrder = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
+          const statusOrder = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (
@@ -1049,6 +1100,8 @@ export default function PedidoPage() {
                     pending:            { bg: '#f59e0b', border: '#f59e0b', text: '#fff', ring: '#fef3c7', line: '#fbbf24', cardBg: '#fffbeb', cardBorder: '#fde68a' },
                     processing:         { bg: '#3b82f6', border: '#3b82f6', text: '#fff', ring: '#dbeafe', line: '#60a5fa', cardBg: '#eff6ff', cardBorder: '#bfdbfe' },
                     paid:               { bg: '#10b981', border: '#10b981', text: '#fff', ring: '#d1fae5', line: '#34d399', cardBg: '#ecfdf5', cardBorder: '#a7f3d0' },
+                    payment_review:     { bg: '#2563eb', border: '#2563eb', text: '#fff', ring: '#dbeafe', line: '#60a5fa', cardBg: '#eff6ff', cardBorder: '#bfdbfe' },
+                    payment_confirmed:  { bg: '#16a34a', border: '#16a34a', text: '#fff', ring: '#dcfce7', line: '#22c55e', cardBg: '#f0fdf4', cardBorder: '#bbf7d0' },
                     assembling:         { bg: '#6366f1', border: '#6366f1', text: '#fff', ring: '#e0e7ff', line: '#818cf8', cardBg: '#eef2ff', cardBorder: '#c7d2fe' },
                     confirming_stock:   { bg: '#14b8a6', border: '#14b8a6', text: '#fff', ring: '#ccfbf1', line: '#2dd4bf', cardBg: '#f0fdfa', cardBorder: '#99f6e4' },
                     stock_confirmed:    { bg: '#65a30d', border: '#65a30d', text: '#fff', ring: '#ecfccb', line: '#84cc16', cardBg: '#f7fee7', cardBorder: '#bef264' },
@@ -1140,7 +1193,7 @@ export default function PedidoPage() {
         )}
 
         {/* ── Bank details ── */}
-        {isPending && !uploaded && (
+        {isStockConfirmed && !uploaded && (
           <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-extrabold text-gray-900">Datos de transferencia</h2>
@@ -1171,7 +1224,7 @@ export default function PedidoPage() {
         )}
 
         {/* ── Comprobante de pago ── */}
-        {(isPending || order.STATUS === 'processing' || order.PAYMENTPROOFURL) && (
+        {(isStockConfirmed || order.STATUS === 'processing' || order.STATUS === 'payment_review' || order.PAYMENTPROOFURL) && (
           <div className={`bg-white rounded-3xl p-5 md:p-6 shadow-sm border transition-all ${order.PAYMENTPROOFURL ? 'border-green-200 bg-green-50/10' : 'border-blue-100/40'}`}>
             <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
               <Upload size={18} className={order.PAYMENTPROOFURL ? 'text-green-600' : 'text-blue-600'} />
@@ -1201,7 +1254,7 @@ export default function PedidoPage() {
                   </button>
                   
                   {/* Permitir re-subir comprobante si aún no ha sido verificado como pagado */}
-                  {(isPending || order.STATUS === 'processing') && (
+                  {(isStockConfirmed || order.STATUS === 'processing' || order.STATUS === 'payment_review') && (
                     <label className={`flex-1 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-150 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
                       <RefreshCw size={14} className={uploading ? 'animate-spin' : ''} />

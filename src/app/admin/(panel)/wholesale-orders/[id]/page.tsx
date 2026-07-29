@@ -43,18 +43,20 @@ interface WholesaleOrder {
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:            { label: 'Recibido',            bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🕐' },
   pending_stock:      { label: 'Recibido',            bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '�' },
-  processing:         { label: 'En Revisión',         bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
-  paid:               { label: 'Confirmado',          bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
+  processing:         { label: 'Comprobando Stock',     bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
+  paid:               { label: 'Stock Confirmado',  bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '�' },
+  payment_review:     { label: 'Revisando Pago',      bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '📄' },
+  payment_confirmed:  { label: 'Pago Confirmado',   bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
   negotiation:        { label: 'Negociando',          bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
-  shipped:            { label: 'Enviado',              bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
-  delivered:          { label: 'Entregado',            bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
+  shipped:            { label: 'Embalado',           bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '�' },
+  delivered:          { label: 'Entregado a Agencia', bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-green-200',   dot: 'bg-green-400',   icon: '🚚' },
   cancelled:          { label: 'Cancelado',            bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 const STATUS_HEX: Record<string, string> = {
-  pending: '#f97316', pending_stock: '#f97316', processing: '#2563eb', paid: '#10b981',
+  pending: '#f97316', pending_stock: '#f97316', processing: '#2563eb', paid: '#10b981', payment_review: '#2563eb', payment_confirmed: '#059669',
   negotiation: '#ec4899', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
 };
 
@@ -67,6 +69,8 @@ const STEP_ICON_PATHS: Record<string, string> = {
   waiting_payment:    'M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z',
   processing:         'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
   paid:               'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+  payment_confirmed:  'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  payment_review:     'M14 2H6c-1.1 0-1.99.9-1.99 2L4 18c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
   assembling:         'M12 2l-5.5 9h11z M17.5 17.5m-4.5 0a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0-9 0 M3 13.5h8v8H3z',
   preparing_shipping: 'M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z',
   ready_to_ship:      'M2.01 21L23 12 2.01 3 2 10l15 2-15 2z',
@@ -77,8 +81,10 @@ const STEP_ICON_PATHS: Record<string, string> = {
 const STATUS_DESC: Record<string, string> = {
   pending:            'El cliente envió la solicitud, aún sin revisar.',
   pending_stock:      'El cliente envió la solicitud, aún sin revisar.',
-  processing:         'Se recibió el comprobante de pago, hay que verificarlo.',
-  paid:               'El pago fue confirmado y verificado correctamente.',
+  processing:         'Se está comprobando el stock del pedido.',
+  paid:               'El stock del pedido fue confirmado. Pendiente de pago.',
+  payment_review:     'Se recibió el comprobante de pago, hay que verificarlo.',
+  payment_confirmed:  'El pago fue confirmado y verificado correctamente.',
   negotiation:        'Faltan productos, se está negociando con el cliente.',
   shipped:            'El pedido salió de la tienda con la agencia.',
   delivered:          'El pedido fue entregado a la agencia de transporte.',
@@ -278,12 +284,6 @@ export default function WholesaleOrderDetailPage() {
       updateStatus(newStatus);
       return;
     }
-    // Prevenir estados hacia atrás (solo dentro del flujo principal)
-    const currentIdx = STATUS_FLOW.indexOf(order.STATUS);
-    const newIdx = STATUS_FLOW.indexOf(newStatus);
-    if (currentIdx >= 0 && newIdx >= 0 && newIdx < currentIdx) {
-      if (!confirm(`El pedido ya está en "${STATUS_CONFIG[order.STATUS]?.label}". ¿Retroceder a "${STATUS_CONFIG[newStatus]?.label}"?`)) return;
-    }
     updateStatus(newStatus);
   };
 
@@ -459,7 +459,7 @@ export default function WholesaleOrderDetailPage() {
   const scRaw = STATUS_CONFIG[order.STATUS] || STATUS_CONFIG.pending;
   const sc = scRaw;
   const customerNote = order.CUSTOMERNOTE;
-  const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS);
+  const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
   const isCancelled = order.STATUS === 'cancelled';
   const totalItems = items.reduce((s, it) => s + (it.qty || 1), 0);
   const ageDays = Math.floor(ageMs / 86400000);

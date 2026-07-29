@@ -57,7 +57,7 @@ export default function AnalyticsPage() {
   const fmtN = (n: number) => new Intl.NumberFormat('es-CL').format(n);
 
   // KPIs
-  const revenueStatuses = ['paid', 'processing', 'negotiation', 'shipped', 'delivered'];
+  const revenueStatuses = ['paid', 'payment_confirmed', 'processing', 'negotiation', 'shipped', 'delivered'];
   const paidOrders = orders.filter(o => revenueStatuses.includes(o.STATUS));
   const totalRevenue = paidOrders.reduce((s, o) => s + o.TOTAL, 0);
   const avgOrderValue = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
@@ -102,8 +102,10 @@ export default function AnalyticsPage() {
   // Status breakdown
   const statusBreakdown = [
     { label: 'Recibido',                   key: 'pending',            color: 'bg-amber-400' },
-    { label: 'En Revisión',                key: 'processing',         color: 'bg-blue-400' },
-    { label: 'Confirmado',                 key: 'paid',               color: 'bg-emerald-400' },
+    { label: 'Comprobando Stock',          key: 'processing',         color: 'bg-blue-400' },
+    { label: 'Stock Confirmado',           key: 'paid',               color: 'bg-emerald-400' },
+    { label: 'Revisando Pago',             key: 'payment_review',     color: 'bg-blue-500' },
+    { label: 'Pago Confirmado',            key: 'payment_confirmed',  color: 'bg-green-400' },
     { label: 'Negociando',                 key: 'negotiation',        color: 'bg-pink-400' },
     { label: 'Enviado',                    key: 'shipped',            color: 'bg-violet-400' },
     { label: 'Entregado',                  key: 'delivered',          color: 'bg-green-400' },
@@ -402,8 +404,10 @@ export default function AnalyticsPage() {
       {orders.length > 0 && (() => {
         const stages = [
           { key: 'pending',            label: 'Recibido',                   color: 'bg-amber-400' },
-          { key: 'processing',         label: 'En Revisión',                color: 'bg-blue-400' },
+          { key: 'processing',         label: 'C. Stock',                   color: 'bg-blue-400' },
           { key: 'paid',               label: 'Confirmado',                 color: 'bg-emerald-400' },
+          { key: 'payment_review',     label: 'Rev. Pago',                  color: 'bg-blue-500' },
+          { key: 'payment_confirmed',  label: 'P. Confirmado',              color: 'bg-green-400' },
           { key: 'shipped',            label: 'Enviado',                    color: 'bg-violet-400' },
           { key: 'delivered',          label: 'Entregado',                  color: 'bg-emerald-500' },
         ];

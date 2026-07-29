@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Package, ChevronRight, ArrowLeft, Loader2, Search, Receipt, RefreshCw, ShoppingCart, Clock } from 'lucide-react';
+import { Package, ChevronRight, ArrowLeft, Loader2, Search, Receipt, RefreshCw, ShoppingCart, Clock, CheckCircle, MessageSquare, Truck, XCircle, Upload } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
@@ -17,11 +17,13 @@ const PINK = '#3b82f6';
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
   pending:            { label: 'Recibido',            bg: '#fff8e1', color: '#f57f17' },
   pending_stock:      { label: 'Recibido',            bg: '#fff8e1', color: '#f57f17' },
-  processing:         { label: 'En revisión',         bg: '#e3f2fd', color: '#1565c0' },
-  paid:               { label: 'Confirmado',          bg: '#e8f5e9', color: '#2e7d32' },
+  processing:         { label: 'Comprobando Stock',   bg: '#e3f2fd', color: '#1565c0' },
+  paid:               { label: 'Stock confirmado',    bg: '#e8f5e9', color: '#2e7d32' },
+  payment_review:     { label: 'Revisando Pago',      bg: '#e3f2fd', color: '#1d4ed8' },
+  payment_confirmed:  { label: 'Pago confirmado',     bg: '#d1fae5', color: '#059669' },
   negotiation:        { label: 'Negociando',          bg: '#eff6ff', color: '#1d4ed8' },
-  shipped:            { label: 'Enviado',             bg: '#eff6ff', color: '#3b82f6' },
-  delivered:          { label: 'Entregado',           bg: '#e8f5e9', color: '#1b5e20' },
+  shipped:            { label: 'Embalado',            bg: '#f3e8ff', color: '#6b21a8' },
+  delivered:          { label: 'Entregado a agencia', bg: '#e8f5e9', color: '#1b5e20' },
   cancelled:          { label: 'Cancelado',           bg: '#ffebee', color: '#c62828' },
 };
 
@@ -130,7 +132,7 @@ export default function MisPedidosPage() {
   const statusTabs = [
     { key: 'all', label: 'Todos' },
     { key: 'pending', label: 'Recibidos' },
-    { key: 'processing', label: 'En Revisión' },
+    { key: 'processing', label: 'C. Stock' },
     { key: 'paid', label: 'Confirmados' },
     { key: 'negotiation', label: 'Negociando' },
     { key: 'shipped', label: 'Enviados' },
@@ -194,24 +196,23 @@ export default function MisPedidosPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <style>{`
-              @keyframes pulseRing {
-                0% { box-shadow: 0 0 0 0 rgba(245,127,23,0.4); }
-                70% { box-shadow: 0 0 0 8px rgba(245,127,23,0); }
-                100% { box-shadow: 0 0 0 0 rgba(245,127,23,0); }
-              }
-              @keyframes pulseRingBlue {
-                0% { box-shadow: 0 0 0 0 rgba(21,101,192,0.4); }
-                70% { box-shadow: 0 0 0 8px rgba(21,101,192,0); }
-                100% { box-shadow: 0 0 0 0 rgba(21,101,192,0); }
+              @keyframes pulseRingDynamic {
+                0% { box-shadow: 0 0 0 0 var(--pulse-color, rgba(245,127,23,0.4)); }
+                70% { box-shadow: 0 0 0 8px transparent; }
+                100% { box-shadow: 0 0 0 0 transparent; }
               }
               @keyframes shimmer {
                 0% { background-position: -200% 0; }
                 100% { background-position: 200% 0; }
               }
+              @keyframes pulse {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.5; transform: scale(0.8); }
+              }
             `}</style>
             {filtered.map(order => {
               const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-              const isReadyRetiro = order.STATUS === 'paid' && isRetiro;
+              const isReadyRetiro = (order.STATUS === 'paid' || order.STATUS === 'payment_confirmed') && isRetiro;
               const st = isReadyRetiro 
                 ? { label: 'Listo para retirar', bg: '#fae8ff', color: '#a21caf' }
                 : (STATUS[order.STATUS] || { label: order.STATUS, bg: '#f5f5f5', color: '#666' });
@@ -219,7 +220,7 @@ export default function MisPedidosPage() {
               try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
               const qty = items.reduce((s: number, i: any) => s + (i.qty || 1), 0);
               const date = new Date(order.CREATEDAT || order.$createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
-              const isWaiting = order.STATUS === 'pending' || order.STATUS === 'pending_stock' || order.STATUS === 'processing';
+              const isWaiting = true;
 
               // Color scheme per status
               const CARD_THEME: Record<string, { border: string; bg: string; iconBg: string; iconColor: string; shadow: string; hoverBorder: string; hoverShadow: string; barColor: string }> = {
@@ -227,8 +228,10 @@ export default function MisPedidosPage() {
                 pending_stock: { border: '1.5px solid #ffcc80', bg: 'linear-gradient(135deg, #fff8e8 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #fff8e1, #ffe0b2)', iconColor: '#f57f17', shadow: 'rgba(245,127,23,0.08)', hoverBorder: '#ffb74d', hoverShadow: 'rgba(245,127,23,0.15)', barColor: '#f57f17' },
                 processing:    { border: '1.5px solid #90caf9', bg: 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e3f2fd, #bbdefb)', iconColor: '#1565c0', shadow: 'rgba(21,101,192,0.08)', hoverBorder: '#64b5f6', hoverShadow: 'rgba(21,101,192,0.15)', barColor: '#1565c0' },
                 paid:          { border: '1.5px solid #a5d6a7', bg: 'linear-gradient(135deg, #f1f8f3 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)', iconColor: '#2e7d32', shadow: 'rgba(46,125,50,0.08)', hoverBorder: '#81c784', hoverShadow: 'rgba(46,125,50,0.15)', barColor: '#2e7d32' },
+                payment_review: { border: '1.5px solid #93c5fd', bg: 'linear-gradient(135deg, #eff6ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #dbeafe, #bfdbfe)', iconColor: '#1d4ed8', shadow: 'rgba(29,78,216,0.08)', hoverBorder: '#60a5fa', hoverShadow: 'rgba(29,78,216,0.15)', barColor: '#1d4ed8' },
+                payment_confirmed: { border: '1.5px solid #6ee7b7', bg: 'linear-gradient(135deg, #ecfdf5 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #d1fae5, #a7f3d0)', iconColor: '#059669', shadow: 'rgba(5,150,105,0.08)', hoverBorder: '#34d399', hoverShadow: 'rgba(5,150,105,0.15)', barColor: '#059669' },
                 negotiation:   { border: '1.5px solid #b39ddb', bg: 'linear-gradient(135deg, #f5f0ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #ede7f6, #d1c4e9)', iconColor: '#5e35b1', shadow: 'rgba(94,53,177,0.08)', hoverBorder: '#9575cd', hoverShadow: 'rgba(94,53,177,0.15)', barColor: '#5e35b1' },
-                shipped:       { border: '1.5px solid #b3c4ff', bg: 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e8eefc, #c5cdf5)', iconColor: '#3b82f6', shadow: 'rgba(59,130,246,0.08)', hoverBorder: '#93a8f0', hoverShadow: 'rgba(59,130,246,0.15)', barColor: '#3b82f6' },
+                shipped:       { border: '1.5px solid #c4b5fd', bg: 'linear-gradient(135deg, #f5f0ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #ede7f6, #d1c4e9)', iconColor: '#6b21a8', shadow: 'rgba(107,33,168,0.08)', hoverBorder: '#a78bfa', hoverShadow: 'rgba(107,33,168,0.15)', barColor: '#6b21a8' },
                 delivered:     { border: '1.5px solid #81c784', bg: 'linear-gradient(135deg, #f0f9f1 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #e8f5e9, #a5d6a7)', iconColor: '#1b5e20', shadow: 'rgba(27,94,32,0.08)', hoverBorder: '#66bb6a', hoverShadow: 'rgba(27,94,32,0.15)', barColor: '#1b5e20' },
                 cancelled:     { border: '1.5px solid #ef9a9a', bg: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #ffebee, #ffcdd2)', iconColor: '#c62828', shadow: 'rgba(198,40,40,0.08)', hoverBorder: '#e57373', hoverShadow: 'rgba(198,40,40,0.15)', barColor: '#c62828' },
               };
@@ -236,7 +239,20 @@ export default function MisPedidosPage() {
                 ? { border: '1.5px solid #e8a3f0', bg: 'linear-gradient(135deg, #fdf4ff 0%, #ffffff 60%)', iconBg: 'linear-gradient(135deg, #fae8ff, #f3d4f8)', iconColor: '#a21caf', shadow: 'rgba(162,28,175,0.08)', hoverBorder: '#d065e0', hoverShadow: 'rgba(162,28,175,0.15)', barColor: '#a21caf' }
                 : (CARD_THEME[order.STATUS] || { border: '1px solid #e5e7eb', bg: '#fff', iconBg: '#f3f4f6', iconColor: '#6b7280', shadow: 'rgba(0,0,0,0.05)', hoverBorder: '#d1d5db', hoverShadow: 'rgba(0,0,0,0.1)', barColor: '#6b7280' });
 
-              const pulseAnim = isWaiting ? (order.STATUS === 'processing' || order.STATUS === 'pending_stock' ? 'pulseRingBlue 2s infinite' : 'pulseRing 2s infinite') : 'none';
+              const pulseColor = theme.iconColor + '66';
+              const pulseAnim = isWaiting ? 'pulseRingDynamic 2s infinite' : 'none';
+              const statusIcon: Record<string, React.ReactNode> = {
+                pending: <Clock size={20} color={theme.iconColor} strokeWidth={2.5} />,
+                pending_stock: <Clock size={20} color={theme.iconColor} strokeWidth={2.5} />,
+                processing: <Clock size={20} color={theme.iconColor} strokeWidth={2.5} />,
+                paid: <CheckCircle size={22} color={theme.iconColor} />,
+                payment_review: <Upload size={20} color={theme.iconColor} />,
+                payment_confirmed: <CheckCircle size={22} color={theme.iconColor} />,
+                negotiation: <MessageSquare size={20} color={theme.iconColor} />,
+                shipped: <Package size={22} color={theme.iconColor} />,
+                delivered: <Truck size={22} color={theme.iconColor} />,
+                cancelled: <XCircle size={22} color={theme.iconColor} />,
+              };
               return (
                 <Link key={order.$id} href={`/pedido/${order.$id}`}
                   style={{ display: 'flex', alignItems: 'center', gap: 14, background: theme.bg, borderRadius: 16, padding: '16px 18px', textDecoration: 'none', border: theme.border, boxShadow: `0 2px 8px ${theme.shadow}`, transition: 'all .25s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden' }}
@@ -245,14 +261,8 @@ export default function MisPedidosPage() {
                   {isWaiting && (
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${theme.barColor}, transparent)`, backgroundSize: '200% 100%', animation: 'shimmer 2s linear infinite' }} />
                   )}
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: theme.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: pulseAnim, position: 'relative' }}>
-                    {isWaiting ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <Clock size={20} color={theme.iconColor} strokeWidth={2.5} />
-                      </div>
-                    ) : (
-                      <Package size={22} color={theme.iconColor} />
-                    )}
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: theme.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: pulseAnim, position: 'relative', ['--pulse-color' as any]: pulseColor }}>
+                    {statusIcon[order.STATUS] || <Package size={22} color={theme.iconColor} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -266,13 +276,6 @@ export default function MisPedidosPage() {
                     <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>{date}</p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, alignItems: 'flex-end' }}>
-                    {(order.STATUS === 'delivered' || order.STATUS === 'cancelled') && (
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); reorder(order); }}
-                        title="Volver a pedir"
-                        style={{ padding: '5px 10px', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: PINK, fontWeight: 700, transition: 'all .2s' }}>
-                        <RefreshCw size={11} /> Recomprar
-                      </button>
-                    )}
                     <ChevronRight size={16} color="#d1d5db" />
                   </div>
                 </Link>

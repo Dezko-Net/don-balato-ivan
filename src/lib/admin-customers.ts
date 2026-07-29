@@ -112,6 +112,7 @@ export function aggregateOrdersForUser(
         stats.pending += 1;
         break;
       case 'paid':
+      case 'payment_confirmed':
         stats.paid += 1;
         break;
       case 'processing':
@@ -132,7 +133,7 @@ export function aggregateOrdersForUser(
         break;
     }
 
-    const isPaidStatus = ['paid', 'negotiation', 'shipped', 'delivered'].includes(status);
+    const isPaidStatus = ['paid', 'payment_confirmed', 'negotiation', 'shipped', 'delivered'].includes(status);
     if (isPaidStatus) {
       stats.revenuePaid += total;
     }

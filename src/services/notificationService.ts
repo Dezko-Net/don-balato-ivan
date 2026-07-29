@@ -57,6 +57,7 @@ const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'pending',
   'pending_stock',
   'paid',
+  'payment_confirmed',
   'delivered',
 ];
 
@@ -70,27 +71,35 @@ const ORDER_STATUS_COPY: Record<
   },
   pending: {
     title: 'Pedido Recibido',
-    buildMessage: (c) => `¡Hemos recibido tu pedido ${c}! Estamos a la espera del pago.`,
+    buildMessage: (c) => `¡Hemos recibido tu pedido ${c}! Estamos revisando el stock de los productos.`,
   },
   processing: {
-    title: 'En Revisión',
-    buildMessage: (c) => `Tu pago del pedido ${c} está siendo verificado.`,
+    title: 'Comprobando Stock',
+    buildMessage: (c) => `Tu pedido ${c} está en comprobación de stock. Te avisaremos en cuanto esté confirmado.`,
   },
   paid: {
-    title: 'Confirmado',
-    buildMessage: (c) => `Tu pago para el pedido ${c} fue verificado con éxito.`,
+    title: 'Stock Confirmado',
+    buildMessage: (c) => `¡Buenas noticias! El stock de tu pedido ${c} está confirmado. Realiza la transferencia y sube tu comprobante.`,
+  },
+  payment_review: {
+    title: 'Revisando Pago',
+    buildMessage: (c) => `Hemos recibido tu comprobante de pago para el pedido ${c}. Estamos verificando el pago.`,
+  },
+  payment_confirmed: {
+    title: 'Pago Confirmado',
+    buildMessage: (c) => `¡Tu pago del pedido ${c} fue verificado con éxito! Estamos preparando tu pedido.`,
   },
   negotiation: {
     title: 'Negociando',
     buildMessage: (c) => `Tu pedido ${c} está en proceso de negociación. Te contactaremos pronto.`,
   },
   shipped: {
-    title: 'Enviado',
-    buildMessage: (c) => `Tu pedido ${c} salió de la tienda. ¡Pronto lo recibirás!`,
+    title: 'Embalado',
+    buildMessage: (c) => `Tu pedido ${c} ha sido embalado y está listo para ser entregado a la agencia de transporte.`,
   },
   delivered: {
-    title: 'Entregado',
-    buildMessage: (c) => `Tu pedido ${c} fue entregado a la agencia de transporte.`,
+    title: 'Entregado a Agencia',
+    buildMessage: (c) => `¡Tu pedido ${c} fue entregado a la agencia de transporte! Ya está en camino.`,
   },
   cancelled: {
     title: 'Cancelado',

@@ -684,6 +684,38 @@ export async function POST(req: NextRequest) {
 
     // ── Deep Linking / Auto-Linking Interceptors ──
     const userTextLower = userText.toLowerCase().trim();
+
+    // Auto-link catalog orders: detect CAT-XXXX code in message and link phone
+    const catMatch = userText.match(/CAT-\d{6,8}/i);
+    if (catMatch) {
+      try {
+        const { serverListDocuments, serverUpdateDocument } = await import('@/lib/appwrite-server');
+        const WHOLESALE_ORDERS_COLLECTION = 'wholesale_orders';
+        const qEqual = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [catMatch[0]] });
+        const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+        const res = await serverListDocuments(WHOLESALE_ORDERS_COLLECTION, [qEqual, qLimit1]);
+        if (res.documents && res.documents.length > 0) {
+          const order = res.documents[0] as any;
+          const currentPhone = String(order.CUSTOMERPHONE || '');
+          const cleanCurrent = currentPhone.replace(/\D/g, '');
+          if (cleanCurrent !== cleanedFrom) {
+            await serverUpdateDocument(WHOLESALE_ORDERS_COLLECTION, order.$id, {
+              CUSTOMERPHONE: `+${cleanedFrom}`
+            });
+          }
+          await markAsRead(msgId, WA_TOKEN);
+
+          const replyMsg = `¡Hola! 💖 Recibí tu pedido *${catMatch[0]}*. Ya registré tu número de WhatsApp. Estamos verificando la disponibilidad de los productos y te avisaremos muy pronto. 🥰`;
+          await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
+          await addToHistory(fromPhone, 'user', userText, msgId);
+          await addToHistory(fromPhone, 'assistant', replyMsg, `cat-link-${Date.now()}`);
+          return NextResponse.json({ status: 'catalog_order_linked' });
+        }
+      } catch (e) {
+        console.error('[WhatsApp Webhook] Error linking CAT order:', e);
+      }
+    }
+
     if (userTextLower.startsWith('vincular_pedido ')) {
       const orderId = userText.substring('vincular_pedido '.length).trim();
       if (orderId) {
@@ -1289,14 +1321,17 @@ Por favor contáctalo para ayudarle.
           const yesterdayStr = getChileDateStr(yesterday);
           const oneWeekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-          const REVENUE_STATUSES = ['paid', 'processing', 'negotiation', 'shipped', 'delivered'];
+          const REVENUE_STATUSES = ['paid', 'payment_review', 'payment_confirmed', 'processing', 'negotiation', 'shipped', 'delivered'];
           const STATUS_LABELS: Record<string, string> = {
             pending: 'Recibido',
-            processing: 'En Revisión',
-            paid: 'Confirmado',
+            pending_stock: 'Recibido',
+            processing: 'Comprobando Stock',
+            paid: 'Stock Confirmado',
+            payment_review: 'Revisando Pago',
+            payment_confirmed: 'Pago Confirmado',
             negotiation: 'Negociando',
-            shipped: 'Enviado',
-            delivered: 'Entregado',
+            shipped: 'Embalado',
+            delivered: 'Entregado a Agencia',
             cancelled: 'Cancelado'
           };
 

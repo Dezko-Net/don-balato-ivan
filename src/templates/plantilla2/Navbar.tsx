@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCategories } from '@/hooks/useCategories';
 import { useNotifications } from '@/context/NotificationContext';
+import { useStockConfirmedOrders } from '@/hooks/useStockConfirmedOrders';
 import { useState, useEffect, useRef } from 'react';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, CATEGORIES_COLLECTION } from '@/lib/appwrite';
 import type { Category } from '@/types';
@@ -69,6 +70,7 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
   const { totalItems } = useCart();
   const { user, isLoggedIn } = useAuth();
   const { unreadCount } = useNotifications();
+  const { stockConfirmedCount } = useStockConfirmedOrders();
   const [query, setQuery] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -265,6 +267,15 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
         @keyframes nbSearchBtnPulse {
           0%,100% { box-shadow: 0 2px 6px rgba(52,131,250,.3); }
           50% { box-shadow: 0 4px 14px rgba(52,131,250,.5), 0 0 0 3px rgba(52,131,250,.1); }
+        }
+        @keyframes nb23-stock-pulse {
+          0% { transform: scale(1); opacity: 0.5; }
+          70% { transform: scale(2.2); opacity: 0; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        @keyframes nb23-stock-bounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.12); }
         }
         .nb-ml-search:focus-within {
           border-color: #3483fa !important;
@@ -1576,10 +1587,22 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
             </button>
           </div>
           {isLoggedIn && user ? (
-            <Link href="/cuenta" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Link href="/cuenta" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', position: 'relative' }}>
               <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarUrl ? 'none' : accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700, overflow: 'hidden' }}>
                 {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.name.charAt(0).toUpperCase()}
               </div>
+              {stockConfirmedCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, padding: '0 4px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: '#10b981', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 800,
+                  border: '2px solid #fff', zIndex: 5,
+                  animation: 'nb23-stock-bounce 1.4s ease-in-out infinite',
+                }}>
+                  <span style={{ position: 'absolute', inset: -3, borderRadius: 999, background: '#10b981', opacity: 0.4, zIndex: -1, animation: 'nb23-stock-pulse 1.4s ease-out infinite' }} />
+                  {stockConfirmedCount > 9 ? '9+' : stockConfirmedCount}
+                </span>
+              )}
             </Link>
           ) : (
             <Link href="/login" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>

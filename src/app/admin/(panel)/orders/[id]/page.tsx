@@ -20,19 +20,21 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:            { label: 'Recibido',                  bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
   pending_stock:      { label: 'Recibido',                  bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
-  processing:         { label: 'En Revisión',               bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
-  paid:               { label: 'Confirmado',                bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
+  processing:         { label: 'Comprobando Stock',        bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
+  paid:               { label: 'Stock Confirmado',        bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '📦' },
+  payment_review:     { label: 'Revisando Pago',          bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '📄' },
+  payment_confirmed:  { label: 'Pago Confirmado',         bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
   negotiation:        { label: 'Negociando',                bg: 'bg-pink-50',    text: 'text-pink-700',     border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
-  shipped:            { label: 'Enviado',                   bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
-  delivered:          { label: 'Entregado',                 bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
+  shipped:            { label: 'Embalado',                 bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '📦' },
+  delivered:          { label: 'Entregado a Agencia',      bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '🚚' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 // Colores hex por estado (para gradientes/glows del rediseño)
 const STATUS_HEX: Record<string, string> = {
-  pending: '#f97316', pending_stock: '#f97316', processing: '#3b82f6', paid: '#10b981',
+  pending: '#f97316', pending_stock: '#f97316', processing: '#3b82f6', paid: '#10b981', payment_review: '#2563eb', payment_confirmed: '#059669',
   negotiation: '#ec4899', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
 };
 
@@ -42,8 +44,9 @@ const isPickupAgency = (agency?: string) => !!agency && agency.toUpperCase() ===
 // Etiqueta del estado según sea retiro en tienda o envío por agencia
 const displayStatusLabel = (status: string, agency?: string): string => {
   const pickup = isPickupAgency(agency);
-  if (status === 'paid') return pickup ? 'Listo para Retirar' : 'Confirmado';
-  if (status === 'delivered') return pickup ? 'Entregado' : 'Entregado';
+  if (status === 'paid') return pickup ? 'Listo para Retirar' : 'Stock Confirmado';
+  if (status === 'shipped') return 'Embalado';
+  if (status === 'delivered') return pickup ? 'Entregado' : 'Entregado a Agencia';
   return STATUS_CONFIG[status]?.label || status;
 };
 
@@ -1362,30 +1365,6 @@ export default function OrderDetailPage() {
       return;
     }
 
-    // Prevenir estados hacia atrás
-    const currentIdx = STATUS_FLOW.indexOf(order.STATUS);
-    const newIdx = STATUS_FLOW.indexOf(newStatus);
-    if (currentIdx >= 0 && newIdx >= 0 && newIdx < currentIdx) {
-      alert(`No puedes volver a "${STATUS_CONFIG[newStatus]?.label}". El pedido ya pasó a "${STATUS_CONFIG[order.STATUS]?.label}".`);
-      return;
-    }
-
-    // Foto obligatoria antes de shipped (Salió de tienda)
-    if (newStatus === 'shipped' && !orderIsPickup) {
-      if (!order.SHIPPINGPROOFURL) {
-        alert('⚠️ Debes subir la foto de la caja embalada antes de marcar como "Salió de Tienda".\n\nSube la foto en la sección "Comprobante de Envío" e inténtalo de nuevo.');
-        return;
-      }
-    }
-
-    // Foto obligatoria antes de delivered (comprobante de agencia)
-    if (newStatus === 'delivered' && !orderIsPickup && !orderIsBluexpress) {
-      if (!order.PAYMENTPROOFURL) {
-        alert('⚠️ Debes subir la foto del comprobante de la agencia antes de marcar como "Entregado a Agencia".\n\nSube la foto del comprobante (Starken, Chilexpress, etc.) e inténtalo de nuevo.');
-        return;
-      }
-    }
-
     updateStatus(newStatus);
   };
 
@@ -1537,19 +1516,8 @@ export default function OrderDetailPage() {
     !((order as any).TRACKINGNUMBER && (order as any).TRACKINGNUMBER.trim()) &&
     !(order.SHIPPINGPROOFURL && order.SHIPPINGPROOFURL.trim());
 
-  // Warn: falta foto de caja embalada antes de shipped (todas las agencias excepto retiro en tienda)
-  const boxPhotoPending =
-    !orderIsPickup &&
-    !order.SHIPPINGPROOFURL &&
-    ['paid'].includes(order.STATUS);
-
-  // Warn: falta comprobante de agencia antes de delivered (Starken, Chilexpress, etc. — no BluExpress)
-  const agencyProofPending =
-    !orderIsPickup && !orderIsBluexpress &&
-    !order.PAYMENTPROOFURL &&
-    ['paid', 'shipped'].includes(order.STATUS);
   // Mostrar sección de fotos de cajas desde que está confirmado en adelante
-  const showBoxPhotos = ['paid', 'shipped', 'delivered'].includes(order.STATUS) && !orderIsPickup;
+  const showBoxPhotos = ['paid', 'payment_confirmed', 'shipped', 'delivered'].includes(order.STATUS) && !orderIsPickup;
 
   const totalItems = items.reduce((s, it) => s + it.qty, 0);
   const ageDays = Math.floor(ageMs / 86400000);
@@ -2200,6 +2168,8 @@ export default function OrderDetailPage() {
                   pending:          'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67V7z',
                   processing:       'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z',
                   paid:             'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
+                  payment_confirmed:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+                  payment_review:   'M14 2H6c-1.1 0-1.99.9-1.99 2L4 18c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
                   assembling:       'M17.66 8L12 2.35 6.34 8C4.78 9.56 4 11.64 4 13.64s.78 4.11 2.34 5.67 3.61 2.35 5.66 2.35 4.1-.79 5.66-2.35S20 15.64 20 13.64 19.22 9.56 17.66 8z',
                   confirming_stock: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
                   stock_confirmed:  'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
@@ -2300,36 +2270,6 @@ export default function OrderDetailPage() {
             <p className="text-sm font-bold text-amber-800">Seguimiento pendiente</p>
             <p className="text-xs text-amber-700 mt-0.5">
               Este pedido se despachó por <strong>{order.SHIPPINGAGENCY}</strong>. Falta cargar el <strong>N° de seguimiento</strong> o subir la <strong>foto del voucher</strong> que entrega la agencia. (BluExpress no lo requiere — la etiqueta se imprime antes.)
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Alerta: falta foto de caja embalada ── */}
-      {boxPhotoPending && (
-        <div className="no-print rounded-xl sm:rounded-2xl border border-orange-300 bg-orange-50 p-3 sm:p-4 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-orange-800">Falta foto de la caja embalada</p>
-            <p className="text-xs text-orange-700 mt-0.5">
-              Sube la foto del pedido embalado en la sección <strong>"Comprobante de Envío"</strong> antes de marcar como "Salió de Tienda". Es obligatorio.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Alerta: falta comprobante de agencia (Starken, Chilexpress, etc.) ── */}
-      {agencyProofPending && (
-        <div className="no-print rounded-xl sm:rounded-2xl border border-red-300 bg-red-50 p-3 sm:p-4 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-red-800">Falta comprobante de agencia</p>
-            <p className="text-xs text-red-700 mt-0.5">
-              Sube la foto del comprobante que entrega <strong>{order.SHIPPINGAGENCY}</strong> antes de marcar como "Entregado a Agencia". Es obligatorio.
             </p>
           </div>
         </div>

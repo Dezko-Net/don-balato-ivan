@@ -42,7 +42,7 @@ export class LoyaltyService {
       const { databaseId } = getAppwriteConfig();
 
       // Contar pedidos pagados (cualquier estado posterior a pendiente/verificación)
-      const paidStatuses = ['paid', 'negotiation', 'shipped', 'delivered'];
+      const paidStatuses = ['paid', 'payment_confirmed', 'negotiation', 'shipped', 'delivered'];
       const [ordersRes, wholesaleRes] = await Promise.all([
         databases.listDocuments(databaseId, ORDERS_COLLECTION, [
           Query.equal('USERID', userId),

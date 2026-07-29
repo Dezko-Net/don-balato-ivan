@@ -36,12 +36,14 @@ interface WholesaleOrder {
 }
 
 // Flujo principal del pedido; negotiation / cancelled son ramas laterales
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 const STATUS_SVG: Record<string, React.ReactNode> = {
   pending:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
   processing:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
   paid:               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 11.5l2 2 4-4"/></svg>,
+  payment_review:     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
+  payment_confirmed:  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg>,
   negotiation:        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-4 3V5a2 2 0 012-2h13a2 2 0 012 2z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/></svg>,
   shipped:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4h13v11H1z"/><path d="M14 8h4l3 3v4h-7z"/><circle cx="5.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>,
   delivered:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18"/><path d="M9 21v-7h6v7"/></svg>,
@@ -52,6 +54,8 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   pending:            { color: '#f97316', bg: '#fff7ed' },
   processing:         { color: '#2563eb', bg: '#eff6ff' },
   paid:               { color: '#10b981', bg: '#ecfdf5' },
+  payment_review:     { color: '#2563eb', bg: '#eff6ff' },
+  payment_confirmed:  { color: '#059669', bg: '#d1fae5' },
   negotiation:        { color: '#ec4899', bg: '#fdf2f8' },
   shipped:            { color: '#8b5cf6', bg: '#f5f3ff' },
   delivered:          { color: '#22c55e', bg: '#f0fdf4' },
@@ -64,34 +68,40 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   all:                { label: 'Todos',                bg: 'bg-gray-100',    text: 'text-gray-700' },
   paid_group:         { label: 'Confirmados',          bg: 'bg-green-100',   text: 'text-green-700' },
   pending:            { label: 'Recibido',             bg: 'bg-orange-100',  text: 'text-orange-700' },
-  processing:         { label: 'En Revisión',          bg: 'bg-blue-100',    text: 'text-blue-700' },
-  paid:               { label: 'Confirmado',           bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  processing:         { label: 'Comprobando Stock',     bg: 'bg-blue-100',    text: 'text-blue-700' },
+  paid:               { label: 'Stock Confirmado',  bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  payment_review:     { label: 'Revisando Pago',      bg: 'bg-blue-100',    text: 'text-blue-700' },
+  payment_confirmed:  { label: 'Pago Confirmado',   bg: 'bg-green-100',   text: 'text-green-700' },
   negotiation:        { label: 'Negociando',           bg: 'bg-pink-100',    text: 'text-pink-700' },
-  shipped:            { label: 'Enviado',              bg: 'bg-violet-100',  text: 'text-violet-700' },
-  delivered:          { label: 'Entregado',            bg: 'bg-green-100',   text: 'text-green-700' },
+  shipped:            { label: 'Embalado',         bg: 'bg-violet-100',  text: 'text-violet-700' },
+  delivered:          { label: 'Entregado a Agencia', bg: 'bg-green-100',   text: 'text-green-700' },
   cancelled:          { label: 'Cancelado',            bg: 'bg-red-100',     text: 'text-red-700' },
 };
 
 const SHORT_LABEL: Record<string, string> = {
   pending:            'Recibido',
-  processing:         'Revisión',
-  paid:               'Confirmado',
+  processing:         'C. Stock',
+  paid:               'Stock Conf.',
+  payment_review:     'Rev. Pago',
+  payment_confirmed:  'Pago Conf.',
   negotiation:        'Negociando',
-  shipped:            'Enviado',
+  shipped:            'Embalado',
   delivered:          'Entregado',
   cancelled:          'Cancelado',
 };
 
-const PAID_GROUP_STATUSES = ['processing', 'paid', 'shipped', 'delivered'];
+const PAID_GROUP_STATUSES = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 const ALL_STATUS_KEYS = STATUS_FLOW.concat(['negotiation', 'cancelled']);
 
 const STATUS_DESC: Record<string, string> = {
   pending:            'El cliente envió la solicitud, aún sin revisar.',
   pending_stock:      'El cliente envió la solicitud, aún sin revisar.',
-  processing:         'Se recibió el comprobante de pago, hay que verificarlo.',
-  paid:               'El pago fue confirmado y verificado correctamente.',
+  processing:         'Se está comprobando el stock del pedido.',
+  paid:               'El stock del pedido fue confirmado. Pendiente de pago.',
+  payment_review:     'Se recibió el comprobante de pago, hay que verificarlo.',
+  payment_confirmed:  'El pago fue confirmado y verificado correctamente.',
   negotiation:        'Faltan productos, se está negociando con el cliente.',
-  shipped:            'El pedido salió de la tienda con la agencia.',
+  shipped:            'El pedido fue embalado y está listo para la agencia.',
   delivered:          'El pedido fue entregado a la agencia de transporte.',
   cancelled:          'El pedido fue cancelado.',
 };

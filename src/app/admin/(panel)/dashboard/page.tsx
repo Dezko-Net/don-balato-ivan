@@ -1030,12 +1030,16 @@ function SantiagoMap({ comunaCounts }: { comunaCounts: Record<string, number> })
 }
 
 const STATUS_CONF: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pending:    { label: 'Pendiente',  color: '#b45309', bg: '#fffbeb', dot: '#f59e0b' },
-  paid:       { label: 'Pagado',     color: '#047857', bg: '#ecfdf5', dot: '#10b981' },
-  processing: { label: 'Procesando', color: '#1d4ed8', bg: '#eff6ff', dot: '#3b82f6' },
-  shipped:    { label: 'Enviado',    color: '#6d28d9', bg: '#f5f3ff', dot: '#8b5cf6' },
-  delivered:  { label: 'Entregado',  color: '#0e7490', bg: '#ecfeff', dot: '#06b6d4' },
-  cancelled:  { label: 'Cancelado',  color: '#b91c1c', bg: '#fef2f2', dot: '#ef4444' },
+  pending:           { label: 'Recibido',          color: '#b45309', bg: '#fffbeb', dot: '#f59e0b' },
+  pending_stock:     { label: 'Recibido',          color: '#b45309', bg: '#fffbeb', dot: '#f59e0b' },
+  processing:        { label: 'Comprobando Stock', color: '#1d4ed8', bg: '#eff6ff', dot: '#3b82f6' },
+  paid:              { label: 'Stock confirmado', color: '#047857', bg: '#ecfdf5', dot: '#10b981' },
+  payment_review:    { label: 'Revisando Pago',   color: '#1d4ed8', bg: '#eff6ff', dot: '#2563eb' },
+  payment_confirmed: { label: 'Pago confirmado',  color: '#059669', bg: '#d1fae5', dot: '#34d399' },
+  negotiation:       { label: 'Negociando',       color: '#be185d', bg: '#fdf2f8', dot: '#ec4899' },
+  shipped:           { label: 'Embalado',         color: '#6d28d9', bg: '#f5f3ff', dot: '#8b5cf6' },
+  delivered:         { label: 'Entregado agencia',color: '#0e7490', bg: '#ecfeff', dot: '#06b6d4' },
+  cancelled:         { label: 'Cancelado',        color: '#b91c1c', bg: '#fef2f2', dot: '#ef4444' },
 };
 
 type DateRange = '7d' | '30d' | '90d' | 'all';
@@ -1547,9 +1551,9 @@ export default function DashboardPage() {
     const rOrders  = dateRange === 'all' ? allOrders : allOrders.filter(o => (o.CREATEDAT || 0) >= cutoff);
     const prevPeriod = dateRange === 'all' ? [] : allOrders.filter(o => { const t = o.CREATEDAT || 0; return t >= prevCutoff && t < cutoff; });
     let totalRevenue = 0, pendingOrders = 0, paidCount = 0;
-    const paidStatuses = ['paid', 'negotiation', 'shipped', 'delivered'];
+    const paidStatuses = ['paid', 'payment_confirmed', 'negotiation', 'shipped', 'delivered'];
     for (const o of rOrders) {
-      if (o.STATUS === 'pending') pendingOrders++;
+      if (o.STATUS === 'pending' || o.STATUS === 'pending_stock') pendingOrders++;
       if (paidStatuses.includes(o.STATUS)) { totalRevenue += o.TOTAL; paidCount++; }
     }
     const avgTicket = paidCount > 0 ? Math.round(totalRevenue / paidCount) : 0;
@@ -1583,7 +1587,7 @@ export default function DashboardPage() {
       const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
       const next = new Date(d); next.setDate(next.getDate() + 1);
       const dayOrders = rangeOrders.filter(o => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= d.getTime() && ts < next.getTime(); });
-      const rev = dayOrders.filter(o => ['paid', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s, o) => s + o.TOTAL, 0);
+      const rev = dayOrders.filter(o => ['paid', 'payment_confirmed', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s, o) => s + o.TOTAL, 0);
       result.push({ label: d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }), revenue: rev, orders: dayOrders.length });
     }
     return result;
@@ -1595,7 +1599,7 @@ export default function DashboardPage() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
       const next = new Date(d); next.setDate(next.getDate() + 1);
-      const rev = rangeOrders.filter(o => { const ts = o.CREATEDAT || 0; return ts >= d.getTime() && ts < next.getTime() && ['paid', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS); }).reduce((s, o) => s + o.TOTAL, 0);
+      const rev = rangeOrders.filter(o => { const ts = o.CREATEDAT || 0; return ts >= d.getTime() && ts < next.getTime() && ['paid', 'payment_confirmed', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS); }).reduce((s, o) => s + o.TOTAL, 0);
       pts.push(rev);
     }
     return pts;
@@ -1621,7 +1625,7 @@ export default function DashboardPage() {
 
   /* ─── Dashboard status semaphore ─── */
   const todayStart = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
-  const todayRevenue = allOrders.filter(o => (o.CREATEDAT||0) >= todayStart && ['paid', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s,o) => s+o.TOTAL, 0);
+  const todayRevenue = allOrders.filter(o => (o.CREATEDAT||0) >= todayStart && ['paid', 'payment_confirmed', 'negotiation', 'shipped', 'delivered'].includes(o.STATUS)).reduce((s,o) => s+o.TOTAL, 0);
   const topRegions = (() => {
     const map: Record<string, number> = {};
     for (const o of allOrders) { const r = (o.REGION || 'Sin región') as string; map[r] = (map[r]||0)+1; }
@@ -1630,7 +1634,7 @@ export default function DashboardPage() {
 
   const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
   const stalePendingOrders = allOrders.filter(o =>
-    o.STATUS === 'pending' && (o.CREATEDAT || 0) > 0 && (o.CREATEDAT || 0) < threeHoursAgo
+    (o.STATUS === 'pending' || o.STATUS === 'pending_stock') && (o.CREATEDAT || 0) > 0 && (o.CREATEDAT || 0) < threeHoursAgo
   ).length;
   const dashStatus: 'ok' | 'warning' | 'critical' =
     stalePendingOrders > 0 ? 'critical' :

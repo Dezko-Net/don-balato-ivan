@@ -19,11 +19,13 @@ const AMBER_BG = '#fef9f4';
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string; icon: React.ReactNode }> = {
   pending:            { label: 'Recibido',              bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
   pending_stock:      { label: 'Recibido',              bg: '#fff8e1', color: '#f57f17', icon: <Clock size={13} /> },
-  processing:         { label: 'En revisión',           bg: '#e3f2fd', color: '#1558b0', icon: <FileText size={13} /> },
-  paid:               { label: 'Confirmado',            bg: '#e8f5e9', color: '#1b5e20', icon: <CheckCircle size={13} /> },
+  processing:         { label: 'Comprobando Stock',     bg: '#e3f2fd', color: '#1558b0', icon: <FileText size={13} /> },
+  paid:               { label: 'Stock confirmado',      bg: '#e8f5e9', color: '#1b5e20', icon: <CheckCircle size={13} /> },
+  payment_review:     { label: 'Revisando Pago',        bg: '#e3f2fd', color: '#1d4ed8', icon: <FileText size={13} /> },
+  payment_confirmed:  { label: 'Pago confirmado',       bg: '#d1fae5', color: '#059669', icon: <CheckCircle size={13} /> },
   negotiation:        { label: 'Negociando',            bg: '#eff6ff', color: '#1d4ed8', icon: <MessageCircle size={13} /> },
-  shipped:            { label: 'Enviado',               bg: '#faf5ff', color: '#6b21a8', icon: <Truck size={13} /> },
-  delivered:          { label: 'Entregado',             bg: '#e8f5e9', color: '#166534', icon: <CheckCircle size={13} /> },
+  shipped:            { label: 'Embalado',              bg: '#faf5ff', color: '#6b21a8', icon: <Truck size={13} /> },
+  delivered:          { label: 'Entregado a agencia',   bg: '#e8f5e9', color: '#166534', icon: <CheckCircle size={13} /> },
   cancelled:          { label: 'Cancelado',             bg: '#ffebee', color: '#c62828', icon: <XCircle size={13} /> },
 };
 

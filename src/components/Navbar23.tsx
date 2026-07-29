@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, ShoppingBag, User, Heart, Menu, X, Home, ChevronDown } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useStockConfirmedOrders } from '@/hooks/useStockConfirmedOrders';
 import type { Category, Subcategory } from '@/types';
 
 const LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png';
@@ -27,16 +28,35 @@ const EMOJI: Record<string, string> = {
 
 export default function Navbar23() {
   const pathname = usePathname();
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario')) {
-    return null;
-  }
   const { totalItems } = useCart();
+  const { stockConfirmedCount, firstOrderId, firstOrderStatus } = useStockConfirmedOrders();
+  const [dismissedConfirmed, setDismissedConfirmed] = useState(false);
   const [cats, setCats] = useState<Category[]>([]);
   const [subs, setSubs] = useState<Subcategory[]>([]);
   const [catCounts, setCatCounts] = useState<Record<string, number>>({});
   const [subCounts, setSubCounts] = useState<Record<string, number>>({});
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
+
+  useEffect(() => {
+    if (firstOrderId && firstOrderStatus === 'payment_confirmed') {
+      const dismissed = localStorage.getItem(`pay_confirmed_${firstOrderId}`);
+      setDismissedConfirmed(dismissed === '1');
+    } else {
+      setDismissedConfirmed(false);
+    }
+  }, [firstOrderId, firstOrderStatus]);
+
+  const handleConfirmedClick = () => {
+    if (firstOrderId) {
+      localStorage.setItem(`pay_confirmed_${firstOrderId}`, '1');
+      setDismissedConfirmed(true);
+    }
+  };
+
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario')) {
+    return null;
+  }
 
   // â”€â”€ Fetch categorÃ­as + conteos (misma fuente que el home) â”€â”€
   useEffect(() => {
@@ -131,7 +151,15 @@ export default function Navbar23() {
               <ShoppingBag size={21} />
               {totalItems > 0 && <span className="nb23-badge">{badge}</span>}
             </Link>
-            <Link href="/cuenta" aria-label="Mi cuenta" className="nb23-icon"><User size={21} /></Link>
+            <Link href="/cuenta" aria-label="Mi cuenta" className="nb23-icon nb23-account-icon">
+              <User size={21} />
+              {stockConfirmedCount > 0 && (
+                <span className="nb23-stock-badge">
+                  <span className="nb23-stock-pulse" />
+                  <span className="nb23-stock-num">{stockConfirmedCount > 9 ? '9+' : stockConfirmedCount}</span>
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </div>
@@ -182,7 +210,36 @@ export default function Navbar23() {
         <Link href="/carrito" className={`nb23-tab nb23-cart${pathname === '/carrito' ? ' active' : ''}`}>
           <ShoppingBag size={20} />{totalItems > 0 && <span className="nb23-badge nb23-badge-tab">{badge}</span>}<span>Carrito</span>
         </Link>
-        <Link href="/cuenta" className={`nb23-tab${pathname.startsWith('/cuenta') ? ' active' : ''}`}><User size={20} /><span>Cuenta</span></Link>
+        {stockConfirmedCount > 0 && firstOrderId && !(firstOrderStatus === 'payment_confirmed' && dismissedConfirmed) ? (
+          <Link 
+            href={`/pedido/${firstOrderId}`} 
+            className={`nb23-tab nb23-stock-tab${firstOrderStatus === 'payment_review' ? ' nb23-stock-tab--review' : ''}${firstOrderStatus === 'payment_confirmed' ? ' nb23-stock-tab--confirmed' : ''}`}
+            onClick={firstOrderStatus === 'payment_confirmed' ? handleConfirmedClick : undefined}
+          >
+            <span className="nb23-stock-tab-inner">
+              <span className="nb23-stock-tab-icon">
+                {firstOrderStatus === 'payment_review' ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                )}
+              </span>
+              <span className="nb23-stock-tab-text">{firstOrderStatus === 'payment_confirmed' ? 'Pago confirmado' : firstOrderStatus === 'payment_review' ? 'Revisando tu pago' : 'Pagar tu pedido'}</span>
+            </span>
+          </Link>
+        ) : (
+          <Link href="/cuenta" className={`nb23-tab${pathname.startsWith('/cuenta') ? ' active' : ''}`}>
+            <span className="nb23-tab-icon-wrap">
+              <User size={20} />
+            </span>
+            <span>Cuenta</span>
+          </Link>
+        )}
       </nav>
 
       <style>{`
@@ -194,6 +251,79 @@ export default function Navbar23() {
           line-height: 1; border: 1.5px solid #fff;
         }
         .nb23-cart { position: relative; }
+
+        /* ── Stock confirmed badge (cuenta icon) ── */
+        .nb23-account-icon { position: relative; }
+        .nb23-tab-icon-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        .nb23-stock-badge {
+          position: absolute; top: -6px; right: -8px; min-width: 18px; height: 18px; padding: 0 4px;
+          display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+          background: #10b981; color: #fff; border-radius: 999px; font-size: 10px; font-weight: 800;
+          line-height: 1; border: 2px solid #fff; z-index: 5;
+          animation: nb23-stock-bounce 1.4s ease-in-out infinite;
+        }
+        .nb23-stock-badge-tab {
+          position: absolute; top: -4px; right: -6px; min-width: 16px; height: 16px; padding: 0 3px;
+          font-size: 9px; border-width: 1.5px;
+        }
+        .nb23-stock-pulse {
+          position: absolute; inset: -3px; border-radius: 999px;
+          background: #10b981; opacity: 0.4; z-index: -1;
+          animation: nb23-stock-pulse 1.4s ease-out infinite;
+        }
+        @keyframes nb23-stock-pulse {
+          0% { transform: scale(1); opacity: 0.5; }
+          70% { transform: scale(2.2); opacity: 0; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        @keyframes nb23-stock-bounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.12); }
+        }
+
+        /* ── Stock tab button (mobile tab bar) ── */
+        .nb23-stock-tab {
+          flex: 1; display: flex; align-items: center; justify-content: center;
+          padding: 6px 4px; text-decoration: none; min-width: 0;
+        }
+        .nb23-stock-tab-inner {
+          display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          border-radius: 999px; box-shadow: 0 4px 14px rgba(245,158,11,0.35);
+          animation: nb23-stock-tab-pulse 1.8s ease-in-out infinite;
+          white-space: nowrap; overflow: hidden;
+        }
+        .nb23-stock-tab-icon {
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; width: 24px; height: 24px;
+          background: rgba(255,255,255,0.25); border-radius: 50%;
+        }
+        .nb23-stock-tab-text {
+          font-size: 11px; font-weight: 800; color: #fff; letter-spacing: 0.3px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        @keyframes nb23-stock-tab-pulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(245,158,11,0.35); }
+          50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(245,158,11,0.5); }
+        }
+        .nb23-stock-tab--review .nb23-stock-tab-inner {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+          animation: nb23-stock-tab-pulse-review 1.8s ease-in-out infinite;
+        }
+        @keyframes nb23-stock-tab-pulse-review {
+          0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(37,99,235,0.35); }
+          50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(37,99,235,0.5); }
+        }
+        .nb23-stock-tab--confirmed .nb23-stock-tab-inner {
+          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          box-shadow: 0 4px 14px rgba(22,163,74,0.35);
+          animation: nb23-stock-tab-pulse-confirmed 1.8s ease-in-out infinite;
+        }
+        @keyframes nb23-stock-tab-pulse-confirmed {
+          0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(22,163,74,0.35); }
+          50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(22,163,74,0.5); }
+        }
 
         /* â”€â”€ DESKTOP â”€â”€ */
         .nb23-pc { display: none; }

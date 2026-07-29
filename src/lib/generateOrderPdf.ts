@@ -68,7 +68,7 @@ export function generateOrderPdf(
         ${originalHtml}
         ${note ? `<div style="font-size:11px;color:#d97706;background:#fffbeb;border:1px solid #fef3c7;padding:3px 6px;border-radius:4px;margin-top:4px;display:inline-block;">💬 Nota: ${note}</div>` : ''}
       </td>
-      ${hasSku ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#7c3aed;text-align:center;font-weight:600;font-family:monospace;">${sku || '—'}</td>` : ''}
+      ${hasSku ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#2563eb;text-align:center;font-weight:600;font-family:monospace;">${sku || '—'}</td>` : ''}
       ${hasLocations ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#4338ca;text-align:center;font-weight:600;">${loc || '—'}</td>` : ''}
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;text-align:center;">${i.qty}</td>
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;text-align:right;">${formatPrice(i.price)}</td>
@@ -86,9 +86,11 @@ export function generateOrderPdf(
   <title>Pedido ${order.ORDERCODE}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fff; color: #333; padding: 40px; max-width: 700px; margin: 0 auto; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; color: #0f172a; padding: 32px; margin: 0; }
+    .sheet { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(15,23,42,0.10); border: 1px solid #e2e8f0; }
     @media print {
-      body { padding: 20px; max-width: none; }
+      body { padding: 0; background: #fff; }
+      .sheet { box-shadow: none; border: none; border-radius: 0; max-width: none; }
       .no-print { display: none !important; }
       thead { display: table-header-group; }
       tr { page-break-inside: avoid; break-inside: avoid; }
@@ -96,32 +98,50 @@ export function generateOrderPdf(
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #db2777;">
-    <div>
-      <h1 style="font-size:24px;font-weight:700;color:#db2777;margin-bottom:4px;">Comprobante de Pedido</h1>
-      <p style="font-size:13px;color:#999;">${date}</p>
-    </div>
-    <div style="text-align:right;">
-      <p style="font-size:20px;font-weight:700;color:#333;">${order.ORDERCODE}</p>
-      <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:#fdf2f8;font-size:12px;font-weight:600;color:#db2777;border:1px solid #fbcfe8;">${statusLabel}</span>
+  <div class="sheet">
+  <!-- Brand header -->
+  <div style="background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 55%,#3b82f6 100%);color:#fff;padding:28px 40px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:38px;height:38px;border-radius:9px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;">DB</div>
+          <div style="line-height:1.1;">
+            <div style="font-size:17px;font-weight:800;letter-spacing:.5px;">DON BALATO IVÁN</div>
+            <div style="font-size:11px;opacity:.85;">Productos para el hogar · Santiago de Chile</div>
+          </div>
+        </div>
+        <h1 style="font-size:22px;font-weight:800;letter-spacing:.3px;">Comprobante de Pedido</h1>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.8;">N° de pedido</div>
+        <div style="font-size:22px;font-weight:800;margin:2px 0 8px;">${order.ORDERCODE}</div>
+        <span style="display:inline-block;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,0.2);font-size:12px;font-weight:700;border:1px solid rgba(255,255,255,0.35);">${statusLabel}</span>
+      </div>
     </div>
   </div>
 
+  <!-- Meta bar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 40px;background:#eff6ff;border-bottom:1px solid #dbeafe;font-size:12px;color:#1e3a8a;">
+    <span><strong style="color:#1d4ed8;">Fecha de emisión:</strong> ${date}</span>
+    <span style="font-family:monospace;color:#3b82f6;">${order.ORDERCODE}</span>
+  </div>
+
+  <div style="padding:28px 40px 36px;">
+
   <!-- Customer info -->
-  <div style="display:flex;gap:40px;margin-bottom:${customerNote ? '16px' : '28px'};">
-    <div style="flex:1;">
-      <p style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:6px;">Cliente</p>
-      <p style="font-size:14px;font-weight:600;color:#333;margin-bottom:2px;">${order.CUSTOMERNAME || '-'}</p>
-      <p style="font-size:13px;color:#666;">${order.CUSTOMERRUT || ''}</p>
-      <p style="font-size:13px;color:#666;">${order.CUSTOMERPHONE || ''}</p>
-      <p style="font-size:13px;color:#666;">${order.CUSTOMEREMAIL || ''}</p>
+  <div style="display:flex;gap:16px;margin-bottom:${customerNote ? '16px' : '28px'};">
+    <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+      <p style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Cliente</p>
+      <p style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:3px;">${order.CUSTOMERNAME || '-'}</p>
+      <p style="font-size:13px;color:#475569;">${order.CUSTOMERRUT || ''}</p>
+      <p style="font-size:13px;color:#475569;">${order.CUSTOMERPHONE || ''}</p>
+      <p style="font-size:13px;color:#475569;">${order.CUSTOMEREMAIL || ''}</p>
     </div>
-    <div style="flex:1;">
-      <p style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:6px;">Envío</p>
-      <p style="font-size:14px;font-weight:600;color:#333;margin-bottom:2px;">${order.SHIPPINGAGENCY || 'A coordinar'}</p>
-      <p style="font-size:13px;color:#666;">${order.ADDRESS || ''}</p>
-      <p style="font-size:13px;color:#666;">${[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</p>
+    <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+      <p style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Envío</p>
+      <p style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:3px;">${order.SHIPPINGAGENCY || 'A coordinar'}</p>
+      <p style="font-size:13px;color:#475569;">${order.ADDRESS || ''}</p>
+      <p style="font-size:13px;color:#475569;">${[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</p>
     </div>
   </div>
 
@@ -135,51 +155,54 @@ export function generateOrderPdf(
   <!-- Items table -->
   <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
     <thead>
-      <tr style="background:#f8f9fa;">
-        ${hasImages ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Img</th>' : ''}
-        <th style="padding:10px 6px;text-align:left;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Producto</th>
-        ${hasSku ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">SKU</th>' : ''}
-        ${hasLocations ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Sección</th>' : ''}
-        <th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Cant.</th>
-        <th style="padding:10px 6px;text-align:right;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">P. Unit.</th>
-        <th style="padding:10px 6px;text-align:right;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Total</th>
+      <tr style="background:#eff6ff;">
+        ${hasImages ? '<th style="padding:11px 8px;text-align:center;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">Img</th>' : ''}
+        <th style="padding:11px 8px;text-align:left;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">Producto</th>
+        ${hasSku ? '<th style="padding:11px 8px;text-align:center;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">SKU</th>' : ''}
+        ${hasLocations ? '<th style="padding:11px 8px;text-align:center;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">Sección</th>' : ''}
+        <th style="padding:11px 8px;text-align:center;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">Cant.</th>
+        <th style="padding:11px 8px;text-align:right;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">P. Unit.</th>
+        <th style="padding:11px 8px;text-align:right;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">Total</th>
       </tr>
     </thead>
     <tbody>${itemsHtml}</tbody>
   </table>
 
   <!-- Totals -->
-  <div style="margin-left:auto;width:260px;">
-    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;">
-      <span style="color:#666;">Subtotal</span>
-      <span style="color:#333;">${formatPrice(subtotal)}</span>
+  <div style="margin-left:auto;width:290px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;">
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:14px;">
+      <span style="color:#64748b;">Subtotal</span>
+      <span style="color:#0f172a;font-weight:600;">${formatPrice(subtotal)}</span>
     </div>
     ${discount > 0 ? `
-    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;">
-      <span style="color:#00a650;">Descuento${order.COUPONCODE ? ' (' + order.COUPONCODE + ')' : ''}</span>
-      <span style="color:#00a650;font-weight:600;">-${formatPrice(discount)}</span>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:14px;">
+      <span style="color:#059669;">Descuento${order.COUPONCODE ? ' (' + order.COUPONCODE + ')' : ''}</span>
+      <span style="color:#059669;font-weight:700;">-${formatPrice(discount)}</span>
     </div>` : ''}
-    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;">
-      <span style="color:#666;">Envío</span>
-      <span style="color:${order.SHIPPINGCOST > 0 ? '#333' : '#00a650'};font-size:${order.SHIPPINGCOST > 0 ? '14px' : '12px'};">
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:14px;">
+      <span style="color:#64748b;">Envío</span>
+      <span style="color:${order.SHIPPINGCOST > 0 ? '#0f172a' : '#059669'};font-weight:600;font-size:${order.SHIPPINGCOST > 0 ? '14px' : '12px'};">
         ${order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'Pago contraentrega'}
       </span>
     </div>
-    <div style="display:flex;justify-content:space-between;padding:12px 0 0;margin-top:8px;border-top:2px solid #333;font-size:18px;font-weight:700;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;margin-top:10px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:9px;font-size:18px;font-weight:800;color:#fff;">
       <span>Total</span>
       <span>${formatPrice(total)}</span>
     </div>
   </div>
 
   <!-- Footer -->
-  <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e0e0e0;text-align:center;">
-    <p style="font-size:12px;color:#999;">Este documento es un comprobante de tu pedido. Consérvalo como referencia.</p>
-    <p style="font-size:11px;color:#ccc;margin-top:4px;">Generado automáticamente</p>
+  <div style="margin-top:36px;padding-top:16px;border-top:1px solid #e2e8f0;text-align:center;">
+    <p style="font-size:12px;color:#475569;">Este documento es un comprobante de tu pedido. Consérvalo como referencia.</p>
+    <p style="font-size:11px;color:#94a3b8;margin-top:4px;">DON BALATO IVÁN · Estación Central, Chacabuco 08, Santiago de Chile · Generado automáticamente</p>
   </div>
+
+  </div><!-- /padding -->
+  </div><!-- /sheet -->
 
   <!-- Print button (non-print) -->
   <div class="no-print" style="text-align:center;margin-top:24px;">
-    <button onclick="window.print()" style="padding:12px 32px;background:#db2777;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">
+    <button onclick="window.print()" style="padding:13px 34px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,0.35);">
       Imprimir / Guardar PDF
     </button>
   </div>
