@@ -29,7 +29,7 @@ interface OrderData {
 
 const BANK_DETAILS = {
   holder: 'DON BALATO IVAN',
-  rut: '7826749898',
+  rut: '782674269',
   bank: 'Mercado Pago',
   type: 'Cuenta Vista',
   number: '1037879898',
