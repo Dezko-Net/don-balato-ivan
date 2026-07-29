@@ -1,66 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerConfig, getHeaders } from '@/lib/appwrite-server';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, Query } from '@/lib/appwrite';
 import { unstable_cache } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
 const getCachedAppwriteUsage = unstable_cache(
   async () => {
-    const { endpoint, databaseId } = getServerConfig();
-    const headers = getHeaders();
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
 
-    // 1. Fetch database-level usage
-    const dbRes = await fetch(`${endpoint}/databases/${databaseId}/usage?range=30d`, { headers });
-    if (!dbRes.ok) throw new Error(`Failed to fetch database usage: ${dbRes.status}`);
-    const dbData = await dbRes.json();
-
-    // 2. Fetch collection-level usage
-    const collectionsToQuery = [
-      { key: 'products', id: 'products' },
+    // Count documents in each collection using listDocuments with limit=1
+    const collectionsToCount = [
+      { key: 'products', id: PRODUCTS_COLLECTION },
       { key: 'orders', id: 'orders' },
-      { key: 'inventory', id: 'inventory_products' }
+      { key: 'inventory', id: 'inventory_products' },
     ];
 
-    const collectionsUsage: Record<string, number> = {};
+    const collections: Record<string, number> = {};
+    let documentsTotal = 0;
+
     await Promise.all(
-      collectionsToQuery.map(async (c) => {
+      collectionsToCount.map(async (c) => {
         try {
-          const res = await fetch(`${endpoint}/databases/${databaseId}/collections/${c.id}/usage?range=30d`, { headers });
-          if (res.ok) {
-            const data = await res.json();
-            collectionsUsage[c.key] = data.documentsTotal || 0;
-          } else {
-            collectionsUsage[c.key] = 0;
-          }
+          const res = await databases.listDocuments(databaseId, c.id, [Query.limit(1)]);
+          collections[c.key] = res.total;
+          documentsTotal += res.total;
         } catch {
-          collectionsUsage[c.key] = 0;
+          collections[c.key] = 0;
         }
       })
     );
 
-    // Calculate today's reads from the 30d daily aggregation (current calendar day)
-    const databaseReads = dbData.databaseReads || [];
-    const todayData = databaseReads.length > 0 ? databaseReads[databaseReads.length - 1] : null;
-    const todayReads = todayData ? (todayData.value || 0) : 0;
+    // Also count categories
+    try {
+      const catRes = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.limit(1)]);
+      collections.categories = catRes.total;
+      documentsTotal += catRes.total;
+    } catch {
+      collections.categories = 0;
+    }
 
-    // Calculate last 7 days reads
-    const sevenDaysReads = databaseReads.slice(-7).reduce((acc: number, curr: any) => acc + (curr.value || 0), 0);
+    // Build a simple history (no usage API available on free plan)
+    const now = new Date();
+    const history: { date: string; value: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCDate(d.getUTCDate() - i);
+      history.push({ date: d.toISOString().slice(0, 10), value: 0 });
+    }
 
     return {
-      databaseReadsTotal: dbData.databaseReadsTotal || 0,
-      databaseWritesTotal: dbData.databaseWritesTotal || 0,
-      todayReads,
-      sevenDaysReads,
-      history: databaseReads,
-      writesHistory: dbData.databaseWrites || [],
-      collections: collectionsUsage,
-      collectionsTotal: dbData.collectionsTotal || 0,
-      documentsTotal: dbData.documentsTotal || 0,
-      lastUpdated: new Date().toISOString()
+      databaseReadsTotal: 0,
+      databaseWritesTotal: 0,
+      todayReads: 0,
+      sevenDaysReads: 0,
+      history,
+      writesHistory: [],
+      collections,
+      collectionsTotal: Object.keys(collections).length,
+      documentsTotal,
+      lastUpdated: new Date().toISOString(),
+      note: 'Usage metrics API not available on current Appwrite plan. Showing document counts only.',
     };
   },
-  ['appwrite-usage-cache'],
-  { revalidate: 300, tags: ['appwrite-usage'] } // 5 minutes cache
+  ['appwrite-usage-cache-v2'],
+  { revalidate: 300, tags: ['appwrite-usage'] }
 );
 
 export async function GET(req: NextRequest) {
