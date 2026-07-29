@@ -15,6 +15,16 @@ interface FirebaseProduct {
   image2?: string;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -156,12 +166,12 @@ export async function POST(request: NextRequest) {
       errorCount,
       errors: errors.length > 0 ? errors.slice(0, 20) : undefined,
       message: `Sincronización completa: ${importedCount} productos importados, ${skippedCount} ya existían, ${errorCount} errores.`
-    });
+    }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('[sync-firebase] Fatal error:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Error en sincronización'
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders });
   }
 }
