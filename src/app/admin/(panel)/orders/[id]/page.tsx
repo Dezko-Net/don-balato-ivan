@@ -30,7 +30,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'pending_stock', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 // Colores hex por estado (para gradientes/glows del rediseño)
 const STATUS_HEX: Record<string, string> = {

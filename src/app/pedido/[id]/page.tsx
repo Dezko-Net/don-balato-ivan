@@ -1224,7 +1224,7 @@ export default function PedidoPage() {
         )}
 
         {/* ── Comprobante de pago ── */}
-        {(isStockConfirmed || order.STATUS === 'processing' || order.STATUS === 'payment_review' || order.PAYMENTPROOFURL) && (
+        {(isStockConfirmed || order.STATUS === 'payment_review' || order.PAYMENTPROOFURL) && (
           <div className={`bg-white rounded-3xl p-5 md:p-6 shadow-sm border transition-all ${order.PAYMENTPROOFURL ? 'border-green-200 bg-green-50/10' : 'border-blue-100/40'}`}>
             <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
               <Upload size={18} className={order.PAYMENTPROOFURL ? 'text-green-600' : 'text-blue-600'} />
@@ -1254,7 +1254,7 @@ export default function PedidoPage() {
                   </button>
                   
                   {/* Permitir re-subir comprobante si aún no ha sido verificado como pagado */}
-                  {(isStockConfirmed || order.STATUS === 'processing' || order.STATUS === 'payment_review') && (
+                  {(isStockConfirmed || order.STATUS === 'payment_review') && (
                     <label className={`flex-1 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-150 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
                       <RefreshCw size={14} className={uploading ? 'animate-spin' : ''} />
