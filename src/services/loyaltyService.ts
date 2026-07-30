@@ -158,17 +158,16 @@ export class LoyaltyService {
 
       // Crear cupón
       await databases.createDocument(databaseId, COUPONS_COLLECTION, ID.unique(), {
-        CODE: couponCode,
-        DISCOUNTTYPE: 'percentage',
-        DISCOUNTVALUE: percent,
-        MINORDERVALUE: 0,
-        MAXUSES: 1,
-        USES: 0,
-        ISACTIVE: true,
-        EXPIRESAT: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 días para usarlo
-        CREATEDAT: Date.now(),
-        USERRESTRICTION: userId,
-        DESCRIPTION: description,
+        code: couponCode,
+        type: 'percent',
+        value: percent,
+        minPurchase: 0,
+        maxUses: 1,
+        usedCount: 0,
+        isActive: true,
+        expiresAt: Math.floor((Date.now() + 15 * 24 * 60 * 60 * 1000) / 1000), // 15 días para usarlo
+        userRestriction: userId,
+        description,
       });
 
       // Guardar en prefs para marcar que ya recibió el regalo
@@ -204,17 +203,16 @@ export class LoyaltyService {
 
       // Crear cupón
       await databases.createDocument(databaseId, COUPONS_COLLECTION, ID.unique(), {
-        CODE: couponCode,
-        DISCOUNTTYPE: 'percentage',
-        DISCOUNTVALUE: config.percent,
-        MINORDERVALUE: config.minOrder,
-        MAXUSES: 1,
-        USES: 0,
-        ISACTIVE: true,
-        EXPIRESAT: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
-        CREATEDAT: Date.now(),
-        USERRESTRICTION: userId,
-        DESCRIPTION: `Cupón de bienvenida por subir a nivel ${newLevel.toUpperCase()}`,
+        code: couponCode,
+        type: 'percent',
+        value: config.percent,
+        minPurchase: config.minOrder,
+        maxUses: 1,
+        usedCount: 0,
+        isActive: true,
+        expiresAt: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30 días
+        userRestriction: userId,
+        description: `Cupón de bienvenida por subir a nivel ${newLevel.toUpperCase()}`,
       });
 
       // Guardar en prefs

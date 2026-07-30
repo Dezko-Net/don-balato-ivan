@@ -267,13 +267,7 @@ export default function SubcategoriesPage() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
-                <textarea value={modal.data.description || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, description: e.target.value } } : m)}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
-              </div>
-              <ImageUploadField 
+              <ImageUploadField
                 label="Icono (48×48px)" 
                 bucketId={SUBCATEGORIES_BUCKET_ID}
                 value={modal.data.ICON_URL || ''}

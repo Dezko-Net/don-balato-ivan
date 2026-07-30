@@ -64,12 +64,6 @@ const NAV_GROUPS: NavGroup[] = [
   ]},
   { label: 'WEB', defaultOpen: true, items: [
     { href: '/admin/dashboard', label: 'Dashboard', icon: Ico.Dashboard },
-    { href: '/admin/products',  label: 'Productos',  icon: Ico.Productos },
-    { href: '/admin/orders',    label: 'Pedidos',    icon: Ico.Pedidos, badge: 'orders' },
-    { href: '/admin/users',     label: 'Clientes',   icon: Ico.Usuarios },
-  ]},
-  { label: 'General', defaultOpen: true, items: [
-    { href: '/admin/dashboard', label: 'Inicio', icon: Ico.Dashboard },
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
       { href: '', label: 'TIENDA', icon: Ico.Productos, children: [
         { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
@@ -88,14 +82,16 @@ const NAV_GROUPS: NavGroup[] = [
       ]},
       { href: '/admin/product-votes', label: 'PRÓXIMAMENTE', icon: Ico.Ofertas }
     ]},
-    { href: '/admin/por-mayor', label: 'Por Mayor', icon: Ico.Mayoristas },
-    { href: '/admin/por-unidad', label: 'Por Unidad', icon: Ico.Productos },
-    { href: '/admin/embalajes', label: 'Embalajes', icon: Ico.Inventario },
     { href: '', label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders', children: [
       { href: '/admin/orders',            label: 'Todos los Pedidos', icon: Ico.Pedidos, badge: 'orders' },
       { href: '/admin/orders/negotiation', label: 'Negociación',       icon: Ico.Pedidos },
     ]},
-    { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
+    { href: '/admin/users',     label: 'Clientes',   icon: Ico.Usuarios },
+  ]},
+  { label: 'General', defaultOpen: true, items: [
+    { href: '/admin/por-mayor', label: 'Por Mayor', icon: Ico.Mayoristas },
+    { href: '/admin/por-unidad', label: 'Por Unidad', icon: Ico.Productos },
+    { href: '/admin/embalajes', label: 'Embalajes', icon: Ico.Inventario },
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
       { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },

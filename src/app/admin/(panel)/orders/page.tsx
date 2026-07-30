@@ -11,7 +11,7 @@ import { generateOrderPdf } from '@/lib/generateOrderPdf';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
 
-const STATUS_FLOW = ['pending', 'pending_stock', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+const STATUS_FLOW = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 // BluExpress no requiere paso extra (etiqueta se imprime antes); retiro en tienda termina antes.
 const isBluexpress = (agency?: string) => !!agency && agency.toUpperCase().replace(/\s/g, '').includes('BLUEXPRESS');
@@ -25,7 +25,7 @@ const needsTracking = (o: Order) =>
 const STATUS_SVG: Record<string, React.ReactNode> = {
   pending:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
   pending_stock:      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>,
-  processing:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
+  processing:         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6"/></svg>,
   paid:               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 11.5l2 2 4-4"/></svg>,
   payment_confirmed:  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg>,
   payment_review:     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
@@ -38,7 +38,7 @@ const STATUS_SVG: Record<string, React.ReactNode> = {
 const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   pending:            { color: '#f97316', bg: '#fff7ed' },
   pending_stock:      { color: '#f97316', bg: '#fff7ed' },
-  processing:         { color: '#3b82f6', bg: '#eff6ff' },
+  processing:         { color: '#f59e0b', bg: '#fffbeb' },
   paid:               { color: '#10b981', bg: '#ecfdf5' },
   payment_review:     { color: '#2563eb', bg: '#eff6ff' },
   payment_confirmed:  { color: '#059669', bg: '#d1fae5' },
@@ -54,7 +54,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
   paid_group:         { label: 'Confirmados',               bg: 'bg-green-100',   text: 'text-green-700' },
   pending:            { label: 'Recibido',                  bg: 'bg-orange-100',  text: 'text-orange-700' },
-  pending_stock:      { label: 'Recibido',                  bg: 'bg-orange-100',  text: 'text-orange-700' },
+  pending_stock:      { label: 'Pago Recibido',             bg: 'bg-orange-100',  text: 'text-orange-700' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-100',     text: 'text-red-700' },
   processing:         { label: 'Comprobando Stock',     bg: 'bg-blue-100',    text: 'text-blue-700' },
   paid:               { label: 'Stock Confirmado',        bg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -68,7 +68,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 // Etiquetas cortas para los badges (evita el bug de label.split(' ')[0] que mostraba "Pago" en ambos)
 const SHORT_LABEL: Record<string, string> = {
   pending:            'Recibido',
-  pending_stock:      'Recibido',
+  pending_stock:      'Pago Recib',
   processing:         'C. Stock',
   paid:               'Stock Conf.',
   payment_review:     'Rev. Pago',
@@ -192,7 +192,7 @@ function OrdersContent() {
       // every order, ask Appwrite for the total per status (1 doc returned each).
       const byStatusAll: Record<string, number> = {};
       let countAll = 0;
-      const statusesToCount = [...STATUS_FLOW, 'negotiation', 'cancelled'];
+      const statusesToCount = [...STATUS_FLOW, 'pending', 'pending_stock', 'negotiation', 'cancelled'];
       await Promise.all(statusesToCount.map(async (st) => {
         try {
           const r = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
@@ -297,6 +297,8 @@ function OrdersContent() {
         queries.push(Query.equal('STATUS', [
           'processing', 'paid', 'payment_review', 'negotiation', 'shipped', 'delivered'
         ]));
+      } else if (activeFilter === 'processing') {
+        queries.push(Query.equal('STATUS', ['pending', 'pending_stock', 'processing']));
       } else if (activeFilter !== 'all') {
         queries.push(Query.equal('STATUS', activeFilter));
       }
@@ -861,7 +863,7 @@ function OrdersContent() {
 
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
               <p className="text-xs text-emerald-700 font-medium">
-                Se excluirán los pedidos en estado: <b>Negociando</b>, <b>Recibido</b> y <b>Cancelado</b>.
+                Se excluirán los pedidos en estado: <b>Negociando</b>, <b>Comprobando Stock</b> y <b>Cancelado</b>.
               </p>
             </div>
 
@@ -1021,7 +1023,12 @@ function OrdersContent() {
         else if (dateFilter === 'custom' && customDateStart) {
           statusCounts = customStatusCounts;
         } else statusCounts = statsCache?.byStatusAll || {};
-        const counts = STATUS_FLOW.map(st => statusCounts[st] || 0);
+        const counts = STATUS_FLOW.map(st => {
+          if (st === 'processing') {
+            return (statusCounts['processing'] || 0) + (statusCounts['pending'] || 0) + (statusCounts['pending_stock'] || 0);
+          }
+          return statusCounts[st] || 0;
+        });
         let furthestIdx = -1;
         counts.forEach((c, i) => { if (c > 0) furthestIdx = i; });
         const flowTotal = counts.reduce((s, c) => s + c, 0);
@@ -1237,10 +1244,10 @@ function OrdersContent() {
           className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-green-100 text-green-700 border border-green-200 ${activeFilter === 'paid_group' ? 'ring-2 ring-green-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
           Confirmados
         </button>
-        {/* Recibido — soft orange */}
-        <button onClick={() => setActiveFilter('pending')}
-          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-orange-100 text-orange-700 border border-orange-200 ${activeFilter === 'pending' ? 'ring-2 ring-orange-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
-          Recibido
+        {/* Comprobando Stock — soft amber */}
+        <button onClick={() => setActiveFilter('processing')}
+          className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-amber-100 text-amber-700 border border-amber-200 ${activeFilter === 'processing' ? 'ring-2 ring-amber-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+          Comprobando Stock
         </button>
         {/* Cancelado — soft red */}
         <button onClick={() => setActiveFilter('cancelled')}
@@ -2023,6 +2030,11 @@ function OrdersContent() {
                           WhatsApp
                         </span>
                       )}
+                      {(order as any).NIGHTORDER && (
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-900 text-indigo-100 inline-flex items-center gap-1" title="Pedido nocturno: stock confirmado automático">
+                          🌙 Noche
+                        </span>
+                      )}
                       {order.ASSIGNEDCASHIER && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                           {order.ASSIGNEDCASHIER}
@@ -2181,6 +2193,9 @@ function OrdersContent() {
                               <p className="font-mono text-xs text-indigo-600 font-bold">{order.ORDERCODE || '—'}</p>
                               {order.PAYMENTMETHOD === 'WhatsApp' && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">WA</span>
+                              )}
+                              {(order as any).NIGHTORDER && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-indigo-900 text-indigo-100" title="Pedido nocturno: stock confirmado automático">🌙 Noche</span>
                               )}
                               {order.ASSIGNEDCASHIER && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">{order.ASSIGNEDCASHIER}</span>

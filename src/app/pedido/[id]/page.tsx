@@ -539,11 +539,8 @@ export default function PedidoPage() {
       const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
       try {
         const updateData: Record<string, any> = { PAYMENTPROOFURL: url };
-        // Solo cambiar a processing si el pedido está en pending/pending_stock
-        // Si ya está en paid (stock confirmado) o posterior, NO retroceder el status
-        if (order.STATUS === 'pending' || order.STATUS === 'pending_stock') {
-          updateData.STATUS = 'processing';
-        } else if (order.STATUS === 'paid') {
+        // Al subir comprobante, siempre pasar a payment_review (Revisando Pago)
+        if (['pending', 'pending_stock', 'processing', 'paid'].includes(order.STATUS)) {
           updateData.STATUS = 'payment_review';
         }
         await databases.updateDocument(databaseId, coll, id, updateData);
@@ -1060,7 +1057,6 @@ export default function PedidoPage() {
                 { key: 'delivered',          label: 'Entregado',         icon: <Truck size={15} /> },
               ]
             : [
-                { key: 'pending',            label: 'Recibido',            icon: <Clock size={15} /> },
                 { key: 'processing',         label: 'Comprobando Stock',   icon: <Upload size={15} /> },
                 { key: 'paid',               label: 'Stock Confirmado',    icon: <CheckCircle size={15} /> },
                 { key: 'payment_review',     label: 'Revisando Pago',      icon: <Upload size={15} /> },
@@ -1068,8 +1064,9 @@ export default function PedidoPage() {
                 { key: 'shipped',            label: 'Embalado',            icon: <Package size={15} /> },
                 { key: 'delivered',          label: 'Entregado',           icon: <Truck size={15} /> },
               ];
-          const statusOrder = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
-          const currentIdx = statusOrder.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
+          const statusOrder = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+          const effStatus = (order.STATUS === 'pending' || order.STATUS === 'pending_stock') ? 'processing' : order.STATUS;
+          const currentIdx = statusOrder.indexOf(effStatus);
           if (order.STATUS === 'cancelled') return null;
           return (
             <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-blue-100/40">

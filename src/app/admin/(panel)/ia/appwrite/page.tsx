@@ -141,6 +141,12 @@ export default function AppwriteMonitorPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  /* Auto-refresh every 30 seconds for real-time monitoring */
+  useEffect(() => {
+    const t = setInterval(() => load(true), 30000);
+    return () => clearInterval(t);
+  }, [load]);
+
   async function handleClearCache() {
     try {
       await fetch('/api/revalidate?tag=products');

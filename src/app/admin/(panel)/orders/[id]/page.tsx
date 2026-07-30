@@ -19,7 +19,7 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:            { label: 'Recibido',                  bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
-  pending_stock:      { label: 'Recibido',                  bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
+  pending_stock:      { label: 'Pago Recibido',             bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
   processing:         { label: 'Comprobando Stock',        bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
   paid:               { label: 'Stock Confirmado',        bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '📦' },
   payment_review:     { label: 'Revisando Pago',          bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '📄' },
@@ -30,7 +30,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+const STATUS_FLOW = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
 
 // Colores hex por estado (para gradientes/glows del rediseño)
 const STATUS_HEX: Record<string, string> = {
@@ -1397,7 +1397,8 @@ export default function OrderDetailPage() {
   const isGift = (order as any).ISGIFT;
   const isLive = (order as any).PURCHASEDFROMLIVE;
 
-  const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS);
+  const effectiveStatus = (order.STATUS === 'pending' || order.STATUS === 'pending_stock') ? 'processing' : order.STATUS;
+  const currentStepIdx = STATUS_FLOW.indexOf(effectiveStatus);
   const isCancelled = order.STATUS === 'cancelled';
 
   const rawAdditionalInfo = order.ADDITIONALINFO || '';
