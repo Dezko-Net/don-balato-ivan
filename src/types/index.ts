@@ -1,3 +1,14 @@
+export type SedeSlug = 'alameda' | 'copiapo' | 'la-florida' | (string & {});
+
+export const SEDES: Record<string, string> = {
+  alameda: 'Yaxsel Principal (Alameda)',
+  copiapo: 'Yaxsel Copiapó',
+  'la-florida': 'Yaxsel La Florida',
+};
+
+export const DEFAULT_SEDE: SedeSlug = 'alameda';
+export const SEDE_SLUGS: SedeSlug[] = ['alameda', 'copiapo', 'la-florida'];
+
 export interface Product {
   $id: string;
   NAME: string;

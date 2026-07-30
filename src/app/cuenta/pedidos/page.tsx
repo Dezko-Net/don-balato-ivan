@@ -212,7 +212,7 @@ export default function MisPedidosPage() {
             `}</style>
             {filtered.map(order => {
               const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-              const isReadyRetiro = (order.STATUS === 'paid' || order.STATUS === 'payment_confirmed') && isRetiro;
+              const isReadyRetiro = order.STATUS === 'shipped' && isRetiro;
               const st = isReadyRetiro 
                 ? { label: 'Listo para retirar', bg: '#fae8ff', color: '#a21caf' }
                 : (STATUS[order.STATUS] || { label: order.STATUS, bg: '#f5f5f5', color: '#666' });

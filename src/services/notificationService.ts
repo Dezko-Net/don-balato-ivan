@@ -193,7 +193,7 @@ export async function notifyOrderStatusChange(
     let title = copy.title;
     let message = copy.buildMessage(code);
 
-    if (newStatus === 'paid' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') {
+    if (newStatus === 'shipped' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') {
       title = 'Listo para retirar';
       message = `Tu pedido ${code} está listo para ser retirado en tienda.`;
     }

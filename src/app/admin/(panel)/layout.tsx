@@ -56,26 +56,30 @@ interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 
 interface NavGroup { label: string; items: NavItem[]; defaultOpen?: boolean; }
 
 const NAV_GROUPS: NavGroup[] = [
+  { label: 'POS', defaultOpen: true, items: [
+    { href: '/pos-admin', label: 'POS', icon: Ico.Inventario },
+  ]},
+  { label: 'ERP', defaultOpen: true, items: [
+    { href: '/erp-dashboard', label: 'ERP', icon: Ico.Analytics },
+  ]},
+  { label: 'WEB', defaultOpen: true, items: [
+    { href: '/admin/dashboard', label: 'Dashboard', icon: Ico.Dashboard },
+    { href: '/admin/products',  label: 'Productos',  icon: Ico.Productos },
+    { href: '/admin/orders',    label: 'Pedidos',    icon: Ico.Pedidos, badge: 'orders' },
+    { href: '/admin/users',     label: 'Clientes',   icon: Ico.Usuarios },
+  ]},
   { label: 'General', defaultOpen: true, items: [
     { href: '/admin/dashboard', label: 'Inicio', icon: Ico.Dashboard },
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
       { href: '', label: 'TIENDA', icon: Ico.Productos, children: [
         { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
+        { href: '/admin/inventario-erp', label: '📦 Base de Datos & Inventario ERP', icon: Ico.Inventario },
         { href: '/admin/productos-sin-imagen', label: 'Sin Imágenes', icon: Ico.Sparkles },
         { href: '/admin/products/liveshopping', label: 'Live Shopping',   icon: Ico.LiveShop },
-        { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
-        { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
         { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
         { href: '/admin/products/combos',      label: 'Combos / Packs',     icon: Ico.Ofertas },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
-      ]},
-      { href: '', label: 'INVENTARIO', icon: Ico.Inventario, children: [
-        { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
-        { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
-        { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },
-        { href: '/admin/products/stock-editor', label: 'Editor de Stock', icon: Ico.Inventario },
-        { href: '/admin/products/pack-qty', label: 'Cantidad por Paquete', icon: Ico.Inventario },
       ]},
       { href: '', label: 'CATÁLOGO', icon: Ico.Catalogo, children: [
         { href: '/admin/catalog-products', label: 'Productos a Pedido', icon: Ico.Catalogo, badge: 'alerts' },

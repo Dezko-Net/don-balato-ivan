@@ -48,7 +48,7 @@ export default function GlobalMobileNav() {
     }
   };
 
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/inventario') || pathname?.startsWith('/checkout') || pathname?.startsWith('/catalogo') || pathname?.startsWith('/confirmar-pedido') || pathname?.startsWith('/verificar-stock')) {
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/pos-admin') || pathname?.startsWith('/pos') || pathname?.startsWith('/erp') || pathname?.startsWith('/inventario') || pathname?.startsWith('/checkout') || pathname?.startsWith('/catalogo') || pathname?.startsWith('/confirmar-pedido') || pathname?.startsWith('/verificar-stock')) {
     return null;
   }
 

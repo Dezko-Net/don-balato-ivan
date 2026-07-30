@@ -931,7 +931,7 @@ export default function PedidoPage() {
   const isStockConfirmed = order.STATUS === 'paid';
   const BANK = getBankDetails();
   const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
-  const isReadyRetiro = (order.STATUS === 'payment_confirmed' || order.STATUS === 'paid') && isRetiro;
+  const isReadyRetiro = order.STATUS === 'shipped' && isRetiro;
   const status = isReadyRetiro
     ? { label: 'Listo para retirar', color: '#a21caf', bg: '#fae8ff' }
     : (STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#333', bg: '#f5f5f5' });

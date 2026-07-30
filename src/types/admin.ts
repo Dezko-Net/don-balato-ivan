@@ -43,6 +43,7 @@ export interface Order {
   TRACKINGNUMBER?: string;
   BOXPHOTOS?: string; // JSON array de URLs de fotos de las cajas antes de despachar
   adminNotes?: string;
+  ASSIGNEDCASHIER?: string;
   $createdAt: string;
   $updatedAt: string;
 }
