@@ -43,7 +43,13 @@ export async function POST(request: NextRequest) {
       ITEMS: JSON.stringify(itemsData),
       SUBTOTAL: subtotal,
       TOTAL: subtotal,
-      STATUS: 'stock_confirmed',
+      // 'paid' es el estado interno que TODA la app (admin, página del cliente y
+      // checkout) mapea a la etiqueta "Stock Confirmado" y que activa el paso
+      // siguiente (datos de transferencia / temporizador de pago en pedido/[id]).
+      // Antes se escribía 'stock_confirmed', un estado huérfano que no está en
+      // STATUS_FLOW ni en statusOrder, por lo que el pedido quedaba sin pintar
+      // y el cliente no podía continuar al pago.
+      STATUS: 'paid',
       UPDATEDAT: Date.now(),
     });
 

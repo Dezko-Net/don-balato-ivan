@@ -2697,7 +2697,7 @@ export default function HomePage1() {
     };
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Collection list section ── */
+  /* â”€â”€ Collection list section â”€â”€ */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
     const cfg = sectionCfg.find(s => s.id === 'tpl1_collection_list');

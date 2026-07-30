@@ -235,19 +235,17 @@ export async function notifyOrderStatusChange(
 
       // ── Helper: generate AI-enhanced message for status ──
       const STATUS_LABELS: Record<string, string> = {
-        paid: 'Pago Verificado',
-        confirming_stock: 'Confirmando Stock',
-        stock_confirmed: 'Stock Confirmado',
-        ready_to_ship: 'Listo para Despachar',
+        pending_stock: 'Pedido Recibido',
+        paid: 'Stock Confirmado',
+        payment_confirmed: 'Pago Confirmado',
         delivered: 'Entregado a Agencia',
       };
 
       const generateAIMessage = async (status: string, name: string, orderCode: string): Promise<string> => {
         const fallbackMessages: Record<string, string> = {
-          paid: `¡Hola ${name}! 🌸 Soy Kenia de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pago del pedido #${orderCode} fue verificado con éxito 💖 Ahora empezamos a preparar tu pedido con mucho cariño. ¡Pronto te avisaré del avance! 👑`,
-          confirming_stock: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} está en proceso 🔍 Estamos confirmando el stock de tus productos en bodega. Enseguida te cuento novedades 💖`,
-          stock_confirmed: `¡Hola ${name}! 🌸 ¡Buenas noticias! El stock de tu pedido #${orderCode} está confirmado ✔️ Todo está listo para empezar a embalar tu pedido con cariño 📦💖`,
-          ready_to_ship: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} ya está listo para despachar 📦✨ Mira qué hermoso quedó tu paquete 👇 ¡Pronto saldrá en camino! 🚚💖`,
+          pending_stock: `¡Hola ${name}! 🌸 ¡Recibimos tu pedido #${orderCode}! 💖 Estamos revisando el stock de tus productos y te aviso apenas quede confirmado ✔️`,
+          paid: `¡Hola ${name}! 🌸 ¡Buenas noticias! El stock de tu pedido #${orderCode} está confirmado ✔️ Ya puedes realizar la transferencia y subir tu comprobante para avanzar 📦💖`,
+          payment_confirmed: `¡Hola ${name}! 🌸 Soy Kenia de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pago del pedido #${orderCode} fue verificado con éxito 💖 Ahora empezamos a preparar tu pedido con mucho cariño. ¡Pronto te avisaré del avance! 👑`,
           delivered: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} fue entregado a la agencia de transporte 🚚💨 Te adjunto el comprobante para que puedas rastrear tu envío. ¡Pronto lo tendrás en tus manos! 👑💖`,
         };
 

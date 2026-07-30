@@ -72,15 +72,19 @@ Si el administrador te pide cancelar, marcar como pagado, despachado, etc., un p
 [ACTION:UPDATE_ORDER]{"code":"CODIGO_O_NUMERO_PEDIDO","status":"NUEVO_ESTADO"}[/ACTION]
 
 Valores válidos para "status" en la acción JSON:
-- "pending" (Pendiente de pago)
-- "paid" (Pagado)
-- "assembling" (En preparación)
-- "negotiation" (Negociado / En negociación)
-- "preparing_shipping" (Etiqueta Lista)
-- "ready_to_ship" (Pedido listo para enviar)
-- "shipped" (Enviado)
-- "delivered" (Entregado)
+- "pending" (Pedido Recibido)
+- "processing" (Comprobando Stock)
+- "paid" (Stock Confirmado — el stock fue confirmado, falta que el cliente pague)
+- "payment_review" (Revisando Pago)
+- "payment_confirmed" (Pago Confirmado — el pago del cliente fue verificado)
+- "negotiation" (En negociación)
+- "shipped" (Embalado)
+- "delivered" (Entregado a Agencia)
 - "cancelled" (Cancelado)
+
+IMPORTANTE para no confundir estados:
+- "confirmar stock" / "stock confirmado" → usa "paid".
+- "marcar como pagado" / "pago confirmado" / "pago verificado" → usa "payment_confirmed".
 
 Ejemplo de respuesta si piden cancelar:
 "Entendido. He procedido a cancelar el pedido #ORD-00051.
@@ -100,7 +104,7 @@ Y preguntar siempre: "¿Deseas que notifique al cliente para que elija reemplazo
   1. El número de pedido (ORDERCODE, ej: #ORD-00051) en lugar del código de documento.
   2. El nombre real del cliente (CUSTOMERNAME).
   3. El total de la compra en pesos chilenos.
-  4. El estado del pedido TRADUCIDO AL ESPAÑOL (ej: 'Pendiente de pago' en lugar de 'pending', 'Pagado' en lugar de 'paid', 'Enviado' en lugar de 'shipped', 'Cancelado' en lugar de 'cancelled').
+  4. El estado del pedido TRADUCIDO AL ESPAÑOL (ej: 'Pedido Recibido' en lugar de 'pending', 'Stock Confirmado' en lugar de 'paid', 'Pago Confirmado' en lugar de 'payment_confirmed', 'Embalado' en lugar de 'shipped', 'Cancelado' en lugar de 'cancelled').
 - NUNCA uses nombres de estados en inglés (como 'pending', 'paid', 'shipped') en tus textos ni listas. Menciónalos siempre en español.
 - Máx 3-4 pedidos por mensaje para no saturar.
 
@@ -918,16 +922,18 @@ export async function POST(req: NextRequest) {
           const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId);
           const orderCode = orderDoc.ORDERCODE || orderId;
           
-          // Update order status to paid (Pago Verificado)
+          // El worker confirma el PAGO -> payment_confirmed ("Pago Confirmado").
+          // OJO: NO usar 'paid', porque en este proyecto 'paid' = "Stock Confirmado"
+          // (paso previo al pago). Escribir 'paid' aquí hacía retroceder el pedido.
           await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-            STATUS: 'paid',
+            STATUS: 'payment_confirmed',
             UPDATEDAT: Date.now()
           });
-          
+
           // Try notifying the customer
           try {
             const { notifyOrderStatusChange } = await import('@/services/notificationService');
-            await notifyOrderStatusChange(orderDoc as any, (orderDoc as any).STATUS || 'processing', 'paid');
+            await notifyOrderStatusChange(orderDoc as any, (orderDoc as any).STATUS || 'payment_review', 'payment_confirmed');
           } catch (errNotif) {
             console.warn('[WhatsApp Webhook] Notification to customer error:', errNotif);
           }
@@ -935,7 +941,7 @@ export async function POST(req: NextRequest) {
           // Notify the Admin
           const adminAlertPhone = await getAdminAlertPhone();
           const formattedAdminPhone = formatWhatsAppPhone(adminAlertPhone);
-          const adminAlert = `✅ *PAGO CONFIRMADO*\nANA (BINGFEEN) ha verificado y confirmado el pago del pedido #${orderCode}. El estado se ha actualizado a Pago Verificado.`;
+          const adminAlert = `✅ *PAGO CONFIRMADO*\nANA (BINGFEEN) ha verificado y confirmado el pago del pedido #${orderCode}. El estado se ha actualizado a Pago Confirmado.`;
           await sendWhatsAppMessage(formattedAdminPhone, adminAlert, WA_TOKEN);
           
           // Clear worker usage pendingOrderId

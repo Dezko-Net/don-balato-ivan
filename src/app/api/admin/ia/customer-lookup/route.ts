@@ -56,15 +56,15 @@ function buildAvatarUrl(fileId: string): string {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pendiente de pago',
-  processing: 'Procesando',
-  paid: 'Pagado',
-  assembling: 'En preparación',
+  pending: 'Pedido Recibido',
+  pending_stock: 'Pedido Recibido',
+  processing: 'Comprobando Stock',
+  paid: 'Stock Confirmado',
+  payment_review: 'Revisando Pago',
+  payment_confirmed: 'Pago Confirmado',
   negotiation: 'En negociación',
-  preparing_shipping: 'Etiqueta lista',
-  ready_to_ship: 'Listo para enviar',
-  shipped: 'Enviado',
-  delivered: 'Entregado',
+  shipped: 'Embalado',
+  delivered: 'Entregado a Agencia',
   cancelled: 'Cancelado',
 };
 

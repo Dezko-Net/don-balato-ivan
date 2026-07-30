@@ -30,15 +30,19 @@ Si el administrador te pide cancelar, marcar como pagado, despachado, etc., un p
 [ACTION:UPDATE_ORDER]{"code":"CODIGO_O_NUMERO_PEDIDO","status":"NUEVO_ESTADO"}[/ACTION]
 
 Valores válidos para "status" en la acción JSON:
-- "pending" (Pendiente de pago)
-- "paid" (Pagado)
-- "assembling" (En preparación)
-- "negotiation" (Negociado / En negociación)
-- "preparing_shipping" (Etiqueta Lista)
-- "ready_to_ship" (Pedido listo para enviar)
-- "shipped" (Enviado)
-- "delivered" (Entregado)
+- "pending" (Pedido Recibido)
+- "processing" (Comprobando Stock)
+- "paid" (Stock Confirmado — el stock fue confirmado, falta que el cliente pague)
+- "payment_review" (Revisando Pago)
+- "payment_confirmed" (Pago Confirmado — el pago del cliente fue verificado)
+- "negotiation" (En negociación)
+- "shipped" (Embalado)
+- "delivered" (Entregado a Agencia)
 - "cancelled" (Cancelado)
+
+IMPORTANTE para no confundir estados:
+- "confirmar stock" / "stock confirmado" → usa "paid".
+- "marcar como pagado" / "pago confirmado" / "pago verificado" → usa "payment_confirmed".
 
 ## Capacidad de Negociación y Faltantes:
 - Si el administrador te dice que un producto no hay en un pedido (ej: "en el pedido ORD-00051 no hay los abanicos"), debes generar:
