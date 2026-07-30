@@ -119,11 +119,9 @@ function OrdersContent() {
   const [timelineOrderId, setTimelineOrderId] = useState<string | null>(null);
   const [drawerOrderId, setDrawerOrderId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [cashierPickerOrderId, setCashierPickerOrderId] = useState<string | null>(null);
   const [cashierPickerMode, setCashierPickerMode] = useState<'stock' | 'shipping'>('stock');
   const [waShortcutOrderId, setWaShortcutOrderId] = useState<string | null>(null);
-  const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -1671,7 +1669,7 @@ function OrdersContent() {
                   <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 flex-wrap">
                     Pedido <span className="font-mono text-indigo-600 font-extrabold">{order.ORDERCODE || '—'}</span>
                     {(order as any).NIGHTORDER && (
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-900 text-indigo-100 inline-flex items-center gap-1" title="Pedido hecho de noche: se saltó la confirmación de stock">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 text-white inline-flex items-center gap-1 shadow-sm" title="Pedido hecho de noche: se saltó la confirmación de stock">
                         🌙 Nocturno
                       </span>
                     )}
@@ -2249,7 +2247,7 @@ function OrdersContent() {
                             <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: statusColor }} />
                             <p className="font-mono text-xs text-indigo-600 font-bold">{order.ORDERCODE || '—'}</p>
                             {(order as any).NIGHTORDER && (
-                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-indigo-900 text-indigo-100" title="Pedido nocturno: stock confirmado automático">🌙</span>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 text-white inline-flex items-center shadow-sm" title="Pedido nocturno: stock confirmado automático">🌙</span>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 mt-1 pl-2.5">
@@ -2355,105 +2353,8 @@ function OrdersContent() {
                           </p>
                         </div>
 
-                        {/* Ver productos */}
-                        <div className="flex items-center px-3 py-3" onClick={e => e.stopPropagation()}>
-                          <button onClick={async () => {
-                            const newId = expandedOrderId === order.$id ? null : order.$id;
-                            setExpandedOrderId(newId);
-                            // Fetch product locations for this order
-                            if (newId) {
-                              try {
-                                let items: { id?: string }[] = [];
-                                try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
-                                const ids = items.map(i => i.id).filter(Boolean) as string[];
-                                if (ids.length > 0) {
-                                  const { databases } = getServices();
-                                  const { databaseId } = getAppwriteConfig();
-                                  const locs: Record<string, { section: number | null; gondola: string | null }> = { ...productLocations };
-                                  for (const pid of ids) {
-                                    if (locs[pid]) continue; // already cached
-                                    try {
-                                      const doc: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-                                      const wh = getWarehouseLocationFromFeatures(doc.FEATURES);
-                                      locs[pid] = { section: wh.section, gondola: wh.gondola };
-                                    } catch { locs[pid] = { section: null, gondola: null }; }
-                                  }
-                                  setProductLocations(locs);
-                                }
-                              } catch {}
-                            }
-                          }}
-                            className={`p-1.5 rounded-lg transition-colors inline-flex text-xs ${expandedOrderId === order.$id ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600'}`}>
-                            📦
-                          </button>
-                        </div>
                       </div>
                     </div>
-                    {expandedOrderId === order.$id && (() => {
-                      let items: {name:string;qty:number;price:number;total:number;img?:string}[] = [];
-                      try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
-                      const note = (order as any).CUSTOMERNOTE;
-                      const gift = (order as any).ISGIFT;
-                      return (
-                        <div className="mx-1 -mt-1.5 mb-0.5 rounded-b-2xl border-2 border-t-0 px-5 py-4" style={{ borderColor: cardBorder, background: '#f9fafb' }}>
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                              {/* Items */}
-                              <div className="lg:col-span-2">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Productos ({items.length})</p>
-                                <div className="space-y-1.5">
-                                  {items.map((it: any, i: number) => {
-                                    const loc = it.id ? productLocations[it.id] : null;
-                                    const itemMissing = !!it.missing;
-                                    return (
-                                      <div key={i} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${itemMissing ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'}`}>
-                                        {it.img ? <img src={it.img} alt="" className="w-9 h-9 object-contain rounded-lg" /> : <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Package className="w-4 h-4 text-gray-300" /></div>}
-                                        <div className="flex-1 min-w-0">
-                                          <p className={`text-sm font-medium truncate ${itemMissing ? 'text-red-900' : 'text-gray-900'}`}>{it.name}</p>
-                                          <p className="text-[10px] text-gray-400">{fmt(it.price)} c/u</p>
-                                        </div>
-                                        {itemMissing && (
-                                          <span className="text-[10px] font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded shrink-0 border border-red-200">⚠️ Sin stock</span>
-                                        )}
-                                        {loc && loc.section !== null && !itemMissing && (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold shrink-0">
-                                            <MapPin className="w-2.5 h-2.5" /> G{loc.gondola} S{loc.section}
-                                          </span>
-                                        )}
-                                        <div className="text-right flex-shrink-0">
-                                          <p className="text-xs text-gray-400">×{it.qty}</p>
-                                          <p className="text-sm font-bold text-gray-900">{fmt(it.total || it.price * it.qty)}</p>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                              {/* Details sidebar */}
-                              <div className="space-y-3">
-                                <div className="bg-white rounded-xl border border-gray-100 p-3">
-                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">Envío</p>
-                                  <p className="text-sm text-gray-800 font-medium">{order.ADDRESS || '—'}</p>
-                                  <p className="text-xs text-gray-500">{order.COMUNA}, {order.REGION}</p>
-                                  {order.SHIPPINGAGENCY && <p className="text-xs text-indigo-600 font-semibold mt-1">{order.SHIPPINGAGENCY}</p>}
-                                </div>
-                                <div className="bg-white rounded-xl border border-gray-100 p-3">
-                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">Contacto</p>
-                                  <p className="text-sm text-gray-800 font-medium">{order.CUSTOMERNAME}</p>
-                                  <p className="text-xs text-gray-500">{order.CUSTOMERPHONE} · {order.CUSTOMEREMAIL}</p>
-                                  <p className="text-xs text-gray-500">RUT: {order.CUSTOMERRUT || '—'}</p>
-                                </div>
-                                {(note || gift) && (
-                                  <div className="bg-white rounded-xl border border-gray-100 p-3">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">Notas</p>
-                                    {gift && <p className="text-xs text-pink-600 font-medium mb-1">🎁 Pedido marcado como regalo</p>}
-                                    {note && <p className="text-sm text-gray-700 bg-amber-50 rounded-lg px-2 py-1.5 border border-amber-100">{note}</p>}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                        </div>
-                      );
-                    })()}
                     </React.Fragment>
                   );
                 })

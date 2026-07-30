@@ -85,9 +85,13 @@ export function useStockConfirmedOrders() {
     fetchOrders();
     const interval = setInterval(fetchOrders, 300000);
 
+    const onOrdersUpdated = () => fetchOrders();
+    window.addEventListener('orders-updated', onOrdersUpdated);
+
     return () => {
       active = false;
       clearInterval(interval);
+      window.removeEventListener('orders-updated', onOrdersUpdated);
     };
   }, [isLoggedIn, isLoading, user?.id, user?.email]);
 

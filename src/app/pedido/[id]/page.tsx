@@ -552,6 +552,10 @@ export default function PedidoPage() {
       setUploaded(true);
       await load();
 
+      // Revalidate cached order status for navbar + trigger immediate refetch
+      fetch('/api/revalidate-orders', { method: 'POST' }).catch(() => {});
+      window.dispatchEvent(new Event('orders-updated'));
+
       // Notify admin about payment upload
       notifyPaymentUploaded(order?.ORDERCODE || id, order?.CUSTOMERNAME || 'Cliente').catch(() => {});
     } catch (err: any) { 

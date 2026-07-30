@@ -574,15 +574,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
               </button>
             </div>
           </div>
-          {heroImageToUse && !lockCategoryId && (
-            <div className="pk-cover-strip" style={{ position: 'relative', marginTop: 14, borderRadius: 20, overflow: 'hidden', height: 170, background: 'linear-gradient(135deg,#f0f9ff,#e0e7ff)' }}>
-              <img src={heroImageToUse} alt="Portada catálogo" onLoad={() => setHeroImgLoaded(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(17,24,39,0.32) 0%, rgba(17,24,39,0) 55%)' }} />
-              <div style={{ position: 'absolute', left: 18, bottom: 14, display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fff', fontWeight: 900, fontSize: 15, textShadow: '0 2px 8px rgba(0,0,0,0.35)' }}>
-                <Sparkles size={15} /> {heroBadgeText}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 🏷️ Banda de categorías con contadores — burbujas estilo stories,
@@ -2257,7 +2248,6 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           .pk-title2 { font-size: 25px !important; gap: 8px !important; }
           .pk-title2 > span { font-size: 11px !important; padding: 4px 10px !important; }
           .pk-subtitle2 { font-size: 12.5px !important; }
-          .pk-cover-strip { height: 120px !important; border-radius: 16px !important; }
           .pk-catband { gap: 11px !important; padding-bottom: 10px !important; }
           .pk-subcatband { gap: 8px !important; padding-bottom: 8px !important; }
           .pk-toolbar.pk-toolbar-scrolled {

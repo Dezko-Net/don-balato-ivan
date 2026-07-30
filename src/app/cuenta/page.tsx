@@ -7,7 +7,7 @@ import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from 
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
-  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles, PackageSearch,
+  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles,
   Award, Crown, Gem,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -26,14 +26,13 @@ interface MenuItem { icon: any; label: string; href: string; desc?: string; badg
 const MIS_COMPRAS_ITEMS: MenuItem[] = [
   { icon: Receipt,      label: 'Mis Pedidos',   href: '/cuenta/pedidos',    desc: 'Seguí el estado de tus pedidos' },
   { icon: Heart,        label: 'Mis Favoritos', href: '/cuenta/favoritos',  desc: 'Productos que guardaste' },
-  { icon: PackageSearch,label: 'Mis Consultas', href: '/cuenta/consultas', desc: 'Consultas de disponibilidad' },
   { icon: ShoppingCart, label: 'Mi Carrito',    href: '/carrito',           desc: 'Productos en tu carrito' },
 ];
 
 const CUENTA_ITEMS: MenuItem[] = [
   { icon: User,   label: 'Información Personal', href: '/cuenta',      desc: 'Nombre, foto de perfil y portada' },
   { icon: Phone,  label: 'Datos de Contacto',    href: '/cuenta/info',        desc: 'Teléfono y RUT guardados' },
-  { icon: MapPin, label: 'Mis Direcciones',       href: '/cuenta/direcciones', desc: 'Direcciones de envío guardadas' },
+  // { icon: MapPin, label: 'Mis Direcciones',       href: '/cuenta/direcciones', desc: 'Direcciones de envío guardadas' }, // Oculto temporalmente
 ];
 
 const CONFIG_ITEMS: MenuItem[] = [
@@ -48,10 +47,9 @@ const ALL_CARDS: MenuItem[] = [...MIS_COMPRAS_ITEMS, ...CUENTA_ITEMS, ...CONFIG_
 /* Quick shortcuts — these are the most important for the customer */
 const QUICK_SHORTCUTS = [
   { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',     color: '#6366f1', bg: '#eef2ff' },
-  { icon: PackageSearch,label: 'Consultas',  href: '/cuenta/consultas',   color: '#2563eb', bg: '#eff6ff' },
   { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',     color: '#3b82f6', bg: '#eff6ff' },
   { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   color: '#f59e0b', bg: '#fffbeb' },
-  { icon: MapPin,       label: 'Direcciones', href: '/cuenta/direcciones', color: '#10b981', bg: '#ecfdf5' },
+  // { icon: MapPin,       label: 'Direcciones', href: '/cuenta/direcciones', color: '#10b981', bg: '#ecfdf5' }, // Oculto temporalmente
 ];
 
 function getFilePreviewUrl(fileId: string): string {
@@ -96,6 +94,7 @@ export default function CuentaPage() {
   const [currentLevel, setCurrentLevel] = useState<string>('bronze');
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [medalError, setMedalError] = useState(false);
+  const [showPuntosModal, setShowPuntosModal] = useState(false);
 
   useEffect(() => {
     console.log('[CuentaPage] useEffect trigger. isLoggedIn:', isLoggedIn, 'user.id:', user?.id);
@@ -325,10 +324,16 @@ export default function CuentaPage() {
           transform: translateY(-4px) scale(1.015);
           box-shadow: 0 2px 4px rgba(0,0,0,.04), 0 8px 18px rgba(0,0,0,.08), 0 22px 40px rgba(0,0,0,.09) !important;
         }
-        .ccard:hover .ccard-arrow { opacity: 1; transform: translateX(0); }
+        .ccard:active {
+          transform: scale(0.96);
+        }
         .ccard:hover .ccard-wm { transform: scale(1.12) rotate(-8deg); }
         .ccard:hover .ccard-icon { transform: scale(1.08) rotate(-3deg); }
-        .ccard-arrow { opacity: 0; transform: translateX(-6px); transition: all .22s ease; }
+        .ccard-arrow { opacity: 0.85; transform: translateX(0); transition: all .22s ease; }
+        @media (min-width: 900px) {
+          .ccard-arrow { opacity: 0; transform: translateX(-6px); }
+          .ccard:hover .ccard-arrow { opacity: 1; transform: translateX(0); }
+        }
         .ccard-wm { transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
         .ccard-icon { transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
 
@@ -418,9 +423,27 @@ export default function CuentaPage() {
               </div>
               <p style={{ margin: '5px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
-            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, boxShadow: '0 4px 14px rgba(59,130,246,0.25)' }}>
-              <Trophy size={15} /> Tienda de puntos
-            </Link>
+            <motion.button
+              onClick={() => setShowPuntosModal(true)}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px',
+                background: '#eff6ff', color: '#2563eb', fontSize: 13, fontWeight: 800,
+                borderRadius: 999, border: '1.5px solid #bfdbfe', cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(59,130,246,0.1)', fontFamily: FF,
+                letterSpacing: '-0.01em', marginBottom: 6,
+              }}
+            >
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%', background: '#dbeafe',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Sparkles size={13} color="#2563eb" />
+              </div>
+              <span>Tienda de Puntos</span>
+              <ChevronRight size={14} color="#3b82f6" strokeWidth={2.5} />
+            </motion.button>
           </div>
         </div>
 
@@ -435,12 +458,11 @@ export default function CuentaPage() {
           .cuenta-desktop-qa .qa-desk-float:nth-child(4) { animation-delay: 1.2s; }
           .cuenta-desktop-qa .qa-desk-glow { animation: qa-glow-desk 2.5s ease-in-out infinite; }
         `}</style>
-        <div className="cuenta-desktop-qa" style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+        <div className="cuenta-desktop-qa" style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
           {[
             { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
             { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#3b82f6,#f472b6)', shadow: 'rgba(59,130,246,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
             { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778909156669-pegada-1778909150770.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=fD%2Fi%2B6jEPBTW2nenPdkRcfsEbOJa60HYpbbu4i1Aexl10q7aclo9oDq7sQ6EJek6knoKaM9sp8mnOz5%2Fvgdk2ZjBHMrovT%2Bah08BiVFYAgb5kLEpQbxcYTHgX8dxk0ZruQnyx%2FGctf4bmqxWks1hxpLl3skIUFINOqFeU%2FDQ1%2FVoOdnJAMoRQ0L3%2BNtCmzLjkQBZV5JrzJTszeUSHSFl80uB3Os1qsXvgZhvnHkfsqq4mZ8ret4548aMV1TH0EDbO96mv8DWVFNqSuK9gyF2gWcM82KKG2nXP57Fj6B8JVvkjC3jevkIMaNrm8Hn4r4Nm2bsdK3mGk7QKHS53wHZ1Q%3D%3D' },
-            { icon: MapPin,       label: 'Dirección',  href: '/cuenta/direcciones',g: 'linear-gradient(135deg,#10b981,#34d399)', shadow: 'rgba(16,185,129,0.35)', image: 'https://esmartyelevadores.com.br/assets/images/icon-endereo.webp' },
           ].map((sc, idx) => {
             const Icon = sc.icon;
             const shouldAnimate = sc.label === 'Regalos' && hasGifts;
@@ -675,20 +697,37 @@ export default function CuentaPage() {
               </p>
             </div>
 
-            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, padding: '10px 24px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 20, textDecoration: 'none', boxShadow: '0 6px 16px rgba(59,130,246,0.3)', transition: 'transform 0.2s' }}>
-              <Trophy size={15} /> Tienda de puntos
-            </Link>
+            <motion.button
+              onClick={() => setShowPuntosModal(true)}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 22px',
+                background: '#eff6ff', color: '#2563eb', fontSize: 13, fontWeight: 800,
+                borderRadius: 999, border: '1.5px solid #bfdbfe', cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(59,130,246,0.1)', fontFamily: FF,
+                letterSpacing: '-0.01em', marginTop: 16,
+              }}
+            >
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%', background: '#dbeafe',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Sparkles size={13} color="#2563eb" />
+              </div>
+              <span>Tienda de Puntos</span>
+              <ChevronRight size={14} color="#3b82f6" strokeWidth={2.5} />
+            </motion.button>
           </div>
         </div>
 
-        {/* ── QUICK ACTIONS: gradient pill cards ── */}
-        <div style={{ padding: '0 16px 10px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+        {/* ── QUICK ACTIONS: gradient cards grid ── */}
+        <div style={{ padding: '0 16px 12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
             {[
               { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
               { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#3b82f6,#f472b6)', shadow: 'rgba(59,130,246,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
               { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778909156669-pegada-1778909150770.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=fD%2Fi%2B6jEPBTW2nenPdkRcfsEbOJa60HYpbbu4i1Aexl10q7aclo9oDq7sQ6EJek6knoKaM9sp8mnOz5%2Fvgdk2ZjBHMrovT%2Bah08BiVFYAgb5kLEpQbxcYTHgX8dxk0ZruQnyx%2FGctf4bmqxWks1hxpLl3skIUFINOqFeU%2FDQ1%2FVoOdnJAMoRQ0L3%2BNtCmzLjkQBZV5JrzJTszeUSHSFl80uB3Os1qsXvgZhvnHkfsqq4mZ8ret4548aMV1TH0EDbO96mv8DWVFNqSuK9gyF2gWcM82KKG2nXP57Fj6B8JVvkjC3jevkIMaNrm8Hn4r4Nm2bsdK3mGk7QKHS53wHZ1Q%3D%3D' },
-              { icon: MapPin,       label: 'Dirección',  href: '/cuenta/direcciones',g: 'linear-gradient(135deg,#10b981,#34d399)', shadow: 'rgba(16,185,129,0.35)', image: 'https://esmartyelevadores.com.br/assets/images/icon-endereo.webp' },
             ].map((sc, idx) => {
               const Icon = sc.icon;
               const shouldAnimate = sc.label === 'Regalos' && hasGifts;
@@ -696,31 +735,35 @@ export default function CuentaPage() {
               return (
                 <motion.div
                   key={sc.label}
-                  initial={{ opacity: 0, y: 30, scale: 0.5 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: idx * 0.12 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: idx * 0.08 }}
                 >
-                  <Link href={sc.href} className="pm-pill" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, position: 'relative', overflow: 'visible' }}>
+                  <Link href={sc.href} style={{
+                    textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    padding: '14px 10px 12px', background: '#fff', borderRadius: 18,
+                    border: '1px solid rgba(0,0,0,0.07)',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.03), 0 6px 16px rgba(0,0,0,0.05)',
+                    position: 'relative', overflow: 'hidden',
+                  }}>
+                    <div style={{ height: 3, background: sc.g, position: 'absolute', top: 0, left: 0, right: 0 }} />
                     <motion.div
-                      whileHover={{ scale: 1.2 }}
-                      whileTap={{ scale: 0.85 }}
-                      animate={shouldAnimate ? { 
-                        rotate: [0, 15, -15, 15, -15, 0],
-                      } : {}}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.92 }}
+                      animate={shouldAnimate ? { rotate: [0, 15, -15, 15, -15, 0] } : {}}
                       transition={shouldAnimate ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
                       style={{
-                        width: 54, height: 54, borderRadius: 17,
+                        width: 50, height: 50, borderRadius: 16,
                         background: (sc.image && !hasError) ? 'transparent' : sc.g,
-                        boxShadow: (sc.image && !hasError) ? 'none' : `0 6px 18px ${sc.shadow}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: (sc.image && !hasError) ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
+                        position: 'relative', marginBottom: 6,
                       }}
                     >
                       {sc.image && !hasError ? (
                         <img
                           src={sc.image}
                           alt={sc.label}
-                          style={{ width: 128, height: 128, objectFit: 'contain' }}
+                          style={{ width: 110, height: 110, objectFit: 'contain' }}
                           onError={() => setImageErrors(prev => ({ ...prev, [sc.label]: true }))}
                         />
                       ) : (
@@ -728,31 +771,19 @@ export default function CuentaPage() {
                       )}
                       {sc.label === 'Regalos' && hasGifts && (
                         <div style={{
-                          position: 'absolute',
-                          top: -4,
-                          right: -4,
-                          width: 18,
-                          height: 18,
-                          background: '#3b82f6',
-                          color: '#fff',
-                          borderRadius: '50%',
-                          fontSize: 11,
-                          fontWeight: 900,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          position: 'absolute', top: -2, right: -2,
+                          width: 18, height: 18, background: '#3b82f6', color: '#fff',
+                          borderRadius: '50%', fontSize: 11, fontWeight: 900,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
                           border: '2px solid #fff',
                         }}>
                           1
                         </div>
                       )}
                     </motion.div>
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 + idx * 0.12 }}
-                      style={{ fontSize: 11, fontWeight: 700, color: '#475569', textAlign: 'center', lineHeight: 1.2 }}
-                    >{sc.label}</motion.span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#1e293b', textAlign: 'center', lineHeight: 1.2 }}>
+                      {sc.label}
+                    </span>
                   </Link>
                 </motion.div>
               );
@@ -765,23 +796,28 @@ export default function CuentaPage() {
           <LoyaltyLevel />
         </div>
 
-        {/* ── MENU GROUPS (Native iOS Style) ── */}
+        {/* ── SECTIONS IN MOBILE (Premium Cards Grid format) ── */}
         <div style={{ padding: '10px 16px' }}>
-
-          <h3 className="ios-group-title">Mis compras</h3>
-          <div className="ios-group">
-            {MIS_COMPRAS_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i} isLast={i === MIS_COMPRAS_ITEMS.length - 1} />)}
-          </div>
-
-          <h3 className="ios-group-title">Mi cuenta</h3>
-          <div className="ios-group">
-            {CUENTA_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i + 10} isLast={i === CUENTA_ITEMS.length - 1} />)}
-          </div>
-
-          <h3 className="ios-group-title">Más opciones</h3>
-          <div className="ios-group">
-            {CONFIG_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i + 20} isLast={i === CONFIG_ITEMS.length - 1} />)}
-          </div>
+          {([
+            { title: 'Mis Compras',  Icon: ShoppingBag, g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', items: MIS_COMPRAS_ITEMS, base: 0 },
+            { title: 'Mi Cuenta',    Icon: User,        g: 'linear-gradient(135deg,#3b82f6,#60a5fa)', items: CUENTA_ITEMS,      base: 10 },
+            { title: 'Más opciones', Icon: Settings,    g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', items: CONFIG_ITEMS,      base: 20 },
+          ] as const).map(sec => {
+            const SecIcon = sec.Icon;
+            return (
+              <div key={sec.title} style={{ marginBottom: 24 }}>
+                <div className="sec-head">
+                  <div className="sec-head-icon" style={{ background: sec.g }}><SecIcon size={16} color="#fff" strokeWidth={2.2} /></div>
+                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.015em' }}>{sec.title}</h2>
+                  <span className="sec-head-count">{sec.items.length}</span>
+                  <span className="sec-head-line" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                  {sec.items.map((item, i) => <ColoredCard key={item.label} item={item} index={i + sec.base} />)}
+                </div>
+              </div>
+            );
+          })}
 
           <button className="pm-logout" onClick={handleLogout} style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
@@ -801,6 +837,54 @@ export default function CuentaPage() {
           </div>
         </div>
       </div>
+
+      {/* ── MODAL CONSTRUCCIÓN TIENDA DE PUNTOS ── */}
+      {showPuntosModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 99999,
+            background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+          }}
+          onClick={() => setShowPuntosModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: 24, padding: '30px 24px', maxWidth: 380, width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', textAlign: 'center', border: '1px solid #f1f5f9',
+              position: 'relative'
+            }}
+          >
+            <div style={{
+              width: 64, height: 64, borderRadius: 22, background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+              boxShadow: '0 8px 20px rgba(59,130,246,0.15)', border: '1px solid #bfdbfe'
+            }}>
+              <Sparkles size={32} color="#2563eb" />
+            </div>
+            <h3 style={{ margin: '0 0 10px', fontSize: 19, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+              ¡Estamos construyendo este apartado! 🛠️✨
+            </h3>
+            <p style={{ margin: '0 0 22px', fontSize: 13.5, color: '#64748b', lineHeight: 1.55, fontWeight: 500 }}>
+              Mientras tanto, ¡sigue acumulando puntos para disfrutar de las mejores ofertas de la tienda de puntos!
+            </p>
+            <button
+              onClick={() => setShowPuntosModal(false)}
+              style={{
+                width: '100%', padding: '13px 20px', background: '#2563eb', color: '#fff',
+                fontSize: 14, fontWeight: 700, borderRadius: 14, border: 'none', cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(37,99,235,0.3)', fontFamily: FF, transition: 'all 0.15s'
+              }}
+            >
+              ¡Entendido! 👍
+            </button>
+          </motion.div>
+        </div>
+      )}
     </>
   );
 }

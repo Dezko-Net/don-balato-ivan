@@ -143,13 +143,14 @@ function ConfirmadoInner() {
       const created = await storage.createFile(bucketId || MEDIA_BUCKET_ID, ID.unique(), file);
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const proofUrl = `${endpoint}/storage/buckets/${bucketId || MEDIA_BUCKET_ID}/files/${created.$id}/view?project=${projectId}&ext=${ext}`;
-      const shouldChangeStatus = order.STATUS === 'pending' || order.STATUS === 'pending_stock';
+      const shouldChangeStatus = ['pending', 'pending_stock', 'processing', 'paid'].includes(order.STATUS);
       const updateData: Record<string, any> = { PAYMENTPROOFURL: proofUrl };
-      if (shouldChangeStatus) updateData.STATUS = 'processing';
-      else if (order.STATUS === 'paid') updateData.STATUS = 'payment_review';
+      if (shouldChangeStatus) updateData.STATUS = 'payment_review';
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, order.$id, updateData);
       setUploaded(true);
-      setOrder(prev => prev ? { ...prev, PAYMENTPROOFURL: proofUrl, ...(shouldChangeStatus ? { STATUS: 'processing' } : order.STATUS === 'paid' ? { STATUS: 'payment_review' } : {}) } : null);
+      setOrder(prev => prev ? { ...prev, PAYMENTPROOFURL: proofUrl, ...(shouldChangeStatus ? { STATUS: 'payment_review' } : {}) } : null);
+      fetch('/api/revalidate-orders', { method: 'POST' }).catch(() => {});
+      window.dispatchEvent(new Event('orders-updated'));
     } catch (err) {
       console.error(err);
       alert('Error al subir el comprobante. Por favor intenta de nuevo.');

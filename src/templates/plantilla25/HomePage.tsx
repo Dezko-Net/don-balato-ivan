@@ -187,6 +187,14 @@ export default function HomePage25() {
     document.addEventListener('pointerup', onPointerUp);
     document.addEventListener('pointercancel', onPointerUp);
     document.addEventListener('click', onClickBlock, true);
+
+    const isMobileViewport = window.innerWidth <= 1023;
+    if (isMobileViewport) {
+      document.documentElement.style.overflowX = 'hidden';
+      document.body.style.overflowX = 'hidden';
+      document.body.style.maxWidth = '100vw';
+    }
+
     return () => {
       delete document.documentElement.dataset.template;
       document.documentElement.classList.remove('js', 'touch', 'no-touch');
@@ -198,6 +206,9 @@ export default function HomePage25() {
       document.removeEventListener('click', onClickBlock, true);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      document.documentElement.style.overflowX = '';
+      document.body.style.overflowX = '';
+      document.body.style.maxWidth = '';
     };
   }, []);
 
@@ -899,6 +910,13 @@ export default function HomePage25() {
     <div
       ref={containerRef}
       className="tpl25-shopify-root template-index"
+      style={{
+        maxWidth: '100vw',
+        overflowX: 'clip',
+        width: '100%',
+        position: 'relative',
+        boxSizing: 'border-box',
+      }}
     />
   );
 }
