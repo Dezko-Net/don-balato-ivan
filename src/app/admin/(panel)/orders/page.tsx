@@ -1624,8 +1624,13 @@ function OrdersContent() {
               {/* Header */}
               <div className="p-4 sm:p-5 border-b border-gray-150 flex items-center justify-between bg-gray-50/50">
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 flex-wrap">
                     Pedido <span className="font-mono text-indigo-600 font-extrabold">{order.ORDERCODE || '—'}</span>
+                    {(order as any).NIGHTORDER && (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-900 text-indigo-100 inline-flex items-center gap-1" title="Pedido hecho de noche: se saltó la confirmación de stock">
+                        🌙 Nocturno
+                      </span>
+                    )}
                   </h3>
                   <p className="text-xs text-gray-400 mt-0.5">Creado hace {ageStr} ({date.toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })})</p>
                 </div>

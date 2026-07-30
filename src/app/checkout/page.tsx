@@ -724,9 +724,20 @@ function CheckoutInner() {
       const finalAddress = (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && !form.address.startsWith('[SUCURSAL]'))
         ? `[SUCURSAL] ${form.address}`
         : form.address;
-      const additionalInfoWithGeo = coords 
+      const additionalInfoWithGeo = coords
         ? `${form.additionalInfo ? form.additionalInfo + '\\n' : ''}[GEO:${coords.lat},${coords.lng}]`
         : form.additionalInfo;
+
+      // ── Modo noche (18:00–09:00 Chile) ──
+      // De noche no hay cajera: el pedido se crea directo en estado 'paid' para
+      // que el cliente pague de una (la página /pedido-confirmado ya muestra los
+      // datos de transferencia + subir comprobante en ese estado). La hora la
+      // decide el servidor. Si la consulta falla, caemos al flujo normal (día).
+      let isNight = false;
+      try {
+        const nm = await fetch('/api/store/night-mode', { cache: 'no-store' });
+        if (nm.ok) isNight = !!(await nm.json()).night;
+      } catch { /* fallback a flujo diurno */ }
 
       const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
         USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
@@ -735,7 +746,9 @@ function CheckoutInner() {
         PAYMENTMETHOD: 'Transferencia Bancaria', SHIPPINGAGENCY: agency,
         SUBTOTAL: subtotal, SHIPPINGCOST: 0, TOTAL: total,
         ORDERCODE: orderCode, ORDERINDEX: orderIndex,
-        STATUS: 'pending_stock', CREATEDAT: now,
+        // Noche → 'paid' (pago directo, sin confirmar stock). Día → 'pending_stock'.
+        STATUS: isNight ? 'paid' : 'pending_stock', CREATEDAT: now,
+        ...(isNight ? { NIGHTORDER: true } : {}),
         ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
         ...(isGift ? { ISGIFT: true } : {}),
       });
@@ -749,22 +762,26 @@ function CheckoutInner() {
       // El servidor descuenta el stock fresco y revierte lo ya descontado si
       // algún ítem falla. Si el descuento falla en conjunto, cancelamos el
       // pedido recién creado para no dejar una reserva fantasma.
-      try {
-        const dr = await fetch('/api/checkout/stock', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode: 'decrement', orderId, items: stockPayload }),
-        });
-        const dd = await dr.json().catch(() => null);
-        if (!dr.ok || !dd?.ok) {
-          throw new Error(dd?.error || 'No se pudo reservar el stock del pedido.');
-        }
-      } catch (err: any) {
-        // Cancelar el pedido recién creado para no dejar reserva fantasma
+      // De NOCHE se omite: no hay confirmación de stock (stock ilimitado), así
+      // que no se reserva ni se puede fallar por falta de stock.
+      if (!isNight) {
         try {
-          await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
-        } catch {}
-        throw err;
+          const dr = await fetch('/api/checkout/stock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'decrement', orderId, items: stockPayload }),
+          });
+          const dd = await dr.json().catch(() => null);
+          if (!dr.ok || !dd?.ok) {
+            throw new Error(dd?.error || 'No se pudo reservar el stock del pedido.');
+          }
+        } catch (err: any) {
+          // Cancelar el pedido recién creado para no dejar reserva fantasma
+          try {
+            await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
+          } catch {}
+          throw err;
+        }
       }
 
       // Mark coupon as used (increment counter and deactivate)
