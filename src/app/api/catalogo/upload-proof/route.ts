@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { serverListDocuments, serverUpdateDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
       STATUS: 'payment_confirmed',
       UPDATEDAT: Date.now(),
     });
+
+    // Invalidar la caché del badge "Pagar tu pedido" (my-orders-status).
+    try { revalidateTag('orders'); } catch {}
 
     return NextResponse.json({
       success: true,

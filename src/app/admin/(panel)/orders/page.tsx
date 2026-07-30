@@ -380,7 +380,13 @@ function OrdersContent() {
       for (const order of selectedOrders) {
         await databases.deleteDocument(databaseId, ORDERS_COLLECTION_ID, order.$id);
       }
-      
+
+      // Invalidar la caché de "mis pedidos" (badge "Pagar tu pedido" del nav):
+      // el borrado es client-side y no toca el unstable_cache de
+      // /api/public-data/my-orders-status, que si no seguiría mostrando el
+      // pedido eliminado hasta 5 min.
+      try { await fetch('/api/revalidate?tag=orders'); } catch {}
+
       alert(`${selectedOrders.length} pedido(s) eliminado(s)`);
       setSelected(new Set());
       load(1);
@@ -433,6 +439,8 @@ function OrdersContent() {
       );
       setOrders(prev => prev.map(o => selected.has(o.$id) ? { ...o, STATUS: newStatus as OrderStatus } : o));
       setSelected(new Set());
+      // Invalidar caché del badge "Pagar tu pedido" (my-orders-status).
+      try { await fetch('/api/revalidate?tag=orders'); } catch {}
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setBulkUpdating(false); }
   };
@@ -472,6 +480,8 @@ function OrdersContent() {
         UPDATEDAT: Date.now(),
       });
       setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: newStatus as OrderStatus } : o));
+      // Invalidar caché del badge "Pagar tu pedido" (my-orders-status).
+      try { await fetch('/api/revalidate?tag=orders'); } catch {}
       if (orderBefore) {
         const { notifyOrderStatusChange } = await import('@/services/notificationService');
         await notifyOrderStatusChange(orderBefore, prevStatus, newStatus).catch(() => {});
