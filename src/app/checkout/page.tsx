@@ -819,6 +819,14 @@ function CheckoutInner() {
           }
 
           await account.updatePrefs(updatedPrefs);
+
+          // Guardar el NOMBRE real en la cuenta (el registro solo pide correo +
+          // contraseña, así que el nombre se captura aquí, en el pedido). Así la
+          // próxima compra precarga nombre/RUT/teléfono/dirección solos.
+          const trimmedName = form.name.trim();
+          if (trimmedName && trimmedName !== (acc as any).name) {
+            try { await account.updateName(trimmedName); } catch (e) { console.log('Error saving name:', e); }
+          }
         } catch (prefError) {
           console.log('Error saving user prefs:', prefError);
         }
@@ -832,8 +840,8 @@ function CheckoutInner() {
           // Check if this address already exists for the user
           const existing = await databases.listDocuments(databaseId, ADDRESSES_COLLECTION_ID, [
             Query.equal('userId', user.id),
-            Query.equal('fullAddress', finalAddress),
-            Query.equal('commune', form.comuna),
+            Query.equal('address', finalAddress),
+            Query.equal('city', form.comuna),
             Query.limit(1),
           ]);
           if (existing.documents.length === 0) {
@@ -842,8 +850,8 @@ function CheckoutInner() {
               alias: (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia') ? 'Sucursal' : 'Otro',
               name: form.name,
               phone: form.phone,
-              fullAddress: finalAddress,
-              commune: form.comuna,
+              address: finalAddress,
+              city: form.comuna,
               region: form.region,
               lat: 0,
               lng: 0,

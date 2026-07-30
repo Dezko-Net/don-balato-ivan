@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, CreditCard, ArrowRight, Gift, Sparkles, CheckCircle2, Zap, Calendar } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, Mail, Lock, ArrowRight, Gift, Sparkles, CheckCircle2, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { LoyaltyService } from '@/services/loyaltyService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,7 +53,7 @@ function LoginInner() {
 
   const emailParam = params.get('email') || '';
   const [loginForm, setLoginForm] = useState({ email: emailParam, password: '' });
-  const [regForm, setRegForm] = useState({ firstName: '', lastName: '', email: '', phone: '', rut: '', birthMonth: '', birthDay: '', password: '', confirm: '' });
+  const [regForm, setRegForm] = useState({ email: '', password: '', confirm: '' });
 
   const redirectTo = (() => {
     const r = params.get('redirect');
@@ -76,14 +76,15 @@ function LoginInner() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (!regForm.firstName || !regForm.lastName || !regForm.email || !regForm.birthMonth || !regForm.birthDay || !regForm.password) { setError('Completá todos los campos obligatorios'); return; }
+    if (!regForm.email || !regForm.password) { setError('Ingresá tu correo y contraseña'); return; }
     if (regForm.password !== regForm.confirm) { setError('Las contraseñas no coinciden'); return; }
     if (regForm.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres'); return; }
     setSubmitting(true); setError('');
-    const fullName = `${regForm.firstName.trim()} ${regForm.lastName.trim()}`;
-    // Crear fecha con día y mes (año actual)
-    const birthDate = `${new Date().getFullYear()}-${regForm.birthMonth}-${regForm.birthDay}`;
-    const res = await register(regForm.email, regForm.password, fullName, regForm.phone || undefined, regForm.rut || undefined, birthDate);
+    // Solo pedimos correo + contraseña. El nombre y demás datos (RUT, teléfono,
+    // dirección) se piden y se guardan al hacer el primer pedido. Como nombre
+    // inicial usamos la parte del correo, hasta que el cliente complete el suyo.
+    const placeholderName = regForm.email.split('@')[0] || 'Cliente';
+    const res = await register(regForm.email, regForm.password, placeholderName);
     setSubmitting(false);
     if (res.success) {
       confetti({
@@ -279,62 +280,8 @@ function LoginInner() {
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
                         onSubmit={handleRegister} className="flex flex-col gap-4"
                       >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                          <InputField label="Nombres *" icon={<User size={18} />} value={regForm.firstName} onChange={(e: any) => setRegForm(f => ({ ...f, firstName: e.target.value }))} placeholder="Juan" autoFocus />
-                          <InputField label="Apellidos *" icon={<User size={18} />} value={regForm.lastName} onChange={(e: any) => setRegForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Pérez" />
-                        </div>
-                        <InputField label="Correo electrónico *" icon={<Mail size={18} />} type="email" value={regForm.email} onChange={(e: any) => setRegForm(f => ({ ...f, email: e.target.value }))} placeholder="tu@correo.com" />
-
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5">Mes de nacimiento *</label>
-                            <select
-                              value={regForm.birthMonth}
-                              onChange={(e: any) => setRegForm(f => ({ ...f, birthMonth: e.target.value }))}
-                              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none appearance-none"
-                            >
-                              <option value="">Seleccionar mes</option>
-                              <option value="01">Enero</option>
-                              <option value="02">Febrero</option>
-                              <option value="03">Marzo</option>
-                              <option value="04">Abril</option>
-                              <option value="05">Mayo</option>
-                              <option value="06">Junio</option>
-                              <option value="07">Julio</option>
-                              <option value="08">Agosto</option>
-                              <option value="09">Septiembre</option>
-                              <option value="10">Octubre</option>
-                              <option value="11">Noviembre</option>
-                              <option value="12">Diciembre</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5">Día de nacimiento *</label>
-                            <select
-                              value={regForm.birthDay}
-                              onChange={(e: any) => setRegForm(f => ({ ...f, birthDay: e.target.value }))}
-                              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none appearance-none"
-                            >
-                              <option value="">Seleccionar día</option>
-                              {Array.from({ length: 31 }, (_, i) => (
-                                <option key={i + 1} value={String(i + 1).padStart(2, '0')}>{i + 1}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                          <InputField label="Teléfono (opcional)" icon={<Phone size={18} />} type="tel" value={regForm.phone} onChange={(e: any) => setRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+569..." />
-                          <InputField label="RUT (opcional)" icon={<CreditCard size={18} />} value={regForm.rut} 
-                            onChange={(e: any) => {
-                              const clean = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase();
-                              if (clean.length <= 1) { setRegForm(f => ({ ...f, rut: clean })); return; }
-                              const formatted = `${clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${clean.slice(-1)}`;
-                              setRegForm(f => ({ ...f, rut: formatted }));
-                            }} 
-                            placeholder="12.345.678-9" maxLength={12} 
-                          />
-                        </div>
+                        <InputField label="Correo electrónico" icon={<Mail size={18} />} type="email" value={regForm.email} onChange={(e: any) => setRegForm(f => ({ ...f, email: e.target.value }))} placeholder="tu@correo.com" autoFocus />
+                        <p className="text-xs text-slate-400 -mt-1">Solo necesitas tu correo y una contraseña. Tus datos (nombre, RUT, teléfono, dirección) los completas al hacer tu primer pedido y quedan guardados.</p>
 
                         <div className="flex flex-col gap-2">
                           <label className="text-sm font-bold text-slate-700">Contraseña *</label>

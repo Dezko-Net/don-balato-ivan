@@ -120,7 +120,7 @@ function ConfirmadoInner() {
           setItems(Array.isArray(parsed) ? parsed : []);
         } catch { setItems([]); }
       }
-      setUploaded(!!o.PROOFURL);
+      setUploaded(!!o.PAYMENTPROOFURL);
       if (o.STATUS === 'pending' || o.STATUS === 'pending_stock' || o.STATUS === 'processing' || o.STATUS === 'paid' || o.STATUS === 'negotiation') {
         setShowConfetti(true);
       }
@@ -144,12 +144,12 @@ function ConfirmadoInner() {
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const proofUrl = `${endpoint}/storage/buckets/${bucketId || MEDIA_BUCKET_ID}/files/${created.$id}/view?project=${projectId}&ext=${ext}`;
       const shouldChangeStatus = order.STATUS === 'pending' || order.STATUS === 'pending_stock';
-      const updateData: Record<string, any> = { PROOFURL: proofUrl };
+      const updateData: Record<string, any> = { PAYMENTPROOFURL: proofUrl };
       if (shouldChangeStatus) updateData.STATUS = 'processing';
       else if (order.STATUS === 'paid') updateData.STATUS = 'payment_review';
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, order.$id, updateData);
       setUploaded(true);
-      setOrder(prev => prev ? { ...prev, PROOFURL: proofUrl, ...(shouldChangeStatus ? { STATUS: 'processing' } : order.STATUS === 'paid' ? { STATUS: 'payment_review' } : {}) } : null);
+      setOrder(prev => prev ? { ...prev, PAYMENTPROOFURL: proofUrl, ...(shouldChangeStatus ? { STATUS: 'processing' } : order.STATUS === 'paid' ? { STATUS: 'payment_review' } : {}) } : null);
     } catch (err) {
       console.error(err);
       alert('Error al subir el comprobante. Por favor intenta de nuevo.');
