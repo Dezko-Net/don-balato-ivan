@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
@@ -30,22 +31,22 @@ const STATUS_SVG: Record<string, React.ReactNode> = {
   payment_confirmed:  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg>,
   payment_review:     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21z"/><path d="M9 8h6M9 12h4"/></svg>,
   negotiation:        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-4 3V5a2 2 0 012-2h13a2 2 0 012 2z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/></svg>,
-  shipped:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4h13v11H1z"/><path d="M14 8h4l3 3v4h-7z"/><circle cx="5.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>,
+  shipped:            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>,
   delivered:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18"/><path d="M9 21v-7h6v7"/></svg>,
   cancelled:          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
 };
 
 const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
-  pending:            { color: '#f97316', bg: '#fff7ed' },
-  pending_stock:      { color: '#f97316', bg: '#fff7ed' },
-  processing:         { color: '#f59e0b', bg: '#fffbeb' },
-  paid:               { color: '#10b981', bg: '#ecfdf5' },
-  payment_review:     { color: '#2563eb', bg: '#eff6ff' },
-  payment_confirmed:  { color: '#059669', bg: '#d1fae5' },
-  negotiation:        { color: '#ec4899', bg: '#fdf2f8' },
-  shipped:            { color: '#8b5cf6', bg: '#f5f3ff' },
-  delivered:          { color: '#22c55e', bg: '#f0fdf4' },
-  cancelled:          { color: '#ef4444', bg: '#fef2f2' },
+  pending:            { color: '#fb923c', bg: '#fff3e6' },
+  pending_stock:      { color: '#eab308', bg: '#fefce8' },
+  processing:         { color: '#eab308', bg: '#fefce8' },
+  paid:               { color: '#fb923c', bg: '#fff3e6' },
+  payment_review:     { color: '#60a5fa', bg: '#f5f9ff' },
+  payment_confirmed:  { color: '#34d399', bg: '#f0fdf4' },
+  negotiation:        { color: '#f472b6', bg: '#fefcfd' },
+  shipped:            { color: '#a78bfa', bg: '#f3effe' },
+  delivered:          { color: '#4ade80', bg: '#f7fef9' },
+  cancelled:          { color: '#f87171', bg: '#feebeb' },
 };
 
 const PAGE_SIZE = 10;
@@ -54,10 +55,10 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
   paid_group:         { label: 'Confirmados',               bg: 'bg-green-100',   text: 'text-green-700' },
   pending:            { label: 'Recibido',                  bg: 'bg-orange-100',  text: 'text-orange-700' },
-  pending_stock:      { label: 'Pago Recibido',             bg: 'bg-orange-100',  text: 'text-orange-700' },
+  pending_stock:      { label: 'Comprobando Stock',       bg: 'bg-yellow-100',  text: 'text-yellow-700' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-100',     text: 'text-red-700' },
-  processing:         { label: 'Comprobando Stock',     bg: 'bg-blue-100',    text: 'text-blue-700' },
-  paid:               { label: 'Stock Confirmado',        bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  processing:         { label: 'Comprobando Stock',     bg: 'bg-yellow-100',    text: 'text-yellow-700' },
+  paid:               { label: 'Stock Confirmado',        bg: 'bg-orange-100',   text: 'text-orange-700' },
   payment_review:     { label: 'Revisando Pago',          bg: 'bg-blue-100',    text: 'text-blue-700' },
   payment_confirmed:  { label: 'Pago Confirmado',         bg: 'bg-green-100',   text: 'text-green-700' },
   negotiation:        { label: 'Negociando',                bg: 'bg-pink-100',    text: 'text-pink-700' },
@@ -68,7 +69,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 // Etiquetas cortas para los badges (evita el bug de label.split(' ')[0] que mostraba "Pago" en ambos)
 const SHORT_LABEL: Record<string, string> = {
   pending:            'Recibido',
-  pending_stock:      'Pago Recib',
+  pending_stock:      'C. Stock',
   processing:         'C. Stock',
   paid:               'Stock Conf.',
   payment_review:     'Rev. Pago',
@@ -108,6 +109,7 @@ function OrdersContent() {
   const [sortBy, setSortBy] = useState<'date' | 'total'>('date');
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [liveOnly, setLiveOnly] = useState(false);
   const [trackingPending, setTrackingPending] = useState(false);
@@ -120,6 +122,7 @@ function OrdersContent() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [cashierPickerOrderId, setCashierPickerOrderId] = useState<string | null>(null);
   const [cashierPickerMode, setCashierPickerMode] = useState<'stock' | 'shipping'>('stock');
+  const [waShortcutOrderId, setWaShortcutOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -451,6 +454,8 @@ function OrdersContent() {
     setUpdatingId(orderId);
     const orderBefore = orders.find(o => o.$id === orderId);
     const prevStatus = orderBefore?.STATUS;
+    // Optimistic update — update UI immediately
+    setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: newStatus as OrderStatus } : o));
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
@@ -481,14 +486,16 @@ function OrdersContent() {
         STATUS: newStatus,
         UPDATEDAT: Date.now(),
       });
-      setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: newStatus as OrderStatus } : o));
       // Invalidar caché del badge "Pagar tu pedido" (my-orders-status).
       try { await fetch('/api/revalidate?tag=orders'); } catch {}
       if (orderBefore) {
         const { notifyOrderStatusChange } = await import('@/services/notificationService');
         await notifyOrderStatusChange(orderBefore, prevStatus, newStatus).catch(() => {});
       }
-    } catch (e: any) { alert('Error: ' + e.message); }
+    } catch (e: any) {
+      if (prevStatus) setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: prevStatus as OrderStatus } : o));
+      alert('Error: ' + e.message);
+    }
     finally { setUpdatingId(null); }
   };
 
@@ -751,6 +758,14 @@ function OrdersContent() {
     if (paymentFilter !== 'all') {
       const pm = o.PAYMENTMETHOD || 'Sin método';
       if (pm !== paymentFilter) return false;
+    }
+    if (sourceFilter !== 'all') {
+      const isWa = o.PAYMENTMETHOD === 'WhatsApp';
+      const cashier = (o as any).ASSIGNEDCASHIER || '';
+      if (sourceFilter === 'whatsapp' && !isWa) return false;
+      if (sourceFilter === 'lissy' && !(isWa && cashier.toLowerCase().includes('lissy'))) return false;
+      if (sourceFilter === 'fer' && !(isWa && cashier.toLowerCase().includes('fernanda'))) return false;
+      if (sourceFilter === 'web' && isWa) return false;
     }
     if (regionFilter !== 'all') {
       const r = (o as any).REGION || '';
@@ -1074,8 +1089,8 @@ function OrdersContent() {
                   {!dim && <span className="absolute inset-x-1 top-1 h-1/3 rounded-full" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.45), transparent)' }} />}
                   {count > 0 && (
                     <span
-                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] sm:min-w-[21px] sm:h-[21px] flex items-center justify-center text-[9px] sm:text-[10px] font-extrabold rounded-full px-1 border-2 sm:border-[2.5px] border-white"
-                      style={{ background: isActive ? '#0f172a' : `linear-gradient(135deg, ${sc.color}, ${sc.color}cc)`, color: '#fff', boxShadow: `0 2px 5px -1px ${sc.color}55`, animation: 'kcBadgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] sm:min-w-[21px] sm:h-[21px] flex items-center justify-center text-[9px] sm:text-[10px] font-extrabold rounded-full px-1 border-2 sm:border-[2.5px]"
+                      style={{ background: isActive ? '#fff' : `linear-gradient(135deg, ${sc.color}, ${sc.color}cc)`, color: isActive ? sc.color : '#fff', borderColor: isActive ? sc.color : '#fff', boxShadow: `0 2px 5px -1px ${sc.color}55`, animation: 'kcBadgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
                       {count > 99 ? '99+' : count}
                     </span>
                   )}
@@ -1131,8 +1146,8 @@ function OrdersContent() {
                   {!dim && <span className="absolute inset-x-1 top-1 h-1/3 rounded-full" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.45), transparent)' }} />}
                   {count > 0 && (
                     <span
-                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] sm:min-w-[21px] sm:h-[21px] flex items-center justify-center text-[9px] sm:text-[10px] font-extrabold rounded-full px-1 border-2 sm:border-[2.5px] border-white"
-                      style={{ background: isActive ? '#0f172a' : `linear-gradient(135deg, ${sc.color}, ${sc.color}cc)`, color: '#fff', boxShadow: `0 2px 5px -1px ${sc.color}55`, animation: 'kcBadgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] sm:min-w-[21px] sm:h-[21px] flex items-center justify-center text-[9px] sm:text-[10px] font-extrabold rounded-full px-1 border-2 sm:border-[2.5px]"
+                      style={{ background: isActive ? '#fff' : `linear-gradient(135deg, ${sc.color}, ${sc.color}cc)`, color: isActive ? sc.color : '#fff', borderColor: isActive ? sc.color : '#fff', boxShadow: `0 2px 5px -1px ${sc.color}55`, animation: 'kcBadgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
                       {count > 99 ? '99+' : count}
                     </span>
                   )}
@@ -1259,14 +1274,28 @@ function OrdersContent() {
           className={`px-3 py-1.5 rounded-xl text-sm font-medium transition bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 ${['processing','paid','negotiation','shipped','delivered'].includes(activeFilter) ? 'ring-2 ring-indigo-500 ring-inset shadow-sm' : ''}`}>
           Más estados ▾
         </button>
-        {paymentMethods.length > 2 && (
-          <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-            {paymentMethods.map(pm => (
-              <option key={pm} value={pm}>{pm === 'all' ? 'Todos los métodos' : pm}</option>
-            ))}
-          </select>
-        )}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button onClick={() => setSourceFilter('all')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition bg-gray-100 text-gray-600 border border-gray-200 ${sourceFilter === 'all' ? 'ring-2 ring-gray-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+            Todos
+          </button>
+          <button onClick={() => setSourceFilter('web')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition bg-sky-100 text-sky-700 border border-sky-200 ${sourceFilter === 'web' ? 'ring-2 ring-sky-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+            🌐 Web
+          </button>
+          <button onClick={() => setSourceFilter('whatsapp')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition bg-green-100 text-green-700 border border-green-200 ${sourceFilter === 'whatsapp' ? 'ring-2 ring-green-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+            💬 WhatsApp
+          </button>
+          <button onClick={() => setSourceFilter('lissy')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition bg-purple-100 text-purple-700 border border-purple-200 ${sourceFilter === 'lissy' ? 'ring-2 ring-purple-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+            👩 Lissy (WA)
+          </button>
+          <button onClick={() => setSourceFilter('fer')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition bg-pink-100 text-pink-700 border border-pink-200 ${sourceFilter === 'fer' ? 'ring-2 ring-pink-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+            👩 Fernanda (WA)
+          </button>
+        </div>
         {orders.some(o => (o as any).PURCHASEDFROMLIVE) && (
           <button onClick={() => setLiveOnly(v => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition border ${liveOnly ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
@@ -1324,59 +1353,65 @@ function OrdersContent() {
         </div>
       )}
 
-      {/* Cashier Picker Modal — choose which cashier to send WhatsApp message */}
-      {cashierPickerOrderId && (() => {
-        const cOrder = orders.find(o => o.$id === cashierPickerOrderId);
-        if (!cOrder) return null;
+      {/* WhatsApp Shortcuts Modal — send pre-written messages to customer */}
+      {waShortcutOrderId && (() => {
+        const sOrder = orders.find(o => o.$id === waShortcutOrderId);
+        if (!sOrder) return null;
         const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.donbalatomayorista.cl';
-        const buildWaUrl = (phone: string) => {
-          let msg = '';
-          if (cashierPickerMode === 'stock') {
-            msg = `Hola! Llegó un pedido nuevo de la web.\n\nPedido: ${cOrder.ORDERCODE || ''}\nCliente: ${cOrder.CUSTOMERNAME || ''}\n\nPor favor verifica el stock aquí:\n${siteUrl}/verificar-stock?code=${cOrder.ORDERCODE || ''}`;
-          } else {
-            msg = `¡Pago verificado! ✅\n\nPedido: ${cOrder.ORDERCODE || ''}\nCliente: ${cOrder.CUSTOMERNAME || ''}\n\nPor favor completa los datos de envío del cliente aquí:\n${siteUrl}/datos-envio?code=${cOrder.ORDERCODE || ''}`;
-          }
-          return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        const customerPhone = (sOrder.CUSTOMERPHONE || '').replace(/[^0-9]/g, '');
+        const orderLink = `${siteUrl}/pedido/${sOrder.$id}`;
+        const shortcuts = [
+          {
+            label: 'Notificar stock confirmado',
+            desc: 'Avisar al cliente que suba su comprobante de pago',
+            icon: '📦✅',
+            msg: `¡Hola ${sOrder.CUSTOMERNAME?.split(' ')[0] || ''}! Ya tenemos el stock confirmado de tu pedido ${sOrder.ORDERCODE || ''}.\n\nPuedes subir tu comprobante de pago en este enlace:\n${orderLink}\n\nDentro encontrarás los datos de la transferencia bancaria. O si prefieres, envíame el comprobante por aquí y yo lo subo por ti.`,
+          },
+        ];
+        const buildWaUrl = (msg: string) => {
+          if (!customerPhone) return null;
+          return `https://wa.me/56${customerPhone.replace(/^56/, '')}?text=${encodeURIComponent(msg)}`;
         };
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-            onClick={() => setCashierPickerOrderId(null)}>
+            onClick={() => setWaShortcutOrderId(null)}>
             <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-bold text-gray-800">Enviar a cajera</h3>
-                <button onClick={() => setCashierPickerOrderId(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition text-xl leading-none">×</button>
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  Atajos WhatsApp
+                </h3>
+                <button onClick={() => setWaShortcutOrderId(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition text-xl leading-none">×</button>
               </div>
               <div className="p-5 space-y-3">
                 <p className="text-sm text-gray-500 mb-2">
-                  {cashierPickerMode === 'stock' ? 'Verificar stock' : 'Datos de envío'} · Pedido <span className="font-mono font-bold text-indigo-600">{cOrder.ORDERCODE}</span>
+                  Pedido <span className="font-mono font-bold text-indigo-600">{sOrder.ORDERCODE}</span> · {sOrder.CUSTOMERNAME}
                 </p>
-                {CASHIERS.map(cashier => (
-                  <a
-                    key={cashier.phone}
-                    href={buildWaUrl(cashier.phone)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={async () => {
-                      setCashierPickerOrderId(null);
-                      try {
-                        const { databases } = getServices();
-                        const { databaseId } = getAppwriteConfig();
-                        await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, cashierPickerOrderId, { ASSIGNEDCASHIER: cashier.name });
-                        setOrders(prev => prev.map(o => o.$id === cashierPickerOrderId ? { ...o, ASSIGNEDCASHIER: cashier.name } : o));
-                      } catch (e) { console.error('Error saving assigned cashier:', e); }
-                    }}
-                    className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition cursor-pointer">
-                    <div className="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#10b981"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-gray-800">{cashier.name}</p>
-                      <p className="text-xs text-gray-400">+{cashier.phone.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, '$1 $2 $3 $4')}</p>
-                    </div>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                  </a>
-                ))}
+                {!customerPhone && (
+                  <p className="text-xs text-red-500 bg-red-50 p-3 rounded-xl border border-red-100">Este pedido no tiene teléfono registrado</p>
+                )}
+                {shortcuts.map((sc, i) => {
+                  const url = buildWaUrl(sc.msg);
+                  return (
+                    <a
+                      key={i}
+                      href={url || '#'}
+                      target={url ? '_blank' : undefined}
+                      rel="noopener noreferrer"
+                      onClick={(e) => { if (!url) e.preventDefault(); setWaShortcutOrderId(null); }}
+                      className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition cursor-pointer ${!url ? 'opacity-40 pointer-events-none' : ''}`}>
+                      <div className="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 text-xl">
+                        {sc.icon}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-bold text-gray-800 text-sm">{sc.label}</p>
+                        <p className="text-xs text-gray-400">{sc.desc}</p>
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1387,7 +1422,8 @@ function OrdersContent() {
       {timelineOrderId && (() => {
         const tOrder = orders.find(o => o.$id === timelineOrderId);
         if (!tOrder) return null;
-        const currentIdx = STATUS_FLOW.indexOf(tOrder.STATUS);
+        const effStatus = (tOrder.STATUS === 'pending' || tOrder.STATUS === 'pending_stock') ? 'processing' : tOrder.STATUS;
+        const currentIdx = STATUS_FLOW.indexOf(effStatus);
         const isCancelled = tOrder.STATUS === 'cancelled';
         const tIsPickup = isPickup(tOrder.SHIPPINGAGENCY);
         const STATUS_DESC: Record<string, string> = {
@@ -1458,7 +1494,7 @@ function OrdersContent() {
                             {STATUS_SVG[status] && React.cloneElement(STATUS_SVG[status] as any, { width: 15, height: 15 })}
                           </div>
                           {isCurrent && (
-                            <div className="absolute -right-1 -top-1 w-3 h-3 rounded-full border-2 border-white animate-pulse" style={{ background: sc.color }} />
+                            <div className="absolute -right-0.5 -top-0.5 w-3.5 h-3.5 rounded-full animate-ping" style={{ background: sc.color + '40' }} />
                           )}
                         </button>
                         {/* Label + description */}
@@ -1600,10 +1636,6 @@ function OrdersContent() {
         const orderLink = typeof window !== 'undefined' ? `${window.location.origin}/pedido/${order.$id}` : '';
         const firstMissingImg = missingItems[0]?.img || '';
 
-        const msg1 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Don Balato Iván Chile por tu pedido ${order.ORDERCODE || ''}. Queríamos confirmar si tuviste algún problema para realizar tu pago o si tienes alguna duda con el envío. ¡Avísanos y te ayudamos a completarlo!`;
-        const msg2 = `Hola ${order.CUSTOMERNAME || ''}, espero que estés muy bien. Aún tenemos reservado tu pedido ${order.ORDERCODE || ''} en Don Balato Iván Chile. Como queremos que disfrutes tus productos, si realizas tu pago hoy te regalamos un 5% de descuento adicional en esta compra con el cupón PAGO5. ¿Te gustaría que te envíe los datos de transferencia?`;
-        const msg3 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Don Balato Iván Chile. Para poder liberar el stock a otros clientes, te comentamos que tu pedido ${order.ORDERCODE || ''} se cancelará automáticamente en unas horas. Si aún deseas tus productos, puedes enviarnos el comprobante de transferencia hoy mismo para procesarlo de inmediato. ¡Quedamos atentos!`;
-        
         let msg4 = `Hola ${order.CUSTOMERNAME || ''}, te escribimos de Don Balato Iván Chile por tu pedido ${order.ORDERCODE || ''}. 😔 Lamentablemente tuvimos un problema de stock con los siguientes productos:\n\n${missingNames || 'Algunos productos'}\n\n🎁 ¡Pero te traemos una solución excelente! Hemos cargado el valor de esos productos a tu cuenta como *Crédito de Canje*.\n\n✨ *BENEFICIOS DE CANJE:*\n✅ Todo el catálogo disponible a un *20% de descuento* extra.\n✅ Usa tu saldo a favor para elegir nuevos productos. Si no te gastas todo el crédito, te guardamos el vuelto automáticamente como un cupón para tu próxima compra.\n\n📲 *¿CÓMO FUNCIONA?*\n1. Ingresa a tu pedido: ${orderLink}\n2. Haz clic en el botón fucsia "Canjear aquí"\n3. Agrega los productos que más te gusten y presiona "Confirmar Canje".\n\n¡Es muy rápido! Quedamos atentos a tu elección para poder despachar tu paquete lo antes posible. 🚚💨`;
         
         const missingWithImgs = missingItems.filter((it: any) => !!it.img);
@@ -1611,9 +1643,6 @@ function OrdersContent() {
           msg4 += `\n\nFotos de referencia:\n` + missingWithImgs.map((it: any) => `- ${it.name || ''}: ${it.img}`).join('\n');
         }
 
-        const waUrl1 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg1)}`;
-        const waUrl2 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg2)}`;
-        const waUrl3 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg3)}`;
         const waUrl4 = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg4)}`;
         const showNegotiationBtn = hasMissing || order.STATUS === 'negotiation';
         
@@ -1630,8 +1659,8 @@ function OrdersContent() {
           copyToClipboard('all_shipping', text);
         };
         
-        return (
-          <div className="fixed inset-0 z-50 flex justify-end" style={{ background: 'rgba(0,0,0,0.3)', animation: 'kcFadeIn 0.2s ease-out' }} onClick={() => setDrawerOrderId(null)}>
+        return createPortal(
+          <div className="fixed inset-0 z-[100] flex justify-end" style={{ background: 'rgba(0,0,0,0.3)', animation: 'kcFadeIn 0.2s ease-out' }} onClick={() => setDrawerOrderId(null)}>
             <div className="bg-white h-full w-full max-w-md shadow-2xl flex flex-col relative border-l border-gray-200"
               style={{ animation: 'kcSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
               onClick={e => e.stopPropagation()}>
@@ -1646,9 +1675,13 @@ function OrdersContent() {
                         🌙 Nocturno
                       </span>
                     )}
-                    {order.ASSIGNEDCASHIER && (
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 inline-flex items-center gap-1">
-                        👤 {order.ASSIGNEDCASHIER}
+                    {order.PAYMENTMETHOD === 'WhatsApp' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">
+                        💬 WhatsApp{order.ASSIGNEDCASHIER ? ` · ${order.ASSIGNEDCASHIER}` : ''}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
+                        🌐 Web
                       </span>
                     )}
                   </h3>
@@ -1728,21 +1761,6 @@ function OrdersContent() {
                     <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Mensajes de WhatsApp (Don Balato Iván)</h4>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <a href={waUrl1} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-between px-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal">
-                      <span>1. Recordatorio Amistoso (24h)</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </a>
-                    <a href={waUrl2} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-between px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal">
-                      <span>2. Incentivo Pago 5% Descuento (2-3d)</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </a>
-                    <a href={waUrl3} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-between px-3 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal">
-                      <span>3. Último Aviso / Liberar Stock (3d+)</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="shrink-0 ml-2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </a>
                     {showNegotiationBtn && (
                       <a href={waUrl4} target="_blank" rel="noopener noreferrer"
                         className="flex items-center justify-between px-3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-extrabold transition shadow-sm hover:scale-[1.01] active:scale-95 text-left leading-normal border border-pink-500">
@@ -1939,7 +1957,8 @@ function OrdersContent() {
                 100% { opacity: 1; }
               }
             `}</style>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
@@ -1978,7 +1997,7 @@ function OrdersContent() {
       {/* Mobile Card List & Desktop Table view */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Mobile View: Modern Cards */}
-        <div className="block sm:hidden divide-y divide-gray-100">
+        <div className="block sm:hidden p-2 space-y-2">
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="p-4 space-y-3 animate-pulse">
@@ -2012,10 +2031,11 @@ function OrdersContent() {
 
               return (
                 <div key={order.$id}
-                  className={`relative p-4 hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70' : isOverdue ? 'bg-red-50/50' : ''}`}
+                  className={`relative p-4 hover:brightness-95 transition-all cursor-pointer ${selected.has(order.$id) ? 'ring-2 ring-indigo-400' : ''}`}
+                  style={{ background: isRetiro ? '#fdf4ff' : (STATUS_COLORS[order.STATUS]?.bg || '#f3f4f6') }}
                   onClick={() => setDrawerOrderId(order.$id)}>
-                  {/* Status left border */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 rounded-r" style={{ background: statusColor }} />
+                  {/* Source left border */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r" style={{ background: order.PAYMENTMETHOD === 'WhatsApp' ? '#22c55e' : '#0ea5e9' }} />
 
                   {/* Row 1: Code + Time + Status */}
                   <div className="flex items-center justify-between mb-2">
@@ -2024,29 +2044,28 @@ function OrdersContent() {
                         onChange={() => toggleSelect(order.$id)}
                         className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
                       <span className="font-mono text-xs text-indigo-600 font-bold">{order.ORDERCODE || '—'}</span>
-                      {order.PAYMENTMETHOD === 'WhatsApp' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                          WhatsApp
-                        </span>
-                      )}
-                      {(order as any).NIGHTORDER && (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-900 text-indigo-100 inline-flex items-center gap-1" title="Pedido nocturno: stock confirmado automático">
-                          🌙 Noche
-                        </span>
-                      )}
-                      {order.ASSIGNEDCASHIER && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                          {order.ASSIGNEDCASHIER}
+                      {order.PAYMENTMETHOD === 'WhatsApp' ? (
+                        <>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            WhatsApp
+                          </span>
+                          {order.ASSIGNEDCASHIER && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                              {order.ASSIGNEDCASHIER}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                          🌐 Web
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-gray-400 font-medium">{ageStr}</span>
+                      <span className="text-xs text-gray-600 font-bold">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</span>
+                      <span className={`text-xs font-bold ${ageH < 3 ? 'text-indigo-500' : 'text-gray-500'}`}>{ageStr}</span>
                       {pendingAgeStr && <span className={`text-[10px] font-bold ${ageD >= 3 ? 'text-red-600' : 'text-orange-500'}`}>{pendingAgeStr}</span>}
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: (isRetiro ? '#fdf4ff' : STATUS_COLORS[order.STATUS]?.bg) || '#f3f4f6', color: statusColor }}>
-                        {isRetiro ? 'Retirar' : (SHORT_LABEL[order.STATUS] || scfg?.label || order.STATUS)}
-                      </span>
                       {(() => { try { const it = JSON.parse(order.ITEMS || '[]'); const cc = (order as any).CANJE_COUNT || 0; const hasCanje = it.some((i: any) => i.isCanjeReplacement); return (cc > 0 || hasCanje); } catch { return false; } })() && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
                           🎁 Canje
@@ -2058,13 +2077,27 @@ function OrdersContent() {
                   {/* Row 2: Customer + Total */}
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-gray-900 truncate">{order.CUSTOMERNAME}</p>
+                      <p className="text-sm font-bold text-gray-900 truncate flex items-center gap-1.5">
+                        {order.CUSTOMERNAME}
+                        {order.CUSTOMERPHONE && (() => { const pc = order.CUSTOMERPHONE!.replace(/\D/g, ''); const wa = pc.length === 9 ? '56' + pc : pc; return (
+                          <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 text-white transition shrink-0 text-sm" title="WhatsApp">
+                            💬
+                          </a>
+                        ); })()}
+                      </p>
                       <p className="text-[11px] text-gray-400 truncate">{order.CUSTOMERPHONE || ''} · {order.COMUNA || '—'}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-base font-bold text-gray-900">{fmt(order.TOTAL)}</p>
                       <p className="text-[10px] text-gray-400">{totalItems} uds · {items.length} art.</p>
                     </div>
+                  </div>
+
+                  {/* Row 2.5: Status — full width centered */}
+                  <div className="flex items-center justify-center mb-2">
+                    <button onClick={(e) => { e.stopPropagation(); setTimelineOrderId(order.$id); }} className="text-sm font-bold px-5 py-1.5 rounded-full whitespace-nowrap cursor-pointer hover:opacity-90 transition text-white" style={{ background: statusColor }} title="Cambiar estado">
+                      {isRetiro ? 'Retirar' : (scfg?.label || order.STATUS)}
+                    </button>
                   </div>
 
                   {/* Row 3: Badges */}
@@ -2085,23 +2118,14 @@ function OrdersContent() {
                         </span>
                       );
                     })()}
-                    {order.PAYMENTMETHOD && <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">{order.PAYMENTMETHOD}</span>}
-                    {/* Send to cashier for stock verification (web orders only) */}
-                    {order.STATUS === 'pending_stock' && order.PAYMENTMETHOD !== 'WhatsApp' && (
+                    {/* Notificar pago for web orders in Stock Confirmado */}
+                    {order.STATUS === 'paid' && order.PAYMENTMETHOD !== 'WhatsApp' && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setCashierPickerOrderId(order.$id); setCashierPickerMode('stock'); }}
-                        className="text-[10px] font-bold px-2 py-1 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 transition flex items-center gap-1">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                        Enviar a cajera
-                      </button>
-                    )}
-                    {/* Verify payment -> send shipping form link to cashier */}
-                    {order.STATUS === 'payment_confirmed' && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setCashierPickerOrderId(order.$id); setCashierPickerMode('shipping'); }}
-                        className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition flex items-center gap-1">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Pago verificado
+                        onClick={(e) => { e.stopPropagation(); setWaShortcutOrderId(order.$id); }}
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition flex items-center gap-1 animate-pulse"
+                        title="Notificar pago">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        Notificar
                       </button>
                     )}
                     {/* Status change button */}
@@ -2118,44 +2142,54 @@ function OrdersContent() {
         </div>
 
         {/* Desktop View: Modern Table */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/80">
-                <th className="px-4 py-3 w-8">
-                  <input type="checkbox" checked={filtered.length > 0 && selected.size === filtered.length}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Código</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Cliente</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide hidden lg:table-cell">Agencia</th>
-                <th className="text-right px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">
-                  <button onClick={() => toggleSort('total')} className="flex items-center gap-1 ml-auto hover:text-gray-700 transition">
-                    Total
-                    {sortBy === 'total' ? (sortDir === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
-                  </button>
-                </th>
-                <th className="text-center px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Estado</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">
-                  <button onClick={() => toggleSort('date')} className="flex items-center gap-1 hover:text-gray-700 transition">
-                    Fecha
-                    {sortBy === 'date' ? (sortDir === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
-                  </button>
-                </th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {isLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i}>
-                    {[1,2,3,4,5,6,7,8].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}
-                  </tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400">No se encontraron pedidos</td></tr>
-              ) : (
+        <div className="hidden sm:block">
+          {/* Toolbar: seleccionar todo + orden */}
+          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/70">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={filtered.length > 0 && selected.size === filtered.length}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
+              <span className="text-xs font-semibold text-gray-500">{selected.size > 0 ? `${selected.size} seleccionado${selected.size !== 1 ? 's' : ''}` : 'Seleccionar todo'}</span>
+            </label>
+            {/* Leyenda de origen */}
+            <div className="hidden md:flex items-center gap-3 ml-2 pl-3 border-l border-gray-200">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'linear-gradient(155deg,#25d366,#12924a)' }} /> WhatsApp
+              </span>
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'linear-gradient(155deg,#38bdf8,#0369a1)' }} /> Web
+              </span>
+            </div>
+            <div className="ml-auto flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mr-0.5">Ordenar</span>
+              <button onClick={() => toggleSort('date')}
+                className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition ${sortBy === 'date' ? 'bg-indigo-100 text-indigo-700' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                Fecha {sortBy === 'date' ? (sortDir === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+              </button>
+              <button onClick={() => toggleSort('total')}
+                className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition ${sortBy === 'total' ? 'bg-indigo-100 text-indigo-700' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                Total {sortBy === 'total' ? (sortDir === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Lista de tarjetas horizontales */}
+          <div className="p-3 space-y-2.5">
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-stretch rounded-2xl border-2 border-gray-100 overflow-hidden animate-pulse">
+                  <div className="w-[76px] bg-gray-100" />
+                  <div className="flex-1 flex items-center gap-4 px-4 py-5">
+                    <div className="h-4 w-24 bg-gray-100 rounded" />
+                    <div className="h-4 w-40 bg-gray-100 rounded" />
+                    <div className="h-4 w-20 bg-gray-100 rounded ml-auto" />
+                    <div className="h-4 w-24 bg-gray-100 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : filtered.length === 0 ? (
+              <div className="p-12 text-center text-gray-400 text-sm">No se encontraron pedidos</div>
+            ) : (
                 filtered.map(order => {
                   const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
                   const isUpdating = updatingId === order.$id;
@@ -2175,167 +2209,193 @@ function OrdersContent() {
                   const totalItems = items.reduce((s: number, it: any) => s + (it.qty || 1), 0);
                   const isRetiro = order.STATUS === 'shipped' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
                   const statusColor = isRetiro ? '#c026d3' : (STATUS_COLORS[order.STATUS]?.color || '#6b7280');
+                  // Estilo de tarjeta horizontal (solo PC)
+                  const isWa = order.PAYMENTMETHOD === 'WhatsApp';
+                  const isSel = selected.has(order.$id);
+                  const railGrad = isSel ? '#eef2ff' : isRetiro ? '#fdf4ff' : (STATUS_COLORS[order.STATUS]?.bg || '#f9fafb');
+                  const cardBorder = isSel ? '#6366f1' : isWarning ? '#f59e0b' : isOverdue ? '#ef4444' : '#e5e7eb';
+                  const cardBg = isSel ? '#eef2ff' : isRetiro ? '#fdf4ff' : (STATUS_COLORS[order.STATUS]?.bg || '#f3f4f6');
+                  const statusBg = isRetiro ? '#fdf4ff' : (STATUS_COLORS[order.STATUS]?.bg || '#f3f4f6');
+                  const statusLabel = isRetiro ? 'Retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS);
+                  const hasCanje = (() => { try { const it = JSON.parse(order.ITEMS || '[]'); const cc = (order as any).CANJE_COUNT || 0; return cc > 0 || it.some((i: any) => i.isCanjeReplacement); } catch { return false; } })();
 
                   return (
                     <React.Fragment key={order.$id}>
-                    <tr className={`hover:bg-gray-50/80 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70 hover:bg-amber-100/70' : isOverdue ? 'bg-red-50/50' : ''}`}
+                    <div
+                      className="group flex items-stretch rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer"
+                      style={{ background: cardBg }}
                       onClick={() => setDrawerOrderId(order.$id)}>
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <input type="checkbox" checked={selected.has(order.$id)}
-                          onChange={() => toggleSelect(order.$id)}
-                          className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: statusColor }} />
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <p className="font-mono text-xs text-indigo-600 font-bold">{order.ORDERCODE || '—'}</p>
-                              {order.PAYMENTMETHOD === 'WhatsApp' && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">WA</span>
-                              )}
-                              {(order as any).NIGHTORDER && (
-                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-indigo-900 text-indigo-100" title="Pedido nocturno: stock confirmado automático">🌙 Noche</span>
-                              )}
-                              {order.ASSIGNEDCASHIER && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">{order.ASSIGNEDCASHIER}</span>
-                              )}
-                            </div>
+
+                      {/* Riel de origen (WhatsApp vs Web) */}
+                      <div className="flex flex-col items-center justify-center gap-1.5 w-[76px] px-2 py-3 flex-shrink-0 relative" style={{ background: railGrad }} onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-center">
+                          {isWa ? (
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/3840px-WhatsApp.svg.png" alt="WhatsApp" className="w-14 h-14 object-contain" />
+                          ) : (
+                            <img src="https://cdn3d.iconscout.com/3d/premium/thumb/e-commerce-3d-icon-png-download-8762567.png" alt="Web" className="w-14 h-14 object-contain" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Cuerpo */}
+                      <div className="flex-1 min-w-0 flex items-stretch">
+
+                        {/* Código + items + cajera */}
+                        <div className="flex flex-col justify-center min-w-[122px] px-4 py-3" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-1.5">
+                            <input type="checkbox" checked={isSel}
+                              onChange={() => toggleSelect(order.$id)}
+                              className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer flex-shrink-0" />
+                            <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+                            <p className="font-mono text-xs text-indigo-600 font-bold">{order.ORDERCODE || '—'}</p>
+                            {(order as any).NIGHTORDER && (
+                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-indigo-900 text-indigo-100" title="Pedido nocturno: stock confirmado automático">🌙</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 pl-2.5">
                             <p className="text-[10px] text-gray-400">{totalItems} uds · {items.length} art.</p>
+                            {isWa && order.ASSIGNEDCASHIER && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">{order.ASSIGNEDCASHIER}</span>
+                            )}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="font-semibold text-gray-900 truncate max-w-[140px]">{order.CUSTOMERNAME}</p>
-                          {isWarning && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded shrink-0 border border-amber-200 animate-pulse">
-                              ⚠️ FALTAN
-                            </span>
-                          )}
-                          {order.STATUS === 'negotiation' && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded shrink-0 border border-orange-200 animate-pulse">
-                              🤝 EN CANJE
-                            </span>
-                          )}
-                          {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded shrink-0">VENCIDO</span>}
-                          {needsTracking(order) && <span className="text-[9px] font-bold px-1 py-0.5 bg-amber-500 text-white rounded shrink-0 animate-pulse">📍 SEGUIMIENTO</span>}
-                          {(order as any).PURCHASEDFROMLIVE && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-600 text-white rounded shrink-0">LIVE</span>}
-                          {(order as any).ISGIFT && <span className="text-[9px] font-bold px-1 py-0.5 bg-pink-100 text-pink-700 rounded shrink-0">🎁</span>}
-                          {(order as any).CUSTOMERNOTE && <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" title={(order as any).CUSTOMERNOTE} />}
-                          {order.adminNotes && <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" title="Tiene notas internas" />}
+
+                        {/* Cliente */}
+                        <div className="flex flex-col justify-center flex-1 min-w-0 px-4 py-3">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-gray-900 truncate max-w-[200px]">{order.CUSTOMERNAME}</p>
+                            {isWarning && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded shrink-0 border border-amber-200 animate-pulse">
+                                ⚠️ FALTAN
+                              </span>
+                            )}
+                            {order.STATUS === 'negotiation' && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded shrink-0 border border-orange-200 animate-pulse">
+                                🤝 EN CANJE
+                              </span>
+                            )}
+                            {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded shrink-0">VENCIDO</span>}
+                            {needsTracking(order) && <span className="text-[9px] font-bold px-1 py-0.5 bg-amber-500 text-white rounded shrink-0 animate-pulse">📍 SEGUIMIENTO</span>}
+                            {(order as any).PURCHASEDFROMLIVE && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-600 text-white rounded shrink-0">LIVE</span>}
+                            {(order as any).ISGIFT && <span className="text-[9px] font-bold px-1 py-0.5 bg-pink-100 text-pink-700 rounded shrink-0">🎁</span>}
+                            {(order as any).CUSTOMERNOTE && <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" title={(order as any).CUSTOMERNOTE} />}
+                            {order.adminNotes && <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" title="Tiene notas internas" />}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <p className="text-xs text-gray-500 truncate font-medium">{order.CUSTOMERPHONE || ''}</p>
+                            {order.CUSTOMERPHONE && (() => { const pc = order.CUSTOMERPHONE.replace(/\D/g, ''); const wa = pc.length === 9 ? '56' + pc : pc; return (
+                              <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 hover:bg-green-600 text-white transition shrink-0 text-xs" title="WhatsApp">
+                                💬
+                              </a>
+                            ); })()}
+                            {order.COUPONCODE && <span className="text-[9px] font-mono font-bold px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded">{order.COUPONCODE}</span>}
+                            <span className="text-[10px] text-gray-300">·</span>
+                            <span className="text-[10px] text-gray-400 truncate">{order.COMUNA || '—'}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <p className="text-xs text-gray-400">{order.CUSTOMERPHONE || ''}</p>
-                          {order.COUPONCODE && <span className="text-[9px] font-mono font-bold px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded">{order.COUPONCODE}</span>}
-                          <span className="text-[10px] text-gray-300">·</span>
-                          <span className="text-[10px] text-gray-400">{order.COMUNA || '—'}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        {order.SHIPPINGAGENCY ? (() => {
-                          const details = getAgencyDetails(order.SHIPPINGAGENCY);
-                          return (
-                            <span 
-                              style={{ 
-                                color: details?.color, 
-                                backgroundColor: details?.bg, 
-                                borderColor: details?.color + '20' 
-                              }} 
-                              className="px-2 py-0.5 rounded-lg text-xs font-bold border inline-flex items-center gap-1"
-                            >
-                              {details?.logo && (
-                                <img src={details.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />
-                              )}
-                              {details?.name}
-                            </span>
-                          );
-                        })() : <span className="text-gray-300 text-xs">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <p className="font-bold text-gray-900">{fmt(order.TOTAL)}</p>
-                        {order.PAYMENTMETHOD && <p className="text-[10px] text-gray-400 mt-0.5">{order.PAYMENTMETHOD}</p>}
-                      </td>
-                      <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-1.5 justify-center flex-wrap">
-                          {order.STATUS === 'pending_stock' && order.PAYMENTMETHOD !== 'WhatsApp' && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setCashierPickerOrderId(order.$id); setCashierPickerMode('stock'); }}
-                              className="text-[10px] font-bold px-2 py-1 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 transition flex items-center gap-1">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
-                              Cajera
-                            </button>
-                          )}
-                          {order.STATUS === 'payment_confirmed' && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setCashierPickerOrderId(order.$id); setCashierPickerMode('shipping'); }}
-                              className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition flex items-center gap-1">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                              Datos envío
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setTimelineOrderId(order.$id)}
-                            disabled={isUpdating}
-                            className="text-xs font-bold px-2.5 py-1.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 transition hover:opacity-80 inline-flex items-center gap-1.5"
-                            style={{ background: (isRetiro ? '#fdf4ff' : STATUS_COLORS[order.STATUS]?.bg) || '#f3f4f6', color: statusColor }}>
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
-                            {isRetiro ? 'Retirar' : (SHORT_LABEL[order.STATUS] || STATUS_CONFIG[order.STATUS]?.label || order.STATUS)}
+
+                        {/* Estado — centrado, click para cambiar */}
+                        <div className="flex flex-col items-center justify-center min-w-[180px] px-4 py-3" onClick={e => { e.stopPropagation(); setTimelineOrderId(order.$id); }}>
+                          <button className="text-sm font-bold px-5 py-2 rounded-full text-center whitespace-nowrap cursor-pointer hover:opacity-90 transition text-white" style={{ background: statusColor }} title="Cambiar estado">
+                            {statusLabel}
                           </button>
-                          {(() => { try { const it = JSON.parse(order.ITEMS || '[]'); const cc = (order as any).CANJE_COUNT || 0; const hasCanje = it.some((i: any) => i.isCanjeReplacement); return (cc > 0 || hasCanje); } catch { return false; } })() && (
+                        </div>
+
+                        {/* Agencia */}
+                        <div className="hidden xl:flex flex-col justify-center min-w-[116px] px-4 py-3">
+                          {order.SHIPPINGAGENCY ? (() => {
+                            const details = getAgencyDetails(order.SHIPPINGAGENCY);
+                            return (
+                              <span
+                                style={{
+                                  color: details?.color,
+                                  backgroundColor: details?.bg,
+                                  borderColor: (details?.color || '') + '20'
+                                }}
+                                className="px-2 py-0.5 rounded-lg text-xs font-bold border inline-flex items-center gap-1"
+                              >
+                                {details?.logo && (
+                                  <img src={details.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />
+                                )}
+                                {details?.name}
+                              </span>
+                            );
+                          })() : <span className="text-gray-300 text-xs">—</span>}
+                        </div>
+
+                        {/* Total */}
+                        <div className="flex flex-col justify-center items-end min-w-[104px] px-4 py-3">
+                          <p className="font-extrabold text-gray-900 text-[15px] leading-tight">{fmt(order.TOTAL)}</p>
+                        </div>
+
+                        {/* Acciones */}
+                        <div className="flex items-center justify-center gap-1.5 px-4 py-3" onClick={e => e.stopPropagation()}>
+                          {order.STATUS === 'paid' && !isWa && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setWaShortcutOrderId(order.$id); }}
+                              className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition flex items-center gap-1 text-[11px] font-bold animate-pulse"
+                              title="Notificar pago">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                              Notificar
+                            </button>
+                          )}
+                          {hasCanje && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 whitespace-nowrap">
                               🎁 Canje
                             </span>
                           )}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-xs text-gray-600 font-medium">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          <span className={`font-semibold ${ageH < 3 ? 'text-indigo-500' : ageH < 24 ? 'text-gray-400' : 'text-gray-300'}`}>{ageStr}</span>
-                          {pendingAgeStr && <span className={`block font-bold ${ageD >= 3 ? 'text-red-600' : 'text-orange-500'}`}>{pendingAgeStr}</span>}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <button onClick={async () => {
-                          const newId = expandedOrderId === order.$id ? null : order.$id;
-                          setExpandedOrderId(newId);
-                          // Fetch product locations for this order
-                          if (newId) {
-                            try {
-                              let items: { id?: string }[] = [];
-                              try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
-                              const ids = items.map(i => i.id).filter(Boolean) as string[];
-                              if (ids.length > 0) {
-                                const { databases } = getServices();
-                                const { databaseId } = getAppwriteConfig();
-                                const locs: Record<string, { section: number | null; gondola: string | null }> = { ...productLocations };
-                                for (const pid of ids) {
-                                  if (locs[pid]) continue; // already cached
-                                  try {
-                                    const doc: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-                                    const wh = getWarehouseLocationFromFeatures(doc.FEATURES);
-                                    locs[pid] = { section: wh.section, gondola: wh.gondola };
-                                  } catch { locs[pid] = { section: null, gondola: null }; }
+
+                        {/* Fecha / antigüedad */}
+                        <div className="flex flex-col justify-center min-w-[110px] px-4 py-3">
+                          <p className="text-sm text-gray-700 font-bold">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</p>
+                          <p className="text-xs mt-0.5">
+                            <span className={`font-bold ${ageH < 3 ? 'text-indigo-500' : ageH < 24 ? 'text-gray-500' : 'text-gray-400'}`}>{ageStr}</span>
+                            {pendingAgeStr && <span className={`block font-bold ${ageD >= 3 ? 'text-red-600' : 'text-orange-500'}`}>{pendingAgeStr}</span>}
+                          </p>
+                        </div>
+
+                        {/* Ver productos */}
+                        <div className="flex items-center px-3 py-3" onClick={e => e.stopPropagation()}>
+                          <button onClick={async () => {
+                            const newId = expandedOrderId === order.$id ? null : order.$id;
+                            setExpandedOrderId(newId);
+                            // Fetch product locations for this order
+                            if (newId) {
+                              try {
+                                let items: { id?: string }[] = [];
+                                try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
+                                const ids = items.map(i => i.id).filter(Boolean) as string[];
+                                if (ids.length > 0) {
+                                  const { databases } = getServices();
+                                  const { databaseId } = getAppwriteConfig();
+                                  const locs: Record<string, { section: number | null; gondola: string | null }> = { ...productLocations };
+                                  for (const pid of ids) {
+                                    if (locs[pid]) continue; // already cached
+                                    try {
+                                      const doc: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
+                                      const wh = getWarehouseLocationFromFeatures(doc.FEATURES);
+                                      locs[pid] = { section: wh.section, gondola: wh.gondola };
+                                    } catch { locs[pid] = { section: null, gondola: null }; }
+                                  }
+                                  setProductLocations(locs);
                                 }
-                                setProductLocations(locs);
-                              }
-                            } catch {}
-                          }
-                        }}
-                          className={`p-1.5 rounded-lg transition-colors inline-flex ${expandedOrderId === order.$id ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600'}`}>
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
+                              } catch {}
+                            }
+                          }}
+                            className={`p-1.5 rounded-lg transition-colors inline-flex text-xs ${expandedOrderId === order.$id ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600'}`}>
+                            📦
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     {expandedOrderId === order.$id && (() => {
                       let items: {name:string;qty:number;price:number;total:number;img?:string}[] = [];
                       try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
                       const note = (order as any).CUSTOMERNOTE;
                       const gift = (order as any).ISGIFT;
                       return (
-                        <tr className="bg-gray-50/50">
-                          <td colSpan={8} className="px-6 py-4">
+                        <div className="mx-1 -mt-1.5 mb-0.5 rounded-b-2xl border-2 border-t-0 px-5 py-4" style={{ borderColor: cardBorder, background: '#f9fafb' }}>
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                               {/* Items */}
                               <div className="lg:col-span-2">
@@ -2391,67 +2451,66 @@ function OrdersContent() {
                                 )}
                               </div>
                             </div>
-                          </td>
-                        </tr>
+                        </div>
                       );
                     })()}
                     </React.Fragment>
                   );
                 })
               )}
-            </tbody>
-            {filtered.length > 0 && !isLoading && (() => {
-              const totalSum = filtered.reduce((s, o) => s + o.TOTAL, 0);
-              const subtotalSum = filtered.reduce((s, o) => s + (o.SUBTOTAL || o.TOTAL), 0);
-              const shippingSum = filtered.reduce((s, o) => s + (o.SHIPPINGCOST || 0), 0);
-              const paidOrders = filtered.filter(o => ['paid','processing','shipped','delivered'].includes(o.STATUS));
-              const avgTicket = paidOrders.length > 0 ? Math.round(paidOrders.reduce((s,o)=>s+o.TOTAL,0)/paidOrders.length) : 0;
-              const couponDiscount = filtered.reduce((s, o) => s + (o.DISCOUNTAMOUNT || 0), 0);
-              return (
-                <tfoot>
-                  <tr className="border-t-2 border-gray-200 bg-gray-50">
-                    <td colSpan={2} className="px-4 py-3 text-xs font-semibold text-gray-500">
-                      <p>{filtered.length} pedido{filtered.length !== 1 ? 's' : ''}</p>
-                      {(() => {
-                        const byCustomer: Record<string, { name: string; total: number }> = {};
-                        for (const o of filtered) {
-                          const key = o.CUSTOMERRUT || o.CUSTOMERNAME || 'anon';
-                          if (!byCustomer[key]) byCustomer[key] = { name: o.CUSTOMERNAME || key, total: 0 };
-                          byCustomer[key].total += o.TOTAL;
-                        }
-                        const top = Object.values(byCustomer).sort((a, b) => b.total - a.total)[0];
-                        return top && Object.keys(byCustomer).length > 1 ? (
-                          <p className="text-[10px] text-gray-400 mt-0.5 font-normal truncate max-w-[120px]">
-                            Top: {top.name.split(' ')[0]} {fmt(top.total)}
-                          </p>
-                        ) : null;
-                      })()}
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell" />
-                    <td className="px-4 py-3 text-right">
-                      <p className="font-bold text-gray-900">{fmt(totalSum)}</p>
-                      {shippingSum > 0 && (
-                        <p className="text-[10px] text-gray-400">{fmt(subtotalSum)} + {fmt(shippingSum)} env.</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center text-xs text-gray-400">
-                      {fmt(paidOrders.reduce((s, o) => s + o.TOTAL, 0))} pagados
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-400">
-                      {avgTicket > 0 && <p>{`∅ ${fmt(avgTicket)}`}</p>}
-                      {couponDiscount > 0 && <p className="text-emerald-600">-{fmt(couponDiscount)} cupones</p>}
-                      {(() => {
-                        const totalItems = filtered.reduce((s, o) => { try { return s + (JSON.parse(o.ITEMS || '[]') as any[]).reduce((a: number, i: any) => a + (i.quantity || 1), 0); } catch { return s; } }, 0);
-                        const avgItems = filtered.length > 0 ? (totalItems / filtered.length).toFixed(1) : null;
-                        return avgItems ? <p className="text-gray-400">∅ {avgItems} art./pedido</p> : null;
-                      })()}
-                    </td>
-                    <td className="hidden" />
-                  </tr>
-                </tfoot>
-              );
-            })()}
-          </table>
+          </div>
+          {/* Barra resumen (PC) */}
+          {filtered.length > 0 && !isLoading && (() => {
+            const totalSum = filtered.reduce((s, o) => s + o.TOTAL, 0);
+            const subtotalSum = filtered.reduce((s, o) => s + (o.SUBTOTAL || o.TOTAL), 0);
+            const shippingSum = filtered.reduce((s, o) => s + (o.SHIPPINGCOST || 0), 0);
+            const paidOrders = filtered.filter(o => ['paid','processing','shipped','delivered'].includes(o.STATUS));
+            const avgTicket = paidOrders.length > 0 ? Math.round(paidOrders.reduce((s,o)=>s+o.TOTAL,0)/paidOrders.length) : 0;
+            const couponDiscount = filtered.reduce((s, o) => s + (o.DISCOUNTAMOUNT || 0), 0);
+            const byCustomer: Record<string, { name: string; total: number }> = {};
+            for (const o of filtered) {
+              const key = o.CUSTOMERRUT || o.CUSTOMERNAME || 'anon';
+              if (!byCustomer[key]) byCustomer[key] = { name: o.CUSTOMERNAME || key, total: 0 };
+              byCustomer[key].total += o.TOTAL;
+            }
+            const top = Object.values(byCustomer).sort((a, b) => b.total - a.total)[0];
+            const totalItems = filtered.reduce((s, o) => { try { return s + (JSON.parse(o.ITEMS || '[]') as any[]).reduce((a: number, i: any) => a + (i.quantity || 1), 0); } catch { return s; } }, 0);
+            const avgItems = filtered.length > 0 ? (totalItems / filtered.length).toFixed(1) : null;
+            return (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5 border-t-2 border-gray-200 bg-gray-50">
+                <div>
+                  <p className="text-sm font-bold text-gray-700">{filtered.length} pedido{filtered.length !== 1 ? 's' : ''}</p>
+                  {top && Object.keys(byCustomer).length > 1 && (
+                    <p className="text-[10px] text-gray-400 mt-0.5 font-normal truncate max-w-[160px]">Top: {top.name.split(' ')[0]} {fmt(top.total)}</p>
+                  )}
+                </div>
+                <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-1 text-right">
+                  {avgTicket > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Ticket ∅</p>
+                      <p className="text-sm font-semibold text-gray-600">{fmt(avgTicket)}</p>
+                    </div>
+                  )}
+                  {avgItems && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Art./pedido</p>
+                      <p className="text-sm font-semibold text-gray-600">∅ {avgItems}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Pagados</p>
+                    <p className="text-sm font-semibold text-gray-600">{fmt(paidOrders.reduce((s, o) => s + o.TOTAL, 0))}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Total</p>
+                    <p className="text-base font-extrabold text-gray-900">{fmt(totalSum)}</p>
+                    {shippingSum > 0 && <p className="text-[10px] text-gray-400">{fmt(subtotalSum)} + {fmt(shippingSum)} env.</p>}
+                    {couponDiscount > 0 && <p className="text-[10px] text-emerald-600">-{fmt(couponDiscount)} cupones</p>}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
         
         <EpicPagination

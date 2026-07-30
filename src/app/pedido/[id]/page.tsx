@@ -46,8 +46,8 @@ function getBankDetails(): Record<string, string> {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  pending:            { label: 'Recibido',            color: '#b45309', bg: '#fffbeb' },
-  pending_stock:      { label: 'Recibido',            color: '#b45309', bg: '#fffbeb' },
+  pending:            { label: 'Comprobando Stock',   color: '#1558b0', bg: '#e8f0fe' },
+  pending_stock:      { label: 'Comprobando Stock',   color: '#1558b0', bg: '#e8f0fe' },
   processing:         { label: 'Comprobando Stock',   color: '#1558b0', bg: '#e8f0fe' },
   paid:               { label: 'Stock confirmado',    color: '#166534', bg: '#f0fdf4' },
   payment_review:     { label: 'Revisando Pago',      color: '#1d4ed8', bg: '#eff6ff' },
@@ -60,13 +60,13 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
 
 const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertType: 'warning' | 'info' | 'success' | 'indigo' | 'danger' }> = {
   pending: {
-    title: 'Pedido Recibido',
-    desc: 'Hemos recibido tu pedido. Nuestro equipo está revisando el stock de los productos. Te avisaremos en cuanto esté confirmado.',
-    alertType: 'warning'
+    title: 'Comprobando Stock',
+    desc: 'Estamos revisando el stock de tu pedido. Te confirmaremos en unos momentos por WhatsApp y en esta página.',
+    alertType: 'info'
   },
   pending_stock: {
-    title: 'Pedido Recibido',
-    desc: 'Hemos recibido tu pedido. Nuestro equipo está revisando el stock de los productos. Te avisaremos en cuanto esté confirmado.',
+    title: 'Comprobando Stock',
+    desc: 'Estamos revisando el stock de tu pedido. Te confirmaremos en unos momentos por WhatsApp y en esta página.',
     alertType: 'info'
   },
   processing: {
@@ -933,7 +933,7 @@ export default function PedidoPage() {
     ? { label: 'Listo para retirar', color: '#a21caf', bg: '#fae8ff' }
     : (STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#333', bg: '#f5f5f5' });
   const showTimer = isStockConfirmed && order.EXPIRESAT && !uploaded;
-  const isSuccess = uploaded || (order.STATUS !== 'pending' && order.STATUS !== 'pending_stock' && order.STATUS !== 'processing' && order.STATUS !== 'payment_review');
+  const isSuccess = uploaded || ['paid', 'payment_confirmed', 'shipped', 'delivered'].includes(order.STATUS);
   const customerEditCount = getCustomerEditCount(order);
   const canCustomerModify = !['paid', 'payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS) && order.STATUS !== 'pending_stock';
   // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
@@ -975,7 +975,7 @@ export default function PedidoPage() {
                 : <Clock size={38} className="text-blue-600" strokeWidth={2.2} />}
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
-              {isSuccess ? '¡Pedido confirmado!' : '¡Pedido recibido!'}
+              {isSuccess ? '¡Pedido confirmado!' : '¡Comprobando Stock!'}
             </h1>
             <p className="text-sm text-gray-500 mt-1.5">Código: <strong className="text-gray-900 font-bold">{order.ORDERCODE}</strong></p>
             <div className="mt-3">
@@ -1048,7 +1048,6 @@ export default function PedidoPage() {
           const useWholesaleTimeline = isWholesale;
           const steps = useWholesaleTimeline
             ? [
-                { key: 'pending',            label: 'Recibido',          icon: <Clock size={15} /> },
                 { key: 'processing',         label: 'Comprobando Stock', icon: <Upload size={15} /> },
                 { key: 'paid',               label: 'Stock Confirmado',  icon: <CheckCircle size={15} /> },
                 { key: 'payment_review',     label: 'Revisando Pago',    icon: <Upload size={15} /> },

@@ -29,8 +29,9 @@ const EMOJI: Record<string, string> = {
 export default function Navbar23() {
   const pathname = usePathname();
   const { totalItems } = useCart();
-  const { stockConfirmedCount, firstOrderId, firstOrderStatus } = useStockConfirmedOrders();
+  const { stockConfirmedCount, firstOrderId, firstOrderStatus, firstUpdatedAt, shippedCount, shippedOrderId, shippedStatus, shippedUpdatedAt } = useStockConfirmedOrders();
   const [dismissedConfirmed, setDismissedConfirmed] = useState(false);
+  const [dismissedShipped, setDismissedShipped] = useState(false);
   const [cats, setCats] = useState<Category[]>([]);
   const [subs, setSubs] = useState<Subcategory[]>([]);
   const [catCounts, setCatCounts] = useState<Record<string, number>>({});
@@ -40,17 +41,30 @@ export default function Navbar23() {
 
   useEffect(() => {
     if (firstOrderId && firstOrderStatus === 'payment_confirmed') {
-      const dismissed = localStorage.getItem(`pay_confirmed_${firstOrderId}`);
+      const dismissed = localStorage.getItem(`pay_confirmed_${firstOrderId}_${firstUpdatedAt}`);
       setDismissedConfirmed(dismissed === '1');
     } else {
       setDismissedConfirmed(false);
     }
-  }, [firstOrderId, firstOrderStatus]);
+    if (shippedOrderId && (shippedStatus === 'shipped' || shippedStatus === 'delivered')) {
+      const dismissed = localStorage.getItem(`ship_notified_${shippedOrderId}_${shippedUpdatedAt}`);
+      setDismissedShipped(dismissed === '1');
+    } else {
+      setDismissedShipped(false);
+    }
+  }, [firstOrderId, firstOrderStatus, firstUpdatedAt, shippedOrderId, shippedStatus, shippedUpdatedAt]);
 
   const handleConfirmedClick = () => {
     if (firstOrderId) {
-      localStorage.setItem(`pay_confirmed_${firstOrderId}`, '1');
+      localStorage.setItem(`pay_confirmed_${firstOrderId}_${firstUpdatedAt}`, '1');
       setDismissedConfirmed(true);
+    }
+  };
+
+  const handleShippedClick = () => {
+    if (shippedOrderId) {
+      localStorage.setItem(`ship_notified_${shippedOrderId}_${shippedUpdatedAt}`, '1');
+      setDismissedShipped(true);
     }
   };
 
@@ -216,6 +230,11 @@ export default function Navbar23() {
             className={`nb23-tab nb23-stock-tab${firstOrderStatus === 'payment_review' ? ' nb23-stock-tab--review' : ''}${firstOrderStatus === 'payment_confirmed' ? ' nb23-stock-tab--confirmed' : ''}`}
             onClick={firstOrderStatus === 'payment_confirmed' ? handleConfirmedClick : undefined}
           >
+            <span className="nb23-stock-tab-particles">
+              <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
+              <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
+            </span>
+            <span className="ck-shimmer-line" />
             <span className="nb23-stock-tab-inner">
               <span className="nb23-stock-tab-icon">
                 {firstOrderStatus === 'payment_review' ? (
@@ -230,6 +249,35 @@ export default function Navbar23() {
                 )}
               </span>
               <span className="nb23-stock-tab-text">{firstOrderStatus === 'payment_confirmed' ? 'Pago confirmado' : firstOrderStatus === 'payment_review' ? 'Revisando tu pago' : 'Pagar tu pedido'}</span>
+            </span>
+          </Link>
+        ) : shippedCount > 0 && shippedOrderId && !dismissedShipped ? (
+          <Link
+            href={`/pedido/${shippedOrderId}`}
+            className={`nb23-tab nb23-stock-tab nb23-stock-tab--shipped${shippedStatus === 'delivered' ? ' nb23-stock-tab--delivered' : ''}`}
+            onClick={handleShippedClick}
+          >
+            <span className="nb23-stock-tab-particles">
+              <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
+              <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
+            </span>
+            <span className="ck-shimmer-line" />
+            <span className="nb23-stock-tab-inner">
+              <span className="nb23-stock-tab-icon">
+                {shippedStatus === 'delivered' ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 17h4V5H2v12h3" /><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5" />
+                    <circle cx="7.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 16V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                    <path d="M14 19a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2" />
+                    <path d="M18 19V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v2" />
+                  </svg>
+                )}
+              </span>
+              <span className="nb23-stock-tab-text">{shippedStatus === 'delivered' ? 'Entregado a agencia' : 'Pedido embalado'}</span>
             </span>
           </Link>
         ) : (
@@ -288,9 +336,10 @@ export default function Navbar23() {
         }
         .nb23-stock-tab-inner {
           display: flex; align-items: center; gap: 6px; padding: 8px 14px;
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #f59e0b 100%);
+          background-size: 300% 300% !important;
           border-radius: 999px; box-shadow: 0 4px 14px rgba(245,158,11,0.35);
-          animation: nb23-stock-tab-pulse 1.8s ease-in-out infinite;
+          animation: nb23-stock-tab-pulse 1.8s ease-in-out infinite, ckBtnShift 3s ease infinite;
           white-space: nowrap; overflow: hidden;
         }
         .nb23-stock-tab-icon {
@@ -307,7 +356,7 @@ export default function Navbar23() {
           50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(245,158,11,0.5); }
         }
         .nb23-stock-tab--review .nb23-stock-tab-inner {
-          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #2563eb 100%);
           box-shadow: 0 4px 14px rgba(37,99,235,0.35);
           animation: nb23-stock-tab-pulse-review 1.8s ease-in-out infinite;
         }
@@ -316,7 +365,7 @@ export default function Navbar23() {
           50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(37,99,235,0.5); }
         }
         .nb23-stock-tab--confirmed .nb23-stock-tab-inner {
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #22c55e 100%);
           box-shadow: 0 4px 14px rgba(22,163,74,0.35);
           animation: nb23-stock-tab-pulse-confirmed 1.8s ease-in-out infinite;
         }
@@ -324,8 +373,60 @@ export default function Navbar23() {
           0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(22,163,74,0.35); }
           50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(22,163,74,0.5); }
         }
+        .nb23-stock-tab--shipped .nb23-stock-tab-inner {
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #8b5cf6 100%);
+          box-shadow: 0 4px 14px rgba(139,92,246,0.35);
+          animation: nb23-stock-tab-pulse-shipped 1.8s ease-in-out infinite;
+        }
+        @keyframes nb23-stock-tab-pulse-shipped {
+          0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
+          50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(139,92,246,0.5); }
+        }
+        .nb23-stock-tab--delivered .nb23-stock-tab-inner {
+          background: linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #0891b2 100%);
+          box-shadow: 0 4px 14px rgba(8,145,178,0.35);
+          animation: nb23-stock-tab-pulse-delivered 1.8s ease-in-out infinite;
+        }
+        @keyframes nb23-stock-tab-pulse-delivered {
+          0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(8,145,178,0.35); }
+          50% { transform: scale(1.05); box-shadow: 0 6px 22px rgba(8,145,178,0.5); }
+        }
+        /* ── Particles for stock tab ── */
+        .nb23-stock-tab { position: relative; overflow: hidden; }
+        .nb23-stock-tab-inner { position: relative; z-index: 2; }
+        .nb23-stock-tab-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+        .nb23-stock-tab .ck-shimmer-line {
+          position: absolute; top: 0; bottom: 0; width: 40%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          animation: ckShimmer 2.5s ease-in-out infinite;
+          pointer-events: none; z-index: 1;
+        }
+        .nb23-stock-tab .ck-orb {
+          position: absolute; border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1));
+          box-shadow: 0 0 6px rgba(255,255,255,0.5);
+          animation: ckOrbFloat 2.8s ease-in-out infinite;
+        }
+        .nb23-stock-tab .ck-orb:nth-child(1) { width: 6px; height: 6px; left: 10%; bottom: 3px; animation-delay: 0s; }
+        .nb23-stock-tab .ck-orb:nth-child(2) { width: 4px; height: 4px; left: 25%; bottom: 2px; animation-delay: 0.4s; }
+        .nb23-stock-tab .ck-orb:nth-child(3) { width: 7px; height: 7px; left: 40%; bottom: 4px; animation-delay: 0.8s; }
+        .nb23-stock-tab .ck-orb:nth-child(4) { width: 5px; height: 5px; left: 60%; bottom: 3px; animation-delay: 1.2s; }
+        .nb23-stock-tab .ck-orb:nth-child(5) { width: 6px; height: 6px; left: 80%; bottom: 2px; animation-delay: 1.6s; }
+        .nb23-stock-tab .ck-sparkle {
+          position: absolute; width: 4px; height: 4px; background: white;
+          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+          animation: ckSparkle 2s ease-in-out infinite;
+          filter: drop-shadow(0 0 3px rgba(255,255,255,0.8));
+        }
+        .nb23-stock-tab .ck-sparkle:nth-child(6) { left: 20%; top: 25%; animation-delay: 0s; }
+        .nb23-stock-tab .ck-sparkle:nth-child(7) { left: 50%; top: 15%; animation-delay: 0.7s; width: 5px; height: 5px; }
+        .nb23-stock-tab .ck-sparkle:nth-child(8) { left: 75%; top: 35%; animation-delay: 1.4s; }
+        @keyframes ckBtnShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes ckOrbFloat { 0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; } 10% { opacity: 0.9; } 50% { transform: translateY(-18px) translateX(6px) scale(1.3); opacity: 1; } 90% { opacity: 0.6; } 100% { transform: translateY(-36px) translateX(-3px) scale(0.5); opacity: 0; } }
+        @keyframes ckSparkle { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 20% { transform: scale(1.2) rotate(90deg); opacity: 1; } 50% { transform: scale(0.8) rotate(180deg); opacity: 0.8; } 80% { transform: scale(1.1) rotate(270deg); opacity: 0.5; } 100% { transform: scale(0) rotate(360deg); opacity: 0; } }
+        @keyframes ckShimmer { 0% { left: -40%; } 100% { left: 110%; } }
 
-        /* â”€â”€ DESKTOP â”€â”€ */
+        /* ?? DESKTOP ?? */
         .nb23-pc { display: none; }
         @media (min-width: 993px) {
           .nb23-pc {

@@ -28,12 +28,22 @@ export function useStockConfirmedOrders() {
   const [stockConfirmedCount, setStockConfirmedCount] = useState(0);
   const [firstOrderId, setFirstOrderId] = useState<string | null>(null);
   const [firstOrderStatus, setFirstOrderStatus] = useState<string | null>(null);
+  const [shippedCount, setShippedCount] = useState(0);
+  const [shippedOrderId, setShippedOrderId] = useState<string | null>(null);
+  const [shippedStatus, setShippedStatus] = useState<string | null>(null);
+  const [firstUpdatedAt, setFirstUpdatedAt] = useState<number | null>(null);
+  const [shippedUpdatedAt, setShippedUpdatedAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (isLoading || !isLoggedIn || !user?.id) {
       setStockConfirmedCount(0);
       setFirstOrderId(null);
       setFirstOrderStatus(null);
+      setShippedCount(0);
+      setShippedOrderId(null);
+      setShippedStatus(null);
+      setFirstUpdatedAt(null);
+      setShippedUpdatedAt(null);
       return;
     }
 
@@ -52,12 +62,22 @@ export function useStockConfirmedOrders() {
           setStockConfirmedCount(data.count || 0);
           setFirstOrderId(data.firstOrderId ?? null);
           setFirstOrderStatus(data.firstOrderStatus ?? null);
+          setShippedCount(data.shippedCount || 0);
+          setShippedOrderId(data.shippedOrderId ?? null);
+          setShippedStatus(data.shippedStatus ?? null);
+          setFirstUpdatedAt(data.firstUpdatedAt ?? null);
+          setShippedUpdatedAt(data.shippedUpdatedAt ?? null);
         }
       } catch {
         if (active) {
           setStockConfirmedCount(0);
           setFirstOrderId(null);
           setFirstOrderStatus(null);
+          setShippedCount(0);
+          setShippedOrderId(null);
+          setShippedStatus(null);
+          setFirstUpdatedAt(null);
+          setShippedUpdatedAt(null);
         }
       }
     };
@@ -71,5 +91,5 @@ export function useStockConfirmedOrders() {
     };
   }, [isLoggedIn, isLoading, user?.id, user?.email]);
 
-  return { stockConfirmedCount, firstOrderId, firstOrderStatus };
+  return { stockConfirmedCount, firstOrderId, firstOrderStatus, firstUpdatedAt, shippedCount, shippedOrderId, shippedStatus, shippedUpdatedAt };
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Store, ShoppingBag, User, Heart, CheckCircle, ChevronRight, Clock } from 'lucide-react';
+import { Home, Store, ShoppingBag, User, Heart, CheckCircle, ChevronRight, Clock, Package, Truck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useStockConfirmedOrders } from '@/hooks/useStockConfirmedOrders';
 
@@ -28,23 +28,36 @@ function isItemActive(href: string, pathname: string): boolean {
 export default function GlobalMobileNav() {
   const pathname = usePathname();
   const { totalItems } = useCart();
-  const { stockConfirmedCount, firstOrderId, firstOrderStatus } = useStockConfirmedOrders();
+  const { stockConfirmedCount, firstOrderId, firstOrderStatus, firstUpdatedAt, shippedCount, shippedOrderId, shippedStatus, shippedUpdatedAt } = useStockConfirmedOrders();
   const [dismissedConfirmed, setDismissedConfirmed] = useState(false);
+  const [dismissedShipped, setDismissedShipped] = useState(false);
 
   useEffect(() => {
     if (firstOrderId && firstOrderStatus === 'payment_confirmed') {
-      const dismissed = localStorage.getItem(`pay_confirmed_${firstOrderId}`);
-      if (dismissed === '1') setDismissedConfirmed(true);
-      else setDismissedConfirmed(false);
+      const dismissed = localStorage.getItem(`pay_confirmed_${firstOrderId}_${firstUpdatedAt}`);
+      setDismissedConfirmed(dismissed === '1');
     } else {
       setDismissedConfirmed(false);
     }
-  }, [firstOrderId, firstOrderStatus]);
+    if (shippedOrderId && (shippedStatus === 'shipped' || shippedStatus === 'delivered')) {
+      const dismissed = localStorage.getItem(`ship_notified_${shippedOrderId}_${shippedUpdatedAt}`);
+      setDismissedShipped(dismissed === '1');
+    } else {
+      setDismissedShipped(false);
+    }
+  }, [firstOrderId, firstOrderStatus, firstUpdatedAt, shippedOrderId, shippedStatus, shippedUpdatedAt]);
 
-  const handleConfirmedClick = (e: React.MouseEvent) => {
+  const handleConfirmedClick = () => {
     if (firstOrderId) {
-      localStorage.setItem(`pay_confirmed_${firstOrderId}`, '1');
+      localStorage.setItem(`pay_confirmed_${firstOrderId}_${firstUpdatedAt}`, '1');
       setDismissedConfirmed(true);
+    }
+  };
+
+  const handleShippedClick = () => {
+    if (shippedOrderId) {
+      localStorage.setItem(`ship_notified_${shippedOrderId}_${shippedUpdatedAt}`, '1');
+      setDismissedShipped(true);
     }
   };
 
@@ -65,6 +78,10 @@ export default function GlobalMobileNav() {
   const isPaymentConfirmed = firstOrderStatus === 'payment_confirmed';
   const showPayButton = stockConfirmedCount > 0 && !!firstOrderId && !inAccount && !(isPaymentConfirmed && dismissedConfirmed);
 
+  const isShipped = shippedStatus === 'shipped';
+  const isDelivered = shippedStatus === 'delivered';
+  const showShippedButton = shippedCount > 0 && !!shippedOrderId && !inAccount && !dismissedShipped;
+
   return (
     <>
       {/* Cinta de pago — solo modo PC (arriba, encima del navbar) */}
@@ -74,12 +91,40 @@ export default function GlobalMobileNav() {
           href={`/pedido/${firstOrderId}`}
           onClick={isPaymentConfirmed ? handleConfirmedClick : undefined}
         >
+          <span className="global-pay-ribbon__particles">
+            <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
+            <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
+            <span className="ck-trail" /><span className="ck-trail" /><span className="ck-trail" />
+          </span>
+          <span className="ck-shimmer-line" />
           <span className="global-pay-ribbon__inner">
             {isPaymentConfirmed ? <CheckCircle aria-hidden="true" size={18} strokeWidth={2.4} /> : isPaymentReview ? <Clock aria-hidden="true" size={18} strokeWidth={2.4} /> : <CheckCircle aria-hidden="true" size={18} strokeWidth={2.4} />}
             <span><strong>{isPaymentConfirmed ? '¡Pago confirmado!' : isPaymentReview ? 'Revisando tu pago' : 'Pagar tu pedido'}</strong> {isPaymentConfirmed ? 'Tu pago fue verificado con éxito. Estamos preparando tu envío.' : isPaymentReview ? 'Hemos recibido tu comprobante, estamos verificando.' : 'Completa la transferencia para que preparemos tu envío.'}</span>
             {stockConfirmedCount > 1 && !isPaymentConfirmed && (
               <span className="global-pay-ribbon__count">{stockConfirmedCount}</span>
             )}
+            <ChevronRight aria-hidden="true" size={18} strokeWidth={2.4} />
+          </span>
+        </Link>
+      )}
+
+      {/* Cinta de envío — solo modo PC (debajo de la cinta de pago) */}
+      {showShippedButton && (
+        <Link
+          className={`global-pay-ribbon global-pay-ribbon--shipped${isDelivered ? ' global-pay-ribbon--delivered' : ''}`}
+          href={`/pedido/${shippedOrderId}`}
+          onClick={handleShippedClick}
+          style={{ top: showPayButton ? '44px' : '0px' }}
+        >
+          <span className="global-pay-ribbon__particles">
+            <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
+            <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
+            <span className="ck-trail" /><span className="ck-trail" /><span className="ck-trail" />
+          </span>
+          <span className="ck-shimmer-line" />
+          <span className="global-pay-ribbon__inner">
+            {isDelivered ? <Truck aria-hidden="true" size={18} strokeWidth={2.4} /> : <Package aria-hidden="true" size={18} strokeWidth={2.4} />}
+            <span><strong>{isDelivered ? '¡Entregado a la agencia!' : '¡Pedido embalado!'}</strong> {isDelivered ? 'Tu pedido fue entregado a la agencia de transporte.' : 'Tu pedido fue embalado y está listo para despacho.'}</span>
             <ChevronRight aria-hidden="true" size={18} strokeWidth={2.4} />
           </span>
         </Link>
@@ -97,8 +142,35 @@ export default function GlobalMobileNav() {
                 href={`/pedido/${firstOrderId}`}
                 onClick={isPaymentConfirmed ? handleConfirmedClick : undefined}
               >
-                {isPaymentConfirmed ? <CheckCircle aria-hidden="true" size={18} strokeWidth={2.4} /> : isPaymentReview ? <Clock aria-hidden="true" size={18} strokeWidth={2.4} /> : <CheckCircle aria-hidden="true" size={18} strokeWidth={2.4} />}
-                <span>{isPaymentConfirmed ? 'Pago confirmado' : isPaymentReview ? 'Revisando tu pago' : 'Pagar tu pedido'}</span>
+                <span className="global-mobile-nav__pay-particles">
+                  <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
+                  <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
+                </span>
+                <span className="ck-shimmer-line" />
+                <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {isPaymentConfirmed ? <CheckCircle aria-hidden="true" size={18} strokeWidth={2.4} /> : isPaymentReview ? <Clock aria-hidden="true" size={18} strokeWidth={2.4} /> : <CheckCircle aria-hidden="true" size={18} strokeWidth={2.4} />}
+                  <span>{isPaymentConfirmed ? 'Pago confirmado' : isPaymentReview ? 'Revisando tu pago' : 'Pagar tu pedido'}</span>
+                </span>
+              </Link>
+            );
+          }
+          if (label === 'Cuenta' && showShippedButton) {
+            return (
+              <Link
+                key="ship"
+                className={`global-mobile-nav__pay global-mobile-nav__pay--shipped${isDelivered ? ' global-mobile-nav__pay--delivered' : ''}`}
+                href={`/pedido/${shippedOrderId}`}
+                onClick={handleShippedClick}
+              >
+                <span className="global-mobile-nav__pay-particles">
+                  <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
+                  <span className="ck-sparkle" /><span className="ck-sparkle" /><span className="ck-sparkle" />
+                </span>
+                <span className="ck-shimmer-line" />
+                <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {isDelivered ? <Truck aria-hidden="true" size={18} strokeWidth={2.4} /> : <Package aria-hidden="true" size={18} strokeWidth={2.4} />}
+                  <span>{isDelivered ? 'Entregado a agencia' : 'Pedido embalado'}</span>
+                </span>
               </Link>
             );
           }
@@ -123,8 +195,10 @@ export default function GlobalMobileNav() {
         })}
       </nav>
 
-      {/* En PC, reservar espacio arriba para la cinta fija */}
-      {showPay && <style>{`@media (min-width: 900px) { body { padding-top: 44px !important; } }`}</style>}
+      {/* En PC, reservar espacio arriba para la(s) cinta(s) fija(s) */}
+      {showPay && showShippedButton && <style>{`@media (min-width: 900px) { body { padding-top: 88px !important; } }`}</style>}
+      {showPay && !showShippedButton && <style>{`@media (min-width: 900px) { body { padding-top: 44px !important; } }`}</style>}
+      {!showPay && showShippedButton && <style>{`@media (min-width: 900px) { body { padding-top: 44px !important; } }`}</style>}
 
       <style>{`
         .global-mobile-nav {
@@ -202,25 +276,36 @@ export default function GlobalMobileNav() {
           border-radius: 999px !important; text-decoration: none !important;
           color: #fff !important; font-size: 12px !important; font-weight: 800 !important;
           line-height: 1.05 !important; text-align: center !important;
-          background: linear-gradient(135deg,#f59e0b,#d97706) !important;
+          background: linear-gradient(135deg,#f59e0b,#d97706,#f59e0b,#d97706,#f59e0b) !important;
           transition: transform .15s ease !important;
         }
         .global-mobile-nav__pay:active { transform: scale(0.95) !important; }
-        .global-mobile-nav__pay { animation: navPayPulse 2.2s ease-in-out infinite !important; }
-        @keyframes navPayPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.5) !important; }
-          50%      { box-shadow: 0 0 0 7px rgba(245,158,11,0) !important; }
-        }
         .global-mobile-nav__pay--review { animation: navPayPulseBlue 2.2s ease-in-out infinite !important; }
         @keyframes navPayPulseBlue {
           0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,.5) !important; }
           50%      { box-shadow: 0 0 0 7px rgba(37,99,235,0) !important; }
         }
         .global-mobile-nav__pay--review {
-          background: linear-gradient(135deg,#2563eb,#1d4ed8) !important;
+          background: linear-gradient(135deg,#2563eb,#1d4ed8,#2563eb,#1d4ed8,#2563eb) !important;
         }
         .global-mobile-nav__pay--confirmed {
-          background: linear-gradient(135deg,#22c55e,#16a34a) !important;
+          background: linear-gradient(135deg,#22c55e,#16a34a,#22c55e,#16a34a,#22c55e) !important;
+        }
+        .global-mobile-nav__pay--shipped {
+          background: linear-gradient(135deg,#8b5cf6,#7c3aed,#8b5cf6,#7c3aed,#8b5cf6) !important;
+          animation: navPayPulsePurple 2.2s ease-in-out infinite !important;
+        }
+        @keyframes navPayPulsePurple {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,.5) !important; }
+          50%      { box-shadow: 0 0 0 7px rgba(139,92,246,0) !important; }
+        }
+        .global-mobile-nav__pay--delivered {
+          background: linear-gradient(135deg,#0891b2,#0e7490,#0891b2,#0e7490,#0891b2) !important;
+          animation: navPayPulseCyan 2.2s ease-in-out infinite !important;
+        }
+        @keyframes navPayPulseCyan {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(8,145,178,.5) !important; }
+          50%      { box-shadow: 0 0 0 7px rgba(8,145,178,0) !important; }
         }
         .global-mobile-nav__pay svg { flex-shrink: 0 !important; }
         .global-mobile-nav__pay span { white-space: normal !important; }
@@ -245,17 +330,25 @@ export default function GlobalMobileNav() {
           width: 100vw !important; max-width: 100vw !important; height: 44px !important;
           align-items: center !important; justify-content: center !important; box-sizing: border-box !important;
           padding: 0 20px !important; text-decoration: none !important; color: #fff !important;
-          background: linear-gradient(135deg,#f59e0b,#d97706) !important;
+          background: linear-gradient(135deg,#f59e0b,#d97706,#f59e0b,#d97706,#f59e0b) !important;
           box-shadow: 0 2px 12px rgba(245,158,11,.35) !important;
         }
         .global-pay-ribbon:hover { filter: brightness(1.03) !important; }
         .global-pay-ribbon--review {
-          background: linear-gradient(135deg,#2563eb,#1d4ed8) !important;
+          background: linear-gradient(135deg,#2563eb,#1d4ed8,#2563eb,#1d4ed8,#2563eb) !important;
           box-shadow: 0 2px 12px rgba(37,99,235,.35) !important;
         }
         .global-pay-ribbon--confirmed {
-          background: linear-gradient(135deg,#22c55e,#16a34a) !important;
+          background: linear-gradient(135deg,#22c55e,#16a34a,#22c55e,#16a34a,#22c55e) !important;
           box-shadow: 0 2px 12px rgba(22,163,74,.35) !important;
+        }
+        .global-pay-ribbon--shipped {
+          background: linear-gradient(135deg,#8b5cf6,#7c3aed,#8b5cf6,#7c3aed,#8b5cf6) !important;
+          box-shadow: 0 2px 12px rgba(139,92,246,.35) !important;
+        }
+        .global-pay-ribbon--delivered {
+          background: linear-gradient(135deg,#0891b2,#0e7490,#0891b2,#0e7490,#0891b2) !important;
+          box-shadow: 0 2px 12px rgba(8,145,178,.35) !important;
         }
         .global-pay-ribbon__inner {
           display: inline-flex !important; align-items: center !important; gap: 10px !important;
@@ -268,9 +361,67 @@ export default function GlobalMobileNav() {
           border-radius: 999px !important; background: rgba(255,255,255,.25) !important;
           font-size: 12px !important; font-weight: 800 !important;
         }
+        /* ── Particles (orbs, sparkles, trails, shimmer) ── */
+        .global-pay-ribbon { overflow: hidden !important; background-size: 300% 300% !important; animation: ckBtnShift 3s ease infinite !important; }
+        .global-pay-ribbon__particles { position: absolute !important; inset: 0 !important; overflow: hidden !important; pointer-events: none !important; }
+        .global-mobile-nav__pay { overflow: hidden !important; position: relative !important; background-size: 300% 300% !important; }
+        .global-mobile-nav__pay { animation: ckBtnShift 3s ease infinite, navPayPulse 2.2s ease-in-out infinite !important; }
+        .global-mobile-nav__pay--review { animation: ckBtnShift 3s ease infinite, navPayPulseBlue 2.2s ease-in-out infinite !important; }
+        .global-mobile-nav__pay--confirmed { animation: ckBtnShift 3s ease infinite, navPayPulse 2.2s ease-in-out infinite !important; }
+        .global-mobile-nav__pay--shipped { animation: ckBtnShift 3s ease infinite, navPayPulsePurple 2.2s ease-in-out infinite !important; }
+        .global-mobile-nav__pay--delivered { animation: ckBtnShift 3s ease infinite, navPayPulseCyan 2.2s ease-in-out infinite !important; }
+        .global-mobile-nav__pay-particles { position: absolute !important; inset: 0 !important; overflow: hidden !important; pointer-events: none !important; }
+        .ck-shimmer-line {
+          position: absolute !important; top: 0 !important; bottom: 0 !important;
+          width: 40% !important;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent) !important;
+          animation: ckShimmer 2.5s ease-in-out infinite !important;
+          pointer-events: none !important; z-index: 1 !important;
+        }
+        .ck-orb {
+          position: absolute !important; border-radius: 50% !important;
+          background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1)) !important;
+          box-shadow: 0 0 6px rgba(255,255,255,0.5) !important;
+          animation: ckOrbFloat 2.8s ease-in-out infinite !important;
+        }
+        .ck-orb:nth-child(1) { width: 8px !important; height: 8px !important; left: 8% !important; bottom: 4px !important; animation-delay: 0s !important; }
+        .ck-orb:nth-child(2) { width: 5px !important; height: 5px !important; left: 22% !important; bottom: 2px !important; animation-delay: 0.4s !important; }
+        .ck-orb:nth-child(3) { width: 10px !important; height: 10px !important; left: 38% !important; bottom: 6px !important; animation-delay: 0.8s !important; }
+        .ck-orb:nth-child(4) { width: 6px !important; height: 6px !important; left: 52% !important; bottom: 3px !important; animation-delay: 1.2s !important; }
+        .ck-orb:nth-child(5) { width: 7px !important; height: 7px !important; left: 68% !important; bottom: 5px !important; animation-delay: 1.6s !important; }
+        .ck-orb:nth-child(6) { width: 4px !important; height: 4px !important; left: 82% !important; bottom: 2px !important; animation-delay: 2s !important; }
+        .ck-orb:nth-child(7) { width: 9px !important; height: 9px !important; left: 92% !important; bottom: 4px !important; animation-delay: 2.4s !important; }
+        .ck-sparkle {
+          position: absolute !important; width: 4px !important; height: 4px !important;
+          background: white !important;
+          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%) !important;
+          animation: ckSparkle 2s ease-in-out infinite !important;
+          filter: drop-shadow(0 0 3px rgba(255,255,255,0.8)) !important;
+        }
+        .ck-sparkle:nth-child(8) { left: 15% !important; top: 30% !important; animation-delay: 0s !important; }
+        .ck-sparkle:nth-child(9) { left: 45% !important; top: 20% !important; animation-delay: 0.7s !important; width: 5px !important; height: 5px !important; }
+        .ck-sparkle:nth-child(10) { left: 75% !important; top: 40% !important; animation-delay: 1.4s !important; }
+        .ck-sparkle:nth-child(11) { left: 30% !important; top: 55% !important; animation-delay: 0.3s !important; width: 3px !important; height: 3px !important; }
+        .ck-sparkle:nth-child(12) { left: 60% !important; top: 15% !important; animation-delay: 1s !important; }
+        .ck-trail {
+          position: absolute !important; height: 2px !important; width: 20px !important;
+          border-radius: 2px !important;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent) !important;
+          animation: ckTrail 2.5s ease-in-out infinite !important;
+        }
+        .ck-trail:nth-child(13) { left: 5% !important; top: 45% !important; animation-delay: 0s !important; }
+        .ck-trail:nth-child(14) { left: 35% !important; top: 35% !important; animation-delay: 0.8s !important; }
+        .ck-trail:nth-child(15) { left: 65% !important; top: 50% !important; animation-delay: 1.6s !important; }
+        @keyframes ckBtnShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes ckOrbFloat { 0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; } 10% { opacity: 0.9; } 50% { transform: translateY(-22px) translateX(8px) scale(1.4); opacity: 1; } 90% { opacity: 0.7; } 100% { transform: translateY(-44px) translateX(-4px) scale(0.6); opacity: 0; } }
+        @keyframes ckSparkle { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 20% { transform: scale(1.2) rotate(90deg); opacity: 1; } 50% { transform: scale(0.8) rotate(180deg); opacity: 0.8; } 80% { transform: scale(1.1) rotate(270deg); opacity: 0.5; } 100% { transform: scale(0) rotate(360deg); opacity: 0; } }
+        @keyframes ckTrail { 0% { transform: translateX(0) scaleX(1); opacity: 0.8; } 50% { transform: translateX(20px) scaleX(1.5); opacity: 0.4; } 100% { transform: translateX(40px) scaleX(0); opacity: 0; } }
+        @keyframes ckShimmer { 0% { left: -40%; } 100% { left: 110%; } }
+        @keyframes navPayPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.5) !important; } 50% { box-shadow: 0 0 0 7px rgba(245,158,11,0) !important; } }
         @media (max-width: 899px) {
           body { padding-bottom: 64px !important; }
           footer-group, .footer-group, footer { padding-bottom: 64px !important; }
+          .nb23-tabbar { display: none !important; }
         }
         @media (min-width: 900px) {
           .global-mobile-nav { display: none !important; }

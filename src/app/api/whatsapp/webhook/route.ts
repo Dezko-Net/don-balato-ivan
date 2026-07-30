@@ -591,7 +591,7 @@ export async function POST(req: NextRequest) {
               
               await serverUpdateDocument(ORDERS_COLLECTION_ID, pendingOrderId, {
                 PAYMENTPROOFURL: fileUrl,
-                STATUS: 'processing'
+                STATUS: 'payment_review'
               });
               
               if (!orderCode || orderCode === pendingOrderId) {

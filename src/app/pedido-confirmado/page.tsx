@@ -261,7 +261,6 @@ function ConfirmadoInner() {
         {/* ── Timeline ── */}
         {order.STATUS !== 'cancelled' && (() => {
           const steps = [
-            { key: 'pending',    label: 'Recibido',         icon: <Clock size={14} /> },
             { key: 'processing', label: 'Comprobando Stock', icon: <Upload size={14} /> },
             { key: 'paid',       label: 'Stock Confirmado', icon: <CheckCircle2 size={14} /> },
             { key: 'payment_review', label: 'Revisando Pago', icon: <Upload size={14} /> },
@@ -269,8 +268,9 @@ function ConfirmadoInner() {
             { key: 'shipped',    label: 'Embalado',         icon: <Package size={14} /> },
             { key: 'delivered',  label: 'Entregado',        icon: <Truck size={14} /> },
           ];
-          const statusOrder = ['pending', 'processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
-          const currentIdx = statusOrder.indexOf(order.STATUS === 'pending_stock' ? 'pending' : order.STATUS);
+          const statusOrder = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+          const effStatus = (order.STATUS === 'pending' || order.STATUS === 'pending_stock') ? 'processing' : order.STATUS;
+          const currentIdx = statusOrder.indexOf(effStatus);
           return (
             <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 20px', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>

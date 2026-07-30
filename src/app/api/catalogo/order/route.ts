@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       ORDERINDEX: orderIndex,
       SUBTOTAL: total,
       TOTAL: total,
-      STATUS: 'pending_stock',
+      STATUS: 'processing',
       CREATEDAT: now,
       PAYMENTMETHOD: 'WhatsApp',
       SHIPPINGAGENCY: '',

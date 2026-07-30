@@ -1008,12 +1008,12 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Auto-print when status changes to 'paid' (Confirmado)
+  // Auto-print when status changes to 'payment_confirmed' (Pago Confirmado)
   useEffect(() => {
     if (!order) return;
     const prev = prevStatusRef.current;
     prevStatusRef.current = order.STATUS;
-    if (prev && prev !== 'paid' && order.STATUS === 'paid') {
+    if (prev && prev !== 'payment_confirmed' && order.STATUS === 'payment_confirmed') {
       setTimeout(() => window.print(), 500);
     }
   }, [order?.STATUS]);

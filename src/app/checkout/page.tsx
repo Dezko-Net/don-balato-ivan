@@ -582,7 +582,7 @@ function CheckoutInner() {
         SUBTOTAL: subtotal,
         TOTAL: subtotal,
         REQCODE: reqCode,
-        STATUS: 'pending_stock',
+        STATUS: 'processing',
         CREATEDAT: now,
         ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
       });
@@ -746,8 +746,8 @@ function CheckoutInner() {
         PAYMENTMETHOD: 'Transferencia Bancaria', SHIPPINGAGENCY: agency,
         SUBTOTAL: subtotal, SHIPPINGCOST: 0, TOTAL: total,
         ORDERCODE: orderCode, ORDERINDEX: orderIndex,
-        // Noche → 'paid' (pago directo, sin confirmar stock). Día → 'pending_stock'.
-        STATUS: isNight ? 'paid' : 'pending_stock', CREATEDAT: now,
+        // Noche → 'paid' (Stock Confirmado, sin confirmar stock). Día → 'processing' (Comprobando Stock).
+        STATUS: isNight ? 'paid' : 'processing', CREATEDAT: now,
         ...(isNight ? { NIGHTORDER: true } : {}),
         ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
         ...(isGift ? { ISGIFT: true } : {}),

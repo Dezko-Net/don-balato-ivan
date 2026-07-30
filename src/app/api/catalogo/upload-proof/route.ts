@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Update order with proof URL and change status
     await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
       PAYMENTPROOFURL: fileUrl,
-      STATUS: 'payment_confirmed',
+      STATUS: 'payment_review',
       UPDATEDAT: Date.now(),
     });
 
