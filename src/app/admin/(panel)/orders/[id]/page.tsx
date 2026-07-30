@@ -1444,7 +1444,7 @@ export default function OrderDetailPage() {
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
         PAYMENTPROOFURL: url,
-        STATUS: order.STATUS === 'pending' ? 'processing' : order.STATUS,
+        STATUS: ['pending', 'pending_stock', 'processing'].includes(order.STATUS) ? 'payment_review' : order.STATUS,
       });
       await load();
     } catch (err: any) {
@@ -2916,7 +2916,7 @@ export default function OrderDetailPage() {
                   </div>
                   <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                 </button>
-              ) : order.STATUS === 'pending' || order.STATUS === 'processing' ? (
+              ) : ['pending', 'pending_stock', 'processing', 'paid', 'payment_review'].includes(order.STATUS) ? (
                 <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-amber-100 transition group">
                   <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadProof} className="hidden" disabled={uploadingProof} />
                   {uploadingProof ? (
