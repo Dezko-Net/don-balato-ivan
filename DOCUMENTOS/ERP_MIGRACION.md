@@ -866,7 +866,7 @@ Modo demo **apagado** (`isRuntimeDemoProject()→false`). Todo lo vinculado est�
 | **Equipo / Trabajadores** | `trabajadores_erp` (nueva) | ✅ `loadTrabajadores` |
 | **Gastos fijos** (sueldos) para proyecciones | `trabajadores_erp` | ✅ en `loadMonthlyData` |
 | **Cerebro IA / Chat IA / CONTADOR IA** | módulo Kenia IA `/admin/ia` | ✅ enlaces vía `mapRoute` |
-| **Chips de estado de cuadre** (cajeros listos) | posible `ventas_pos` | ⛔ pendiente decisión |
+| **Chips de estado de cuadre** (cajeros pendientes) | `cuadres_erp` + `trabajadores_erp` | ✅ `loadCuadreStatusToday` |
 | **Enlaces de navbar/sidebar** (`/_admin`, `/pos-admin`, etc.) | rutas de Asistora | ✅ remapeados (ver abajo) |
 
 **Remapeo de rutas (✅ hecho):** se agregó `mapRoute()` en los shims `Link`/`useNavigate` de `page.tsx` y
@@ -878,9 +878,12 @@ Modo demo **apagado** (`isRuntimeDemoProject()→false`). Todo lo vinculado est�
 ## 6. Pendientes / notas técnicas para el próximo agente
 
 - ~~**Remapear rutas** de la navbar y el drawer~~ ✅ HECHO vía `mapRoute()` (ver §5).
-- **Dead code:** en `page.tsx` (`loadData`, `loadMonthlyData`) y `layout.tsx` (`fetchTodaySales`) el código
-  Firebase original quedó **debajo de un `return` temprano** (comentado como "ya no se ejecuta"). Limpiar cuando
-  se confirme que la lógica Appwrite es la definitiva.
+- ~~**Dead code**~~ ✅ LIMPIADO: se borraron ~625 líneas de código Firebase muerto (page.tsx: `loadData`,
+  `loadTrabajadores`, `loadCuadreStatusToday`, `loadMonthlyData` = 501 líneas; layout.tsx: `fetchTodaySales` = 124).
+  Cada loader ahora tiene solo su lógica `[APPWRITE]`. `tsc --noEmit` → 0 errores, render verificado.
+- **Chips de estado de cuadre** ✅ HECHO: `loadCuadreStatusToday` marca una sede como pendiente si NO tiene cuadre
+  para el día (Hoy/Ayer); muestra sus cajeros (trabajadores con cargo "cajer*"). El botón "Hacer corte" →
+  `/erp/nuevo` (vía `mapRoute` slug de sede → nuevo cuadre).
 - ~~**Trabajadores/Gastos fijos**~~ ✅ HECHO: colección `trabajadores_erp` creada (nombre, cargo, sede, sueldo,
   fotoUrl, activo, nacionalidad, genero, fechaIngreso; índice `sede_idx`; permisos `any`). Servicio
   `src/lib/trabajadoresErpService.ts` (`fetchTrabajadoresERP`, `createTrabajadorERP`, `deleteTrabajadorERP`).

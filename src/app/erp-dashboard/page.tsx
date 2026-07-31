@@ -64,6 +64,7 @@ function mapRoute(to?: string): string {
   // IA (Cerebro IA / Chat IA / CONTADOR IA / ASIS) → módulo Kenia IA de Yaxsel
   if (path.startsWith('/whatsapp')) return '/admin/ia/whatsapp'
   if (/^\/(chat-ia|cerebro-ia|ia-consultor|asis-monitor|telegram)/.test(path)) return '/admin/ia'
+  if (/^\/(alameda|copiapo|la-florida)$/.test(path)) return '/erp/nuevo'  // "hacer corte" de una sede → nuevo cuadre
   return '/erp-dashboard'
 }
 const Link = ({ to, children, ...rest }: any) => <NextLink href={mapRoute(to)} {...rest}>{children}</NextLink>
@@ -645,231 +646,6 @@ export default function Dashboard() {
         return
       }
     }
-    // ─── (código original de Firebase/demo — ya no se ejecuta) ───
-    if (IS_DEMO_PROJECT) {
-      const demoSucursales = dateMode === 'ayer' ? DEMO_MOCK_SUCURSALES_AYER : DEMO_MOCK_SUCURSALES
-      const demoTopProducts = dateMode === 'ayer' ? DEMO_MOCK_TOP_PRODUCTS_AYER : DEMO_MOCK_TOP_PRODUCTS
-      const demoTotals = demoSucursales.reduce(
-        (acc, s) => {
-          acc.ventas += s.ventas
-          acc.gastos += s.gastos
-          acc.ganancia += s.ganancia
-          return acc
-        },
-        { ventas: 0, gastos: 0, ganancia: 0 }
-      )
-
-      setLoading(false)
-      setSucursalesData(demoSucursales)
-      setTotals(demoTotals)
-      setTopProducts(demoTopProducts)
-      setLastUpdate(new Date())
-      saveToCache({
-        sucursalesData: demoSucursales,
-        totals: demoTotals,
-        topProducts: demoTopProducts,
-        lastUpdate: new Date().toISOString()
-      })
-      return
-    }
-
-    // Intentar cargar desde cache primero
-    if (!forceRefresh) {
-      const cached = loadFromCache()
-      if (cached) {
-        const cachedSucursales = Array.isArray(cached.sucursalesData) ? cached.sucursalesData : []
-        const cachedTop = Array.isArray(cached.topProducts) ? cached.topProducts : []
-        const cacheHasRealData = cachedSucursales.some((s: any) => Number(s?.ventas) > 0 || Number(s?.gastos) > 0 || Number(s?.ganancia) > 0) || cachedTop.length > 0
-
-        if (IS_DEMO_PROJECT && !cacheHasRealData) {
-          const demoTotals = DEMO_MOCK_SUCURSALES.reduce(
-            (acc, s) => {
-              acc.ventas += s.ventas
-              acc.gastos += s.gastos
-              acc.ganancia += s.ganancia
-              return acc
-            },
-            { ventas: 0, gastos: 0, ganancia: 0 }
-          )
-          setSucursalesData(DEMO_MOCK_SUCURSALES)
-          setTotals(demoTotals)
-          setTopProducts(DEMO_MOCK_TOP_PRODUCTS)
-          setLastUpdate(new Date())
-          setLoading(false)
-          return
-        }
-
-        setSucursalesData(cached.sucursalesData)
-        setTotals(cached.totals)
-        setTopProducts(cached.topProducts)
-        setLastUpdate(new Date(cached.lastUpdate))
-        setLoading(false)
-        return
-      }
-    }
-    
-    setLoading(true)
-    try {
-      const d = new Date()
-      if (dateMode === 'ayer') d.setDate(d.getDate() - 1)
-      const yyyy = d.getFullYear()
-      const MM = String(d.getMonth() + 1).padStart(2, '0')
-      const dd = String(d.getDate()).padStart(2, '0')
-
-      if (!db) throw new Error('no-db')
-
-      const data: SucursalData[] = []
-      let totalVentas = 0, totalGastos = 0, totalGanancia = 0
-      const allTopProducts: TopProduct[] = []
-
-      const SUCURSALES = getSucursales()
-      const fechaStr = `${yyyy}-${MM}-${dd}`
-
-      // Cargar todas las sucursales EN PARALELO para mejor rendimiento
-      const sucursalPromises = SUCURSALES.map(async (suc) => {
-        try {
-          let dayRef = doc(db!, 'sedes', suc.slug, 'reports', fechaStr)
-          let daySnap = await getDoc(dayRef)
-
-          // Fallback to old path: reports/{sede}/{yyyy}/{MM}/days/{dd}
-          if (!daySnap.exists()) {
-            const yyyy2 = fechaStr.slice(0, 4)
-            const MM2 = fechaStr.slice(5, 7)
-            const dd2 = fechaStr.slice(8, 10)
-            dayRef = doc(db!, 'reports', suc.slug, yyyy2, MM2, 'days', dd2)
-            daySnap = await getDoc(dayRef)
-          }
-
-          if (daySnap.exists()) {
-            const raw: any = daySnap.data()
-            const ventas = (Number(raw?.montos?.efectivoSistema) || 0) + 
-                          (Number(raw?.montos?.debitoSistema) || 0) + 
-                          (Number(raw?.montos?.transferencias) || 0)
-            const gastos = Number(raw?.calculos?.gastosTotales) || 0
-            
-            // Calcular ganancia como en TopProducts
-            const topProductsArr = Array.isArray(raw?.topProducts) ? raw.topProducts : []
-            let totVentas = 0
-            let totCostos = 0
-            
-            topProductsArr.forEach((p: any) => {
-              const sku = String(p?.sku || '').trim().toUpperCase()
-              const cantidad = Number(p?.cantidadVendida) || 0
-              const ventasBrutas = Number(p?.ventasBrutas) || 0
-              const costoNetoReporte = Number(p?.costoNeto) || 0
-              
-              const costoUnitBD = costsBD.get(sku) || 0
-              const base = costoUnitBD > 0 ? costoUnitBD : (cantidad > 0 ? Math.round(costoNetoReporte / cantidad) : 0)
-              
-              const applyAdj = minus10Flags.has(sku)
-              const costoUnit = Math.round(base * (applyAdj ? 0.81 : 1))
-              const costoNeto = costoUnit * cantidad
-              
-              if (base > 0) {
-                totVentas += ventasBrutas
-                totCostos += costoNeto
-              }
-            })
-            
-            const gananciaBruta = totVentas - totCostos
-            const ganancia = gananciaBruta - gastos
-
-            const sucData: SucursalData = { ...suc, ventas, gastos, ganancia, cuadreEnviado: true }
-            const products = topProductsArr.map((p: any) => ({
-              sku: p.sku || '',
-              nombre: p.nombre || '',
-              cantidad: Number(p.cantidadVendida) || 0,
-              ventas: Number(p.ventasBrutas) || 0,
-              costoNeto: Number(p.costoNeto) || 0,
-            }))
-
-            return { sucData, products, ventas, gastos, ganancia }
-          } else {
-            return { sucData: { ...suc, ventas: 0, gastos: 0, ganancia: 0, cuadreEnviado: false } as SucursalData, products: [], ventas: 0, gastos: 0, ganancia: 0 }
-          }
-        } catch (err) {
-          console.error(`[Dashboard] Error cargando ${suc.slug}:`, err)
-          return { sucData: { ...suc, ventas: 0, gastos: 0, ganancia: 0, cuadreEnviado: false } as SucursalData, products: [], ventas: 0, gastos: 0, ganancia: 0 }
-        }
-      })
-
-      // Esperar a que todas las consultas terminen en paralelo
-      const results = await Promise.all(sucursalPromises)
-      
-      // Agregar resultados
-      const bySedeTop: Record<string, TopProduct[]> = {}
-      results.forEach(r => {
-        data.push(r.sucData)
-        totalVentas += r.ventas
-        totalGastos += r.gastos
-        totalGanancia += r.ganancia
-        r.products.forEach((p: TopProduct) => allTopProducts.push(p))
-        bySedeTop[r.sucData.slug] = [...r.products].sort((a, b) => b.cantidad - a.cantidad).slice(0, 5)
-      })
-      setTopProductsBySede(bySedeTop)
-
-      const aggregated = new Map<string, TopProduct>()
-      allTopProducts.forEach(p => {
-        const key = p.sku || p.nombre
-        const existing = aggregated.get(key)
-        if (existing) {
-          existing.cantidad += p.cantidad
-          existing.ventas += p.ventas
-        } else {
-          aggregated.set(key, { ...p })
-        }
-      })
-      const sortedTop = Array.from(aggregated.values()).sort((a, b) => b.cantidad - a.cantidad).slice(0, 5)
-
-      const hasRealData = data.some((s) => s.ventas > 0 || s.gastos > 0 || s.ganancia > 0) || sortedTop.length > 0
-
-      // Si es "hoy" y no hay datos, cambiar automáticamente a "ayer"
-      if (dateMode === 'hoy' && !hasRealData) {
-        setDateMode('ayer')
-        return
-      }
-
-      if (IS_DEMO_PROJECT && !hasRealData) {
-        const demoTotals = DEMO_MOCK_SUCURSALES.reduce(
-          (acc, s) => {
-            acc.ventas += s.ventas
-            acc.gastos += s.gastos
-            acc.ganancia += s.ganancia
-            return acc
-          },
-          { ventas: 0, gastos: 0, ganancia: 0 }
-        )
-
-        setSucursalesData(DEMO_MOCK_SUCURSALES)
-        setTotals(demoTotals)
-        setTopProducts(DEMO_MOCK_TOP_PRODUCTS)
-        setLastUpdate(new Date())
-        saveToCache({
-          sucursalesData: DEMO_MOCK_SUCURSALES,
-          totals: demoTotals,
-          topProducts: DEMO_MOCK_TOP_PRODUCTS,
-          lastUpdate: new Date().toISOString()
-        })
-        return
-      }
-
-      setSucursalesData(data)
-      setTotals({ ventas: totalVentas, gastos: totalGastos, ganancia: totalGanancia })
-      setTopProducts(sortedTop)
-      setLastUpdate(new Date())
-      
-      // Guardar en cache
-      saveToCache({
-        sucursalesData: data,
-        totals: { ventas: totalVentas, gastos: totalGastos, ganancia: totalGanancia },
-        topProducts: sortedTop,
-        lastUpdate: new Date().toISOString()
-      })
-    } catch (e) {
-      console.error('Error loading dashboard data:', e)
-    } finally {
-      setLoading(false)
-    }
   }
 
   const loadTrabajadores = async () => {
@@ -894,124 +670,36 @@ export default function Dashboard() {
         return
       }
     }
-    // ─── (código original Firebase — ya no se ejecuta) ───
-    try {
-      if (!db) return
-      const snap = await getDocs(collection(db, 'trabajadores'))
-      const list: Trabajador[] = []
-      snap.forEach((d: any) => {
-        const data = d.data() as any
-        // Soft-delete flags posibles: activo:false, activa:false, eliminado:true, estado:'inactivo'
-        const isInactive = data.activo === false || data.activa === false || data.eliminado === true || data.estado === 'inactivo' || data.estado === 'eliminado'
-        if (!isInactive) {
-          // El campo real en Firestore es `sede` (PlanillaUnificada lo usa así)
-          const sede = data.sede || data.sucursal || ''
-          list.push({
-            id: d.id,
-            nombre: data.nombre || 'Sin nombre',
-            cargo: data.cargo || 'Trabajador',
-            sucursal: sede,
-            foto: data.foto || data.fotoUrl || '',
-          })
-        }
-      })
-      const filteredList = list.filter((worker) => {
-        const currentSlugs = new Set(getSucursales().map(s => s.slug))
-        // Slug alterno: 'web' equivale a 'web-tiendas-3b-chile'
-        const sede = worker.sucursal === 'web' ? 'web-tiendas-3b-chile' : worker.sucursal
-        return !!sede && currentSlugs.has(sede)
-      }).map(w => ({ ...w, sucursal: w.sucursal === 'web' ? 'web-tiendas-3b-chile' : w.sucursal }))
-      if (IS_DEMO_PROJECT && filteredList.length === 0) {
-        setTrabajadores(DEMO_MOCK_TRABAJADORES)
-        return
-      }
-      setTrabajadores(filteredList)
-    } catch (e) {
-      console.error('Error loading trabajadores:', e)
-      if (IS_DEMO_PROJECT) setTrabajadores(DEMO_MOCK_TRABAJADORES)
-    }
   }
 
   // Carga el estado de cierre de caja de HOY por cada sede: lista los cajeros pendientes/listos
   const loadCuadreStatusToday = async () => {
+    // ── [APPWRITE] Estado de cuadre por sede (pendiente si aún no hay cuadre) ──
     try {
-      if (!db || IS_DEMO_PROJECT) { setCuadreStatusBySede({}); return }
-      // Respetar el modo Hoy/Ayer del dashboard
-      const refDate = new Date()
+      const [cuadres, trabajadores] = await Promise.all([fetchCuadresERP(1), fetchTrabajadoresERP()])
+      const refDate = new Date(Date.now() - 3 * 60 * 60 * 1000)
       if (dateMode === 'ayer') refDate.setDate(refDate.getDate() - 1)
-      const today = refDate.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
-      const SUCURSALES = getSucursales()
+      const targetDate = refDate.toISOString().slice(0, 10)
+      const sedesConCuadre = new Set(
+        cuadres.filter((c: CuadreERP) => c.fecha === targetDate).map((c: CuadreERP) => c.sede)
+      )
       const result: Record<string, { sedeName: string; cajeros: { nombre: string; listo: boolean }[] }> = {}
-      await Promise.all(SUCURSALES.map(async (suc) => {
-        try {
-          // Cargar cajeros de la sede (soporta slug alterno 'web' para web-tiendas-3b-chile)
-          const sedeQueries = suc.slug === 'web-tiendas-3b-chile'
-            ? [
-                query(collection(db!, 'trabajadores'), where('sede', '==', 'web-tiendas-3b-chile')),
-                query(collection(db!, 'trabajadores'), where('sede', '==', 'web')),
-              ]
-            : [query(collection(db!, 'trabajadores'), where('sede', '==', suc.slug))]
-          const snaps = await Promise.all(sedeQueries.map(q => getDocs(q)))
-          const seen = new Set<string>()
-          const names: string[] = []
-          snaps.forEach((snap: any) => snap.forEach((d: any) => {
-            const data = d.data() as any
-            if (data?.activo === false) return
-            const cargo = String(data?.cargo || '').toUpperCase()
-            const nombre = String(data?.nombre || '').trim()
-            if (!nombre) return
-            if (cargo.includes('CAJER') && !seen.has(nombre.toLowerCase())) {
-              seen.add(nombre.toLowerCase())
-              names.push(nombre)
-            }
-          }))
-          if (names.length === 0) return
-
-          // Cargar estado parcial de hoy (soporta slug alterno 'web' para web-tiendas-3b-chile)
-          const slugCandidates = suc.slug === 'web-tiendas-3b-chile' ? ['web-tiendas-3b-chile', 'web'] : [suc.slug]
-          const cajerosMap: Record<string, any> = {}
-          for (const slug of slugCandidates) {
-            try {
-              const parcialSnap = await getDoc(doc(db!, 'cuadre_parcial', `${slug}_${today}`))
-              if (parcialSnap.exists()) {
-                const map = parcialSnap.data()?.cajeros || {}
-                Object.entries(map).forEach(([k, v]) => { cajerosMap[k] = v })
-              }
-            } catch { /* noop */ }
-          }
-
-          // Normalizar nombres para matching robusto (case-insensitive, trim, sin acentos)
-          const normName = (s: string) => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-          const cajerosMapNorm: Record<string, any> = {}
-          Object.entries(cajerosMap).forEach(([k, v]) => { cajerosMapNorm[normName(k)] = v })
-
-          // Si ya existe un reporte final enviado para hoy, todas las cajeras se consideran listas
-          let hasFinalReport = false
-          try {
-            const [yyyy, MM, dd] = today.split('-')
-            for (const slug of slugCandidates) {
-              const finalSnap = await getDoc(doc(db!, 'reports', slug, yyyy, MM, 'days', dd))
-              if (finalSnap.exists()) { hasFinalReport = true; break }
-            }
-          } catch { /* noop */ }
-
-          const cajerosStatus = names.map(nombre => {
-            const entry = cajerosMap[nombre] || cajerosMapNorm[normName(nombre)]
-            const status = entry?.status
-            // Tratar como "listo" cualquier estado terminal conocido, completedAt, o si ya se envió el cierre final
-            const listo = hasFinalReport || status === 'completed' || status === 'submitted' || status === 'absent' || status === 'no_caja' || (!!entry?.completedAt && !entry?.correctionPending)
-            return { nombre, listo }
-          })
-
-          // Mostrar siempre todas las sedes con cajeras (verdes si listas, rojas si pendientes)
-          result[suc.slug] = { sedeName: suc.name, cajeros: cajerosStatus }
-        } catch (err) {
-          console.warn(`[CuadreStatus] Error en ${suc.slug}:`, err)
+      getSucursales().forEach((suc) => {
+        const yaCuadrado = sedesConCuadre.has(suc.slug)
+        const cajeros = trabajadores
+          .filter((t: TrabajadorERP) => t.activo && t.sede === suc.slug && /cajer/i.test(t.cargo))
+          .map((t: TrabajadorERP) => ({ nombre: t.nombre, listo: yaCuadrado }))
+        // Chip solo para sedes con cajeros y SIN cuadre aún (pendiente)
+        if (cajeros.length > 0 && !yaCuadrado) {
+          result[suc.slug] = { sedeName: suc.name, cajeros }
         }
-      }))
+      })
       setCuadreStatusBySede(result)
+      return
     } catch (e) {
-      console.warn('Error loading cuadre status:', e)
+      console.error('[Dashboard][Appwrite] loadCuadreStatusToday error:', e)
+      setCuadreStatusBySede({})
+      return
     }
   }
 
@@ -1065,166 +753,6 @@ export default function Dashboard() {
         setLoadingMonthly(false)
         return
       }
-    }
-    // ─── (código original de Firebase — ya no se ejecuta) ───
-    if (!db || IS_DEMO_PROJECT) return
-    setLoadingMonthly(true)
-    try {
-      const SUCURSALES = getSucursales()
-      const today = new Date()
-      // Build days from 1st of current month to today
-      const days: { yyyy: string; MM: string; dd: string; label: string; fechaFull: string }[] = []
-      const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-      for (let d = new Date(firstOfMonth); d <= today; d.setDate(d.getDate() + 1)) {
-        const yyyy = String(d.getFullYear())
-        const MM = String(d.getMonth() + 1).padStart(2, '0')
-        const dd = String(d.getDate()).padStart(2, '0')
-        days.push({ yyyy, MM, dd, label: `${dd}/${MM}`, fechaFull: `${yyyy}-${MM}-${dd}` })
-      }
-
-      // Per-day totals across all sedes
-      const dayMap = new Map<string, DayData>()
-      days.forEach(d => dayMap.set(d.fechaFull, { fecha: d.label, fechaFull: d.fechaFull, ventas: 0, gastos: 0, ganancia: 0 }))
-
-      // Per-sede monthly totals y per-sede daily map
-      const sedeAcc: Record<string, { ventas: number; gastos: number; ganancia: number }> = {}
-      const sedeDayMap: Record<string, Map<string, DayData>> = {}
-      SUCURSALES.forEach(s => {
-        sedeAcc[s.slug] = { ventas: 0, gastos: 0, ganancia: 0 }
-        const m = new Map<string, DayData>()
-        days.forEach(d => m.set(d.fechaFull, { fecha: d.label, fechaFull: d.fechaFull, ventas: 0, gastos: 0, ganancia: 0 }))
-        sedeDayMap[s.slug] = m
-      })
-
-      // Fetch all days × all sedes in parallel
-      await Promise.all(SUCURSALES.flatMap(suc =>
-        days.map(async day => {
-          try {
-            let snap = await getDoc(doc(db!, 'sedes', suc.slug, 'reports', day.fechaFull))
-            if (!snap.exists()) {
-              snap = await getDoc(doc(db!, 'reports', suc.slug, day.yyyy, day.MM, 'days', day.dd))
-            }
-            if (!snap.exists()) return
-            const raw: any = snap.data()
-            const ventas = (Number(raw?.montos?.efectivoSistema) || 0) +
-              (Number(raw?.montos?.debitoSistema) || 0) +
-              (Number(raw?.montos?.transferencias) || 0)
-            const gastos = Number(raw?.calculos?.gastosTotales) || 0
-            const topArr = Array.isArray(raw?.topProducts) ? raw.topProducts : []
-            let totV = 0, totC = 0
-            topArr.forEach((p: any) => {
-              const ventasBrutas = Number(p?.ventasBrutas) || 0
-              const costoNeto = Number(p?.costoNeto) || 0
-              if (costoNeto > 0 || ventasBrutas > 0) { totV += ventasBrutas; totC += costoNeto }
-            })
-            const ganancia = (totV - totC) - gastos
-
-            const dayEntry = dayMap.get(day.fechaFull)
-            if (dayEntry) {
-              dayEntry.ventas += ventas
-              dayEntry.gastos += gastos
-              dayEntry.ganancia += ganancia
-            }
-            if (sedeAcc[suc.slug]) {
-              sedeAcc[suc.slug].ventas += ventas
-              sedeAcc[suc.slug].gastos += gastos
-              sedeAcc[suc.slug].ganancia += ganancia
-            }
-            const sedeDayEntry = sedeDayMap[suc.slug]?.get(day.fechaFull)
-            if (sedeDayEntry) {
-              sedeDayEntry.ventas += ventas
-              sedeDayEntry.gastos += gastos
-              sedeDayEntry.ganancia += ganancia
-            }
-          } catch { /* skip */ }
-        })
-      ))
-
-      // Cargar sueldos planilla + gastos fijos externos por sede y restarlos del resultado
-      // Prorrateo: (sueldos mensuales + gastos fijos mensuales) * (diasLaborablesHastaHoy / diasLaborablesTotalMes)
-      const countWorkingDays = (start: Date, end: Date) => {
-        let count = 0
-        const d = new Date(start)
-        while (d <= end) {
-          if (d.getDay() !== 0) count++ // lun-sab (excluye domingos)
-          d.setDate(d.getDate() + 1)
-        }
-        return count
-      }
-      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-      const workingDaysElapsed = countWorkingDays(firstOfMonth, today)
-      const workingDaysTotal = countWorkingDays(firstOfMonth, lastDayOfMonth)
-      const proratio = workingDaysTotal > 0 ? workingDaysElapsed / workingDaysTotal : 0
-
-      const fixedBySede: Record<string, { sueldos: number; externos: number; total: number }> = {}
-
-      await Promise.all(SUCURSALES.map(async (suc) => {
-        try {
-          // Sueldos: colección trabajadores filtrada por sede
-          const workersSnap = await getDocs(query(collection(db!, 'trabajadores'), where('sede', '==', suc.slug)))
-          let sueldosMensual = 0
-          workersSnap.forEach((docSnap: any) => {
-            const raw: any = docSnap.data()
-            sueldosMensual += Number(raw?.sueldo) || 0
-          })
-
-          // Gastos fijos externos: doc external_expenses/{sede}
-          let externosFijosMensual = 0
-          try {
-            const extSnap = await getDoc(doc(db!, 'external_expenses', suc.slug))
-            if (extSnap.exists()) {
-              const rawItems = Array.isArray(extSnap.data()?.fixedItems) ? extSnap.data()?.fixedItems : []
-              externosFijosMensual = rawItems
-                .filter((it: any) => it?.active !== false)
-                .reduce((sum: number, it: any) => sum + (Number(it?.amount) || 0), 0)
-            }
-          } catch { /* skip */ }
-
-          fixedBySede[suc.slug] = {
-            sueldos: sueldosMensual,
-            externos: externosFijosMensual,
-            total: sueldosMensual + externosFijosMensual,
-          }
-
-          const ajuste = Math.round((sueldosMensual + externosFijosMensual) * proratio)
-          if (sedeAcc[suc.slug]) {
-            sedeAcc[suc.slug].gastos += ajuste
-            sedeAcc[suc.slug].ganancia -= ajuste
-          }
-
-          // Distribuir ajuste diariamente para que los sparklines y charts diarios reflejen
-          const ajustePerDay = workingDaysElapsed > 0 ? ajuste / workingDaysElapsed : 0
-          days.forEach(d => {
-            const dDate = new Date(d.fechaFull + 'T00:00:00')
-            if (dDate.getDay() === 0) return // domingo
-            const dayEntry = dayMap.get(d.fechaFull)
-            if (dayEntry) {
-              dayEntry.gastos += ajustePerDay
-              dayEntry.ganancia -= ajustePerDay
-            }
-            const sedeDayEntry = sedeDayMap[suc.slug]?.get(d.fechaFull)
-            if (sedeDayEntry) {
-              sedeDayEntry.gastos += ajustePerDay
-              sedeDayEntry.ganancia -= ajustePerDay
-            }
-          })
-        } catch (err) {
-          console.warn(`[Dashboard] Error cargando sueldos/externos ${suc.slug}:`, err)
-        }
-      }))
-
-      setMonthlyData(Array.from(dayMap.values()))
-      setMonthlyBySede(sedeAcc)
-      setFixedMonthlyBySede(fixedBySede)
-      const dailyBySedeOut: Record<string, DayData[]> = {}
-      Object.keys(sedeDayMap).forEach(slug => {
-        dailyBySedeOut[slug] = Array.from(sedeDayMap[slug].values())
-      })
-      setDailyBySede(dailyBySedeOut)
-    } catch (e) {
-      console.error('[Dashboard] loadMonthlyData error:', e)
-    } finally {
-      setLoadingMonthly(false)
     }
   }
 

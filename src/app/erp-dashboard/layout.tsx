@@ -37,6 +37,7 @@ function mapRoute(to?: string): string {
   // IA (CONTADOR IA / Cerebro IA / ASIS) → módulo Kenia IA de Yaxsel
   if (path.startsWith('/whatsapp')) return '/admin/ia/whatsapp'
   if (/^\/(chat-ia|cerebro-ia|ia-consultor|asis-monitor|telegram)/.test(path)) return '/admin/ia'
+  if (/^\/(alameda|copiapo|la-florida)$/.test(path)) return '/erp/nuevo'  // "hacer corte" de una sede → nuevo cuadre
   return '/erp-dashboard'
 }
 const Link = ({ to, children, ...rest }: any) => <NextLink href={mapRoute(to)} {...rest}>{children}</NextLink>
@@ -194,130 +195,6 @@ export default function ErpDashboardLayout({ children }: { children: React.React
       const id = setInterval(run, 60000)
       return () => { cancelled = true; clearInterval(id) }
     }
-    // ─── (código original Firebase — ya no se ejecuta) ───
-
-    const fetchTodaySales = async () => {
-      try {
-        // Primero intentar con HOY
-        let today = new Date()
-        let yyyy = today.getFullYear()
-        let MM = String(today.getMonth() + 1).padStart(2, '0')
-        let dd = String(today.getDate()).padStart(2, '0')
-        let fechaStr = `${yyyy}-${MM}-${dd}`
-        let fechaLabel = 'hoy'
-
-        console.log('🔍 Buscando ventas para fecha:', fechaStr, `(${fechaLabel})`)
-
-        // Obtener configuración de sucursales
-        const branches = getConfiguredBranches()
-        console.log('🏢 Sucursales configuradas:', branches.map(b => b.slug))
-        
-        let totalVentas = 0
-        let hasData = false
-
-        // Función interna para buscar ventas en una fecha específica
-        const fetchForDate = async (fecha: string, label: string) => {
-          let totalVentas = 0
-          let foundData = false
-
-          await Promise.all(branches.map(async (sucursal) => {
-            try {
-              console.log(`📊 Buscando en sucursal: ${sucursal.slug} (${label})`)
-              
-              // Intentar nuevo path: sedes/{sucursal}/reports/{fecha}
-              let dayRef = doc(db!, 'sedes', sucursal.slug, 'reports', fecha)
-              let daySnap = await getDoc(dayRef)
-              console.log(`✅ Nuevo path sedes/${sucursal.slug}/reports/${fecha} existe:`, daySnap.exists())
-
-              // Fallback a path antiguo: reports/{sucursal}/{yyyy}/{MM}/days/{dd}
-              if (!daySnap.exists()) {
-                const [y, m, d] = fecha.split('-')
-                dayRef = doc(db!, 'reports', sucursal.slug, y, m, 'days', d)
-                daySnap = await getDoc(dayRef)
-                console.log(`🔄 Fallback path reports/${sucursal.slug}/${y}/${m}/days/${d} existe:`, daySnap.exists())
-              }
-
-              if (daySnap.exists()) {
-                const data: any = daySnap.data()
-                console.log(`📄 Documento completo de ${sucursal.slug} (${label}):`, data)
-                
-                // Revisar estructuras anidadas
-                console.log(`💳 Montos de ${sucursal.slug} (${label}):`, data?.montos)
-                console.log(`🧮 Calculos de ${sucursal.slug} (${label}):`, data?.calculos)
-                
-                // Buscar todos los campos posibles que contengan ventas
-                const ventasBrutas = Number(data?.ventasBrutas) || 0
-                const ventas = Number(data?.ventas) || 0
-                const total = Number(data?.total) || 0
-                const totalVenta = Number(data?.totalVenta) || 0
-                const totalVentasCampo = Number(data?.totalVentas) || 0
-                
-                // Buscar en montos
-                const montosVentas = Number(data?.montos?.ventasBrutas) || 0
-                const montosTotal = Number(data?.montos?.total) || 0
-                const montosVentasNetas = Number(data?.montos?.ventasNetas) || 0
-                
-                // Buscar en calculos
-                const calculosVentas = Number(data?.calculos?.ventasBrutas) || 0
-                const calculosTotal = Number(data?.calculos?.total) || 0
-                const calculosTotalBruto = Number(data?.calculos?.totalBruto) || 0
-                const calculosTotalNeto = Number(data?.calculos?.totalNeto) || 0
-                
-                console.log(`💰 Campos de ventas encontrados en ${sucursal.slug} (${label}):`, {
-                  directas: { ventasBrutas, ventas, total, totalVenta, totalVentas: totalVentasCampo },
-                  montos: { ventasBrutas: montosVentas, total: montosTotal, ventasNetas: montosVentasNetas },
-                  calculos: { ventasBrutas: calculosVentas, total: calculosTotal, totalBruto: calculosTotalBruto, totalNeto: calculosTotalNeto }
-                })
-                
-                // Usar el primer campo que tenga valor (priorizando totalBruto que es el campo real)
-                const ventasValor = calculosTotalBruto || calculosTotalNeto || montosVentas || montosTotal || 
-                                  calculosVentas || calculosTotal || ventasBrutas || ventas || total || totalVenta || totalVentasCampo
-                console.log(`✅ Ventas de ${sucursal.slug} (${label}):`, ventasValor)
-                totalVentas += ventasValor
-                if (ventasValor > 0) foundData = true
-              } else {
-                console.log(`❌ No hay datos para ${sucursal.slug} (${label})`)
-              }
-            } catch (error) {
-              console.error(`Error al obtener ventas de ${sucursal.slug} (${label}):`, error)
-            }
-          }))
-
-          return { total: totalVentas, foundData }
-        }
-
-        // Primero intentar hoy
-        let result = await fetchForDate(fechaStr, 'hoy')
-        totalVentas = result.total
-        hasData = result.foundData
-
-        // Si no hay datos hoy, intentar ayer (misma lógica que Dashboard)
-        if (!hasData) {
-          console.log('� No hay datos hoy, intentando ayer...')
-          today.setDate(today.getDate() - 1)
-          yyyy = today.getFullYear()
-          MM = String(today.getMonth() + 1).padStart(2, '0')
-          dd = String(today.getDate()).padStart(2, '0')
-          fechaStr = `${yyyy}-${MM}-${dd}`
-          fechaLabel = 'ayer'
-
-          result = await fetchForDate(fechaStr, 'ayer')
-          totalVentas = result.total
-          hasData = result.foundData
-        }
-
-        console.log(`�📈 Total ventas (${fechaLabel}):`, totalVentas)
-        setTotalVentasHoy(totalVentas)
-      } catch (error) {
-        console.error('Error al obtener ventas de hoy:', error)
-      }
-    }
-
-    // Ejecutar inmediatamente y luego cada 30 segundos
-    fetchTodaySales()
-    const interval = setInterval(fetchTodaySales, 30000)
-
-    return () => clearInterval(interval)
   }, [])
 
   // Cerrar dropdowns al hacer clic fuera
