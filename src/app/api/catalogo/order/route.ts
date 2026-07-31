@@ -3,6 +3,7 @@ import { getServices, getAppwriteConfig } from '@/lib/appwrite';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { ID } from 'appwrite';
+import { isNightNow } from '@/lib/night-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,11 +34,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { customerName, customerPhone, items, total } = body as {
+    const { customerName, customerPhone, items, total, assignedCashier } = body as {
       customerName: string;
       customerPhone: string;
       items: Array<{ id?: string; sku: string; name: string; qty: number; price: number; image?: string }>;
       total: number;
+      assignedCashier?: string;
     };
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -73,6 +75,8 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
+    const night = isNightNow();
+
     const doc = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
       USERID: 'catalogo-guest',
       ITEMS: JSON.stringify(itemsData),
@@ -83,13 +87,15 @@ export async function POST(request: NextRequest) {
       ORDERINDEX: orderIndex,
       SUBTOTAL: total,
       TOTAL: total,
-      STATUS: 'processing',
+      STATUS: night ? 'paid' : 'processing',
       CREATEDAT: now,
       PAYMENTMETHOD: 'WhatsApp',
       SHIPPINGAGENCY: '',
       REGION: '',
       COMUNA: '',
       ADDRESS: '',
+      ...(night ? { NIGHTORDER: true } : {}),
+      ...(assignedCashier ? { ASSIGNEDCASHIER: assignedCashier } : {}),
     });
 
     return NextResponse.json({

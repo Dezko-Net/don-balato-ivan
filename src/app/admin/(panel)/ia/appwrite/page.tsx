@@ -126,7 +126,6 @@ export default function AppwriteMonitorPage() {
       ]);
       if (!usageRes.ok) throw new Error(`HTTP ${usageRes.status}`);
       const json = await usageRes.json();
-      if (json.error && !json.databaseReadsTotal) throw new Error(json.error);
       setData(json);
       if (sourcesRes.ok) {
         setSources(await sourcesRes.json());
@@ -141,12 +140,6 @@ export default function AppwriteMonitorPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  /* Auto-refresh every 30 seconds for real-time monitoring */
-  useEffect(() => {
-    const t = setInterval(() => load(true), 30000);
-    return () => clearInterval(t);
-  }, [load]);
-
   async function handleClearCache() {
     try {
       await fetch('/api/revalidate?tag=products');
@@ -157,12 +150,13 @@ export default function AppwriteMonitorPage() {
   }
 
   /* Derived values */
-  const todayPct = data ? Math.min(100, (data.todayReads / 60000) * 100) : 0;
+  const effectiveTodayReads = (data?.todayReads && data.todayReads > 0) ? data.todayReads : (sources?.total || 0);
+  const todayPct = Math.min(100, (effectiveTodayReads / 60000) * 100);
   const barColor = getBarColor(todayPct);
   const sevenPct = data ? Math.min(100, (data.sevenDaysReads / 420000) * 100) : 0;
   const totalDaySeconds = 86400;
   const dayPct = (elapsed / totalDaySeconds) * 100;
-  const projectedReads = data && elapsed > 0 ? Math.round((data.todayReads / elapsed) * totalDaySeconds) : 0;
+  const projectedReads = elapsed > 0 ? Math.round((effectiveTodayReads / elapsed) * totalDaySeconds) : 0;
 
   const getRecentDays = () => {
     if (!data || !data.history) return [];
@@ -297,7 +291,7 @@ export default function AppwriteMonitorPage() {
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Lecturas Hoy (UTC) vs Límite (60k)</span>
                     <div className="flex items-baseline gap-3">
-                      <span className="text-4xl font-black tracking-tight" style={{ color: barColor }}>{fmt(data.todayReads)}</span>
+                      <span className="text-4xl font-black tracking-tight" style={{ color: barColor }}>{fmt(effectiveTodayReads)}</span>
                       <span className="text-sm font-bold text-slate-400">/ 60,000</span>
                     </div>
                   </div>
@@ -687,7 +681,7 @@ export default function AppwriteMonitorPage() {
                   
                   <div className="space-y-2.5 relative mb-6">
                     {[
-                      { label: 'Lecturas Hoy', limit: '60,000', used: fmt(data.todayReads) },
+                      { label: 'Lecturas Hoy', limit: '60,000', used: fmt(effectiveTodayReads) },
                       { label: 'Lecturas Mes', limit: '1.8M', used: compactNum(data.databaseReadsTotal) },
                       { label: 'Escrituras Mes', limit: '300k', used: compactNum(data.databaseWritesTotal) },
                     ].map((l, i) => (

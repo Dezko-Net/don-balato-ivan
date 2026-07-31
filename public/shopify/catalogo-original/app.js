@@ -683,7 +683,8 @@ async function submitCustomerOrder() {
         customerName: customerName,
         customerPhone: normalizedPhone,
         items: orderItems,
-        total: total
+        total: total,
+        assignedCashier: attendant.name
       })
     });
     var data = await res.json();

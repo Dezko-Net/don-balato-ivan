@@ -1,7 +1,7 @@
 /**
- * Appwrite Read Tracker — in-memory buffer of server-side reads.
+ * Appwrite Read Tracker — Persistent server-side read tracker.
  * Tracks which API route/component originated each Appwrite call.
- * No Appwrite writes; data lives in server RAM and resets on cold start.
+ * Persists entries to globalThis & disk so refresh/HMR never resets the counter.
  */
 
 export interface ReadEntry {
@@ -15,14 +15,73 @@ export interface ReadEntry {
   path: string;
 }
 
-const MAX_ENTRIES = 3000;
-const entries: ReadEntry[] = [];
+const MAX_ENTRIES = 5000;
+
+function getFs() {
+  if (typeof window !== 'undefined') return null;
+  try {
+    return eval('require')('fs');
+  } catch {
+    return null;
+  }
+}
+
+function getStoragePath(): string | null {
+  if (typeof window !== 'undefined') return null;
+  try {
+    const p = eval('require')('path');
+    return p.join(process.cwd(), '.appwrite-tracker-log.json');
+  } catch {
+    return null;
+  }
+}
+
+const globalForTracker = globalThis as unknown as { appwriteTrackerEntries?: ReadEntry[] };
+
+function loadEntries(): ReadEntry[] {
+  if (globalForTracker.appwriteTrackerEntries && globalForTracker.appwriteTrackerEntries.length > 0) {
+    return globalForTracker.appwriteTrackerEntries;
+  }
+  const fsLib = getFs();
+  const filePath = getStoragePath();
+  if (fsLib && filePath) {
+    try {
+      if (fsLib.existsSync(filePath)) {
+        const raw = fsLib.readFileSync(filePath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          globalForTracker.appwriteTrackerEntries = parsed;
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore file read errors
+    }
+  }
+  const initial: ReadEntry[] = [];
+  globalForTracker.appwriteTrackerEntries = initial;
+  return initial;
+}
+
+const entries: ReadEntry[] = loadEntries();
+
+function saveEntriesToDisk() {
+  const fsLib = getFs();
+  const filePath = getStoragePath();
+  if (fsLib && filePath) {
+    try {
+      fsLib.writeFileSync(filePath, JSON.stringify(entries.slice(-MAX_ENTRIES)), 'utf-8');
+    } catch {
+      // Ignore file write errors
+    }
+  }
+}
 
 export function getRecentReads(limit = 500): ReadEntry[] {
   return entries.slice(-limit);
 }
 
-export function getReadsSummary(minutes = 30): {
+export function getReadsSummary(minutes = 1440): {
   bySource: { source: string; count: number; collections: string[]; ops: Record<string, number> }[];
   byCollection: { collectionId: string; count: number; sources: string[]; ops: Record<string, number> }[];
   bySourceFile: { file: string; line: number; count: number; source: string }[];
@@ -155,6 +214,7 @@ export function trackRead(op: string, collectionId: string, detail: string, stac
 
     entries.push(entry);
     if (entries.length > MAX_ENTRIES) entries.shift();
+    saveEntriesToDisk();
   } catch {
     // never throw from tracker
   }

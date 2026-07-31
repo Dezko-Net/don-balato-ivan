@@ -53,6 +53,7 @@ const getCachedAppwriteUsage = unstable_cache(
     let sevenDaysReads = 0;
     let history: { date: string; value: number }[] = [];
     let writesHistory: { date: string; value: number }[] = [];
+    let usageError: string | undefined = undefined;
 
     if (API_KEY) {
       try {
@@ -101,13 +102,19 @@ const getCachedAppwriteUsage = unstable_cache(
             sevenDaysReads = history.reduce((sum, h) => sum + h.value, 0);
           }
         } else {
-          console.error('[appwrite-usage] API returned', usageRes.status, await usageRes.text());
+          const text = await usageRes.text();
+          try {
+            const errObj = JSON.parse(text);
+            usageError = errObj.message || `HTTP ${usageRes.status}`;
+          } catch {
+            usageError = `HTTP ${usageRes.status}: ${text.slice(0, 100)}`;
+          }
         }
       } catch (e: any) {
-        console.error('[appwrite-usage] Error fetching usage API:', e?.message);
+        usageError = e?.message || 'Error de red';
       }
     } else {
-      console.warn('[appwrite-usage] No APPWRITE_API_KEY set, usage metrics will be zero');
+      usageError = 'No hay APPWRITE_API_KEY configurada en .env.local';
     }
 
     // Fallback: build empty history if API didn't return data
@@ -132,6 +139,7 @@ const getCachedAppwriteUsage = unstable_cache(
       documentsTotal,
       lastUpdated: new Date().toISOString(),
       cached: false,
+      error: usageError,
     };
   },
   ['appwrite-usage-cache-v3'],
@@ -181,6 +189,7 @@ export async function GET(req: NextRequest) {
       let sevenDaysReads = 0;
       let history: { date: string; value: number }[] = [];
       let writesHistory: { date: string; value: number }[] = [];
+      let usageError: string | undefined = undefined;
 
       if (API_KEY) {
         try {
@@ -215,10 +224,20 @@ export async function GET(req: NextRequest) {
             } else if (history.length > 0) {
               sevenDaysReads = history.reduce((sum, h) => sum + h.value, 0);
             }
+          } else {
+            const text = await usageRes.text();
+            try {
+              const errObj = JSON.parse(text);
+              usageError = errObj.message || `HTTP ${usageRes.status}`;
+            } catch {
+              usageError = `HTTP ${usageRes.status}: ${text.slice(0, 100)}`;
+            }
           }
         } catch (e: any) {
-          console.error('[appwrite-usage] Error fetching usage API (force):', e?.message);
+          usageError = e?.message || 'Error de red';
         }
+      } else {
+        usageError = 'No hay APPWRITE_API_KEY configurada en .env.local';
       }
 
       if (history.length === 0) {
@@ -242,6 +261,7 @@ export async function GET(req: NextRequest) {
         documentsTotal,
         lastUpdated: new Date().toISOString(),
         cached: false,
+        error: usageError,
       });
     }
 

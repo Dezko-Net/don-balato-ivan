@@ -91,7 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   });
 
   return (
-    <html lang="es">
+    <html lang="es" data-scroll-behavior="smooth">
       <head>
         {/* Force one-time hard reload for all users after deploy to clear stale chunks */}
         {/* biome-ignore lint: intentional dangerouslySetInnerHTML for cache-busting */}
