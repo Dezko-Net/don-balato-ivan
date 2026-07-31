@@ -12,11 +12,39 @@ import type { CuadreERP } from '@/lib/cuadresErpService'
 // SHIMS DE MIGRACIÓN (mismos que erp-dashboard/page.tsx): reemplazan
 // Firebase / react-router-dom / auth / runtimeConfig del original Asistora.
 // ============================================================================
-const Link = ({ to, children, ...rest }: any) => <NextLink href={to || '#'} {...rest}>{children}</NextLink>
+// Mapa de rutas del ERP original (Asistora) → rutas reales de Yaxsel.
+// Lo no mapeado cae al dashboard para evitar 404 (features aún sin equivalente).
+function mapRoute(to?: string): string {
+  if (!to) return '/erp-dashboard'
+  const path = to.split('?')[0]
+  const MAP: Record<string, string> = {
+    '/': '/erp-dashboard',
+    '/_admin': '/erp',                 // Ver Cortes / Cuadres
+    '/admin': '/erp',                  // Corregir Corte
+    '/pos-admin': '/admin/pos-admin',
+    '/pos': '/admin/pos-admin',
+    '/dashboard-login': '/admin/login',
+    '/inventario': '/admin/inventario-erp',
+    '/base-datos': '/admin/inventario-erp',
+    '/control-datos': '/admin/inventario-erp',
+    '/cajeras': '/erp/nuevo',                        // Realizar Corte → nuevo cuadre
+    '/planilla-unificada': '/erp-dashboard/equipo',  // Trabajadores → gestión de equipo
+    '/informe-general-trabajadores': '/erp-dashboard/equipo',
+    '/analisis-cajeras': '/erp-dashboard/equipo',
+  }
+  if (MAP[path]) return MAP[path]
+  if (path.startsWith('/top-products') || path.startsWith('/ganancias')) return '/erp'
+  // IA (CONTADOR IA / Cerebro IA / ASIS) → módulo Kenia IA de Yaxsel
+  if (path.startsWith('/whatsapp')) return '/admin/ia/whatsapp'
+  if (/^\/(chat-ia|cerebro-ia|ia-consultor|asis-monitor|telegram)/.test(path)) return '/admin/ia'
+  return '/erp-dashboard'
+}
+const Link = ({ to, children, ...rest }: any) => <NextLink href={mapRoute(to)} {...rest}>{children}</NextLink>
 function useNavigate() {
   const r = useRouter()
   return React.useCallback((path: string, opts?: { replace?: boolean }) => {
-    try { opts?.replace ? r.replace(path) : r.push(path) } catch {}
+    const dest = mapRoute(path)
+    try { opts?.replace ? r.replace(dest) : r.push(dest) } catch {}
   }, [r])
 }
 function useLocation() { return { pathname: usePathname() || '/' } }

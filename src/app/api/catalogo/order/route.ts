@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { serverListDocuments } from '@/lib/appwrite-server';
-import { ID } from 'appwrite';
+import { serverListDocuments, serverCreateDocument } from '@/lib/appwrite-server';
 import { isNightNow } from '@/lib/night-mode';
 
 export const dynamic = 'force-dynamic';
@@ -46,9 +44,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Faltan datos del pedido' }, { status: 400 });
     }
 
-    const { databases } = getServices();
-    const { databaseId } = getAppwriteConfig();
-
     const now = Date.now();
     const reqCode = `WA-${String(now).slice(-8)}`;
 
@@ -65,19 +60,19 @@ export async function POST(request: NextRequest) {
     // Get next order index
     let orderIndex = now;
     try {
-      const { Query } = await import('appwrite');
-      const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
-        Query.orderDesc('ORDERINDEX'),
-        Query.limit(1)
-      ]);
-      if (res.documents.length > 0) {
-        orderIndex = (res.documents[0].ORDERINDEX || res.total || 0) + 1;
+      const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: 'ORDERINDEX' });
+      const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+      const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit1]);
+      if (res.documents && res.documents.length > 0) {
+        const doc = res.documents[0] as Record<string, unknown>;
+        orderIndex = ((doc.ORDERINDEX as number) || res.total || 0) + 1;
       }
     } catch {}
 
     const night = isNightNow();
+    const docId = `wa_${now}_${Math.random().toString(36).slice(2, 10)}`;
 
-    const doc = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
+    const doc = await serverCreateDocument(ORDERS_COLLECTION_ID, docId, {
       USERID: 'catalogo-guest',
       ITEMS: JSON.stringify(itemsData),
       CUSTOMERNAME: customerName,
@@ -100,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      orderId: (doc as unknown as { $id: string }).$id,
+      orderId: (doc as Record<string, unknown>).$id as string,
       orderCode: reqCode,
     }, {
       headers: { 'Cache-Control': 'private, no-store, max-age=0' }

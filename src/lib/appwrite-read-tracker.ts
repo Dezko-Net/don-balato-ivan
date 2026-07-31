@@ -1,7 +1,7 @@
 /**
  * Appwrite Read Tracker — Persistent server-side read tracker.
  * Tracks which API route/component originated each Appwrite call.
- * Persists entries to globalThis & disk so refresh/HMR never resets the counter.
+ * Syncs daily reads to Appwrite 'sequences' collection so Vercel Serverless cold starts never reset the counter.
  */
 
 export interface ReadEntry {
@@ -36,7 +36,10 @@ function getStoragePath(): string | null {
   }
 }
 
-const globalForTracker = globalThis as unknown as { appwriteTrackerEntries?: ReadEntry[] };
+const globalForTracker = globalThis as unknown as {
+  appwriteTrackerEntries?: ReadEntry[];
+  appwritePersistedCount?: number;
+};
 
 function loadEntries(): ReadEntry[] {
   if (globalForTracker.appwriteTrackerEntries && globalForTracker.appwriteTrackerEntries.length > 0) {
@@ -77,6 +80,81 @@ function saveEntriesToDisk() {
   }
 }
 
+let lastSyncTime = 0;
+export async function syncDailyUsageToAppwrite(count: number): Promise<void> {
+  const now = Date.now();
+  if (now - lastSyncTime < 8000) return; // throttle sync every 8 seconds
+  lastSyncTime = now;
+
+  try {
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
+    const project = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan';
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28';
+    const key = process.env.APPWRITE_API_KEY;
+
+    if (!key) return;
+
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
+    const docId = `daily_usage_${todayStr}`;
+    const headers = {
+      'X-Appwrite-Project': project,
+      'X-Appwrite-Key': key,
+      'Content-Type': 'application/json'
+    };
+
+    const patchRes = await fetch(`${endpoint}/databases/${dbId}/collections/sequences/documents/${docId}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ data: { value: count } })
+    });
+
+    if (!patchRes.ok && patchRes.status === 404) {
+      await fetch(`${endpoint}/databases/${dbId}/collections/sequences/documents`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          documentId: docId,
+          data: { key: `daily_usage_${todayStr}`, value: count }
+        })
+      });
+    }
+  } catch {
+    // Silent catch
+  }
+}
+
+export async function fetchPersistedDailyCountFromAppwrite(): Promise<number> {
+  try {
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
+    const project = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan';
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28';
+    const key = process.env.APPWRITE_API_KEY;
+
+    if (!key) return 0;
+
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
+    const docId = `daily_usage_${todayStr}`;
+    const headers = {
+      'X-Appwrite-Project': project,
+      'X-Appwrite-Key': key,
+      'Content-Type': 'application/json'
+    };
+
+    const res = await fetch(`${endpoint}/databases/${dbId}/collections/sequences/documents/${docId}`, {
+      headers,
+      cache: 'no-store'
+    });
+
+    if (res.ok) {
+      const doc = await res.json();
+      return typeof doc.value === 'number' ? doc.value : 0;
+    }
+  } catch {
+    // Silent catch
+  }
+  return 0;
+}
+
 export function getRecentReads(limit = 500): ReadEntry[] {
   return entries.slice(-limit);
 }
@@ -102,32 +180,27 @@ export function getReadsSummary(minutes = 1440): {
   const ops: Record<string, number> = {};
 
   for (const e of recent) {
-    // By source (API route)
     const s = sourceMap.get(e.source) || { count: 0, collections: new Set(), ops: {} };
     s.count++;
     s.collections.add(e.collectionId);
     s.ops[e.op] = (s.ops[e.op] || 0) + 1;
     sourceMap.set(e.source, s);
 
-    // By collection
     const c = colMap.get(e.collectionId) || { count: 0, sources: new Set(), ops: {} };
     c.count++;
     c.sources.add(e.source);
     c.ops[e.op] = (c.ops[e.op] || 0) + 1;
     colMap.set(e.collectionId, c);
 
-    // By source file + line
     const fileKey = `${e.sourceFile}:${e.sourceLine}`;
     const f = fileMap.get(fileKey) || { file: e.sourceFile, line: e.sourceLine, count: 0, source: e.source };
     f.count++;
     fileMap.set(fileKey, f);
 
-    // By minute
     const d = new Date(e.ts);
     const minuteKey = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     minuteMap.set(minuteKey, (minuteMap.get(minuteKey) || 0) + 1);
 
-    // Cross-reference source × collection
     const crossKey = `${e.source}|||${e.collectionId}`;
     const cr = crossMap.get(crossKey) || { source: e.source, collection: e.collectionId, count: 0 };
     cr.count++;
@@ -195,7 +268,6 @@ export function trackRead(op: string, collectionId: string, detail: string, stac
       }
     }
 
-    // Extract just the filename for cleaner display
     const fileNameMatch = path.match(/[\\/]([^\\/]+\.tsx?)$/);
     if (fileNameMatch) {
       sourceFile = fileNameMatch[1];
@@ -215,6 +287,9 @@ export function trackRead(op: string, collectionId: string, detail: string, stac
     entries.push(entry);
     if (entries.length > MAX_ENTRIES) entries.shift();
     saveEntriesToDisk();
+
+    // Trigger throttled background sync to Appwrite
+    syncDailyUsageToAppwrite(entries.length).catch(() => {});
   } catch {
     // never throw from tracker
   }

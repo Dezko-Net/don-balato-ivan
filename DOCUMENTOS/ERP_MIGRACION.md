@@ -3,7 +3,12 @@
 > **Escrito por:** Agente Antigravity (contexto completo del proyecto)
 > **Para:** Claude Pro Max u otro agente con capacidad de escritura
 > **Proyecto:** `C:\Proyectos\PROYECTO DON BALATO IVAN\PROJECT YAXSEL (PRODUCCION) - 14-06-2026 (3GB)`
-> **Última actualización:** 2026-07-30
+> **Última actualización:** 2026-07-30 (plan original) · **Log de ejecución agregado 2026-07-30 por Claude Opus 4.8**
+
+> ⚠️ **IMPORTANTE:** El plan de abajo (PASOS 1–7) se ejecutó, PERO durante la ejecución se descubrió que la
+> página `/erp` (Cuadres) es solo **una parte** del ERP. El dashboard principal real es otro (el `Dashboard.tsx`
+> de Asistora). El alcance creció. **Lee primero el [LOG DE EJECUCIÓN](#log-de-ejecución--estado-real-2026-07-30)
+> al final del documento** para ver el estado real y actualizado antes de continuar.
 
 ---
 
@@ -778,3 +783,134 @@ Cuando llegue el momento de separar, cada módulo debería poder funcionar con s
 | `src/components/StoreShell.tsx` | Ya configurado — no tocar |
 | `src/app/admin/(panel)/layout.tsx` | Sidebar ya correcto — no tocar |
 | Todo lo de la tienda web | Módulo separado — no tocar nunca |
+
+---
+---
+
+# LOG DE EJECUCIÓN — ESTADO REAL (2026-07-30)
+
+> Ejecutado por **Claude Opus 4.8**. Esta sección refleja lo que **realmente** se hizo y el estado actual.
+> Sustituye/complementa al plan de arriba donde haya diferencias.
+
+## 0. Descubrimiento clave (cambio de alcance)
+
+El plan original asumía que `/erp` era "el dashboard del ERP". **No lo es.** Durante la ejecución el dueño aclaró:
+
+- **`/erp`** (la página de Cuadres que migró el plan original) es **solo UNA pestaña** del ERP.
+- El **dashboard principal** del ERP es el `Dashboard.tsx` del proyecto original Asistora, mucho más grande
+  (header "Ventas hoy", pestañas Cuadres/Ganancias/POS, Cerebro IA, Análisis Mensual, proyecciones, Top
+  Productos, Ranking de Rentabilidad, etc.).
+- **Repo fuente del original (Asistora, solo lectura, referencia):**
+  `C:\Proyectos\PROJECT ERP ASISTORA (PRODUCCION) - 14-06-2026 (2.5GB)`
+  - Dashboard principal: `src/components/Dashboard.tsx` (~3548 líneas)
+  - Chrome (navbar + sidebar): `src/layouts/DashboardLayout.tsx` (~1198 líneas)
+
+**Decisiones del dueño durante la ejecución:**
+1. El dashboard nuevo pasa a ser el **principal** del ERP (no el `/erp` de Cuadres).
+2. Primero portar **todo el diseño/visual**; luego vincular a Appwrite incrementalmente ("yo te diré qué
+   vinculamos y qué borramos").
+
+## 1. Migración `/erp` (Cuadres) — ✅ COMPLETADA (PASOS 1–5 del plan)
+
+- **Colección `cuadres_erp` creada** en Appwrite (19 atributos `available`, índices `sede_fecha_idx` y
+  `fecha_idx`, permisos `any`). SDK Appwrite instalado = **16.1.0** → `Query.greaterThanEqual` existe (se usó tal cual).
+- **`src/lib/cuadresErpService.ts`** creado (idéntico al PASO 2): `fetchCuadresERP`, `createCuadreERP`,
+  `updateCuadreERP`, `deleteCuadreERP` + (de)serialización de arrays JSON.
+- **`src/app/erp/page.tsx`** editado: mocks de Firebase eliminados, `rows: CuadreERP[]`, `useEffect` de carga y
+  de costos vinculados a Appwrite, `handleDeleteCuadreOfDay` borra en Appwrite, textos de export actualizados.
+- **Documento de prueba** creado en `cuadres_erp` (`sede=alameda`, `fecha=2026-07-30`) — borrable desde el 🗑️ de la UI.
+- Verificado en vivo: `/erp` lee datos reales. `tsc --noEmit` → **0 errores**.
+
+## 2. Dashboard principal portado — ✅ VISUAL + VINCULACIÓN PARCIAL
+
+**Archivo nuevo:** `src/app/erp-dashboard/page.tsx` (port de `Dashboard.tsx` de Asistora).
+
+Técnica de port (para no reescribir 3548 líneas de JSX): se copió el archivo y se **shimeó solo la capa de datos**:
+- `firebase/firestore` → mocks no-op (in-file).
+- `react-router-dom` (`Link`/`useNavigate`) → Next (`next/link`, `useRouter`).
+- `useAuth` / `runtimeConfig` → mocks fijos de Yaxsel (branding + 1 sede `alameda`).
+- Assets copiados a `public/erp/` (`asis.png`, `tora.png`) y `public/avatar.png`.
+- **`recharts` instalado** (los charts lo requieren; no estaba en Yaxsel).
+- `'use client'` agregado.
+
+**Dependencias nuevas creadas:** `src/data/demoWorkers.ts` (copiado de Asistora, datos demo de equipo).
+
+## 3. Navbar superior + cortina lateral (sidebar) — ✅ PORTADO
+
+**Archivo nuevo:** `src/app/erp-dashboard/layout.tsx` (port de `DashboardLayout.tsx`, como **layout de Next**).
+- `<Outlet />` → `{children}` (ahí se renderiza el dashboard).
+- Mismos shims que `page.tsx` + `useLocation` → `usePathname`, `Timestamp` mockeado.
+- **Fix SSR:** el original (Vite, sin SSR) usaba `window.innerWidth` directo en el render → crasheaba en el
+  server de Next. Se protegieron los 5 usos con `typeof window !== 'undefined'`.
+- Incluye: botón hamburguesa, logo/branding, "Ventas hoy", CONTADOR IA, pestañas Cuadres/Ganancias/POS,
+  selector de sede, notificaciones, avatar, reloj, modo claro/oscuro, command palette, y el drawer lateral.
+- Verificado en vivo (server limpio, consola sin errores): `<header>` ✓, `<aside>` ✓, contenido dentro ✓.
+
+## 4. Ruteo — ✅ dashboard como principal del ERP
+
+- `src/app/admin/(panel)/layout.tsx` → enlace **ERP** del sidebar admin ahora apunta a `/erp-dashboard`.
+- `src/app/admin/(panel)/erp/page.tsx` → `redirect('/erp-dashboard')`.
+- `src/components/GlobalMobileNav.tsx` → oculta la nav móvil de tienda en rutas `/erp*`.
+- La página de Cuadres sigue en `/erp` (será una pestaña del dashboard más adelante).
+
+## 5. Estado de la VINCULACIÓN a Appwrite
+
+Modo demo **apagado** (`isRuntimeDemoProject()→false`). Todo lo vinculado está marcado con `[APPWRITE]` en el código.
+
+| Sección del dashboard | Fuente Appwrite | Estado |
+|---|---|---|
+| Datos del día, sucursales, totales, Top Productos, Producto más vendido | `cuadres_erp` | ✅ `loadData` |
+| Análisis Mensual, Proyecciones, Tendencia, Acumulado por Sede, Ranking | `cuadres_erp` | ✅ `loadMonthlyData` |
+| Costos Productos, Ganancia Final, Pérdidas / Rev. Costos (`costsBD`/`pricesBD`) | `products` (226 prods) | ✅ `loadCosts` |
+| "Ventas hoy" (pill de la navbar) | `cuadres_erp` | ✅ en `layout.tsx` |
+| **Equipo / Trabajadores** | `trabajadores_erp` (nueva) | ✅ `loadTrabajadores` |
+| **Gastos fijos** (sueldos) para proyecciones | `trabajadores_erp` | ✅ en `loadMonthlyData` |
+| **Cerebro IA / Chat IA / CONTADOR IA** | módulo Kenia IA `/admin/ia` | ✅ enlaces vía `mapRoute` |
+| **Chips de estado de cuadre** (cajeros listos) | posible `ventas_pos` | ⛔ pendiente decisión |
+| **Enlaces de navbar/sidebar** (`/_admin`, `/pos-admin`, etc.) | rutas de Asistora | ✅ remapeados (ver abajo) |
+
+**Remapeo de rutas (✅ hecho):** se agregó `mapRoute()` en los shims `Link`/`useNavigate` de `page.tsx` y
+`layout.tsx`. Mapea `/_admin`→`/erp`, `/admin`→`/erp`, `/pos-admin`,`/pos`→`/admin/pos-admin`,
+`/dashboard-login`→`/admin/login`, `/inventario`,`/base-datos`,`/control-datos`→`/admin/inventario-erp`,
+`/top-products*`,`/ganancias*`→`/erp`. Todo lo demás (features de Asistora sin equivalente en Yaxsel) cae a
+`/erp-dashboard` para evitar 404. Ampliar el `MAP` cuando existan más rutas Yaxsel.
+
+## 6. Pendientes / notas técnicas para el próximo agente
+
+- ~~**Remapear rutas** de la navbar y el drawer~~ ✅ HECHO vía `mapRoute()` (ver §5).
+- **Dead code:** en `page.tsx` (`loadData`, `loadMonthlyData`) y `layout.tsx` (`fetchTodaySales`) el código
+  Firebase original quedó **debajo de un `return` temprano** (comentado como "ya no se ejecuta"). Limpiar cuando
+  se confirme que la lógica Appwrite es la definitiva.
+- ~~**Trabajadores/Gastos fijos**~~ ✅ HECHO: colección `trabajadores_erp` creada (nombre, cargo, sede, sueldo,
+  fotoUrl, activo, nacionalidad, genero, fechaIngreso; índice `sede_idx`; permisos `any`). Servicio
+  `src/lib/trabajadoresErpService.ts` (`fetchTrabajadoresERP`, `createTrabajadorERP`, `deleteTrabajadorERP`).
+  `loadTrabajadores` y los gastos fijos de `loadMonthlyData` leen de ahí. Hay 3 trabajadores de prueba (alameda).
+  **Formulario ✅:** `src/app/erp-dashboard/equipo/page.tsx` — lista/agrega/elimina equipo (probado: create cliente→Appwrite
+  funciona). Entrada desde el dashboard: "Trabajadores" (`/planilla-unificada` → `/erp-dashboard/equipo` vía `mapRoute`).
+- ~~**Cerebro IA / Chat IA**~~ ✅ HECHO: los botones (Cerebro IA, Dashboard ASIS, CONTADOR IA, burbujas ASIS/TORA,
+  WhatsApp/Telegram) enlazan al módulo Kenia IA de Yaxsel vía `mapRoute` (`/chat-ia`,`/cerebro-ia`,`/ia-consultor`,
+  `/asis-monitor`→`/admin/ia`; `/whatsapp*`→`/admin/ia/whatsapp`).
+- **Regla de oro respetada:** tras cada cambio, `npx tsc --noEmit` → **0 errores**.
+- **Datos mensuales sparse:** hoy solo existe 1 cuadre real (el de prueba), por eso el Análisis Mensual muestra
+  "1/31 días". Al ingresar cuadres reales, el dashboard se llena solo.
+
+## 7. Archivos nuevos/editados en esta ejecución
+
+| Archivo | Acción |
+|---|---|
+| Appwrite: colección `cuadres_erp` | CREADA (+ doc de prueba) |
+| Appwrite: colección `trabajadores_erp` | CREADA (+ 3 docs de prueba) |
+| `src/lib/cuadresErpService.ts` | CREADO |
+| `src/lib/trabajadoresErpService.ts` | CREADO |
+| `src/app/erp/page.tsx` | EDITADO (migrado a Appwrite) |
+| `src/app/erp-dashboard/page.tsx` | CREADO (dashboard principal, port + binding) |
+| `src/app/erp-dashboard/layout.tsx` | CREADO (navbar + sidebar, port + binding) |
+| `src/app/erp-dashboard/equipo/page.tsx` | CREADO (formulario gestión de equipo) |
+| `src/app/erp/nuevo/page.tsx` | CREADO (formulario nuevo cuadre, PASO 6) |
+| `src/lib/trabajadoresErpService.ts` | CREADO |
+| `src/data/demoWorkers.ts` | CREADO (datos demo de equipo) |
+| `public/erp/asis.png`, `public/erp/tora.png`, `public/avatar.png` | COPIADOS |
+| `src/app/admin/(panel)/layout.tsx` | EDITADO (enlace ERP → `/erp-dashboard`) |
+| `src/app/admin/(panel)/erp/page.tsx` | EDITADO (redirect → `/erp-dashboard`) |
+| `src/components/GlobalMobileNav.tsx` | EDITADO (ocultar en `/erp*`) |
+| `package.json` | recharts agregado |

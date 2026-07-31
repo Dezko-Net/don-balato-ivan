@@ -24,6 +24,8 @@ import type { SedeSlug } from '@/types'
 import { fetchCuadresERP } from '@/lib/cuadresErpService'
 import type { CuadreERP } from '@/lib/cuadresErpService'
 import { fetchAllAppwriteErpProducts } from '@/lib/appwriteErpService'
+import { fetchTrabajadoresERP } from '@/lib/trabajadoresErpService'
+import type { TrabajadorERP } from '@/lib/trabajadoresErpService'
 
 // ============================================================================
 // SHIMS DE MIGRACIÓN (SOLO-VISUAL)
@@ -37,10 +39,37 @@ const asisImage = '/erp/asis.png'
 const toraImage = '/erp/tora.png'
 
 // react-router-dom → Next.js
-const Link = ({ to, children, ...rest }: any) => <NextLink href={to || '#'} {...rest}>{children}</NextLink>
+// Mapa de rutas del ERP original (Asistora) → rutas reales de Yaxsel.
+// Lo no mapeado cae al dashboard para evitar 404 (features aún sin equivalente).
+function mapRoute(to?: string): string {
+  if (!to) return '/erp-dashboard'
+  const path = to.split('?')[0]
+  const MAP: Record<string, string> = {
+    '/': '/erp-dashboard',
+    '/_admin': '/erp',
+    '/admin': '/erp',
+    '/pos-admin': '/admin/pos-admin',
+    '/pos': '/admin/pos-admin',
+    '/dashboard-login': '/admin/login',
+    '/inventario': '/admin/inventario-erp',
+    '/base-datos': '/admin/inventario-erp',
+    '/control-datos': '/admin/inventario-erp',
+    '/cajeras': '/erp/nuevo',                        // Realizar Corte → nuevo cuadre
+    '/planilla-unificada': '/erp-dashboard/equipo',  // Trabajadores → gestión de equipo
+    '/informe-general-trabajadores': '/erp-dashboard/equipo',
+    '/analisis-cajeras': '/erp-dashboard/equipo',
+  }
+  if (MAP[path]) return MAP[path]
+  if (path.startsWith('/top-products') || path.startsWith('/ganancias')) return '/erp'
+  // IA (Cerebro IA / Chat IA / CONTADOR IA / ASIS) → módulo Kenia IA de Yaxsel
+  if (path.startsWith('/whatsapp')) return '/admin/ia/whatsapp'
+  if (/^\/(chat-ia|cerebro-ia|ia-consultor|asis-monitor|telegram)/.test(path)) return '/admin/ia'
+  return '/erp-dashboard'
+}
+const Link = ({ to, children, ...rest }: any) => <NextLink href={mapRoute(to)} {...rest}>{children}</NextLink>
 function useNavigate() {
   const router = useRouter()
-  return useCallback((path: string) => { try { router.push(path) } catch {} }, [router])
+  return useCallback((path: string) => { try { router.push(mapRoute(path)) } catch {} }, [router])
 }
 
 // Firebase Firestore → mocks no-op (retornan vacío; el componente cae a datos demo)
@@ -844,6 +873,28 @@ export default function Dashboard() {
   }
 
   const loadTrabajadores = async () => {
+    // ── [APPWRITE] Equipo desde la colección trabajadores_erp ──
+    {
+      try {
+        const items = await fetchTrabajadoresERP()
+        const list: Trabajador[] = items
+          .filter((t: TrabajadorERP) => t.activo)
+          .map((t: TrabajadorERP) => ({
+            id: t.$id,
+            nombre: t.nombre,
+            cargo: t.cargo,
+            sucursal: t.sede,
+            foto: t.fotoUrl || undefined,
+          }))
+        setTrabajadores(list)
+        return
+      } catch (e) {
+        console.error('[Dashboard][Appwrite] loadTrabajadores error:', e)
+        setTrabajadores([])
+        return
+      }
+    }
+    // ─── (código original Firebase — ya no se ejecuta) ───
     try {
       if (!db) return
       const snap = await getDocs(collection(db, 'trabajadores'))
@@ -997,7 +1048,16 @@ export default function Dashboard() {
         setMonthlyData(days)
         setDailyBySede(perSedeDaily)
         setMonthlyBySede(perSedeAcc)
-        setFixedMonthlyBySede({}) // gastos fijos (sueldos/externos): binding posterior
+        // Gastos fijos (sueldos) por sede desde trabajadores_erp
+        const trabajadoresFijos = await fetchTrabajadoresERP()
+        const fixedBySede: Record<string, { sueldos: number; externos: number; total: number }> = {}
+        trabajadoresFijos.filter((t: TrabajadorERP) => t.activo).forEach((t: TrabajadorERP) => {
+          const acc = fixedBySede[t.sede] || { sueldos: 0, externos: 0, total: 0 }
+          acc.sueldos += Number(t.sueldo) || 0
+          acc.total = acc.sueldos + acc.externos
+          fixedBySede[t.sede] = acc
+        })
+        setFixedMonthlyBySede(fixedBySede)
         setLoadingMonthly(false)
         return
       } catch (e) {
