@@ -90,7 +90,6 @@ export async function POST(request: NextRequest) {
       COMUNA: '',
       ADDRESS: '',
       ...(night ? { NIGHTORDER: true } : {}),
-      ...(assignedCashier ? { ASSIGNEDCASHIER: assignedCashier } : {}),
     });
 
     return NextResponse.json({
