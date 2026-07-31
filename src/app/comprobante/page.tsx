@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { parsePaymentProofs, serializePaymentProofs, MAX_PAYMENT_PROOFS } from '@/lib/payment-proofs';
 
 const ACCESS_PASSWORD = 'redes123';
 
@@ -35,7 +36,9 @@ function ComprobanteContent() {
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !code) return;
+    if (!file || !code || !order) return;
+    const current = parsePaymentProofs(order.PAYMENTPROOFURL);
+    if (current.length >= MAX_PAYMENT_PROOFS) { setError('Solo se permiten hasta 3 comprobantes'); return; }
     setUploading(true);
     setError('');
     try {
@@ -47,7 +50,8 @@ function ComprobanteContent() {
         body: formData,
       });
       const data = await res.json();
-      if (data.error) { setError(data.error); return; }
+      if (data.error) { setError(data.error); setUploading(false); return; }
+      setOrder((prev: any) => prev ? { ...prev, PAYMENTPROOFURL: serializePaymentProofs([...current, data.proofUrl]) } : prev);
       setSuccess(true);
     } catch (e: any) {
       setError(e.message);
@@ -150,25 +154,56 @@ function ComprobanteContent() {
         </div>
 
         {/* Upload area */}
-        <div className="bg-white rounded-2xl p-6">
-          <h2 className="font-bold text-gray-800 mb-2">Comprobante de pago</h2>
-          <p className="text-sm text-gray-500 mb-4">Sube la foto o PDF del comprobante de transferencia que envió el cliente.</p>
-          {error && <div className="text-red-500 text-sm mb-3">{error}</div>}
-          <label className={`block ${uploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-            <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
-            <div className="border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-2xl p-8 text-center bg-blue-50/10 transition">
-              {uploading ? (
-                <div className="text-blue-500 font-semibold">Subiendo...</div>
+        {(() => {
+          const proofs = parsePaymentProofs(order?.PAYMENTPROOFURL);
+          const canAdd = proofs.length < MAX_PAYMENT_PROOFS;
+          return (
+            <div className="bg-white rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-gray-800 mb-1">Comprobante(s) de pago</h2>
+                <p className="text-sm text-gray-500">Sube la foto o PDF del comprobante. Máximo 3.</p>
+              </div>
+              {proofs.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {proofs.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-3 p-3 border border-emerald-200 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-emerald-700 truncate">Comprobante {i + 1}</p>
+                        <p className="text-[10px] text-emerald-500">Ver archivo</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+              {error && <div className="text-red-500 text-sm">{error}</div>}
+              {success && <div className="text-emerald-600 text-sm font-semibold">Comprobante subido correctamente.</div>}
+              {canAdd ? (
+                <label className={`block ${uploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
+                  <div className="border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-2xl p-6 text-center bg-blue-50/10 transition">
+                    {uploading ? (
+                      <div className="text-blue-500 font-semibold">Subiendo...</div>
+                    ) : (
+                      <>
+                        <svg className="w-10 h-10 text-blue-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                        <div className="text-blue-600 font-semibold">Toca para subir comprobante {proofs.length + 1} de {MAX_PAYMENT_PROOFS}</div>
+                        <div className="text-xs text-gray-400 mt-1">JPG, PNG o PDF</div>
+                      </>
+                    )}
+                  </div>
+                </label>
               ) : (
-                <>
-                  <svg className="w-12 h-12 text-blue-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                  <div className="text-blue-600 font-semibold">Toca para subir comprobante</div>
-                  <div className="text-xs text-gray-400 mt-1">JPG, PNG o PDF</div>
-                </>
+                <div className="p-4 text-center text-sm text-amber-700 bg-amber-50 rounded-xl border border-amber-200">
+                  Ya se subieron los {MAX_PAYMENT_PROOFS} comprobantes permitidos.
+                </div>
               )}
             </div>
-          </label>
-        </div>
+          );
+        })()}
       </div>
     </div>
   );

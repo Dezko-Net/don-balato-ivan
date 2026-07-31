@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 import { resolveStorageImageUrl } from '@/lib/product-images';
+import { parsePaymentProofs, serializePaymentProofs, MAX_PAYMENT_PROOFS } from '@/lib/payment-proofs';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:            { label: 'Recibido',                  bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
@@ -94,8 +95,9 @@ export default function OrderDetailPage() {
   const [productPrices, setProductPrices] = useState<Record<string, number>>({});
   const [productBarcodes, setProductBarcodes] = useState<Record<string, string>>({});
   const [proofOpen, setProofOpen] = useState(false);
+  const [selectedPaymentProof, setSelectedPaymentProof] = useState<string | null>(null);
+  const [selectedPaymentProofIsPdf, setSelectedPaymentProofIsPdf] = useState(false);
   const [shippingProofOpen, setShippingProofOpen] = useState(false);
-  const [paymentProofIsPdf, setPaymentProofIsPdf] = useState(false);
   const [shippingProofIsPdf, setShippingProofIsPdf] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [uploadingShippingProof, setUploadingShippingProof] = useState(false);
@@ -1140,26 +1142,26 @@ export default function OrderDetailPage() {
   }, [order?.ADDITIONALINFO]);
 
   useEffect(() => {
-    if (order?.PAYMENTPROOFURL) {
-      if (isPdfUrl(order.PAYMENTPROOFURL)) {
-        setPaymentProofIsPdf(true);
+    if (selectedPaymentProof) {
+      if (isPdfUrl(selectedPaymentProof)) {
+        setSelectedPaymentProofIsPdf(true);
       } else {
-        fetch(order.PAYMENTPROOFURL, { method: 'HEAD' })
+        fetch(selectedPaymentProof, { method: 'HEAD' })
           .then(res => {
             const contentType = res.headers.get('content-type');
             if (contentType?.includes('application/pdf')) {
-              setPaymentProofIsPdf(true);
+              setSelectedPaymentProofIsPdf(true);
             } else {
-              setPaymentProofIsPdf(false);
+              setSelectedPaymentProofIsPdf(false);
             }
           })
           .catch(err => {
             console.warn('Error checking payment proof Content-Type:', err);
-            setPaymentProofIsPdf(false);
+            setSelectedPaymentProofIsPdf(false);
           });
       }
     } else {
-      setPaymentProofIsPdf(false);
+      setSelectedPaymentProofIsPdf(false);
     }
 
     if (order?.SHIPPINGPROOFURL) {
@@ -1183,7 +1185,7 @@ export default function OrderDetailPage() {
     } else {
       setShippingProofIsPdf(false);
     }
-  }, [order?.PAYMENTPROOFURL, order?.SHIPPINGPROOFURL]);
+  }, [selectedPaymentProof, order?.SHIPPINGPROOFURL]);
 
   // Load agencies for the selector
   useEffect(() => {
@@ -1434,6 +1436,11 @@ export default function OrderDetailPage() {
   const handleAdminUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !order) return;
+    const current = parsePaymentProofs(order.PAYMENTPROOFURL);
+    if (current.length >= MAX_PAYMENT_PROOFS) {
+      alert('Solo se permiten hasta 3 comprobantes de pago');
+      return;
+    }
     setUploadingProof(true);
     try {
       const { storage, databases } = getServices();
@@ -1442,8 +1449,9 @@ export default function OrderDetailPage() {
       await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
+      const allProofs = serializePaymentProofs([...current, url]);
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
-        PAYMENTPROOFURL: url,
+        PAYMENTPROOFURL: allProofs,
         STATUS: ['pending', 'pending_stock', 'processing'].includes(order.STATUS) ? 'payment_review' : order.STATUS,
       });
       await load();
@@ -1454,16 +1462,20 @@ export default function OrderDetailPage() {
     }
   };
 
-  const handleAdminDeleteProof = async () => {
+  const handleAdminDeleteProof = async (index: number) => {
     if (!order) return;
-    if (!confirm('¿Seguro que deseas eliminar el comprobante de pago?')) return;
+    const current = parsePaymentProofs(order.PAYMENTPROOFURL);
+    if (index < 0 || index >= current.length) return;
+    if (!confirm('¿Seguro que deseas eliminar este comprobante de pago?')) return;
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+      current.splice(index, 1);
+      const remaining = serializePaymentProofs([...current]);
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
-        PAYMENTPROOFURL: '',
+        PAYMENTPROOFURL: remaining,
       });
-      setOrder(prev => prev ? { ...prev, PAYMENTPROOFURL: '' } : prev);
+      setOrder(prev => prev ? { ...prev, PAYMENTPROOFURL: remaining } : prev);
       alert('Comprobante de pago eliminado correctamente.');
       await load();
     } catch (err: any) {
@@ -1626,20 +1638,20 @@ export default function OrderDetailPage() {
       `}</style>
 
       {/* Proof lightbox */}
-      {proofOpen && order.PAYMENTPROOFURL && (() => {
-        const isPdf = isPdfUrl(order.PAYMENTPROOFURL) || paymentProofIsPdf;
+      {proofOpen && selectedPaymentProof && (() => {
+        const isPdf = isPdfUrl(selectedPaymentProof) || selectedPaymentProofIsPdf;
         return (
-          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 gap-4" onClick={() => setProofOpen(false)}>
+          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 gap-4" onClick={() => { setProofOpen(false); setSelectedPaymentProof(null); }}>
             <div className="no-print flex gap-4">
               <a 
-                href={order.PAYMENTPROOFURL} 
+                href={selectedPaymentProof} 
                 target="_blank" 
                 rel="noreferrer" 
                 className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 hover:bg-indigo-700 transition"
               >
                 <ExternalLink className="w-4 h-4" /> Abrir archivo / Descargar
               </a>
-              <button onClick={() => setProofOpen(false)} className="px-4 py-2 bg-white/20 text-white text-xs font-bold rounded-xl hover:bg-white/30 transition">
+              <button onClick={() => { setProofOpen(false); setSelectedPaymentProof(null); }} className="px-4 py-2 bg-white/20 text-white text-xs font-bold rounded-xl hover:bg-white/30 transition">
                 Cerrar
               </button>
             </div>
@@ -1648,12 +1660,12 @@ export default function OrderDetailPage() {
                 <div className="flex flex-col items-center justify-center gap-4 py-12 text-white">
                   <FileText size={64} className="text-indigo-400 animate-pulse" />
                   <p className="text-sm font-semibold text-gray-300">Este comprobante es un archivo PDF</p>
-                  <a href={order.PAYMENTPROOFURL} target="_blank" rel="noreferrer" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition font-bold text-xs flex items-center gap-2 no-underline">
+                  <a href={selectedPaymentProof} target="_blank" rel="noreferrer" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition font-bold text-xs flex items-center gap-2 no-underline">
                     <ExternalLink size={14} /> Abrir y ver PDF en nueva pestaña
                   </a>
                 </div>
               ) : (
-                <img src={order.PAYMENTPROOFURL} alt="Comprobante de pago" className="w-full h-auto max-h-[75vh] object-contain rounded-2xl" />
+                <img src={selectedPaymentProof} alt="Comprobante de pago" className="w-full h-auto max-h-[75vh] object-contain rounded-2xl" />
               )}
             </div>
           </div>
@@ -2914,63 +2926,53 @@ export default function OrderDetailPage() {
                   <span className="text-[10px] sm:text-xs font-mono font-bold text-emerald-700">{order.COUPONCODE}</span>
                 </div>
               )}
-              {order.PAYMENTPROOFURL ? (
-                <div className="p-2.5 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl space-y-2">
-                  <button onClick={() => {
-                    const url = order.PAYMENTPROOFURL!;
-                    if (isPdfUrl(url) || paymentProofIsPdf) {
-                      window.open(url, '_blank');
-                    } else {
-                      setProofOpen(true);
-                    }
-                  }}
-                    className="flex items-center gap-2 w-full text-left group">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                      <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] sm:text-xs font-semibold text-emerald-700">Comprobante de pago</p>
-                      <p className="text-[9px] sm:text-[10px] text-emerald-500">Click para ver</p>
-                    </div>
-                    <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  </button>
-                  <div className="flex items-center gap-2 pt-1 border-t border-emerald-200/60">
-                    <label className="flex-1 flex items-center justify-center gap-1.5 p-1.5 sm:p-2 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg cursor-pointer transition text-[10px] sm:text-xs font-bold">
-                      <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadProof} className="hidden" disabled={uploadingProof} />
-                      {uploadingProof ? (
-                        <>
-                          <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                          <span>Reemplazando...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                          <span>Reemplazar</span>
-                        </>
-                      )}
-                    </label>
-                    <button onClick={handleAdminDeleteProof} className="flex-1 flex items-center justify-center gap-1.5 p-1.5 sm:p-2 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-lg transition text-[10px] sm:text-xs font-bold">
-                      <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      <span>Eliminar</span>
-                    </button>
+              {(() => {
+                const proofs = parsePaymentProofs(order?.PAYMENTPROOFURL);
+                const canAdd = proofs.length < MAX_PAYMENT_PROOFS;
+                const canUpload = ['pending', 'pending_stock', 'processing', 'paid', 'payment_review'].includes(order.STATUS);
+                if (!proofs.length && !canUpload) return null;
+                return (
+                  <div className="space-y-2">
+                    {proofs.map((url, i) => (
+                      <div key={i} className="p-2.5 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl space-y-2">
+                        <button onClick={() => { setSelectedPaymentProof(url); setProofOpen(true); }}
+                          className="flex items-center gap-2 w-full text-left group">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                            <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] sm:text-xs font-semibold text-emerald-700">Comprobante de pago {i + 1}</p>
+                            <p className="text-[9px] sm:text-[10px] text-emerald-500">Click para ver</p>
+                          </div>
+                          <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                        </button>
+                        <div className="flex items-center gap-2 pt-1 border-t border-emerald-200/60">
+                          <button onClick={() => handleAdminDeleteProof(i)} className="flex-1 flex items-center justify-center gap-1.5 p-1.5 sm:p-2 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-lg transition text-[10px] sm:text-xs font-bold">
+                            <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            <span>Eliminar</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {canAdd && canUpload && (
+                      <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-amber-100 transition group">
+                        <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadProof} className="hidden" disabled={uploadingProof} />
+                        {uploadingProof ? (
+                          <>
+                            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                            <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Subiendo...</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0 group-hover:text-amber-600" />
+                            <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Subir comprobante {proofs.length + 1} / {MAX_PAYMENT_PROOFS}</p>
+                          </>
+                        )}
+                      </label>
+                    )}
                   </div>
-                </div>
-              ) : ['pending', 'pending_stock', 'processing', 'paid', 'payment_review'].includes(order.STATUS) ? (
-                <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-amber-100 transition group">
-                  <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadProof} className="hidden" disabled={uploadingProof} />
-                  {uploadingProof ? (
-                    <>
-                      <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                      <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Subiendo...</p>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0 group-hover:text-amber-600" />
-                      <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Subir comprobante</p>
-                    </>
-                  )}
-                </label>
-              ) : null}
+                );
+              })()}
             </div>
           </div>
 

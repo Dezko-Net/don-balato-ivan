@@ -3,6 +3,7 @@ import { revalidateTag } from 'next/cache';
 import { serverListDocuments, serverUpdateDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
+import { parsePaymentProofs, serializePaymentProofs, MAX_PAYMENT_PROOFS } from '@/lib/payment-proofs';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,9 +34,15 @@ export async function POST(request: NextRequest) {
     const fileId = (uploaded as any).$id;
     const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, fileId);
 
-    // Update order with proof URL and change status
+    // Append to existing proofs (max 3)
+    const existing = parsePaymentProofs(order.PAYMENTPROOFURL);
+    if (existing.length >= MAX_PAYMENT_PROOFS) {
+      return NextResponse.json({ error: 'Solo se permiten hasta 3 comprobantes de pago' }, { status: 400 });
+    }
+    const allProofs = serializePaymentProofs([...existing, fileUrl]);
+
     await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
-      PAYMENTPROOFURL: fileUrl,
+      PAYMENTPROOFURL: allProofs,
       STATUS: 'payment_review',
       UPDATEDAT: Date.now(),
     });

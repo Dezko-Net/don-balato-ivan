@@ -1037,10 +1037,12 @@ export default function ProductsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+      const stockForSave = (d.STOCK === undefined || d.STOCK === null) ? 99999 : Math.max(0, Math.round(Number(d.STOCK)));
       const payload: Record<string, any> = {
         NAME: d.NAME, DESCRIPTION: d.DESCRIPTION || '',
         PRICE: Math.round(Number(d.PRICE)) || Math.round(Number(d.CATALOGPRICE)) || 0,
-        STOCK: (d.STOCK === undefined || d.STOCK === null || Number(d.STOCK) === 0) ? 99999 : Math.round(Number(d.STOCK)),
+        STOCK: stockForSave,
+        ISACTIVE: stockForSave > 0,
         COST: Math.round(Number(d.COST)) || 0,
         CURRENTPRICE: d.CURRENTPRICE ? Math.round(Number(d.CURRENTPRICE)) : null,
         WHOLESALEPRICE: Math.round(Number(d.WHOLESALEPRICE)) || 0,
