@@ -54,7 +54,7 @@ const CSS = `
     radial-gradient(90% 55% at 50% 0%, #dbe9ff 0%, transparent 60%),
     radial-gradient(70% 50% at 80% 90%, rgba(221,214,254,.4) 0%, transparent 60%),
     linear-gradient(180deg, #eef4ff 0%, #e6eefb 50%, #f0ecfa 100%);
-  padding: 20px 14px 40px;
+  padding: 0 14px 40px;
   display: flex;
   justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -105,7 +105,7 @@ const CSS = `
 /* ── Hero ─────────────────────────────────────────────────── */
 .lt-hero {
   position: sticky;
-  top: 12px;
+  top: 0;
   z-index: 1;
   height: auto;
   min-height: 200px;
@@ -271,17 +271,24 @@ const CSS = `
   overflow: hidden;
   white-space: nowrap;
   border-right: 2px solid #3b82f6;
-  animation: lt_typing 2.5s steps(55, end) 0.3s both, lt_blink_caret 0.6s step-end infinite 2.8s;
+  animation: lt_typing 4s steps(55, end) 0.3s infinite, lt_blink_caret 0.6s step-end infinite;
   max-width: 100%;
 }
 @keyframes lt_typing {
   0% { width: 0; }
-  90% { width: 100%; }
-  100% { width: 100%; }
+  70% { width: 100%; }
+  85% { width: 100%; }
+  100% { width: 0; }
 }
 @keyframes lt_blink_caret {
   0%, 100% { border-color: transparent; }
   50% { border-color: #3b82f6; }
+}
+@media (max-width: 380px) {
+  .lt-sub-typing { font-size: 11px; animation: lt_typing 4s steps(55, end) 0.3s infinite, lt_blink_caret 0.6s step-end infinite; }
+}
+@media (max-width: 320px) {
+  .lt-sub-typing { font-size: 10px; }
 }
 
 /* ── Beneficios ───────────────────────────────────────────── */
@@ -293,23 +300,42 @@ const CSS = `
 }
 .lt-benefit {
   display: flex; flex-direction: column; align-items: center; text-align: center;
-  gap: 2px;
-  padding: 12px 6px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #f8faff 0%, #eef4ff 100%);
+  gap: 4px;
+  padding: 14px 8px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #ffffff 0%, #f8faff 100%);
   border: 1px solid #e2ecfb;
-  transition: transform .18s, box-shadow .18s;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+  position: relative;
+  overflow: hidden;
 }
-.lt-benefit:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(13,42,99,.08); }
+.lt-benefit::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: var(--b-color, #3b82f6);
+  opacity: 0.7;
+}
+.lt-benefit:hover { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(13,42,99,.10); border-color: var(--b-color, #bfdbfe); }
 .lt-benefit-ico {
-  width: 30px; height: 30px; border-radius: 10px;
+  width: 38px; height: 38px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #1d4ed8;
   margin-bottom: 4px;
+  box-shadow: 0 3px 8px rgba(0,0,0,.10);
 }
-.lt-benefit-title { font-size: 10.5px; font-weight: 700; color: #12305f; line-height: 1.2; }
-.lt-benefit-sub   { font-size: 9.5px; color: #8b9dba; line-height: 1.2; }
+.lt-benefit-title { font-size: 11px; font-weight: 800; color: #12305f; line-height: 1.25; }
+.lt-benefit-sub   { font-size: 10px; color: #7089ad; line-height: 1.25; font-weight: 600; }
+@media (max-width: 380px) {
+  .lt-benefits { gap: 6px; }
+  .lt-benefit { padding: 12px 6px; }
+  .lt-benefit-ico { width: 32px; height: 32px; }
+  .lt-benefit-title { font-size: 10px; }
+  .lt-benefit-sub { font-size: 9px; }
+}
+@media (max-width: 320px) {
+  .lt-benefit-title { font-size: 9px; }
+  .lt-benefit-sub { font-size: 8px; }
+}
 
 /* ── Stylist ──────────────────────────────────────────────── */
 .lt-stylist {

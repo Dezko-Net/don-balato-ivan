@@ -23,9 +23,9 @@ const SOCIAL = [
 ];
 
 const BENEFITS = [
-  { icon: Truck,       title: 'Envío a todo Chile',     sub: 'Despacho 24–48 h' },
-  { icon: ShieldCheck, title: 'Compra segura',          sub: 'Pago protegido' },
-  { icon: Zap,         title: 'Descuento por volumen',  sub: 'Automático' },
+  { icon: Truck,       title: 'Envío a todo Chile',     sub: '2 a 3 días',                    color: '#059669', bg: 'linear-gradient(135deg, #d1fae5, #6ee7b7)' },
+  { icon: ShieldCheck, title: 'Compra segura',          sub: 'Pago protegido',                color: '#7c3aed', bg: 'linear-gradient(135deg, #ede9fe, #c4b5fd)' },
+  { icon: Zap,         title: 'Mejores descuentos', sub: 'Precios más bajos',          color: '#e11d48', bg: 'linear-gradient(135deg, #ffe4e6, #fda4af)' },
 ];
 
 export default function LinktreeClientContent() {
@@ -81,21 +81,26 @@ export default function LinktreeClientContent() {
           </div>
 
           {/* ── Mapa de Google Maps ─────────────────────────────── */}
-          <div className="lt-map-wrap" style={{ marginTop: '12px', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(13,42,99,.10)' }}>
+          <div className="lt-map-wrap" style={{ marginTop: '12px', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(13,42,99,.10)', position: 'relative' }}>
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3328.9786600811253!2d-70.6780387!3d-33.4498625!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662c5d2428c6333%3A0xdafe9e614f5b5f8f!2sDON%20BALATO%20IVAN!5e0!3m2!1ses-419!2scl!4v1785651227199!5m2!1ses-419!2scl"
               width="100%"
               height="200"
-              style={{ border: 0, display: 'block' }}
-              allowFullScreen
+              style={{ border: 0, display: 'block', pointerEvents: 'none' }}
               loading="lazy"
               referrerPolicy="strict-origin-when-cross-origin"
             />
+            <a href="https://maps.app.goo.gl/Fsd3vsE51UFJqWt4A" target="_blank" rel="noopener noreferrer"
+              style={{ position: 'absolute', top: 8, right: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', textDecoration: 'none', zIndex: 1 }}>
+              <span style={{ background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(6px)', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '6px 12px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <MapPin size={12} /> Ver en Maps
+              </span>
+            </a>
           </div>
           <div className="lt-benefits">
-            {BENEFITS.map(({ icon: Icon, title, sub }) => (
-              <div key={title} className="lt-benefit">
-                <span className="lt-benefit-ico"><Icon size={15} /></span>
+            {BENEFITS.map(({ icon: Icon, title, sub, color, bg }) => (
+              <div key={title} className="lt-benefit" style={{ '--b-color': color } as React.CSSProperties}>
+                <span className="lt-benefit-ico" style={{ background: bg, color }}><Icon size={18} /></span>
                 <span className="lt-benefit-title">{title}</span>
                 <span className="lt-benefit-sub">{sub}</span>
               </div>
