@@ -89,45 +89,50 @@ const updateDoc = async (..._args: any[]) => {}
 // useAuth → invitado demo
 const useAuth = () => ({ user: null as any, appUser: null as any, isGuest: true, logout: () => {} })
 
-// runtimeConfig → configuración Yaxsel fija, en modo demo
+// runtimeConfig → configuración cargada dinámicamente desde Appwrite (erp_config)
 interface RuntimeBranchConfig { slug: SedeSlug; name: string; region: string; icon: string; color: string; active: boolean; imageUrl: string; managerEmail: string }
-const YAXSEL_BRANDING = {
-  companyLogoUrl: '/avatar.png',
-  companyIconUrl: '/avatar.png',
-  defaultUserAvatarUrl: '/avatar.png',
-  titleColor: '#10b981',
-}
-const YAXSEL_OWNER = { displayName: 'Administrador', email: 'dexkonet@gmail.com', photoURL: '/avatar.png' }
-const YAXSEL_BRANCHES: RuntimeBranchConfig[] = [
+const DEFAULT_BRANDING = { companyLogoUrl: '/avatar.png', companyIconUrl: '/avatar.png', defaultUserAvatarUrl: '/avatar.png', titleColor: '#10b981' }
+const DEFAULT_OWNER = { displayName: 'Administrador', email: 'dexkonet@gmail.com', photoURL: '/avatar.png' }
+const DEFAULT_BRANCHES: RuntimeBranchConfig[] = [
   { slug: 'alameda', name: 'Alameda', region: 'Santiago Centro', icon: '🏙️', color: 'emerald', active: true, imageUrl: '', managerEmail: '' },
 ]
-const getRuntimeConfig = () => ({
-  companyName: 'Yaxsel',
-  legalName: 'Yaxsel',
-  companyDescription: 'ERP Yaxsel',
-  supremeAdminEmail: YAXSEL_OWNER.email,
-  branding: YAXSEL_BRANDING,
-  ownerProfile: YAXSEL_OWNER,
-  firebase: { projectId: 'asistoraerp-demo' },
-  branches: YAXSEL_BRANCHES,
-  sparkMode: false,
+const getDefaultRuntimeConfig = () => ({
+  companyName: 'Yaxsel', legalName: 'Yaxsel', companyDescription: 'ERP Yaxsel',
+  supremeAdminEmail: DEFAULT_OWNER.email, branding: DEFAULT_BRANDING, ownerProfile: DEFAULT_OWNER,
+  firebase: { projectId: 'asistoraerp-demo' }, branches: DEFAULT_BRANCHES, sparkMode: false,
 })
-const getConfiguredBranches = (includeInactive = false): RuntimeBranchConfig[] =>
-  includeInactive ? YAXSEL_BRANCHES : YAXSEL_BRANCHES.filter(b => b.active)
+async function loadRuntimeConfig() {
+  try {
+    const res = await fetch('/api/admin-supreme/load-config')
+    if (!res.ok) return getDefaultRuntimeConfig()
+    const json = await res.json()
+    if (!json.ok || !json.data) return getDefaultRuntimeConfig()
+    const parsed = JSON.parse(json.data)
+    const base = getDefaultRuntimeConfig()
+    return {
+      ...base,
+      companyName: parsed.companyName || base.companyName,
+      legalName: parsed.legalName || parsed.companyName || base.legalName,
+      companyDescription: parsed.companyDescription || base.companyDescription,
+      supremeAdminEmail: parsed.supremeAdminEmail || base.supremeAdminEmail,
+      sparkMode: parsed.sparkMode ?? base.sparkMode,
+      branding: { ...base.branding, ...(parsed.branding || {}) },
+      ownerProfile: { ...base.ownerProfile, ...(parsed.ownerProfile || {}) },
+      firebase: { ...base.firebase, ...(parsed.firebase || {}) },
+      branches: Array.isArray(parsed.branches) && parsed.branches.length > 0 ? parsed.branches : base.branches,
+    }
+  } catch { return getDefaultRuntimeConfig() }
+}
 const getFirebaseProjectId = () => 'asistoraerp-demo'
 // [APPWRITE] Demo apagado: los datos ahora vienen de Appwrite (cuadres_erp)
 const isRuntimeDemoProject = () => false
 
 const ASIS_AVATAR = '/avatar.png'
-const runtimeAppConfig = getRuntimeConfig()
-const runtimeBranding = runtimeAppConfig.branding
-const runtimeOwnerProfile = runtimeAppConfig.ownerProfile
+// Config dinámica — se carga en el componente
 const firebaseProjectId = getFirebaseProjectId()
 const CLOUD_FUNCTIONS_BASE_URL = `https://us-central1-${firebaseProjectId}.cloudfunctions.net`
 const IS_DEMO_PROJECT = isRuntimeDemoProject()
 const DEMO_PROFILE_CACHE_KEY = `asistora_demo_profile_${firebaseProjectId}`
-const SIDEBAR_EXECUTIVE_AVATAR = runtimeOwnerProfile.photoURL || runtimeBranding.defaultUserAvatarUrl
-const COMPANY_LOGO_URL = runtimeBranding.companyLogoUrl || runtimeBranding.companyIconUrl
 
 // Cache keys (bump version cuando agregues nuevos campos a SucursalData para invalidar caches viejos)
 const CACHE_KEY = 'dashboard_cache_v2'
@@ -161,7 +166,7 @@ const cacheMedia = async (url: string): Promise<string> => {
   }
 }
 
-const LOGO_URL = runtimeBranding.companyLogoUrl || runtimeBranding.companyIconUrl
+const LOGO_URL = DEFAULT_BRANDING.companyLogoUrl || DEFAULT_BRANDING.companyIconUrl
 
 interface SucursalData {
   slug: string
@@ -203,8 +208,8 @@ interface DayData {
   ganancia: number
 }
 
-function getSucursales() {
-  return getConfiguredBranches().map((branch) => ({
+function getSucursales(config = getDefaultRuntimeConfig()) {
+  return (config.branches || []).filter((b) => b.active).map((branch) => ({
     slug: branch.slug,
     name: branch.name,
     icon: branch.icon,
@@ -285,7 +290,26 @@ const colorClasses: Record<string, { bg: string, text: string, border: string, l
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, appUser, isGuest, logout } = useAuth()
-  const [demoProfile, setDemoProfile] = useState<DemoProfile>({ companyName: runtimeAppConfig.companyName, userName: 'Usuario Demo' })
+
+  // ─── Configuración dinámica desde Appwrite ───────────────────────
+  const [runtimeAppConfig, setRuntimeAppConfig] = useState(getDefaultRuntimeConfig())
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const config = await loadRuntimeConfig()
+      if (!cancelled) {
+        setRuntimeAppConfig(config)
+        setDemoProfile(prev => ({ ...prev, companyName: config.companyName }))
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+  const runtimeBranding = runtimeAppConfig.branding
+  const runtimeOwnerProfile = runtimeAppConfig.ownerProfile
+  const SIDEBAR_EXECUTIVE_AVATAR = runtimeOwnerProfile.photoURL || runtimeBranding.defaultUserAvatarUrl
+  const COMPANY_LOGO_URL = runtimeBranding.companyLogoUrl || runtimeBranding.companyIconUrl
+
+  const [demoProfile, setDemoProfile] = useState<DemoProfile>({ companyName: getDefaultRuntimeConfig().companyName, userName: 'Usuario Demo' })
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [onboardingCompany, setOnboardingCompany] = useState('')
   const [onboardingUser, setOnboardingUser] = useState('')
@@ -559,7 +583,7 @@ export default function Dashboard() {
       data: cachePayload,
       timestamp: Date.now(),
       dateMode,
-      branchSlugs: getSucursales().map(s => s.slug)
+      branchSlugs: getSucursales(runtimeAppConfig).map(s => s.slug)
     }
     localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
   }
@@ -571,7 +595,7 @@ export default function Dashboard() {
       if (!cached) return null
       const { data, timestamp, dateMode: cachedMode, branchSlugs: cachedSlugs } = JSON.parse(cached)
       // Invalidate cache if branch slugs changed
-      const currentSlugs = getSucursales().map(s => s.slug).sort().join(',')
+      const currentSlugs = getSucursales(runtimeAppConfig).map(s => s.slug).sort().join(',')
       const savedSlugs = Array.isArray(cachedSlugs) ? cachedSlugs.sort().join(',') : ''
       if (savedSlugs !== currentSlugs) return null
       // Verificar si el cache es válido (mismo modo y no expirado)
@@ -598,7 +622,7 @@ export default function Dashboard() {
         const dayList = cuadres.filter((c: CuadreERP) => c.fecha === targetDate)
         const bruto = (c: CuadreERP) =>
           (Number(c.montos?.efectivoSistema) || 0) + (Number(c.montos?.debitoSistema) || 0) + (Number(c.montos?.transferencias) || 0)
-        const sucData: SucursalData[] = getSucursales().map((b) => {
+        const sucData: SucursalData[] = getSucursales(runtimeAppConfig).map((b) => {
           const c = dayList.find((x: CuadreERP) => x.sede === b.slug)
           const ventas = c ? bruto(c) : 0
           const gastos = c ? (Number(c.calculos?.gastosTotales) || 0) : 0
@@ -684,7 +708,7 @@ export default function Dashboard() {
         cuadres.filter((c: CuadreERP) => c.fecha === targetDate).map((c: CuadreERP) => c.sede)
       )
       const result: Record<string, { sedeName: string; cajeros: { nombre: string; listo: boolean }[] }> = {}
-      getSucursales().forEach((suc) => {
+      getSucursales(runtimeAppConfig).forEach((suc) => {
         const yaCuadrado = sedesConCuadre.has(suc.slug)
         const cajeros = trabajadores
           .filter((t: TrabajadorERP) => t.activo && t.sede === suc.slug && /cajer/i.test(t.cargo))
@@ -761,7 +785,7 @@ export default function Dashboard() {
     loadData()
     loadTrabajadores()
     loadCuadreStatusToday()
-  }, [dateMode, costsBD, onboardingOpen])
+  }, [dateMode, costsBD, onboardingOpen, runtimeAppConfig])
 
   // Refrescar estado de cuadres cada 60s
   useEffect(() => {
@@ -1717,7 +1741,7 @@ Responde de forma amigable y concisa. Si preguntan por algo específico, explica
         {(() => {
           const fmtK = (v: number) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}K` : `$${v}`
           const COLORS_SEDES = ['#10b981','#6366f1','#f59e0b','#ef4444','#8b5cf6','#06b6d4']
-          const SUCURSALES = getSucursales()
+          const SUCURSALES = getSucursales(runtimeAppConfig)
 
           // Spinner mientras carga datos mensuales
           if (loadingMonthly) return (

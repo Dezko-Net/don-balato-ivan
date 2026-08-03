@@ -95,3 +95,25 @@ export async function deleteTrabajadorERP(id: string): Promise<boolean> {
     return false
   }
 }
+
+/** Actualiza un trabajador por su $id. */
+export async function updateTrabajadorERP(id: string, data: Partial<Omit<TrabajadorERP, '$id'>>): Promise<boolean> {
+  try {
+    const { databases } = getServices()
+    const updates: Record<string, any> = {}
+    if (data.nombre !== undefined) updates.nombre = data.nombre
+    if (data.cargo !== undefined) updates.cargo = data.cargo
+    if (data.sede !== undefined) updates.sede = data.sede
+    if (data.sueldo !== undefined) updates.sueldo = Number(data.sueldo)
+    if (data.fotoUrl !== undefined) updates.fotoUrl = data.fotoUrl
+    if (data.activo !== undefined) updates.activo = data.activo
+    if (data.nacionalidad !== undefined) updates.nacionalidad = data.nacionalidad
+    if (data.genero !== undefined) updates.genero = data.genero
+    if (data.fechaIngreso !== undefined) updates.fechaIngreso = data.fechaIngreso
+    await databases.updateDocument(DB_ID, TRABAJADORES_COLLECTION, id, updates)
+    return true
+  } catch (err) {
+    console.error('[trabajadoresErpService] updateTrabajadorERP error:', err)
+    return false
+  }
+}

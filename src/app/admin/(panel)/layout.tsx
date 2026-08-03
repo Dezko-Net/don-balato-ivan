@@ -47,20 +47,33 @@ const Ico = {
   Catalogo:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/><path d="M8 4v16"/><path d="M4 12h4"/><path d="M4 16h4"/></svg>,
   Server:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>,
   MiTienda:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  CatalogoWeb: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
 };
 
 /* Shopify-dark sidebar — no accent colors needed */
 
 /* ─────────────────────────── nav structure ─────────────────────────── */
-interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'wholesale'|'requests'|'alerts'; children?: NavItem[]; }
+interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'requests'|'alerts'; children?: NavItem[]; }
 interface NavGroup { label: string; items: NavItem[]; defaultOpen?: boolean; }
 
 const NAV_GROUPS: NavGroup[] = [
-  { label: 'POS', defaultOpen: true, items: [
-    { href: '/pos-admin', label: 'POS', icon: Ico.Inventario },
+  { label: 'IA', defaultOpen: false, items: [
+    { href: '/admin/ia', label: 'Kenia IA', icon: Ico.Sparkles, children: [
+      { href: '/admin/ia',           label: 'Centro de control', icon: Ico.Sparkles },
+      { href: '/admin/ia/whatsapp',  label: 'WhatsApp',          icon: Ico.Soporte },
+      { href: '/admin/ia/cotizacion', label: 'Cotización',       icon: Ico.Plantillas },
+      { href: '/admin/ia/appwrite',  label: 'Appwrite Monitor',  icon: Ico.Server },
+    ]},
   ]},
   { label: 'ERP', defaultOpen: true, items: [
     { href: '/erp-dashboard', label: 'ERP', icon: Ico.Analytics },
+    { href: '/admin-supreme', label: 'Admin Supreme', icon: Ico.Server },
+  ]},
+  { label: 'POS', defaultOpen: false, items: [
+    { href: '/pos-admin', label: 'POS', icon: Ico.Inventario },
+  ]},
+  { label: 'Catálogo', defaultOpen: false, items: [
+    { href: '/admin/catalogo-mayorista', label: 'Catalogo Web', icon: Ico.CatalogoWeb },
   ]},
   { label: 'WEB', defaultOpen: true, items: [
     { href: '/admin/dashboard', label: 'Dashboard', icon: Ico.Dashboard },
@@ -88,10 +101,7 @@ const NAV_GROUPS: NavGroup[] = [
     ]},
     { href: '/admin/users',     label: 'Clientes',   icon: Ico.Usuarios },
   ]},
-  { label: 'General', defaultOpen: true, items: [
-    { href: '/admin/por-mayor', label: 'Por Mayor', icon: Ico.Mayoristas },
-    { href: '/admin/por-unidad', label: 'Por Unidad', icon: Ico.Productos },
-    { href: '/admin/embalajes', label: 'Embalajes', icon: Ico.Inventario },
+  { label: 'General', defaultOpen: false, items: [
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
       { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },
@@ -102,14 +112,6 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/vip',           label: 'VIP',            icon: Ico.Usuarios },
       { href: '/admin/points-store',  label: 'Tienda de puntos', icon: Ico.Sorteos },
       { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
-    ]},
-    { href: '/admin/wholesale', label: 'Mayoristas',   icon: Ico.Mayoristas, badge: 'wholesale' },
-    { href: '/admin/catalogo-mayorista', label: 'Catálogo Unificado', icon: Ico.Mayoristas },
-    { href: '/admin/ia', label: 'Kenia IA', icon: Ico.Sparkles, children: [
-      { href: '/admin/ia',           label: 'Centro de control', icon: Ico.Sparkles },
-      { href: '/admin/ia/whatsapp',  label: 'WhatsApp',          icon: Ico.Soporte },
-      { href: '/admin/ia/cotizacion', label: 'Cotización',       icon: Ico.Plantillas },
-      { href: '/admin/ia/appwrite',  label: 'Appwrite Monitor',  icon: Ico.Server },
     ]},
   ]},
   { label: 'Configuración', defaultOpen: false, items: [
@@ -262,7 +264,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [pendingOrders,    setPendingOrders]    = useState(0);
   const [processingOrders, setProcessingOrders] = useState(0);
   const [unreadNotifs,     setUnreadNotifs]     = useState(0);
-  const [pendingWholesale, setPendingWholesale] = useState(0);
   const [pendingRequests,  setPendingRequests]  = useState(0);
   const [pendingAlerts,    setPendingAlerts]    = useState(0);
 
@@ -292,7 +293,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     import('@/lib/cache').then(m => m.flushPendingRevalidate()).catch(() => {});
   }, []);
 
-  const [openGroups,  setOpenGroups]  = useState<string[]>(NAV_GROUPS.map(g => g.label));
+  const [openGroups,  setOpenGroups]  = useState<string[]>(NAV_GROUPS.filter(g => g.defaultOpen).map(g => g.label));
   const [openItems,   setOpenItems]   = useState<Record<string, boolean>>({});
 
   const toggleGroup = (label: string) => {
@@ -340,7 +341,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const data = await res.json();
         setPendingOrders(data.pendingOrders);
         setProcessingOrders(data.processingOrders || 0);
-        if (data.pendingWholesale !== undefined) setPendingWholesale(data.pendingWholesale);
       }
     } catch { /* silent */ }
   }, []);
@@ -460,8 +460,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } else if (item.badge === 'orders') {
       pushBadge(processingOrders, '#4ade80', '#1a1a1a'); // Verde Claro (Procesando)
       pushBadge(pendingOrders, '#fed7aa', '#1a1a1a'); // Naranja pastel (Pendiente)
-    } else if (item.badge === 'wholesale') {
-      pushBadge(pendingWholesale, '#8b5cf6');
     } else if (item.badge === 'notifs') {
       pushBadge(unreadNotifs, '#6366f1');
     }
@@ -651,8 +649,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             if (isMain) {
               return (
-                <div key={group.label} style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 0 }}>
-                  {group.items.map(item => renderItem(item, ctr))}
+                <div key={group.label}>
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.25)', margin: '10px 12px' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 0 }}>
+                    {group.items.map(item => renderItem(item, ctr))}
+                  </div>
                 </div>
               );
             }

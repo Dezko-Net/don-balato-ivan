@@ -26,8 +26,8 @@ export default function BackToTop() {
     };
   }, [pathname]);
 
-  // Ocultar en rutas admin y catalogo (iframe fullscreen)
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/catalogo')) return null;
+  // Ocultar en rutas admin, catalogo y linktree
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/catalogo') || pathname?.startsWith('/linktree')) return null;
   if (!visible) return null;
 
   const handleClick = (e: React.MouseEvent | React.TouchEvent) => {

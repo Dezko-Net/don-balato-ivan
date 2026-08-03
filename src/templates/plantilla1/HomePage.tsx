@@ -7106,14 +7106,13 @@ export default function HomePage1() {
                 logo.appendChild(img);
               }
               img.src = imgUrl;
-              img.style.setProperty('max-height', 'none', 'important');
-              img.style.setProperty('height', 'auto', 'important');
+              img.style.setProperty('max-height', `${logoHeight}px`, 'important');
+              img.style.setProperty('height', `${logoHeight}px`, 'important');
               img.style.setProperty('width', 'auto', 'important');
               img.style.setProperty('object-fit', 'contain', 'important');
-              const scale = logoHeight / 40;
               const translateX = logoPosX;
               const translateY = logoPosY;
-              img.style.setProperty('transform', `scale(${scale}) translate(${translateX / scale}px, ${translateY / scale}px)`, 'important');
+              img.style.setProperty('transform', `translate(${translateX}px, ${translateY}px)`, 'important');
               img.style.setProperty('transform-origin', 'left center', 'important');
               img.style.display = '';
               logo.style.removeProperty('display');

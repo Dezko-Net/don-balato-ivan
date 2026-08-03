@@ -22,7 +22,6 @@ const FOOTER_LINKS = [
   ]},
   { title: 'Ayuda', items: [
     { label: 'Soporte', href: '/cuenta/tickets' },
-    { label: 'Mayorista', href: '/mayorista' },
     { label: 'Comparar', href: '/comparar' },
   ]},
 ];
@@ -38,6 +37,8 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   const isCatalogo    = pathname.startsWith('/catalogo');
   // Flujo de checkout del catálogo WhatsApp: páginas dedicadas sin navbar ni footer.
   const isCheckoutFlow = pathname.startsWith('/confirmar-pedido') || pathname.startsWith('/verificar-stock');
+  // Link in bio: página autónoma a pantalla completa, sin navbar ni footer.
+  const isLinktree     = pathname.startsWith('/linktree');
   const landingTemplate = getSectionTemplate('landing');
   const hideNavbarForCapturedLanding = (pathname === '/' || pathname.startsWith('/preview/plantilla/')) && landingTemplate === 101;
   const isSadoerBrand = pathname.startsWith('/marcas/sadoer');
@@ -49,7 +50,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   /* Templates 1 (Shopify-Venice), 4 (Chinamart) y 5 (Pebble Little) tienen su propio footer en el HTML migrado */
   const hideNativeFooter = true; // Hidden for all templates because we use the injected HTML footer
 
-  if (isCatalogo || isCheckoutFlow) {
+  if (isCatalogo || isCheckoutFlow || isLinktree) {
     return <>{children}</>;
   }
 

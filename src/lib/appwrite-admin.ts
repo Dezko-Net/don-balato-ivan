@@ -52,6 +52,14 @@ export function createAppwriteClient(): Client {
   const cfg = getAppwriteConfig();
   if (!_client) {
     _client = new Client().setEndpoint(cfg.endpoint).setProject(cfg.projectId);
+    if (typeof window === 'undefined' && process.env.APPWRITE_API_KEY) {
+      try {
+        (_client as any).headers = {
+          ...((_client as any).headers || {}),
+          'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
+        };
+      } catch { /* noop */ }
+    }
   }
   return _client;
 }

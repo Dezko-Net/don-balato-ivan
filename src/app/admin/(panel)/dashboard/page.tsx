@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { Order, Product, DashboardStats } from '@/types/admin';
 import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, AlertTriangle, RefreshCw, ArrowRight, Plus, ChevronRight, Users, Megaphone, BarChart3, Zap, Globe, Search, MapPin, ShoppingBag, Eye, Database, Coins, Activity, Calendar } from 'lucide-react';
@@ -1427,7 +1427,6 @@ function AnimatedGlobe() {
 }
 
 interface DashboardCacheData {
-  pendingWholesale: number;
   openSupport: number;
   unreadNotifs: number;
   newUsers: number;
@@ -1460,7 +1459,6 @@ export default function DashboardPage() {
   const [error, setError]                     = useState('');
   const [lastRefresh, setLastRefresh]         = useState<Date>(new Date());
   const [dateRange, setDateRange]             = useState<DateRange>('30d');
-  const [pendingWholesale, setPendingWholesale] = useState(0);
   const [openSupport, setOpenSupport]         = useState(0);
   const [unreadNotifs, setUnreadNotifs]       = useState(0);
   const [newUsers, setNewUsers]               = useState(0);
@@ -1487,7 +1485,6 @@ export default function DashboardPage() {
     // Check cache
     if (!force && dashboardCache && Date.now() - dashboardCache.timestamp < 180_000) {
       const cached = dashboardCache.data;
-      setPendingWholesale(cached.pendingWholesale);
       setOpenSupport(cached.openSupport);
       setUnreadNotifs(cached.unreadNotifs);
       setNewUsers(cached.newUsers);
@@ -1516,7 +1513,6 @@ export default function DashboardPage() {
       dashboardCache = {
         timestamp: Date.now(),
         data: {
-          pendingWholesale: 0,
           openSupport: 0,
           unreadNotifs: 0,
           newUsers: 0,
@@ -1638,7 +1634,7 @@ export default function DashboardPage() {
   ).length;
   const dashStatus: 'ok' | 'warning' | 'critical' =
     stalePendingOrders > 0 ? 'critical' :
-    (stats.pendingOrders > 0 || stats.lowStockCount > 0 || pendingWholesale > 0 || openSupport > 0) ? 'warning' :
+    (stats.pendingOrders > 0 || stats.lowStockCount > 0 || openSupport > 0) ? 'warning' :
     'ok';
   const svgCol = {
     ok:       { bg: '#064e3b', border: '#059669', star: '#34d399', d1: '#10b981', d2: '#34d399' },
@@ -1923,7 +1919,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ═══ Alerts ═══ */}
-      {!isLoading && (stats.pendingOrders > 0 || stats.lowStockCount > 0 || pendingWholesale > 0 || openSupport > 0) && (
+      {!isLoading && (stats.pendingOrders > 0 || stats.lowStockCount > 0 || openSupport > 0) && (
         <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: 14, padding: '14px 16px', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <AlertTriangle size={15} color="#d97706" />
@@ -1942,13 +1938,6 @@ export default function DashboardPage() {
                 onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
                 <Package size={13} /> {stats.lowStockCount} producto{stats.lowStockCount !== 1 ? 's' : ''} stock bajo
-              </Link>
-            )}
-            {pendingWholesale > 0 && (
-              <Link href="/admin/wholesale" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, background: '#fff', border: '1px solid #6366f1', textDecoration: 'none', fontSize: 13, color: '#4338ca', fontWeight: 500, transition: 'all .15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#eef2ff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
-                <Users size={13} /> {pendingWholesale} solicitud{pendingWholesale !== 1 ? 'es' : ''} mayorista
               </Link>
             )}
             {openSupport > 0 && (

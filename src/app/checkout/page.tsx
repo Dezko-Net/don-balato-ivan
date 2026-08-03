@@ -223,17 +223,24 @@ function CheckoutInner() {
             Query.equal('userId', user.id),
             Query.limit(25),
           ]);
-          const dbAddrs: SavedAddress[] = res.documents.map((doc: any) => ({
-            id: doc.$id,
-            alias: doc.alias || 'Otro',
-            name: doc.name || '',
-            phone: doc.phone || '',
-            fullAddress: doc.fullAddress || '',
-            commune: doc.commune || '',
-            region: doc.region || '',
-            lat: doc.lat || 0,
-            lng: doc.lng || 0,
-          }));
+          const dbAddrs: SavedAddress[] = res.documents.map((doc: any) => {
+            const rawAddress = doc.fullAddress || doc.address || '';
+            const rawAlias = doc.alias || '';
+            const displayAlias = (rawAlias === 'Otro' || !rawAlias)
+              ? (rawAddress.replace('[SUCURSAL]', '').trim().split(',')[0].slice(0, 30) || 'Otro')
+              : rawAlias;
+            return {
+              id: doc.$id,
+              alias: displayAlias,
+              name: doc.name || '',
+              phone: doc.phone || '',
+              fullAddress: rawAddress,
+              commune: doc.commune || doc.city || '',
+              region: doc.region || '',
+              lat: doc.lat || 0,
+              lng: doc.lng || 0,
+            };
+          });
           if (dbAddrs.length > 0) {
             setSavedAddresses(dbAddrs);
             setSelectedAddressId(dbAddrs[0].id);
@@ -248,7 +255,12 @@ function CheckoutInner() {
               if (addresses.length > 0) {
                 setSelectedAddressId(addresses[0].id);
                 fillFormFromAddress(addresses[0]);
+              } else {
+                setSelectedAddressId(null);
               }
+            } else {
+              setSavedAddresses([]);
+              setSelectedAddressId(null);
             }
           }
         } catch {
@@ -261,9 +273,17 @@ function CheckoutInner() {
               if (addresses.length > 0) {
                 setSelectedAddressId(addresses[0].id);
                 fillFormFromAddress(addresses[0]);
+              } else {
+                setSelectedAddressId(null);
               }
+            } else {
+              setSavedAddresses([]);
+              setSelectedAddressId(null);
             }
-          } catch {}
+          } catch {
+            setSavedAddresses([]);
+            setSelectedAddressId(null);
+          }
         }
       })();
     }
@@ -314,6 +334,31 @@ function CheckoutInner() {
   function selectAddress(addr: SavedAddress) {
     setSelectedAddressId(addr.id);
     fillFormFromAddress(addr);
+  }
+
+  async function deleteAddress(addrId: string) {
+    const updated = savedAddresses.filter(a => a.id !== addrId);
+    setSavedAddresses(updated);
+    if (selectedAddressId === addrId) {
+      if (updated.length > 0) {
+        setSelectedAddressId(updated[0].id);
+        fillFormFromAddress(updated[0]);
+      } else {
+        setSelectedAddressId(null);
+        setShowingNewAddress(true);
+        setForm({ name: '', rut: '', phone: '', email: '', region: '', comuna: '', address: '', additionalInfo: '' });
+      }
+    }
+    if (user?.id) {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        await databases.deleteDocument(databaseId, ADDRESSES_COLLECTION_ID, addrId);
+        localStorage.setItem(`addr_${user.id}`, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error deleting address:', e);
+      }
+    }
   }
 
   function set(key: string, val: string) { setForm(f => ({ ...f, [key]: val })); }
@@ -847,7 +892,7 @@ function CheckoutInner() {
           if (existing.documents.length === 0) {
             await databases.createDocument(databaseId, ADDRESSES_COLLECTION_ID, ID.unique(), {
               userId: user.id,
-              alias: (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia') ? 'Sucursal' : 'Otro',
+              alias: (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia') ? 'Sucursal' : (form.address.split(',')[0].trim().slice(0, 30) || 'Otro'),
               name: form.name,
               phone: form.phone,
               address: finalAddress,
@@ -1165,7 +1210,7 @@ function CheckoutInner() {
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                           </span>}
                           <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 12, overflow: 'hidden' }}>
-                            {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 38, height: 38, objectFit: 'contain' }} /> : <Truck size={22} color={ag.color} />}
+                            {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: ag.name === 'CHILEXPRESS' ? 30 : 38, height: ag.name === 'CHILEXPRESS' ? 30 : 38, objectFit: 'contain' }} /> : <Truck size={22} color={ag.color} />}
                           </div>
                           <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: sel ? ag.color : '#333', textAlign: 'center' }}>{ag.name}</p>
                         </button>
@@ -1185,23 +1230,48 @@ function CheckoutInner() {
                     <span className="ck-step-badge">2</span>
                     Dirección de envío
                   </h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10, marginBottom: 12 }}>
                     {savedAddresses.map((addr) => {
                       const sel = selectedAddressId === addr.id;
-                      const aliasIcon = addr.alias === 'Casa' ? '🏠' : addr.alias === 'Trabajo' ? '💼' : '📍';
+                      const aliasIcon = addr.alias === 'Casa' ? '🏠' : addr.alias === 'Trabajo' ? '💼' : addr.alias === 'Sucursal' ? '🏪' : '📍';
                       return (
-                        <button type="button" key={addr.id} onClick={() => selectAddress(addr)}
-                          style={{ padding: '14px 16px', border: `2px solid ${sel ? PINK : '#dbeafe'}`, borderRadius: 14, background: sel ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', position: 'relative', boxShadow: sel ? '0 4px 14px rgba(37,99,235,0.15)' : 'none' }}>
+                        <div key={addr.id}
+                          style={{ padding: '16px 18px', border: `2px solid ${sel ? PINK : '#dbeafe'}`, borderRadius: 14, background: sel ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', position: 'relative', boxShadow: sel ? '0 4px 14px rgba(37,99,235,0.15)' : 'none' }}
+                          onClick={() => selectAddress(addr)}
+                        >
                           {sel && <span style={{ position: 'absolute', top: 8, right: 10, width: 18, height: 18, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                           </span>}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); deleteAddress(addr.id); }}
+                            style={{ position: 'absolute', top: 8, right: sel ? 36 : 10, width: 22, height: 22, borderRadius: '50%', border: 'none', background: '#fee2e2', color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s', padding: 0 }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                            title="Eliminar dirección">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m-9 0v14a2 2 0 002 2h6a2 2 0 002-2V6"/></svg>
+                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingRight: 28 }}>
                             <span style={{ fontSize: 16 }}>{aliasIcon}</span>
-                            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: sel ? PINK : '#333' }}>{addr.alias}</p>
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: sel ? PINK : '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr.alias}</p>
                           </div>
-                          <p style={{ margin: '0 0 3px', fontSize: 12, color: '#555', lineHeight: 1.3 }}>{addr.fullAddress}</p>
-                          <p style={{ margin: 0, fontSize: 11, color: '#888' }}>{addr.commune}{addr.region ? `, ${addr.region}` : ''}</p>
-                        </button>
+                          {addr.name && (
+                            <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 700, color: sel ? '#1d4ed8' : '#444', lineHeight: 1.3 }}>
+                              {addr.name}
+                            </p>
+                          )}
+                          {addr.phone && (
+                            <p style={{ margin: '0 0 6px', fontSize: 11, color: '#6b7280', lineHeight: 1.3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 10 }}>📞</span> {addr.phone}
+                            </p>
+                          )}
+                          {addr.fullAddress && (
+                            <p style={{ margin: '0 0 3px', fontSize: 12, color: '#555', lineHeight: 1.35, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                              <span style={{ fontSize: 10, marginTop: 2 }}>📮</span> <span>{addr.fullAddress}</span>
+                            </p>
+                          )}
+                          <p style={{ margin: '4px 0 0', fontSize: 11, color: '#888', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 10 }}>🗺️</span> {addr.commune}{addr.region ? `, ${addr.region}` : ''}
+                          </p>
+                        </div>
                       );
                     })}
                   </div>
@@ -1807,6 +1877,68 @@ function CheckoutInner() {
                 to { opacity: 1; transform: translateY(0) scale(1); }
               }
             `}</style>
+          </div>,
+          document.body
+        )}
+
+        {/* Loading overlay cuando se procesa el pedido */}
+        {submitting && createPortal(
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(255,255,255,0.75)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 20, fontFamily: FF,
+          }}>
+            <style>{`
+              @keyframes ckLoaderSpin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              @keyframes ckLoaderPulse {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.15); opacity: 0.7; }
+              }
+              @keyframes ckLoaderDot {
+                0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+                40% { transform: scale(1); opacity: 1; }
+              }
+            `}</style>
+            <div style={{ position: 'relative', width: 72, height: 72 }}>
+              <div style={{
+                position: 'absolute', inset: 0, borderRadius: '50%',
+                border: '4px solid #dbeafe', borderTopColor: '#2563eb',
+                animation: 'ckLoaderSpin 0.8s linear infinite',
+              }} />
+              <div style={{
+                position: 'absolute', inset: 12, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                animation: 'ckLoaderPulse 1.5s ease-in-out infinite',
+                boxShadow: '0 4px 20px rgba(37,99,235,0.3)',
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1e3a8a', fontFamily: FF }}>
+                Procesando tu pedido...
+              </p>
+              <p style={{ margin: '6px 0 0', fontSize: 14, color: '#6b7280', fontFamily: FF }}>
+                Espera un momento por favor, estamos confirmando tu compra.
+              </p>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 14 }}>
+                {[0, 1, 2].map(i => (
+                  <span key={i} style={{
+                    width: 8, height: 8, borderRadius: '50%', background: '#2563eb',
+                    animation: `ckLoaderDot 1.2s ease-in-out ${i * 0.15}s infinite`,
+                  }} />
+                ))}
+              </div>
+            </div>
           </div>,
           document.body
         )}

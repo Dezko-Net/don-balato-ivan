@@ -16,7 +16,8 @@ export default function ChatBot() {
   const isHiddenRoute =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/login') ||
-    pathname.startsWith('/inventario');
+    pathname.startsWith('/inventario') ||
+    pathname.startsWith('/linktree');
 
   useEffect(() => {
     setMounted(true);

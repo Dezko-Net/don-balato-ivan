@@ -7,7 +7,7 @@ import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from 
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
-  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles,
+  Loader2, ChevronRight, LogOut, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles,
   Award, Crown, Gem,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -37,7 +37,6 @@ const CUENTA_ITEMS: MenuItem[] = [
 
 const CONFIG_ITEMS: MenuItem[] = [
   { icon: Trophy,        label: 'Mis Niveles',       href: '/cuenta/niveles',         desc: 'Programa de lealtad y cupones' },
-  { icon: Building2,     label: 'Cuenta Mayorista',  href: '/mayorista',             desc: 'Solicita precios especiales por volumen' },
   { icon: HelpCircle,    label: 'Soporte / Tickets', href: '/cuenta/tickets',        desc: 'Solicitudes de ayuda' },
   { icon: MessageCircle, label: 'Conversaciones',    href: '/cuenta/conversaciones', desc: 'Historial de chats' },
 ];

@@ -4,11 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, Mail, Lock, ArrowRight, Gift, Sparkles, CheckCircle2, Zap } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { LoyaltyService } from '@/services/loyaltyService';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import { getSectionConfigAsync, type SectionConfig } from '@/lib/section-config';
 
 function LoginInner() {
@@ -22,30 +20,22 @@ function LoginInner() {
   const [showPass, setShowPass] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [claimingGift, setClaimingGift] = useState(false);
-  const [claimedCode, setClaimedCode] = useState('');
   const { user } = useAuth();
-  const [logoUrl, setLogoUrl] = useState<string>('');
   const [storeName, setStoreName] = useState<string>('Don Balato Iván');
   const FALLBACK_LOGO = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/07/1784931333115-pegada-1784931318404.png';
+  const logoUrl = FALLBACK_LOGO;
 
-  // Cargar logo del theme editor
+  // Cargar nombre de la tienda del theme editor
   useEffect(() => {
     getSectionConfigAsync().then(cfg => {
       const heroSec = cfg.find((s: SectionConfig) => s.id === 'tpl1_hero');
       if (heroSec?.settings) {
         const hs = heroSec.settings as Record<string, any>;
-        if (hs.heroStoreLogoMode === 'image') {
-          setLogoUrl(hs.heroStoreLogoScrollUrl || hs.heroStoreLogoUrl || '');
-        }
         if (hs.heroStoreName) setStoreName(hs.heroStoreName);
       }
-      // Fallback: buscar en footer
       const footerSec = cfg.find((s: SectionConfig) => s.id === 'tpl1_footer');
       if (footerSec?.settings) {
         const fs = footerSec.settings as Record<string, any>;
-        if (!logoUrl && fs.logoUrl) setLogoUrl(fs.logoUrl);
         if (fs.companyName && storeName === 'Don Balato Iván') setStoreName(fs.companyName);
       }
     }).catch(() => {});
@@ -87,36 +77,9 @@ function LoginInner() {
     const res = await register(regForm.email, regForm.password, placeholderName);
     setSubmitting(false);
     if (res.success) {
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#3b82f6', '#60a5fa', '#ffffff']
-      });
-      setShowWelcomeModal(true);
+      router.replace(redirectTo);
     }
     else setError(res.error || 'Error al registrarse');
-  }
-
-  async function handleClaimGift(type: 'order_2' | 'product_5') {
-    if (!user?.id) return;
-    setClaimingGift(true);
-    const res = await LoyaltyService.generateWelcomeCoupon(user.id, type);
-    setClaimingGift(false);
-    if (res.success && res.couponCode) {
-      setClaimedCode(res.couponCode);
-      confetti({
-        particleCount: 50,
-        spread: 50,
-        origin: { y: 0.8 },
-        colors: ['#10b981', '#ffffff']
-      });
-      setTimeout(() => {
-        router.replace(redirectTo);
-      }, 4000);
-    } else {
-      setError(res.error || 'Error al reclamar regalo');
-    }
   }
 
   return (
@@ -348,95 +311,6 @@ function LoginInner() {
         </div>
       </div>
 
-      {/* Welcome Gift Modal */}
-      <AnimatePresence>
-        {showWelcomeModal && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="w-full max-w-lg bg-white rounded-[32px] overflow-hidden shadow-2xl relative"
-            >
-              {/* Header */}
-              <div className="relative h-32 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }} />
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
-                  className="bg-white p-4 rounded-2xl shadow-xl"
-                >
-                  <Gift size={32} className="text-blue-500" />
-                </motion.div>
-              </div>
-
-              <div className="p-8 text-center">
-                <h3 className="text-2xl font-black text-slate-900 mb-2">¡Bienvenido a la familia!</h3>
-                <p className="text-slate-500 mb-8">Como regalo de bienvenida, elige el beneficio que prefieras para tu primera compra:</p>
-
-                {!claimedCode ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button 
-                      disabled={claimingGift}
-                      onClick={() => handleClaimGift('order_2')}
-                      className="group p-6 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left relative overflow-hidden"
-                    >
-                      <div className="relative z-10">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
-                          <Zap size={20} />
-                        </div>
-                        <div className="font-black text-2xl text-slate-900 mb-1">2% OFF</div>
-                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">En todo tu pedido</div>
-                      </div>
-                      <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Zap size={80} />
-                      </div>
-                    </button>
-
-                    <button 
-                      disabled={claimingGift}
-                      onClick={() => handleClaimGift('product_5')}
-                      className="group p-6 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left relative overflow-hidden"
-                    >
-                      <div className="relative z-10">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
-                          <Sparkles size={20} />
-                        </div>
-                        <div className="font-black text-2xl text-slate-900 mb-1">5% OFF</div>
-                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">En un producto</div>
-                      </div>
-                      <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Sparkles size={80} />
-                      </div>
-                    </button>
-                  </div>
-                ) : (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                    className="p-8 bg-emerald-50 rounded-3xl border-2 border-emerald-100"
-                  >
-                    <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
-                    <h4 className="text-lg font-bold text-emerald-900 mb-1">¡Regalo reclamado!</h4>
-                    <p className="text-emerald-600 text-sm mb-6">Usa este código al finalizar tu compra:</p>
-                    <div className="bg-white p-4 rounded-xl border border-emerald-200 font-mono text-xl font-black text-emerald-700 tracking-widest shadow-sm">
-                      {claimedCode}
-                    </div>
-                    <p className="text-xs text-emerald-500 mt-6 font-medium">Redirigiendo a tu cuenta...</p>
-                  </motion.div>
-                )}
-
-                {claimingGift && (
-                  <div className="mt-6 flex items-center justify-center gap-2 text-blue-500 font-bold text-sm">
-                    <Loader2 size={16} className="animate-spin" />
-                    Generando tu regalo...
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

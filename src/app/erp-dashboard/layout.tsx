@@ -23,6 +23,7 @@ function mapRoute(to?: string): string {
     '/admin': '/erp',                  // Corregir Corte
     '/pos-admin': '/admin/pos-admin',
     '/pos': '/admin/pos-admin',
+    '/admin-supreme': '/admin-supreme',
     '/dashboard-login': '/admin/login',
     '/inventario': '/admin/inventario-erp',
     '/base-datos': '/admin/inventario-erp',
@@ -66,20 +67,41 @@ const Timestamp = {
 // useAuth → invitado demo
 const useAuth = () => ({ user: null as any, appUser: null as any, isGuest: true, logout: async () => {} })
 
-// runtimeConfig → configuración Yaxsel fija
+// runtimeConfig → configuración cargada dinámicamente desde Appwrite (erp_config)
 interface RuntimeBranchConfig { slug: SedeSlug; name: string; region: string; icon: string; color: string; active: boolean; imageUrl: string; managerEmail: string }
-const YAXSEL_BRANDING = { companyLogoUrl: '/avatar.png', companyIconUrl: '/avatar.png', defaultUserAvatarUrl: '/avatar.png', titleColor: '#10b981' }
-const YAXSEL_OWNER = { displayName: 'Administrador', email: 'dexkonet@gmail.com', photoURL: '/avatar.png' }
-const YAXSEL_BRANCHES: RuntimeBranchConfig[] = [
+const DEFAULT_BRANDING = { companyLogoUrl: '/avatar.png', companyIconUrl: '/avatar.png', defaultUserAvatarUrl: '/avatar.png', titleColor: '#10b981' }
+const DEFAULT_OWNER = { displayName: 'Administrador', email: 'dexkonet@gmail.com', photoURL: '/avatar.png' }
+const DEFAULT_BRANCHES: RuntimeBranchConfig[] = [
   { slug: 'alameda', name: 'Alameda', region: 'Santiago Centro', icon: '🏙️', color: 'emerald', active: true, imageUrl: '', managerEmail: '' },
 ]
-const getRuntimeConfig = () => ({
+const getDefaultRuntimeConfig = () => ({
   companyName: 'Yaxsel', legalName: 'Yaxsel', companyDescription: 'ERP Yaxsel',
-  supremeAdminEmail: YAXSEL_OWNER.email, branding: YAXSEL_BRANDING, ownerProfile: YAXSEL_OWNER,
-  firebase: { projectId: 'asistoraerp-demo' }, branches: YAXSEL_BRANCHES, sparkMode: false,
+  supremeAdminEmail: DEFAULT_OWNER.email, branding: DEFAULT_BRANDING, ownerProfile: DEFAULT_OWNER,
+  firebase: { projectId: 'asistoraerp-demo' }, branches: DEFAULT_BRANCHES, sparkMode: false,
 })
-const getConfiguredBranches = (includeInactive = false): RuntimeBranchConfig[] =>
-  includeInactive ? YAXSEL_BRANCHES : YAXSEL_BRANCHES.filter(b => b.active)
+
+async function loadRuntimeConfig() {
+  try {
+    const res = await fetch('/api/admin-supreme/load-config')
+    if (!res.ok) return getDefaultRuntimeConfig()
+    const json = await res.json()
+    if (!json.ok || !json.data) return getDefaultRuntimeConfig()
+    const parsed = JSON.parse(json.data)
+    const base = getDefaultRuntimeConfig()
+    return {
+      ...base,
+      companyName: parsed.companyName || base.companyName,
+      legalName: parsed.legalName || parsed.companyName || base.legalName,
+      companyDescription: parsed.companyDescription || base.companyDescription,
+      supremeAdminEmail: parsed.supremeAdminEmail || base.supremeAdminEmail,
+      sparkMode: parsed.sparkMode ?? base.sparkMode,
+      branding: { ...base.branding, ...(parsed.branding || {}) },
+      ownerProfile: { ...base.ownerProfile, ...(parsed.ownerProfile || {}) },
+      firebase: { ...base.firebase, ...(parsed.firebase || {}) },
+      branches: Array.isArray(parsed.branches) && parsed.branches.length > 0 ? parsed.branches : base.branches,
+    }
+  } catch { return getDefaultRuntimeConfig() }
+}
 import {
   Home, FileText, ClipboardList, DollarSign, Users, Brain,
   MessageCircle, Boxes, AlertTriangle, TrendingDown, Database,
@@ -90,11 +112,7 @@ import {
   Zap, CheckCircle2, Circle, Command as CommandIcon, Store
 } from 'lucide-react'
 
-const runtimeAppConfig = getRuntimeConfig()
-const runtimeBranding = runtimeAppConfig.branding
-const runtimeOwnerProfile = runtimeAppConfig.ownerProfile
-const SIDEBAR_EXECUTIVE_AVATAR = runtimeOwnerProfile.photoURL || runtimeBranding.defaultUserAvatarUrl
-const COMPANY_LOGO_URL = runtimeBranding.companyLogoUrl || runtimeBranding.companyIconUrl
+// Configuración dinámica — se carga en el componente desde Appwrite
 
 const colorClasses: Record<string, { bg: string, text: string, border: string, light: string }> = {
   pink: { bg: 'bg-pink-500', text: 'text-pink-600', border: 'border-pink-200', light: 'bg-pink-50' },
@@ -119,6 +137,21 @@ export default function ErpDashboardLayout({ children }: { children: React.React
   const { user, appUser, isGuest, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [avatarLoaded, setAvatarLoaded] = useState(false)
+
+  // ─── Configuración dinámica desde Appwrite ───────────────────────
+  const [runtimeAppConfig, setRuntimeAppConfig] = useState(getDefaultRuntimeConfig())
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const config = await loadRuntimeConfig()
+      if (!cancelled) setRuntimeAppConfig(config)
+    })()
+    return () => { cancelled = true }
+  }, [])
+  const runtimeBranding = runtimeAppConfig.branding
+  const runtimeOwnerProfile = runtimeAppConfig.ownerProfile
+  const SIDEBAR_EXECUTIVE_AVATAR = runtimeOwnerProfile.photoURL || runtimeBranding.defaultUserAvatarUrl
+  const COMPANY_LOGO_URL = runtimeBranding.companyLogoUrl || runtimeBranding.companyIconUrl
 
   // ─── Command Palette ──────────────────────────────────────────────
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -150,7 +183,7 @@ export default function ErpDashboardLayout({ children }: { children: React.React
     try { return localStorage.getItem('activeBranch') || 'todas' } catch { return 'todas' }
   })
 
-  const branches = useMemo(() => getConfiguredBranches(), [])
+  const branches = useMemo(() => (runtimeAppConfig.branches || []).filter((b: any) => b.active), [runtimeAppConfig])
   const activeBranchLabel = activeBranch === 'todas' ? 'Todas las sedes' : (branches.find(b => b.slug === activeBranch)?.name || 'Todas')
 
   // Reloj en vivo
@@ -221,7 +254,7 @@ export default function ErpDashboardLayout({ children }: { children: React.React
       try {
         const items: NotifItem[] = []
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
-        const branches = getConfiguredBranches().filter(b => b.active !== false)
+        const branches = (runtimeAppConfig.branches || []).filter((b: any) => b.active !== false)
 
         // 1) Cuadres pendientes de hoy por sede
         const { collection, getDocs, query, where, doc, getDoc } = await import('firebase/firestore')
@@ -980,9 +1013,11 @@ export default function ErpDashboardLayout({ children }: { children: React.React
                 onClick={() => { setAvatarOpen(v => !v); setNotifOpen(false); setPlusOpen(false); setBranchOpen(false) }}
                 className="flex items-center gap-1 p-0.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               >
-                <div className="relative rounded-xl overflow-hidden ring-2 ring-white dark:ring-slate-800 shadow-md h-9 w-9 sm:h-[54px] sm:w-[54px]">
-                  <img src={SIDEBAR_EXECUTIVE_AVATAR} className="h-full w-full object-cover" />
-                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-400 ring-1 ring-white dark:ring-slate-900" />
+                <div className="relative rounded-xl ring-2 ring-white dark:ring-slate-800 shadow-md h-9 w-9 sm:h-[54px] sm:w-[54px]">
+                  <div className="absolute inset-0 rounded-xl overflow-hidden">
+                    <img src={SIDEBAR_EXECUTIVE_AVATAR} className="h-full w-full object-cover" />
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900 z-10" />
                 </div>
                 <ChevronDown size={12} className={`text-slate-400 hidden sm:block transition-transform ${avatarOpen ? 'rotate-180' : ''}`} />
               </button>
