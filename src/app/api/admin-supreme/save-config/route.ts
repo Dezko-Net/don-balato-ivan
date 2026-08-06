@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServices } from '@/lib/appwrite-admin'
 import { ID, Query } from 'appwrite'
+import { revalidateTag } from 'next/cache'
 
 const DB_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28'
 const ERP_CONFIG_COLLECTION = 'erp_config'
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
         docId: 'config',
       })
     }
+
+    // Invalidar caché server-side de load-config → propagación inmediata
+    revalidateTag('erp-config')
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {

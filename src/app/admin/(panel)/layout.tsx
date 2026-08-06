@@ -31,7 +31,6 @@ const Ico = {
   SalaInterac: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9"/><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2"/><path d="M7 19v-8"/><path d="M11 19v-8"/><path d="M15 19v-8"/></svg>,
   Recomendados:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
   Destacados:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>,
-  Notifs:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><circle cx="18" cy="5" r="3" fill="#f43f5e" stroke="none"/></svg>,
   LiveShop:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>,
   Plantillas:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19.5" cy="10.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><circle cx="13.5" cy="17.5" r="2.5"/><path d="M16 6.5h-2.5a3 3 0 0 0-3 3v.5"/><path d="M9 12.5h8.5a3 3 0 0 1 3 3v.5"/></svg>,
   Usuarios:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
@@ -53,12 +52,12 @@ const Ico = {
 /* Shopify-dark sidebar — no accent colors needed */
 
 /* ─────────────────────────── nav structure ─────────────────────────── */
-interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'requests'|'alerts'; children?: NavItem[]; }
+interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'; children?: NavItem[]; }
 interface NavGroup { label: string; items: NavItem[]; defaultOpen?: boolean; }
 
 const NAV_GROUPS: NavGroup[] = [
   { label: 'IA', defaultOpen: false, items: [
-    { href: '/admin/ia', label: 'Kenia IA', icon: Ico.Sparkles, children: [
+    { href: '/admin/ia', label: 'Balatin IA', icon: Ico.Sparkles, children: [
       { href: '/admin/ia',           label: 'Centro de control', icon: Ico.Sparkles },
       { href: '/admin/ia/whatsapp',  label: 'WhatsApp',          icon: Ico.Soporte },
       { href: '/admin/ia/cotizacion', label: 'Cotización',       icon: Ico.Plantillas },
@@ -80,20 +79,11 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
       { href: '', label: 'TIENDA', icon: Ico.Productos, children: [
         { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
-        { href: '/admin/inventario-erp', label: '📦 Base de Datos & Inventario ERP', icon: Ico.Inventario },
-        { href: '/admin/productos-sin-imagen', label: 'Sin Imágenes', icon: Ico.Sparkles },
-        { href: '/admin/products/liveshopping', label: 'Live Shopping',   icon: Ico.LiveShop },
-        { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
-        { href: '/admin/products/combos',      label: 'Combos / Packs',     icon: Ico.Ofertas },
+        { href: '/inventario', label: 'Inventario', icon: Ico.Inventario },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
       ]},
-      { href: '', label: 'CATÁLOGO', icon: Ico.Catalogo, children: [
-        { href: '/admin/catalog-products', label: 'Productos a Pedido', icon: Ico.Catalogo, badge: 'alerts' },
-        { href: '/admin/stock-requests', label: 'Solicitudes de Stock', icon: Ico.Inventario, badge: 'requests' },
-        { href: '/admin/catalog-visibility', label: 'Visibilidad de Catálogo', icon: Ico.Catalogo },
-      ]},
-      { href: '/admin/product-votes', label: 'PRÓXIMAMENTE', icon: Ico.Ofertas }
+
     ]},
     { href: '', label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders', children: [
       { href: '/admin/orders',            label: 'Todos los Pedidos', icon: Ico.Pedidos, badge: 'orders' },
@@ -105,13 +95,8 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
       { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },
-      { href: '/admin/timed-offers',  label: 'Ofertas Temporales', icon: Ico.Ofertas },
-      { href: '/admin/ofertas',       label: 'Ofertas Mayoristas', icon: Ico.OfertasDia },
-      { href: '/admin/destacado-temporal', label: 'Destacado Temporal', icon: Ico.OfertasDia },
-      { href: '/admin/apertura',      label: 'Apertura',       icon: Ico.Sparkles },
       { href: '/admin/vip',           label: 'VIP',            icon: Ico.Usuarios },
       { href: '/admin/points-store',  label: 'Tienda de puntos', icon: Ico.Sorteos },
-      { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
     ]},
   ]},
   { label: 'Configuración', defaultOpen: false, items: [
@@ -131,7 +116,7 @@ const NAV_GROUPS: NavGroup[] = [
 /* ═══════════════════ IA Top Bar Button ═══════════════════ */
 const IA_PHRASES = [
   '¿Necesitas ayuda?',
-  'Habla con Kenia',
+  'Habla con Balatin',
   'Crear y editar productos',
   'Consultar pedidos',
   'Niveles de inventario',
@@ -263,9 +248,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const userMenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingOrders,    setPendingOrders]    = useState(0);
   const [processingOrders, setProcessingOrders] = useState(0);
-  const [unreadNotifs,     setUnreadNotifs]     = useState(0);
-  const [pendingRequests,  setPendingRequests]  = useState(0);
-  const [pendingAlerts,    setPendingAlerts]    = useState(0);
+
+
 
   const closeUserMenu = () => {
     setUserMenuClosing(true);
@@ -453,15 +437,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       );
     };
 
-    if (item.label === 'Productos a Pedido' || item.badge === 'alerts') {
-      pushBadge(pendingAlerts, '#f97316');
-    } else if (item.label === 'Solicitudes de Stock' || item.badge === 'requests') {
-      pushBadge(pendingRequests, '#eab308', '#1a1a1a');
-    } else if (item.badge === 'orders') {
+    if (item.badge === 'orders') {
       pushBadge(processingOrders, '#4ade80', '#1a1a1a'); // Verde Claro (Procesando)
       pushBadge(pendingOrders, '#fed7aa', '#1a1a1a'); // Naranja pastel (Pendiente)
-    } else if (item.badge === 'notifs') {
-      pushBadge(unreadNotifs, '#6366f1');
     }
 
     if (badges.length === 0) return null;
@@ -907,19 +885,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             setSidekickOpen(true);
             if (pathname !== '/admin/ia') router.push('/admin/ia');
           }} />
-
-          {/* Notifications */}
-          <Link href="/admin/notifications" style={{
-            width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', position: 'relative', transition: 'background .15s',
-          }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-            </svg>
-            {unreadNotifs > 0 && (
-              <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '2px solid #1a1a1a' }} />
-            )}
-          </Link>
 
           {/* User menu */}
           <div ref={userMenuRef} style={{ position: 'relative' }}>

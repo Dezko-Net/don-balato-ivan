@@ -24,8 +24,21 @@ const GONDOLAS = [
   { id: 'D', name: 'Góndola D', sections: [28,29,30,31,32,33,34,35,36], color: 'from-orange-500 to-red-600', light: 'bg-orange-50 border-orange-200', dot: 'bg-orange-500' },
 ];
 
+function getFeaturesString(p: Product): string {
+  if (!p || p.FEATURES == null) return '';
+  const feat = p.FEATURES as any;
+  if (typeof feat === 'string') return feat;
+  if (Array.isArray(feat)) return feat.join(' ');
+  try {
+    return String(feat);
+  } catch {
+    return '';
+  }
+}
+
 function getSku(p: Product): string {
-  const m = p.FEATURES?.match(/SKU:\s*(.+)/i);
+  const featStr = getFeaturesString(p);
+  const m = featStr ? featStr.match(/SKU:\s*(.+)/i) : null;
   if (m) return m[1].trim();
   const tags = Array.isArray(p.TAGS)
     ? p.TAGS
@@ -37,7 +50,8 @@ function getSku(p: Product): string {
 }
 
 function getBarcode(p: Product): string {
-  const m = p.FEATURES?.match(/Barcode:\s*(.+)/i);
+  const featStr = getFeaturesString(p);
+  const m = featStr ? featStr.match(/Barcode:\s*(.+)/i) : null;
   if (m) return m[1].trim();
   const direct = (p as any).barcode;
   if (direct && String(direct).trim()) return String(direct).trim();
@@ -45,7 +59,8 @@ function getBarcode(p: Product): string {
 }
 
 function getSection(p: Product): number | null {
-  const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
+  const featStr = getFeaturesString(p);
+  const m = featStr ? featStr.match(/Section:\s*(\d+)/i) : null;
   if (m) return parseInt(m[1], 10);
   const direct = (p as any).section;
   if (direct && Number(direct) > 0) return Number(direct);
@@ -210,7 +225,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       const targetCollectionId = isInventory ? collectionId : publishedCollectionId;
       
       // Siempre guardar section en FEATURES como fallback
-      const features = selectedProduct.FEATURES || '';
+      const features = getFeaturesString(selectedProduct);
       const existing = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
       const newFeatures = existing ? `${existing}\nSection: ${sectionNum}` : `Section: ${sectionNum}`;
       

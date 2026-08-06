@@ -147,17 +147,6 @@ export interface Banner {
   $updatedAt: string;
 }
 
-export interface AdminNotification {
-  $id: string;
-  title: string;
-  message: string;
-  type?: string;
-  userId?: string;
-  isRead?: boolean;
-  $createdAt: string;
-  $updatedAt: string;
-}
-
 export interface TimedOffer {
   $id: string;
   title: string;

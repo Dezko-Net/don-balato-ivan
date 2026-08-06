@@ -11,7 +11,9 @@ import {
 } from 'lucide-react';
 
 function getSku(p: Product): string {
-  const featMatch = p.FEATURES?.match(/SKU:\s*(.+)/i);
+  const feat = p.FEATURES as any;
+  const featStr = typeof feat === 'string' ? feat : (Array.isArray(feat) ? feat.join(' ') : (feat ? String(feat) : ''));
+  const featMatch = featStr ? featStr.match(/SKU:\s*(.+)/i) : null;
   if (featMatch) return featMatch[1].trim();
   const tagParts = Array.isArray(p.TAGS)
     ? p.TAGS

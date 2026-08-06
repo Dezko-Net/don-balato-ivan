@@ -11,15 +11,16 @@ import {
   RefreshCw,
   Shield,
   TrendingUp,
-  Zap,
   Clock,
   BarChart3,
   Layers,
   Server,
-  HardDrive,
+  Calendar,
+  Flame,
   Globe,
   Wifi,
   Cpu,
+  HardDrive,
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -30,7 +31,7 @@ type UsageData = {
   sevenDaysReads: number;
   history: { date: string; value: number }[];
   writesHistory?: { date: string; value: number }[];
-  collections: { products: number; orders: number; inventory: number };
+  collections: { products: number; orders: number; inventory: number; categories?: number };
   collectionsTotal?: number;
   documentsTotal?: number;
   lastUpdated: string;
@@ -63,7 +64,7 @@ function formatDuration(secs: number): string {
 }
 
 function fmt(n: number) {
-  return n.toLocaleString('es-CL');
+  return (n || 0).toLocaleString('es-CL');
 }
 
 function compactNum(n: number) {
@@ -76,34 +77,23 @@ function getBarColor(pct: number): string {
   return '#10b981';
 }
 
-/* ─── Mini bar chart ─── */
-function BarChart({ data, color = '#6366f1', height = 80 }: { data: number[]; color?: string; height?: number }) {
-  if (!data.length) return null;
-  const max = Math.max(...data, 1);
-  return (
-    <div className="flex items-end gap-1 w-full" style={{ height }}>
-      {data.map((v, i) => (
-        <div key={i} className="flex-1 min-w-[3px] rounded-t-sm sm:rounded-t-md transition-all duration-500 hover:opacity-80"
-          style={{
-            height: `${Math.max(3, (v / max) * 100)}%`,
-            background: i === data.length - 1 ? color : `${color}55`,
-          }} title={fmt(v)} />
-      ))}
-    </div>
-  );
+function getStatusBadge(reads: number) {
+  if (reads > 50000) return { label: '🔴 CRÍTICO', bg: 'bg-red-50 text-red-700 border-red-200', bar: '#ef4444' };
+  if (reads > 30000) return { label: '🟡 MODERADO', bg: 'bg-amber-50 text-amber-700 border-amber-200', bar: '#f59e0b' };
+  return { label: '🟢 ÓPTIMO', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: '#10b981' };
 }
 
-/* ─── Component ─── */
+/* ─── Main Component ─── */
 export default function AppwriteMonitorPage() {
   const [data, setData] = useState<UsageData | null>(null);
   const [sources, setSources] = useState<ReadSourceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [elapsed, setElapsed] = useState(secondsSinceMidnightUTC());
+  const [hoveredDay, setHoveredDay] = useState<{ date: string; reads: number; writes: number } | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* Tick every second for the daily chronometer */
   useEffect(() => {
     const t = setInterval(() => setElapsed(secondsSinceMidnightUTC()), 1000);
     return () => clearInterval(t);
@@ -143,76 +133,75 @@ export default function AppwriteMonitorPage() {
   async function handleClearCache() {
     try {
       await fetch('/api/revalidate?tag=products');
-      showToast('success', '¡Caché de tienda limpiado!');
+      showToast('success', '¡Caché de productos e historia actualizado!');
     } catch {
       showToast('error', 'Error al limpiar caché');
     }
   }
 
-  /* Derived values */
+  /* Calculations */
+  const history = data?.history || [];
+  const writesHistory = data?.writesHistory || [];
+  const totalDaySeconds = 86400;
+  const dayPct = (elapsed / totalDaySeconds) * 100;
+
+  // Active today's reads
   const effectiveTodayReads = (data?.todayReads && data.todayReads > 0) ? data.todayReads : (sources?.total || 0);
   const todayPct = Math.min(100, (effectiveTodayReads / 60000) * 100);
   const barColor = getBarColor(todayPct);
   const sevenPct = data ? Math.min(100, (data.sevenDaysReads / 420000) * 100) : 0;
-  const totalDaySeconds = 86400;
-  const dayPct = (elapsed / totalDaySeconds) * 100;
   const projectedReads = elapsed > 0 ? Math.round((effectiveTodayReads / elapsed) * totalDaySeconds) : 0;
 
-  const getRecentDays = () => {
-    if (!data || !data.history) return [];
-    const list = [];
-    const len = data.history.length;
-    for (let i = 1; i <= 4; i++) {
-      const idx = len - i;
-      if (idx < 0) continue;
-      const readItem = data.history[idx];
-      const writeItem = data.writesHistory ? data.writesHistory[idx] : null;
-      
-      let label = '';
-      if (i === 1) label = 'Hoy (UTC)';
-      else if (i === 2) label = 'Ayer';
-      else if (i === 3) label = 'Anteayer';
-      else label = 'Hace 3 días';
-
-      const d = new Date(readItem.date);
-      const dateFormatted = d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'UTC' });
-
-      list.push({
-        label,
-        date: dateFormatted,
-        reads: readItem.value,
-        writes: writeItem ? writeItem.value : 0,
-        total: readItem.value + (writeItem ? writeItem.value : 0),
-      });
+  // Peak day calculation
+  let peakDay = { date: '', value: 0 };
+  for (const h of history) {
+    if (h.value > peakDay.value) {
+      peakDay = { date: h.date, value: h.value };
     }
-    return list;
-  };
+  }
+
+  // Last 15 days for main chart
+  const recentHistory = history.slice(-15);
 
   return (
     <div className="min-h-[calc(100vh-2rem)] bg-slate-50/50 p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-6 lg:space-y-8">
-        
+
         {/* ─── Header ─── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
           <div className="flex items-center gap-4 sm:gap-5">
-            <Link href="/admin/ia" className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 hover:shadow-md transition-all text-slate-600 shrink-0">
+            <Link
+              href="/admin/ia"
+              className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 hover:shadow-md transition-all text-slate-600 shrink-0"
+            >
               <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </Link>
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full mb-1">
                 <Database className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-widest">Appwrite Monitor</span>
+                <span className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                  Appwrite Monitor Pro
+                </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Consumo y Recursos</h1>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Consumo y Recursos (Plan Pro 1.8M)
+              </h1>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <button onClick={handleClearCache} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 rounded-xl text-sm font-bold transition-all shadow-sm">
+            <button
+              onClick={handleClearCache}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 rounded-xl text-sm font-bold transition-all shadow-sm"
+            >
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">Limpiar Caché</span>
             </button>
-            <button onClick={() => load(true)} disabled={refreshing || loading} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50">
+            <button
+              onClick={() => load(true)}
+              disabled={refreshing || loading}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50"
+            >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Cargando...' : 'Actualizar'}
             </button>
@@ -222,9 +211,11 @@ export default function AppwriteMonitorPage() {
         {loading ? (
           /* ─── Skeleton ─── */
           <div className="space-y-6 lg:space-y-8 animate-pulse">
-            <div className="h-32 bg-white rounded-3xl border border-slate-100 shadow-sm" />
+            <div className="h-44 bg-white rounded-3xl border border-slate-100 shadow-sm" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white rounded-3xl border border-slate-100 shadow-sm" />)}
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-white rounded-3xl border border-slate-100 shadow-sm" />
+              ))}
             </div>
             <div className="h-64 bg-white rounded-3xl border border-slate-100 shadow-sm" />
           </div>
@@ -235,18 +226,23 @@ export default function AppwriteMonitorPage() {
               <AlertTriangle className="w-10 h-10 text-red-500" />
             </div>
             <h2 className="text-xl font-bold text-slate-900 mb-2">No se pudieron cargar los datos</h2>
-            <p className="text-slate-500 mb-6 max-w-md mx-auto">Verifica que el token de API de Appwrite sea correcto o que el servidor tenga conexión.</p>
-            <button onClick={() => load(true)} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-md">
+            <p className="text-slate-500 mb-6 max-w-md mx-auto">
+              Verifica la conexión con el servidor.
+            </p>
+            <button
+              onClick={() => load(true)}
+              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-md"
+            >
               Reintentar Conexión
             </button>
           </div>
         ) : (
           <div className="space-y-6 lg:space-y-8">
-            
-            {/* ─── Top Section: Chronometer & Gauge ─── */}
+
+            {/* ─── Top 2 Hero Cards (Cronómetro + Gauge 60k) ─── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-              
-              {/* Chronometer */}
+
+              {/* Card 1: Cronómetro Diario (Servidor UTC) */}
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none group-hover:bg-cyan-50/50 transition-colors duration-1000" />
                 <div className="relative">
@@ -256,14 +252,18 @@ export default function AppwriteMonitorPage() {
                         <Clock className="w-6 h-6" />
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Cronómetro Diario (Servidor UTC)</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">
+                          Cronómetro Diario (Servidor UTC)
+                        </span>
                         <div className="flex items-baseline gap-2">
-                          <span className="font-mono text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{formatDuration(elapsed)}</span>
+                          <span className="font-mono text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                            {formatDuration(elapsed)}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-end justify-between bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-100">
                     <div className="flex items-center gap-4 sm:gap-6 w-full">
                       <div className="flex-1">
@@ -278,69 +278,128 @@ export default function AppwriteMonitorPage() {
                         <p className="text-2xl font-black text-indigo-600">{dayPct.toFixed(1)}%</p>
                       </div>
                       <div className="w-2.5 h-12 bg-slate-200 rounded-full overflow-hidden shrink-0">
-                        <div className="w-full bg-gradient-to-t from-cyan-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out" style={{ height: `${dayPct}%` }} />
+                        <div
+                          className="w-full bg-gradient-to-t from-cyan-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out"
+                          style={{ height: `${dayPct}%` }}
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Gauge */}
+              {/* Card 2: Lecturas Hoy vs Límite (60k) */}
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Lecturas Hoy (UTC) vs Límite (60k)</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">
+                      Lecturas Hoy (UTC) vs Límite (60k)
+                    </span>
                     <div className="flex items-baseline gap-3">
-                      <span className="text-4xl font-black tracking-tight" style={{ color: barColor }}>{fmt(effectiveTodayReads)}</span>
+                      <span className="text-4xl font-black tracking-tight" style={{ color: barColor }}>
+                        {fmt(effectiveTodayReads)}
+                      </span>
                       <span className="text-sm font-bold text-slate-400">/ 60,000</span>
                     </div>
                   </div>
-                  <div className="px-3 py-1.5 rounded-xl text-xs font-bold" style={{ backgroundColor: `${barColor}15`, color: barColor }}>
+                  <div
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold"
+                    style={{ backgroundColor: `${barColor}15`, color: barColor }}
+                  >
                     {todayPct >= 85 ? '🔴 CRÍTICO' : todayPct >= 50 ? '🟡 MODERADO' : '🟢 ÓPTIMO'}
                   </div>
                 </div>
 
                 <div className="h-4 bg-slate-100 rounded-full overflow-hidden mb-3">
-                  <div className="h-full rounded-full transition-all duration-1000 relative overflow-hidden" style={{ width: `${todayPct}%`, backgroundColor: barColor }}>
-                    <div className="absolute inset-0 bg-white/20 w-full h-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', animation: 'shimmer 2s infinite' }} />
+                  <div
+                    className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
+                    style={{ width: `${todayPct}%`, backgroundColor: barColor }}
+                  >
+                    <div
+                      className="absolute inset-0 bg-white/20 w-full h-full"
+                      style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', animation: 'shimmer 2s infinite' }}
+                    />
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between text-[10px] font-bold text-slate-300 mb-4">
-                  {[0, '15k', '30k', '45k', '60k'].map(t => <span key={t}>{t}</span>)}
+                  {[0, '15k', '30k', '45k', '60k'].map((t) => (
+                    <span key={t}>{t}</span>
+                  ))}
                 </div>
 
                 <div className="flex items-center gap-3 bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-100">
-                  <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${barColor}15`, color: barColor }}>
+                  <div
+                    className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: `${barColor}15`, color: barColor }}
+                  >
                     {todayPct >= 85 ? <AlertTriangle className="w-4 h-4" /> : <CheckCheck className="w-4 h-4" />}
                   </div>
                   <p className="text-xs sm:text-sm font-medium text-slate-600">
                     {todayPct >= 85
-                      ? 'Atención: Estás cerca del límite diario de Appwrite. Pausa operaciones masivas.'
+                      ? 'Atención: Estás cerca del límite de 60k diario. Revisa operaciones activas.'
                       : todayPct >= 50
-                      ? 'Consumo estable. Mantén el ritmo controlado.'
+                      ? 'Consumo moderado. Tienes suficiente margen dentro de los 60k diarios.'
                       : 'Consumo óptimo. Tienes suficiente cuota para el día de hoy.'}
                   </p>
                 </div>
               </div>
+
             </div>
 
             {/* ─── 4 KPI Cards ─── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {[
-                { label: 'Lecturas totales (30d)', value: compactNum(data.databaseReadsTotal), sub: `${fmt(data.databaseReadsTotal)} totales`, icon: Activity, colors: 'from-indigo-500 to-indigo-600', text: 'text-indigo-600', shadow: 'shadow-indigo-500/20' },
-                { label: 'Escrituras (30d)', value: compactNum(data.databaseWritesTotal), sub: 'Creaciones/updates', icon: Database, colors: 'from-cyan-500 to-cyan-600', text: 'text-cyan-600', shadow: 'shadow-cyan-500/20' },
-                { label: 'Lecturas semanales', value: compactNum(data.sevenDaysReads), sub: `${sevenPct.toFixed(0)}% del límite`, icon: TrendingUp, colors: 'from-violet-500 to-violet-600', text: 'text-violet-600', shadow: 'shadow-violet-500/20' },
-                { label: 'Documentos activos', value: fmt(data.collections.products + data.collections.orders + data.collections.inventory), sub: 'Catálogo y pedidos', icon: Layers, colors: 'from-emerald-500 to-emerald-600', text: 'text-emerald-600', shadow: 'shadow-emerald-500/20' },
+                {
+                  label: 'Lecturas totales (30d)',
+                  value: compactNum(data.databaseReadsTotal),
+                  sub: `${fmt(data.databaseReadsTotal)} totales`,
+                  icon: Activity,
+                  colors: 'from-indigo-500 to-indigo-600',
+                  text: 'text-indigo-600',
+                  shadow: 'shadow-indigo-500/20',
+                },
+                {
+                  label: 'Escrituras (30d)',
+                  value: compactNum(data.databaseWritesTotal),
+                  sub: 'Creaciones y updates',
+                  icon: Database,
+                  colors: 'from-cyan-500 to-cyan-600',
+                  text: 'text-cyan-600',
+                  shadow: 'shadow-cyan-500/20',
+                },
+                {
+                  label: 'Lecturas semanales',
+                  value: compactNum(data.sevenDaysReads),
+                  sub: `${sevenPct.toFixed(0)}% de 420k semanal`,
+                  icon: TrendingUp,
+                  colors: 'from-violet-500 to-violet-600',
+                  text: 'text-violet-600',
+                  shadow: 'shadow-violet-500/20',
+                },
+                {
+                  label: 'Documentos activos',
+                  value: fmt(data.documentsTotal || 0),
+                  sub: 'Catálogo y pedidos',
+                  icon: Layers,
+                  colors: 'from-emerald-500 to-emerald-600',
+                  text: 'text-emerald-600',
+                  shadow: 'shadow-emerald-500/20',
+                },
               ].map((s, i) => (
-                <div key={i} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-transform duration-300">
+                <div
+                  key={i}
+                  className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-transform duration-300"
+                >
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.colors} shadow-lg ${s.shadow} flex items-center justify-center text-white`}>
                       <s.icon className="w-6 h-6" />
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{s.label}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                      {s.label}
+                    </span>
                     <p className={`text-3xl font-black tracking-tight mb-1 ${s.text}`}>{s.value}</p>
                     <p className="text-xs font-medium text-slate-400">{s.sub}</p>
                   </div>
@@ -348,405 +407,209 @@ export default function AppwriteMonitorPage() {
               ))}
             </div>
 
-            {/* ─── Comparativa de Consumo Reciente ─── */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                  <BarChart3 className="w-5 h-5" />
-                </div>
+            {/* ─── Interactive Daily Chart (Light Theme) ─── */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900">Historial Diario Reciente</h2>
-                  <p className="text-xs text-slate-400 font-medium">Comparativa de llamadas en las últimas jornadas (servidor UTC)</p>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-indigo-600" />
+                    <h2 className="text-lg font-black text-slate-900">Gráfico de Lecturas Diarias (Últimos 15 Días)</h2>
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                    Pasa el cursor por las barras para ver lecturas y escrituras exactas.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500" /> &lt; 15k</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-500" /> 15k–50k</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-500" /> &gt; 50k</span>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {getRecentDays().map((day, i) => (
-                  <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100/50 transition-colors flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                          i === 0 
-                            ? 'bg-indigo-100 text-indigo-700 font-black' 
-                            : i === 1 
-                            ? 'bg-slate-200 text-slate-700 font-black' 
-                            : 'bg-slate-100 text-slate-500 font-bold'
-                        }`}>
-                          {day.label}
-                        </span>
-                        <span className="text-[11px] font-bold text-slate-400">{day.date}</span>
-                      </div>
-                      <p className="text-2xl font-black text-slate-800 tracking-tight">
-                        {fmt(day.total)} <span className="text-xs text-slate-400 font-bold">reqs</span>
-                      </p>
-                    </div>
-                    
-                    <div className="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-2 gap-2 text-left">
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Lecturas</span>
-                        <span className="text-xs font-bold text-slate-700">{fmt(day.reads)}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Escrituras</span>
-                        <span className="text-xs font-bold text-slate-700">{fmt(day.writes)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* ─── Top Read Sources (Detailed) ─── */}
-            {sources && sources.total > 0 && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
-                    <Server className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-black text-slate-900">Top Origen de Lecturas Appwrite</h2>
-                    <p className="text-xs text-slate-400 font-medium">Últimos 30 minutos · {fmt(sources.total)} lecturas rastreadas · {Object.entries(sources.ops).map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
-                  </div>
-                </div>
-
-                {/* Per-minute activity chart */}
-                {sources.byMinute.length > 1 && (
-                  <div className="mb-6 bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Actividad por Minuto</h3>
-                    <BarChart data={sources.byMinute.map(m => m.count)} color="#f43f5e" height={60} />
-                    <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
-                      <span>{sources.byMinute[0]?.minute}</span>
-                      <span className="text-rose-500">Ahora</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* By Source (API route) */}
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Ruta / Componente</h3>
-                    <div className="space-y-3">
-                      {sources.bySource.slice(0, 10).map((s, i) => {
-                        const max = sources.bySource[0]?.count || 1;
-                        const pct = (s.count / max) * 100;
-                        const opsStr = Object.entries(s.ops).map(([k, v]) => `${k}:${v}`).join(' ');
-                        return (
-                          <div key={i}>
-                            <div className="flex justify-between items-end mb-1">
-                              <span className="text-sm font-medium text-slate-700 truncate max-w-[60%]" title={s.source}>{s.source}</span>
-                              <span className="text-sm font-black text-slate-900">{fmt(s.count)}</span>
-                            </div>
-                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                            </div>
-                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                              <span className="font-mono text-slate-500">{opsStr}</span> · {s.collections.join(', ')}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* By Collection */}
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Colección</h3>
-                    <div className="space-y-3">
-                      {sources.byCollection.slice(0, 10).map((c, i) => {
-                        const max = sources.byCollection[0]?.count || 1;
-                        const pct = (c.count / max) * 100;
-                        const opsStr = Object.entries(c.ops).map(([k, v]) => `${k}:${v}`).join(' ');
-                        return (
-                          <div key={i}>
-                            <div className="flex justify-between items-end mb-1">
-                              <span className="text-sm font-medium text-slate-700 truncate max-w-[60%]" title={c.collectionId}>{c.collectionId}</span>
-                              <span className="text-sm font-black text-slate-900">{fmt(c.count)}</span>
-                            </div>
-                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                            </div>
-                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                              <span className="font-mono text-slate-500">{opsStr}</span> · {c.sources.slice(0, 3).join(', ')}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* By Source File + Line */}
-                {sources.bySourceFile.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Por Archivo + Línea (Top 20)</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="text-slate-400 border-b border-slate-100">
-                            <th className="text-left py-2 px-2 font-bold">Archivo</th>
-                            <th className="text-right py-2 px-2 font-bold">Línea</th>
-                            <th className="text-left py-2 px-2 font-bold">Ruta</th>
-                            <th className="text-right py-2 px-2 font-bold">Lecturas</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sources.bySourceFile.map((f, i) => (
-                            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
-                              <td className="py-1.5 px-2 font-mono text-slate-700">{f.file}</td>
-                              <td className="py-1.5 px-2 text-right font-mono text-slate-500">:{f.line}</td>
-                              <td className="py-1.5 px-2 text-slate-400 truncate max-w-[200px]" title={f.source}>{f.source}</td>
-                              <td className="py-1.5 px-2 text-right font-black text-slate-900">{fmt(f.count)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Cross-reference Source × Collection */}
-                {sources.crossRef.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Cruce Ruta × Colección (Top 30)</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="text-slate-400 border-b border-slate-100">
-                            <th className="text-left py-2 px-2 font-bold">Ruta</th>
-                            <th className="text-left py-2 px-2 font-bold">Colección</th>
-                            <th className="text-right py-2 px-2 font-bold">Lecturas</th>
-                            <th className="text-left py-2 px-2 font-bold w-24">Proporción</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sources.crossRef.map((cr, i) => {
-                            const max = sources.crossRef[0]?.count || 1;
-                            const pct = (cr.count / max) * 100;
-                            return (
-                              <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                <td className="py-1.5 px-2 text-slate-700 truncate max-w-[180px]" title={cr.source}>{cr.source}</td>
-                                <td className="py-1.5 px-2 font-mono text-slate-500 truncate max-w-[160px]" title={cr.collection}>{cr.collection}</td>
-                                <td className="py-1.5 px-2 text-right font-black text-slate-900">{fmt(cr.count)}</td>
-                                <td className="py-1.5 px-2">
-                                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Recent individual entries */}
-                {sources.recent.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Últimas 50 Lecturas Individuales</h3>
-                    <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                      <table className="w-full text-xs">
-                        <thead className="sticky top-0 bg-white">
-                          <tr className="text-slate-400 border-b border-slate-100">
-                            <th className="text-left py-2 px-2 font-bold">Hora</th>
-                            <th className="text-left py-2 px-2 font-bold">Op</th>
-                            <th className="text-left py-2 px-2 font-bold">Colección</th>
-                            <th className="text-left py-2 px-2 font-bold">Ruta</th>
-                            <th className="text-left py-2 px-2 font-bold">Archivo:Linea</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sources.recent.map((r, i) => {
-                            const time = new Date(r.ts).toLocaleTimeString('es-CL', { hour12: false });
-                            return (
-                              <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                <td className="py-1.5 px-2 font-mono text-slate-400">{time}</td>
-                                <td className="py-1.5 px-2">
-                                  <span className={`font-mono font-bold ${r.op === 'list' ? 'text-blue-600' : r.op === 'get' ? 'text-green-600' : r.op === 'create' ? 'text-amber-600' : r.op === 'update' ? 'text-orange-600' : 'text-red-600'}`}>{r.op}</span>
-                                </td>
-                                <td className="py-1.5 px-2 font-mono text-slate-500 truncate max-w-[140px]" title={r.collection}>{r.collection}</td>
-                                <td className="py-1.5 px-2 text-slate-700 truncate max-w-[160px]" title={r.source}>{r.source}</td>
-                                <td className="py-1.5 px-2 font-mono text-slate-400">{r.file}:{r.line}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ─── Bottom Section: Charts & Details ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-              
-              {/* History Chart */}
-              <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                    <BarChart3 className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-lg font-black text-slate-900">Historial de Lecturas (30 días)</h2>
-                </div>
-                
-                {data.history.length > 0 ? (
+              {/* Hover Inspection Bar */}
+              <div className="min-h-[40px] bg-slate-50 rounded-2xl px-5 py-2.5 border border-slate-100 flex items-center justify-between text-xs">
+                {hoveredDay ? (
                   <>
-                    <div className="bg-slate-50/50 rounded-2xl p-4 sm:p-6 border border-slate-100">
-                      <BarChart data={data.history.map(h => h.value)} color="#6366f1" height={160} />
-                      <div className="flex justify-between mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        <span>{data.history[0]?.date ? new Date(data.history[0].date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : 'Inicio'}</span>
-                        <span className="text-indigo-600">Hoy</span>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-4 mt-6">
-                      {[
-                        { label: 'Pico Máximo', value: fmt(Math.max(...data.history.map(h => h.value))), color: 'text-slate-900' },
-                        { label: 'Promedio', value: fmt(Math.round(data.history.reduce((a, h) => a + h.value, 0) / data.history.length)), color: 'text-indigo-600' },
-                        { label: 'Días con Datos', value: String(data.history.filter(h => h.value > 0).length), color: 'text-emerald-600' },
-                      ].map((s, i) => (
-                        <div key={i} className="text-center p-4 rounded-2xl bg-white border border-slate-100">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{s.label}</span>
-                          <span className={`text-lg sm:text-xl font-black ${s.color}`}>{s.value}</span>
-                        </div>
-                      ))}
+                    <span className="font-bold text-slate-800">
+                      📅 {new Date(hoveredDay.date).toLocaleDateString('es-CL', { weekday: 'long', day: '2-digit', month: 'long', timeZone: 'UTC' })}
+                    </span>
+                    <div className="flex items-center gap-4 font-extrabold">
+                      <span className="text-indigo-600">📖 Lecturas: {fmt(hoveredDay.reads)}</span>
+                      <span className="text-cyan-600">✏️ Escrituras: {fmt(hoveredDay.writes)}</span>
+                      <span className="text-slate-900">Total: {fmt(hoveredDay.reads + hoveredDay.writes)}</span>
                     </div>
                   </>
                 ) : (
-                  <div className="h-48 flex items-center justify-center text-slate-400 text-sm font-medium bg-slate-50 rounded-2xl border border-slate-100">
-                    No hay datos históricos suficientes
-                  </div>
+                  <span className="text-slate-400 font-medium">Coloca el cursor sobre cualquier barra para inspeccionar fecha y consumo exacto.</span>
                 )}
               </div>
 
-              {/* Sidebar Info */}
-              <div className="space-y-6 lg:space-y-8">
-                {/* Collections Breakdown */}
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                      <Layers className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-lg font-black text-slate-900">Desglose de Datos</h2>
-                  </div>
+              {/* Chart Bars */}
+              {recentHistory.length > 0 ? (
+                <div className="relative pt-6 pb-2">
+                  <div className="flex items-end gap-2 sm:gap-3 h-64 w-full">
+                    {recentHistory.map((item, i) => {
+                      const writeItem = writesHistory.find(w => w.date === item.date) || { value: 0 };
+                      const maxVal = Math.max(...recentHistory.map(h => h.value), 60000);
+                      const heightPct = Math.max(5, (item.value / maxVal) * 100);
+                      const badge = getStatusBadge(item.value);
+                      const dateFormatted = new Date(item.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 
-                  <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100 mb-5">
-                    <div className="text-center flex-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Colecciones</span>
-                      <span className="text-lg font-black text-slate-800">{fmt(data.collectionsTotal || 0)}</span>
-                    </div>
-                    <div className="w-px h-8 bg-slate-200" />
-                    <div className="text-center flex-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Docs Totales</span>
-                      <span className="text-lg font-black text-slate-800">{fmt(data.documentsTotal || 0)}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-5">
-                    {[
-                      { label: 'Productos', count: data.collections.products, color: 'bg-sky-500', text: 'text-sky-600' },
-                      { label: 'Pedidos', count: data.collections.orders, color: 'bg-pink-500', text: 'text-pink-600' },
-                      { label: 'Inventario', count: data.collections.inventory, color: 'bg-emerald-500', text: 'text-emerald-600' },
-                    ].map((col, i) => {
-                      const maxC = Math.max(data.collections.products, data.collections.orders, data.collections.inventory, 1);
-                      const pct = (col.count / maxC) * 100;
                       return (
-                        <div key={i}>
-                          <div className="flex justify-between items-end mb-2">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">{col.label}</span>
-                            <span className={`text-sm font-black ${col.text}`}>{fmt(col.count)}</span>
+                        <div
+                          key={i}
+                          className="flex-1 flex flex-col items-center gap-2 group cursor-pointer h-full justify-end"
+                          onMouseEnter={() => setHoveredDay({ date: item.date, reads: item.value, writes: writeItem.value })}
+                          onMouseLeave={() => setHoveredDay(null)}
+                        >
+                          <span className="text-[10px] font-extrabold text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {compactNum(item.value)}
+                          </span>
+
+                          <div className="w-full bg-slate-100 rounded-t-xl overflow-hidden flex items-end h-full p-0.5 border border-slate-200/50">
+                            <div
+                              className="w-full rounded-t-lg transition-all duration-500 group-hover:brightness-110 shadow-sm"
+                              style={{
+                                height: `${heightPct}%`,
+                                backgroundColor: badge.bar,
+                              }}
+                            />
                           </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full ${col.color} rounded-full transition-all duration-1000`} style={{ width: `${pct}%` }} />
-                          </div>
+
+                          <span className="text-[10px] font-bold text-slate-500 group-hover:text-slate-900 transition-colors">
+                            {dateFormatted}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
+              ) : (
+                <div className="h-40 flex items-center justify-center text-slate-400 text-sm">
+                  Sin datos suficientes para graficar
+                </div>
+              )}
+            </div>
 
-                {/* Free Plan Limits & Server Status */}
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:bg-amber-500/20 transition-colors duration-1000" />
-                  
-                  {/* Límite del Plan */}
-                  <div className="flex items-center gap-3 mb-5 relative">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shadow-sm border border-amber-100">
-                      <Shield className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-lg font-black text-slate-900">Límites del Plan</h2>
-                  </div>
-                  
-                  <div className="space-y-2.5 relative mb-6">
-                    {[
-                      { label: 'Lecturas Hoy', limit: '60,000', used: fmt(effectiveTodayReads) },
-                      { label: 'Lecturas Mes', limit: '1.8M', used: compactNum(data.databaseReadsTotal) },
-                      { label: 'Escrituras Mes', limit: '300k', used: compactNum(data.databaseWritesTotal) },
-                    ].map((l, i) => (
-                      <div key={i} className="flex justify-between items-center p-3.5 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100/80 transition-colors">
-                        <span className="text-xs font-bold text-slate-500">{l.label}</span>
-                        <div className="text-right">
-                          <span className="text-sm font-black text-slate-900">{l.used}</span>
-                          <span className="text-[10px] font-bold text-slate-400 ml-1.5">/ {l.limit}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Estado Servidor Extendido */}
-                  <div className="pt-6 border-t border-slate-100 relative">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Server className="w-4 h-4 text-slate-400" />
-                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Servidor Appwrite</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                        <span className="text-[10px] font-bold text-emerald-600">En línea</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1.5">
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <Globe className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold uppercase">Región</span>
-                        </div>
-                        <span className="text-xs font-black text-slate-700">FRA (Frankfurt)</span>
-                      </div>
-                      
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1.5">
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <Wifi className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold uppercase">Latencia</span>
-                        </div>
-                        <span className="text-xs font-black text-emerald-600">~24ms</span>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1.5">
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <Cpu className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold uppercase">Uptime</span>
-                        </div>
-                        <span className="text-xs font-black text-slate-700">99.99%</span>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1.5">
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <HardDrive className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold uppercase">Storage</span>
-                        </div>
-                        <span className="text-xs font-black text-slate-700">~85MB <span className="text-[9px] text-slate-400 font-bold">/ 2GB</span></span>
-                      </div>
-                    </div>
-                  </div>
-
+            {/* ─── Detailed Daily Breakdown Table ─── */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-900">Desglose Detallado por Día</h2>
+                  <p className="text-xs text-slate-400 font-medium">Historial completo de peticiones registradas</p>
                 </div>
               </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
+                      <th className="py-3 px-3">Fecha</th>
+                      <th className="py-3 px-3">Lecturas</th>
+                      <th className="py-3 px-3">Escrituras</th>
+                      <th className="py-3 px-3">Total Reqs</th>
+                      <th className="py-3 px-3 text-right">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {[...recentHistory].reverse().map((row, i) => {
+                      const writeItem = writesHistory.find(w => w.date === row.date) || { value: 0 };
+                      const total = row.value + writeItem.value;
+                      const badge = getStatusBadge(row.value);
+                      const dateStr = new Date(row.date).toLocaleDateString('es-CL', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' });
+
+                      return (
+                        <tr key={i} className="hover:bg-slate-50/80 transition-colors font-medium">
+                          <td className="py-3 px-3 text-slate-900 font-bold capitalize">
+                            {dateStr}
+                          </td>
+                          <td className="py-3 px-3 font-mono font-bold text-indigo-600">
+                            {fmt(row.value)}
+                          </td>
+                          <td className="py-3 px-3 font-mono text-cyan-600">
+                            {fmt(writeItem.value)}
+                          </td>
+                          <td className="py-3 px-3 font-mono font-bold text-slate-800">
+                            {fmt(total)}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold border ${badge.bg}`}>
+                              {badge.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            
+
+            {/* ─── Realtime Sources Breakdown ─── */}
+            {sources && sources.bySource.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                    <Server className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">Top Origen de Lecturas Appwrite</h2>
+                    <p className="text-xs text-slate-400 font-medium">
+                      Rastreadas en memoria en tiempo real ({fmt(sources.total)} lecturas activas)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Por Ruta / Componente</h3>
+                    <div className="space-y-3">
+                      {sources.bySource.slice(0, 7).map((s, i) => {
+                        const max = sources.bySource[0]?.count || 1;
+                        const pct = (s.count / max) * 100;
+                        return (
+                          <div key={i} className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <div className="flex justify-between items-center mb-1 text-xs">
+                              <span className="font-mono text-slate-700 font-bold truncate max-w-[70%]" title={s.source}>{s.source}</span>
+                              <span className="font-mono font-black text-rose-600">{fmt(s.count)}</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Por Colección</h3>
+                    <div className="space-y-3">
+                      {sources.byCollection.slice(0, 7).map((c, i) => {
+                        const max = sources.byCollection[0]?.count || 1;
+                        const pct = (c.count / max) * 100;
+                        return (
+                          <div key={i} className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <div className="flex justify-between items-center mb-1 text-xs">
+                              <span className="font-mono text-slate-700 font-bold truncate max-w-[70%]" title={c.collectionId}>{c.collectionId}</span>
+                              <span className="font-mono font-black text-indigo-600">{fmt(c.count)}</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
       </div>
@@ -760,11 +623,8 @@ export default function AppwriteMonitorPage() {
           </div>
         </div>
       )}
-      
-      {/* Required custom animations */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes shimmer { 100% { transform: translateX(100%); } }
-      `}} />
+
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes shimmer { 100% { transform: translateX(100%); } }` }} />
     </div>
   );
 }

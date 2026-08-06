@@ -9,9 +9,10 @@ if (pathSegments.length > 0 && pathSegments[0] !== 'index.html' && !pathSegments
 }
 
 let WHATSAPP_CONTACTS = [
-  { name: 'Lizzy', number: '56962293893' },
+  { name: 'Lissy', number: '56962293893' },
   { name: 'Fernanda', number: '56967294975' }
 ];
+const BALATIN_CONTACT = { name: 'Balatin', number: '56936599658' };
 const PASSWORDS = { admin: 'Flavia273@' }; // TODO: Move to firebase
 const STORAGE_KEYS = { cart: `db_cart_${CLIENT_ID}`, adminAuth: `db_admin_auth_${CLIENT_ID}` };
 
@@ -433,6 +434,7 @@ function updateBottomNav() {
   const hash = location.hash || '#/';
   let active = 'home';
   if (hash.startsWith('#/all')) active = 'all';
+  else if (hash.startsWith('#/my-orders')) active = 'orders';
   else if (hash.startsWith('#/search')) active = 'search';
   else if (hash !== '#/' && hash !== '') active = 'all';
   document.querySelectorAll('#bottomNav .nav-item').forEach(el => {
@@ -582,21 +584,44 @@ function sendWhatsApp() {
     showToast(`Compra minima: $${getMinPurchase().toLocaleString('es-CL')}`);
     return;
   }
-  // Render attendant options
+  // Render attendant options (step 1) — 3 circular selectors
   selectedAttendant = null;
   var container = document.getElementById('attendantOptions');
   if (container) {
-    container.innerHTML = WHATSAPP_CONTACTS.map(function(c, idx) {
-      return '<button type="button" data-idx="' + idx + '" onclick="selectAttendant(' + idx + ')" class="attendant-btn px-4 py-3 rounded-2xl border-2 border-blue-100 text-blue-700 font-bold text-sm transition active:scale-95 flex flex-col items-center gap-1">' +
-        '<span>' + c.name + '</span>' +
-        '</button>';
+    var attendantMeta = [
+      { emoji: null, img: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785997439696-pegada-1785997429956.png', label: 'Lissy', sub: 'Personalizado', border: 'border-red-400', hover: 'hover:border-red-500', text: 'text-red-500' },
+      { emoji: null, img: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785998075009-pegada-1785998072451.png', label: 'Fernanda', sub: 'Personalizado', border: 'border-gray-500', hover: 'hover:border-gray-600', text: 'text-gray-600' },
+    ];
+    var humanButtons = attendantMeta.map(function(meta, idx) {
+      var avatarContent = meta.img
+        ? '<img src="' + meta.img + '" alt="' + meta.label + '" class="w-full h-full object-cover rounded-full">'
+        : meta.emoji;
+      return '<button type="button" data-idx="' + idx + '" onclick="selectAttendant(' + idx + ')" class="attendant-btn group flex flex-col items-center gap-3 transition-all duration-200 active:scale-90">' +
+        '<div class="w-24 h-24 rounded-full border-4 ' + meta.border + ' ' + meta.hover + ' bg-transparent flex items-center justify-center text-5xl transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden">' +
+          avatarContent +
+        '</div>' +
+        '<div class="text-center">' +
+          '<div class="font-bold text-gray-800 text-sm">' + meta.label + '</div>' +
+          '<div class="text-[10px] text-gray-400 font-medium mt-0.5">' + meta.sub + '</div>' +
+        '</div>' +
+      '</button>';
     }).join('');
+    var balatinButton = '<button type="button" onclick="sendToBalatin()" class="attendant-btn group flex flex-col items-center gap-3 transition-all duration-200 active:scale-90">' +
+      '<div class="w-24 h-24 rounded-full border-4 border-blue-400 hover:border-blue-500 bg-transparent flex items-center justify-center text-5xl transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden">' +
+        '<img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png" alt="Balatin" class="w-full h-full object-cover rounded-full">' +
+      '</div>' +
+      '<div class="text-center">' +
+        '<div class="font-bold text-gray-800 text-sm flex items-center gap-1 justify-center">Balatin <span class="text-[8px] font-bold bg-blue-400 text-white px-1.5 py-0.5 rounded-full">IA</span></div>' +
+        '<div class="text-[10px] text-blue-500 font-medium mt-0.5">Al instante</div>' +
+      '</div>' +
+    '</button>';
+    container.innerHTML = '<div class="flex justify-center items-start gap-8 py-2">' + humanButtons + balatinButton + '</div>';
   }
-  // Clear fields
-  var nameInput = document.getElementById('custName');
-  var phoneInput = document.getElementById('custPhone');
-  if (nameInput) nameInput.value = '';
-  if (phoneInput) phoneInput.value = '';
+  // Show step 1 (attendant selection), hide step 2 (name/phone)
+  var step1 = document.getElementById('modalStep1');
+  var step2 = document.getElementById('modalStep2');
+  if (step1) step1.classList.remove('hidden');
+  if (step2) step2.classList.add('hidden');
   // Show modal
   const modal = document.getElementById('customerFormModal');
   if (modal) { modal.classList.remove('hidden'); return; }
@@ -604,15 +629,30 @@ function sendWhatsApp() {
 function selectAttendant(idx) {
   selectedAttendant = idx;
   var buttons = document.querySelectorAll('.attendant-btn');
-  buttons.forEach(function(btn, i) {
-    if (i === idx) {
-      btn.classList.remove('border-blue-100', 'text-blue-700');
-      btn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-800');
-    } else {
-      btn.classList.add('border-blue-100', 'text-blue-700');
-      btn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-800');
+  buttons.forEach(function(btn) {
+    var circle = btn.querySelector('div');
+    if (String(btn.getAttribute('data-idx')) === String(idx)) {
+      if (circle) {
+        circle.style.transform = 'scale(1.1)';
+        circle.style.borderWidth = '5px';
+        circle.style.boxShadow = '0 0 0 4px rgba(0,0,0,0.05)';
+      }
+    } else if (btn.getAttribute('data-idx')) {
+      if (circle) {
+        circle.style.transform = '';
+        circle.style.borderWidth = '';
+        circle.style.boxShadow = '';
+      }
     }
   });
+  // Show step 2 (name + phone) after selecting a human attendant
+  var step2 = document.getElementById('modalStep2');
+  if (step2) step2.classList.remove('hidden');
+  // Focus name input
+  setTimeout(function() {
+    var nameInput = document.getElementById('custName');
+    if (nameInput) nameInput.focus();
+  }, 100);
 }
 function closeCustomerFormModal() {
   const modal = document.getElementById('customerFormModal');
@@ -650,6 +690,83 @@ function normalizeChileanPhone(raw) {
   // Retornar con 56 adelante
   return '56' + digits;
 }
+// Balatin: sin formulario, sin pedido pre-creado. El cliente le escribe directo con su lista
+// y Balatin arma el pedido conversando (nombre, stock, direccion y comprobante por chat).
+function sendToBalatin() {
+  if (cart.length === 0) { showToast('Carrito vacio'); return; }
+  if (cartTotal() < getMinPurchase()) {
+    showToast(`Compra minima: $${getMinPurchase().toLocaleString('es-CL')}`);
+    return;
+  }
+
+  var apiBase = window.location.origin.indexOf('localhost') >= 0
+    ? 'http://localhost:3000'
+    : 'https://www.donbalatomayorista.cl';
+
+  var orderItems = cart.map(function(i) {
+    return { id: i.id || '', sku: i.sku, name: i.name, qty: i.qty, price: i.price, image: i.image || '' };
+  });
+  var total = cartTotal();
+
+  // Crear pedido en Appwrite (sin nombre ni telefono — Balatin los pedira por chat)
+  var orderCode = '';
+  var orderId = '';
+  var saveError = false;
+  var self = this;
+
+  (async function() {
+    try {
+      var res = await fetch(apiBase + '/api/catalogo/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: '',
+          customerPhone: '',
+          items: orderItems,
+          total: total,
+          assignedCashier: 'Balatin'
+        })
+      });
+      var data = await res.json();
+      if (data.success) {
+        orderCode = data.orderCode || '';
+        orderId = data.orderId || '';
+      } else {
+        saveError = true;
+      }
+    } catch (e) {
+      console.error('Error guardando pedido Balatin en Appwrite:', e);
+      saveError = true;
+    }
+
+    // Construir mensaje de WhatsApp para Balatin con el codigo del pedido
+    var waMsg = '*Hola Balatin!*\n\n';
+    waMsg += 'Quiero hacer este pedido:\n\n';
+    waMsg += '----------------------------------------\n';
+    cart.forEach(function(i) {
+      waMsg += '\n- ' + i.name + '\n';
+      waMsg += '  ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
+    });
+    waMsg += '\n----------------------------------------\n';
+    waMsg += '*Total: ' + formatPrice(total) + '*\n';
+    waMsg += '*Codigo: ' + orderCode + '*';
+
+    var waUrl = 'https://wa.me/' + BALATIN_CONTACT.number + '?text=' + encodeURIComponent(waMsg);
+
+    // Guardar pedido en localStorage
+    if (orderCode) saveLocalOrder(orderCode, orderId, cart.slice(), total, 'Balatin');
+
+    // Limpiar carrito y cerrar modal
+    cart = [];
+    saveCart();
+    updateCartCount();
+    closeCustomerFormModal();
+
+    // Mostrar confirmacion y abrir WhatsApp
+    showOrderConfirmation(orderCode, '', saveError, waUrl);
+  })();
+}
+
 async function submitCustomerOrder() {
   if (selectedAttendant === null) { showToast('Selecciona quien te atiende'); return; }
   var rawName = (document.getElementById('custName') || {}).value || '';
@@ -721,6 +838,10 @@ async function submitCustomerOrder() {
 
   var waUrl = 'https://wa.me/' + attendant.number + '?text=' + encodeURIComponent(waMsg);
 
+  // Guardar pedido y teléfono en localStorage
+  if (orderCode) saveLocalOrder(orderCode, orderId, cart.slice(), total, attendant.name);
+  saveCustomerPhone(normalizedPhone);
+
   // Limpiar carrito
   cart = [];
   saveCart();
@@ -760,6 +881,233 @@ function closeOrderConfirmModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+// === Local orders (localStorage) ===
+function saveLocalOrder(orderCode, orderId, items, total, cashier) {
+  try {
+    var orders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    orders.unshift({
+      orderCode: orderCode,
+      orderId: orderId || '',
+      items: items.map(function(i) { return { name: i.name, qty: i.qty, price: i.price, image: i.image || '' }; }),
+      total: total,
+      cashier: cashier || '',
+      status: 'pending_stock',
+      createdAt: new Date().toISOString()
+    });
+    localStorage.setItem('myOrders', JSON.stringify(orders.slice(0, 50)));
+  } catch (e) { console.error('Error saving local order:', e); }
+}
+function getLocalOrders() {
+  try { return JSON.parse(localStorage.getItem('myOrders') || '[]'); } catch { return []; }
+}
+function saveCustomerPhone(phone) {
+  try { localStorage.setItem('customerPhone', phone); } catch {}
+}
+function getCustomerPhone() {
+  try { return localStorage.getItem('customerPhone') || ''; } catch { return ''; }
+}
+
+// === My Orders view ===
+var ORDER_STATUS_LABELS = {
+  'pending': 'Pendiente',
+  'pending_stock': 'Verificando stock',
+  'payment_review': 'Pago en revisión',
+  'paid': 'Pagado',
+  'payment_confirmed': 'Pago confirmado',
+  'processing': 'Procesando',
+  'shipped': 'Entregado a agencia',
+  'delivered': 'Entregado',
+  'negotiation': 'Negociando',
+  'cancelled': 'Cancelado'
+};
+var ORDER_STATUS_COLORS = {
+  'pending': '#f59e0b',
+  'pending_stock': '#f59e0b',
+  'payment_review': '#8b5cf6',
+  'paid': '#3b82f6',
+  'payment_confirmed': '#22c55e',
+  'processing': '#3b82f6',
+  'shipped': '#06b6d4',
+  'delivered': '#22c55e',
+  'negotiation': '#f97316',
+  'cancelled': '#ef4444'
+};
+var ORDER_STATUS_ICONS = {
+  'pending': '⏳',
+  'pending_stock': '🔍',
+  'payment_review': '🔍',
+  'paid': '💳',
+  'payment_confirmed': '✅',
+  'processing': '📦',
+  'shipped': '🚚',
+  'delivered': '🎉',
+  'negotiation': '🤝',
+  'cancelled': '❌'
+};
+
+function renderMyOrders() {
+  var app = $('#app');
+  var localOrders = getLocalOrders();
+  var savedPhone = getCustomerPhone();
+
+  app.innerHTML = '<div class="min-h-screen pb-24">' +
+    '<div class="text-white px-4 pt-6 pb-8 rounded-b-3xl" style="background: linear-gradient(180deg, rgba(90, 150, 216, 0.97), rgba(58, 120, 194, 0.96));">' +
+      '<div class="flex items-center gap-3 mb-1">' +
+        '<div class="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-xl">📦</div>' +
+        '<div>' +
+          '<h1 class="font-display font-extrabold text-2xl">Mis Pedidos</h1>' +
+          '<p class="text-white/70 text-xs">Sigue el estado de tus compras</p>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="max-w-2xl mx-auto px-4 mt-4">' +
+      '<div id="myOrdersList" class="space-y-3"></div>' +
+      '<div class="mt-6 rounded-2xl p-4 border" style="background:rgba(90,150,216,0.06);border-color:rgba(58,120,194,0.15);">' +
+        '<div class="flex items-center gap-2 mb-2">' +
+          '<svg class="w-4 h-4" style="color:#3a78c2;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
+          '<p class="text-xs font-bold" style="color:#3a78c2;">Sincronizar pedidos</p>' +
+        '</div>' +
+        '<p class="text-[11px] text-gray-500 mb-3">Ingresa tu teléfono para buscar todos tus pedidos</p>' +
+        '<div class="flex gap-2">' +
+          '<input id="syncPhoneInput" type="tel" placeholder="Ej: 9 1234 5678" value="' + escapeHtml(savedPhone) + '" class="flex-1 px-3 py-2.5 text-sm border-2 rounded-xl focus:outline-none" style="border-color:rgba(58,120,194,0.15);">' +
+          '<button onclick="syncMyOrders()" class="px-5 py-2.5 text-white font-bold text-sm rounded-xl active:scale-95 transition flex items-center gap-1.5" style="background:#3a78c2;">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
+            'Sincronizar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Render local orders first (instant)
+  renderMyOrdersList(localOrders);
+
+  // If we have a saved phone, auto-sync
+  if (savedPhone) {
+    syncMyOrders(true);
+  }
+}
+
+function renderMyOrdersList(orders) {
+  var list = document.getElementById('myOrdersList');
+  if (!list) return;
+  if (!orders || orders.length === 0) {
+    list.innerHTML = '<div class="text-center py-16">' +
+      '<div class="text-6xl mb-4">📦</div>' +
+      '<p class="text-gray-400 font-bold text-sm mb-1">No tienes pedidos aún</p>' +
+      '<p class="text-gray-300 text-xs mb-5">Cuando hagas un pedido aparecerá aquí</p>' +
+      '<a href="#/" class="inline-block px-6 py-3 text-white font-bold text-sm rounded-2xl active:scale-95 shadow-lg" style="background:#3a78c2;">Ir al catálogo</a>' +
+    '</div>';
+    return;
+  }
+  list.innerHTML = orders.map(function(o) {
+    var status = o.status || 'pending_stock';
+    var label = ORDER_STATUS_LABELS[status] || status;
+    var color = ORDER_STATUS_COLORS[status] || '#6b7280';
+    var icon = ORDER_STATUS_ICONS[status] || '📦';
+    var date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    var itemCount = (o.items || []).reduce(function(s, i) { return s + (i.qty || 1); }, 0);
+    var items = o.items || [];
+    var firstItems = items.slice(0, 2);
+    var remainingCount = items.length - firstItems.length;
+    return '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">' +
+      '<div class="px-4 pt-3 pb-2 flex items-center justify-between" style="background:' + color + '08;border-bottom:1px solid ' + color + '15;">' +
+        '<div class="flex items-center gap-2">' +
+          '<span class="text-lg">' + icon + '</span>' +
+          '<div>' +
+            '<p class="font-mono font-bold text-sm text-gray-800">' + escapeHtml(o.orderCode || 'Sin código') + '</p>' +
+            '<p class="text-[10px] text-gray-400">' + date + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<span class="text-xs font-bold px-3 py-1.5 rounded-full" style="background:' + color + '15;color:' + color + ';">' + escapeHtml(label) + '</span>' +
+      '</div>' +
+      '<div class="p-4">' +
+        '<div class="space-y-2 mb-3">' +
+          firstItems.map(function(it) {
+            return '<div class="flex items-center gap-2.5">' +
+              '<div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100">' +
+                (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-gray-300 text-sm">📦</span>') +
+              '</div>' +
+              '<div class="flex-1 min-w-0">' +
+                '<p class="text-xs font-semibold text-gray-700 truncate">' + escapeHtml(it.name || '') + '</p>' +
+                '<p class="text-[10px] text-gray-400">' + (it.qty || 1) + ' x ' + formatPrice(it.price || 0) + '</p>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+          (remainingCount > 0 ? '<p class="text-[11px] text-gray-400 font-medium pl-1">+' + remainingCount + ' producto' + (remainingCount > 1 ? 's' : '') + ' más</p>' : '') +
+        '</div>' +
+        '<div class="flex items-center justify-between pt-3 border-t border-gray-50">' +
+          '<div class="flex items-center gap-2 text-xs text-gray-500">' +
+            '<span class="font-semibold">' + itemCount + ' producto' + (itemCount !== 1 ? 's' : '') + '</span>' +
+            (o.cashier ? '<span class="text-gray-300">·</span><span class="text-gray-400">' + escapeHtml(o.cashier) + '</span>' : '') +
+          '</div>' +
+          '<span class="font-bold text-sm" style="color:#3a78c2;">' + formatPrice(o.total || 0) + '</span>' +
+        '</div>' +
+        (o.trackingNumber ? '<div class="mt-3 p-2.5 rounded-xl flex items-center gap-2" style="background:rgba(6,182,212,0.08);">' +
+          '<svg class="w-4 h-4 text-cyan-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>' +
+          '<div><p class="text-[10px] text-cyan-600 font-bold uppercase tracking-wide">Seguimiento</p><p class="text-xs text-cyan-700 font-mono font-bold">' + escapeHtml(o.trackingNumber) + '</p></div>' +
+        '</div>' : '') +
+        '<details class="mt-3">' +
+          '<summary class="text-xs font-semibold cursor-pointer hover:opacity-70 transition" style="color:#3a78c2;">Ver todos los productos ▾</summary>' +
+          '<div class="mt-2 space-y-1.5">' +
+            items.map(function(it) {
+              return '<div class="flex items-center gap-2 text-xs py-1">' +
+                '<div class="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100">' +
+                  (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-gray-300 text-[9px]">📦</span>') +
+                '</div>' +
+                '<span class="flex-1 text-gray-600 truncate">' + escapeHtml(it.name || '') + '</span>' +
+                '<span class="text-gray-400">x' + (it.qty || 1) + '</span>' +
+                '<span class="font-semibold text-gray-700">' + formatPrice((it.price || 0) * (it.qty || 1)) + '</span>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</details>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function syncMyOrders(silent) {
+  var phoneInput = document.getElementById('syncPhoneInput');
+  var phone = phoneInput ? phoneInput.value.trim() : '';
+  if (!phone) { if (!silent) showToast('Ingresa tu número de teléfono'); return; }
+  var normalized = normalizeChileanPhone(phone);
+  if (!normalized) { if (!silent) showToast('Teléfono inválido. Ej: 9 1234 5678'); return; }
+  saveCustomerPhone(normalized);
+
+  var list = document.getElementById('myOrdersList');
+  if (list && !silent) {
+    list.innerHTML = '<div class="text-center py-12"><div class="animate-spin w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><p class="text-sm text-gray-400">Sincronizando...</p></div>';
+  }
+
+  try {
+    var apiBase = window.location.origin.indexOf('localhost') >= 0 ? 'http://localhost:3000' : window.location.origin;
+    var res = await fetch(apiBase + '/api/catalogo/my-orders?phone=' + encodeURIComponent(normalized));
+    var data = await res.json();
+    if (data.success && data.orders) {
+      // Merge: combine local + server orders, dedup by orderCode
+      var localOrders = getLocalOrders();
+      var seen = {};
+      var merged = [];
+      // Server orders first (they have real status)
+      data.orders.forEach(function(o) { if (o.orderCode && !seen[o.orderCode]) { seen[o.orderCode] = true; merged.push(o); } });
+      // Local orders that aren't on server yet
+      localOrders.forEach(function(o) { if (o.orderCode && !seen[o.orderCode]) { seen[o.orderCode] = true; merged.push(o); } });
+      // Save merged to localStorage
+      try { localStorage.setItem('myOrders', JSON.stringify(merged.slice(0, 50))); } catch {}
+
+      renderMyOrdersList(merged);
+      if (!silent) showToast('Pedidos sincronizados (' + merged.length + ')');
+    } else {
+      if (!silent) showToast('No se encontraron pedidos');
+      renderMyOrdersList(getLocalOrders());
+    }
+  } catch (e) {
+    console.error('Error syncing orders:', e);
+    if (!silent) showToast('Error al sincronizar');
+    renderMyOrdersList(getLocalOrders());
+  }
+}
+
 // === Routing ===
 function parseHash() {
   const h = location.hash.slice(1) || '/';
@@ -788,6 +1136,13 @@ function render() {
 
   // Show back button if not home
   $('#backBtn').classList.toggle('hidden', parts.length === 0);
+
+  // Show bottom nav on home and my-orders pages, hide on other screens
+  const isHome = parts.length === 0;
+  const isMyOrders = route === 'my-orders';
+  const bottomNav = document.getElementById('bottomNav');
+  if (bottomNav) bottomNav.classList.toggle('hidden', !isHome && !isMyOrders);
+
   updateBottomNav();
   syncHeaderHeight();
   window.scrollTo({ top: 0 });
@@ -796,8 +1151,44 @@ function render() {
   if (route === 'admin') return renderAdmin(parts.slice(1));
   if (route === 'category') return renderCategory(parts.slice(1));
   if (route === 'all') return renderAllProducts();
+  if (route === 'my-orders') return renderMyOrders();
   if (route === 'search' || searchQuery) return renderSearch();
-  return renderHome();
+  renderHome();
+  initHeroParticles();
+  return;
+}
+
+// === Hero particles ===
+function initHeroParticles() {
+  var container = document.getElementById('heroParticles');
+  if (!container) return;
+  container.innerHTML = '';
+  var count = 18;
+  for (var i = 0; i < count; i++) {
+    var p = document.createElement('div');
+    p.className = 'hero-particle';
+    var size = Math.random() * 6 + 3;
+    var left = Math.random() * 100;
+    var top = 60 + Math.random() * 40;
+    var duration = Math.random() * 4 + 4;
+    var delay = Math.random() * 5;
+    var drift = (Math.random() - 0.5) * 60;
+    var opacity = Math.random() * 0.4 + 0.3;
+    var isShimmer = Math.random() > 0.6;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = left + '%';
+    p.style.top = top + '%';
+    p.style.setProperty('--p-opacity', opacity);
+    p.style.setProperty('--p-drift', drift + 'px');
+    if (isShimmer) {
+      p.style.animation = 'particleShimmer ' + (duration * 0.6) + 's ease-in-out ' + delay + 's infinite';
+      p.style.background = 'rgba(255,232,128,0.5)';
+    } else {
+      p.style.animation = 'particleFloat ' + duration + 's ease-in-out ' + delay + 's infinite';
+    }
+    container.appendChild(p);
+  }
 }
 
 // === Hierarchy helpers ===
@@ -901,10 +1292,12 @@ function renderHome() {
       <!-- Hero banner -->
       <div class="relative overflow-hidden rounded-[28px] p-6 sm:p-8 card-shadow"
            style="background: linear-gradient(135deg, #5a96d8 0%, #7eb1e6 35%, #9fc7f0 70%, #cce4fb 100%);">
+        <!-- Particles -->
+        <div class="hero-particles" id="heroParticles"></div>
         <div class="absolute -top-20 -right-12 w-64 h-64 rounded-full" style="background: radial-gradient(circle, rgba(255,232,128,.45), transparent 60%); animation: floaty 6s ease-in-out infinite;"></div>
         <div class="absolute -bottom-24 -left-16 w-56 h-56 rounded-full" style="background: radial-gradient(circle, rgba(255,255,255,.4), transparent 65%);"></div>
         <div class="absolute top-1/2 right-4 sm:right-6 -translate-y-1/2">
-          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-white/30 flex items-center justify-center bg-white/10 backdrop-blur"><span class="font-display font-extrabold text-2xl text-white/90">DB</span></div>
+          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-lg" style="border:2px solid rgba(255,255,255,0.5);"><img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png" alt="Don Balato Ivan" class="w-full h-full object-cover"></div>
         </div>
         <div class="relative max-w-[70%] sm:max-w-[75%]">
           <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/30 backdrop-blur text-[10px] font-bold tracking-[0.2em] uppercase text-white shadow-sm border border-white/40">

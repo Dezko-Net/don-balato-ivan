@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_ORDERS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, WHOLESALE_ORDERS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { notifyNewOrder } from '@/lib/notify-admin';
@@ -804,29 +804,22 @@ function CheckoutInner() {
       notifyNewOrder(orderCode, form.name, total, items.length).catch(() => {});
 
       // ── Descontar stock reservado (server-side, API key + rollback) ──
-      // El servidor descuenta el stock fresco y revierte lo ya descontado si
-      // algún ítem falla. Si el descuento falla en conjunto, cancelamos el
-      // pedido recién creado para no dejar una reserva fantasma.
-      // De NOCHE se omite: no hay confirmación de stock (stock ilimitado), así
-      // que no se reserva ni se puede fallar por falta de stock.
-      if (!isNight) {
-        try {
-          const dr = await fetch('/api/checkout/stock', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: 'decrement', orderId, items: stockPayload }),
-          });
-          const dd = await dr.json().catch(() => null);
-          if (!dr.ok || !dd?.ok) {
-            throw new Error(dd?.error || 'No se pudo reservar el stock del pedido.');
-          }
-        } catch (err: any) {
-          // Cancelar el pedido recién creado para no dejar reserva fantasma
-          try {
-            await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
-          } catch {}
-          throw err;
+      try {
+        const dr = await fetch('/api/checkout/stock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'decrement', orderId, items: stockPayload }),
+        });
+        const dd = await dr.json().catch(() => null);
+        if (!dr.ok || !dd?.ok) {
+          throw new Error(dd?.error || 'No se pudo reservar el stock del pedido.');
         }
+      } catch (err: any) {
+        // Cancelar el pedido recién creado para no dejar reserva fantasma
+        try {
+          await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
+        } catch {}
+        throw err;
       }
 
       // Mark coupon as used (increment counter and deactivate)

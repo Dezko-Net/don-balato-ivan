@@ -17,13 +17,23 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, logout, isLoggedIn, isLoading, user } = useAuth();
 
+  // Destino post-login: respeta ?next= (ej: viene de /pos, /pos-admin, /pos-visualizer)
+  const getNext = () => {
+    try {
+      const n = new URLSearchParams(window.location.search).get('next');
+      // Solo rutas internas seguras
+      if (n && n.startsWith('/') && !n.startsWith('//')) return n;
+    } catch { /* noop */ }
+    return '/admin/dashboard';
+  };
+
   useEffect(() => {
     setConfigured(isAppwriteConfigured());
   }, []);
 
   useEffect(() => {
     if (!isLoading && isLoggedIn && isAdminEmail(user?.email)) {
-      router.replace('/admin/dashboard');
+      router.replace(getNext());
     }
     if (!isLoading && isLoggedIn && !isAdminEmail(user?.email)) {
       logout();
@@ -44,7 +54,7 @@ export default function LoginPage() {
         setIsSubmitting(false);
         return;
       }
-      router.replace('/admin/dashboard');
+      router.replace(getNext());
     } else {
       setError(result.error || 'Credenciales inválidas.');
       setIsSubmitting(false);

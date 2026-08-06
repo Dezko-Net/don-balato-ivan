@@ -84,7 +84,7 @@ export default function CatalogoMayoristaAdminPage() {
             </div>
             <p className="text-3xl font-black text-gray-900 tracking-tight mb-3">WhatsApp</p>
             <p className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
-              <Sparkles size={14} className="text-emerald-500" /> Asistente Kenia en línea
+              <Sparkles size={14} className="text-emerald-500" /> Asistente Balatin en línea
             </p>
           </div>
         </div>

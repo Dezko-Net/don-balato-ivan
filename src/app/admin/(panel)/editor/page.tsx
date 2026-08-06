@@ -27,8 +27,8 @@ const MANUAL_HERO_CONFIG = {
     btnLink: '/productos',
   },
   hero2: {
-    desktopImg: 'https://...', // URL de imagen Kenia (PC)
-    mobileImg: 'https://...',  // URL de imagen Kenia (Móvil)
+    desktopImg: 'https://...', // URL de imagen Balatin (PC)
+    mobileImg: 'https://...',  // URL de imagen Balatin (Móvil)
   }
 };`}
         </code>

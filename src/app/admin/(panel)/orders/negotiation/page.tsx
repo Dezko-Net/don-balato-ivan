@@ -565,7 +565,7 @@ export default function NegotiationOrdersPage() {
                 messages.map((msg: any) => {
                   const isAdmin = msg.senderRole === 'admin';
                   const date = new Date(msg.$createdAt);
-                  const isKenia = isAdmin && (msg.message.includes('Kenia') || msg.message.includes('IA') || msg.message.includes('🤖'));
+                  const isKenia = isAdmin && (msg.message.includes('Balatin') || msg.message.includes('IA') || msg.message.includes('🤖'));
 
                   return (
                     <div
@@ -594,7 +594,7 @@ export default function NegotiationOrdersPage() {
                         <div
                           className={'text-[10px] text-gray-400 font-medium ' + (isAdmin ? 'text-right' : 'text-left')}
                         >
-                          {isAdmin ? (isKenia ? 'Kenia (IA)' : 'Admin') : 'Cliente'} ·{' '}
+                          {isAdmin ? (isKenia ? 'Balatin (IA)' : 'Admin') : 'Cliente'} ·{' '}
                           {date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>

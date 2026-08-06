@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback, Fragment, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, Fragment, useRef } from 'react';
 import EpicPagination from '@/components/admin/EpicPagination';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { Query, ID } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload, FileSpreadsheet, FileText, ShoppingBag, Wrench } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload, FileSpreadsheet, FileText, ShoppingBag, Wrench, Lock, Ban } from 'lucide-react';
 import Link from 'next/link';
-import ImageUploadField from '@/components/admin/ImageUploadField';
 import ProductPhotoUploader from '@/components/admin/ProductPhotoUploader';
 import MobileProductList from '@/components/admin/mobile/MobileProductList';
 import MobileProductEditor from '@/components/admin/mobile/MobileProductEditor';
@@ -26,15 +25,6 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
 const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, BOXPRICE: 0, BOXQTY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
-
-const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: string; field: string; type?: string; value: any; onChange: (val: any) => void }) => (
-  <div>
-    <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-    <input type={type} value={value ?? ''}
-      onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
-      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-  </div>
-);
 
 const getLiveStatus = (p: Product) => {
   if (!p.$createdAt) return null;
@@ -63,7 +53,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
   const [subCatFilter, setSubCatFilter] = useState('');
-  const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'low' | 'out'>('instock');
+  const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'low' | 'out'>('all');
   const [noImageOnly, setNoImageOnly] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [showAddChoice, setShowAddChoice] = useState(false);
@@ -127,6 +117,9 @@ export default function ProductsPage() {
   const [aiTitles, setAiTitles] = useState<string[]>([]);
   const [desktopMarginPct, setDesktopMarginPct] = useState<string>('');
   const [desktopCatalogPct, setDesktopCatalogPct] = useState<string>('');
+  // Editor desktop: secciones colapsables (null = automático según contenido)
+  const [techTabsOpen, setTechTabsOpen] = useState<boolean | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [KeniaOpen, setKeniaOpen] = useState(false);
   const [KeniaMessages, setKeniaMessages] = useState<{role: string; content: string}[]>([]);
   const [KeniaInput, setKeniaInput] = useState('');
@@ -240,6 +233,37 @@ export default function ProductsPage() {
       setAiLoading(null);
     }
   }, [categories, getModalImageUrls, modal]);
+
+  // Generar títulos sugeridos con IA (botón del editor desktop)
+  const generateTitlesAI = async () => {
+    if (!modal) return;
+    setAiLoading('title');
+    setAiTitles([]);
+    try {
+      const categoryName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+      const titles = await generateProductTitle(modal.data.DESCRIPTION || '', categoryName, getModalImageUrls(modal.data), modal.data.NAME || '');
+      setAiTitles(titles);
+    } catch (e: any) {
+      alert(e.message || 'No se pudieron generar títulos con IA.');
+    } finally {
+      setAiLoading(null);
+    }
+  };
+
+  // Generar descripción con IA (botón del editor desktop)
+  const generateDescriptionAI = async () => {
+    if (!modal) return;
+    setAiLoading('desc');
+    try {
+      const categoryName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+      const desc = await generateProductDescription(modal.data.NAME || '', categoryName, modal.data.DESCRIPTION || '', getModalImageUrls(modal.data));
+      setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: desc } } : m);
+    } catch (e: any) {
+      alert(e.message || 'No se pudo generar la descripción con IA.');
+    } finally {
+      setAiLoading(null);
+    }
+  };
 
   // AI Categorization states
   const [aiCategorizeModal, setAiCategorizeModal] = useState(false);
@@ -582,109 +606,37 @@ export default function ProductsPage() {
     })();
   }, []);
 
-  const [lastCursor, setLastCursor] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  // Map: page number -> cursor to reach it (page 1 = null cursor)
-  const pageCursorsRef = useRef<Map<number, string | null>>(new Map([[1, null]]));
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 24;
 
-  const load = useCallback(async (isLoadMore = false, passedCursor: string | null = null, currentSearch = '', currentCat = '', currentSub = '', currentStock = 'instock') => {
-    if (!isLoadMore) {
-      setIsLoading(true);
-      setProducts([]);
-    }
+  const load = useCallback(async () => {
+    setIsLoading(true);
     setError('');
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      
-      const queries: any[] = [Query.limit(PAGE_SIZE), Query.orderDesc('$createdAt')];
-      
-      if (isLoadMore && passedCursor) {
-        queries.push(Query.cursorAfter(passedCursor));
-      }
-      
-      if (currentCat) {
-        queries.push(Query.equal('CATEGORYID', currentCat));
-      }
-      if (currentSub) {
-        queries.push(Query.equal('SUBCATEGORYID', currentSub));
-      }
-      
-      if (currentStock === 'instock') {
-        queries.push(Query.greaterThan('STOCK', 0));
-      } else if (currentStock === 'out') {
-        queries.push(Query.equal('STOCK', 0));
-      } else if (currentStock === 'low') {
-        queries.push(Query.greaterThan('STOCK', 0));
-        queries.push(Query.lessThanEqual('STOCK', 10));
-      }
 
-      let docs: Product[] = [];
-      const q = currentSearch.trim();
-      
-      if (q) {
-        const qLower = q.toLowerCase();
-        const qUpper = q.toUpperCase();
-        
-        const searchOptions = [
-          [Query.equal('sku', [q, qLower, qUpper])],
-          [Query.equal('barcode', [q, qLower, qUpper])],
-          [Query.contains('NAME', q)],
-          [Query.contains('NAME', qLower)],
-          [Query.contains('NAME', qUpper)],
-          [Query.contains('TAGS', [q, qLower, qUpper])],
-          [Query.equal('jumpseller_id', [q, qLower, qUpper])],
-        ];
-        
-        let foundDocs: any[] = [];
-        for (const sOpt of searchOptions) {
-          try {
-            const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-              ...queries,
-              ...sOpt
-            ]);
-            if (resp.documents.length > 0) {
-              foundDocs = resp.documents;
-              break;
-            }
-          } catch {}
-        }
-        
-        if (foundDocs.length === 0) {
-          try {
-            const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-              ...queries,
-              Query.contains('FEATURES', q)
-            ]);
-            foundDocs = resp.documents;
-          } catch {}
-        }
-        
-        docs = foundDocs as unknown as Product[];
-      } else {
-        const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-        docs = resp.documents as unknown as Product[];
-      }
-
-      const [cr, subRes] = await Promise.all([
+      const [prodRes, cr, subRes] = await Promise.all([
+        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.limit(5000),
+          Query.orderDesc('$createdAt'),
+        ]),
         databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
         databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(100)]),
       ]);
-      
-      setProducts(docs);
 
-      if (docs.length === PAGE_SIZE) {
-        setLastCursor((docs[docs.length - 1] as any).$id);
-        pageCursorsRef.current.set(currentPage + 1, (docs[docs.length - 1] as any).$id);
-      } else {
-        setLastCursor(null);
-      }
-      setTotalCount(prev => isLoadMore ? prev : docs.length);
-      
+      const docs = prodRes.documents as unknown as Product[];
+      setProducts(docs);
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);
+
+      try {
+        sessionStorage.setItem('admin_products_all_v3', JSON.stringify({
+          products: docs,
+          categories: cr.documents,
+          subcategories: subRes.documents,
+        }));
+      } catch {}
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -693,7 +645,8 @@ export default function ProductsPage() {
   }, []);
 
   const triggerSearch = async (searchTerm: string) => {
-    load(false, null, searchTerm, catFilter, subCatFilter, stockFilter);
+    setSearch(searchTerm);
+    setCurrentPage(1);
   };
 
   useEffect(() => {
@@ -706,8 +659,7 @@ export default function ProductsPage() {
         setSearch(querySearch);
       }
     }
-    const cacheKey = `admin_products_${initialSearch.trim()}_${catFilter}_${subCatFilter}_${stockFilter}`;
-    const cached = sessionStorage.getItem(cacheKey);
+    const cached = sessionStorage.getItem('admin_products_all_v3');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -715,33 +667,17 @@ export default function ProductsPage() {
           setProducts(parsed.products);
           setCategories(parsed.categories || []);
           setSubcategories(parsed.subcategories || []);
-          setTotalCount(parsed.totalCount || parsed.products.length);
-          setLastCursor(parsed.lastCursor || null);
           setIsLoading(false);
           return;
         }
       } catch {}
     }
-    load(false, null, initialSearch, catFilter, subCatFilter, stockFilter);
-  }, [catFilter, subCatFilter, stockFilter, load]);
+    load();
+  }, [load]);
 
   useEffect(() => {
-    if (isLoading || products.length === 0) return;
-    const cacheKey = `admin_products_${search.trim()}_${catFilter}_${subCatFilter}_${stockFilter}`;
-    sessionStorage.setItem(cacheKey, JSON.stringify({
-      products,
-      categories,
-      subcategories,
-      totalCount,
-      lastCursor
-    }));
-  }, [products, categories, subcategories, totalCount, lastCursor, search, catFilter, subCatFilter, stockFilter, isLoading]);
-
-  useEffect(() => {
-    const handler = () => load(false, null, search, catFilter, subCatFilter, stockFilter);
-    window.addEventListener('yaxsel-data-change', handler);
-    return () => window.removeEventListener('yaxsel-data-change', handler);
-  }, [search, catFilter, subCatFilter, stockFilter, load]);
+    setCurrentPage(1);
+  }, [search, catFilter, subCatFilter, stockFilter, noImageOnly, brokenOnly]);
 
   const sendKeniaMessage = async () => {
     if (!KeniaInput.trim() || KeniaLoading) return;
@@ -836,7 +772,7 @@ export default function ProductsPage() {
         }
       }
     } catch {
-      setKeniaMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con Kenia.' }]);
+      setKeniaMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con Balatin.' }]);
     } finally {
       setKeniaLoading(false);
     }
@@ -933,6 +869,12 @@ export default function ProductsPage() {
       setAiLoading(null);
     }
   }, [modal, generateAllProductContent]);
+
+  // Reset de secciones colapsables del editor desktop al cambiar de producto
+  const modalKey = modal ? ((modal.data as Product).$id || 'nuevo') : null;
+  useEffect(() => { setTechTabsOpen(null); setAdvancedOpen(false); }, [modalKey]);
+  // Editor desktop: bloquear todo hasta que suba al menos una foto
+  const editorHasPhoto = modal ? getModalImageUrls(modal.data).length > 0 : false;
 
   // Auto-enhance cuando se abre el modal con aiAutoEnhance y hay imagen
   useEffect(() => {
@@ -1207,6 +1149,18 @@ export default function ProductsPage() {
       alert('Error al eliminar: ' + (e.response?.message || e.message || 'Error desconocido de Appwrite'));
     } finally {
       setDeleteId(null);
+    }
+  };
+  const disableProduct = async (p: Product) => {
+    if (!confirm(`¿Deshabilitar producto "${p.NAME}" dejándolo con stock en 0?`)) return;
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, p.$id, { STOCK: 0 });
+      setProducts(prev => prev.map(item => item.$id === p.$id ? { ...item, STOCK: 0 } : item));
+      invalidateProductCache();
+    } catch (e: any) {
+      alert('Error al deshabilitar producto: ' + e.message);
     }
   };
 
@@ -1717,9 +1671,6 @@ export default function ProductsPage() {
     return data.dataUrl;
   };
 
-  const toggleSort = (key: typeof sort.key) =>
-    setSort(s => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
-
   const syncBrokenImages = async () => {
     if (products.length === 0) return;
     setSyncingImages(true);
@@ -1815,6 +1766,11 @@ export default function ProductsPage() {
     return sort.dir === 'asc' ? cmp : -cmp;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pagedProducts = useMemo(() => {
+    return filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  }, [filtered, currentPage, PAGE_SIZE]);
+
   const totalInventoryValue = filtered.reduce((sum, p) => sum + (p.STOCK ?? 0) * p.PRICE, 0);
   const totalCostValue = filtered.reduce((sum, p) => sum + (p.STOCK ?? 0) * (p.COST || 0), 0);
   const totalUnits = filtered.reduce((sum, p) => sum + (p.STOCK ?? 0), 0);
@@ -1879,10 +1835,6 @@ export default function ProductsPage() {
                   <Eye className="w-4 h-4" /> Ver Producto
                 </a>
               )}
-              <button onClick={() => setKeniaOpen(!KeniaOpen)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${KeniaOpen ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 border border-gray-200'}`}>
-                <MessageSquare className="w-4 h-4" /> Preguntar a Kenia
-              </button>
               <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
               <button onClick={save} disabled={isSaving} className="px-5 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-900 transition disabled:opacity-60 flex items-center gap-2">
                 {isSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Guardando...</> : 'Guardar'}
@@ -1890,55 +1842,78 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          <div className="flex gap-6">
-            {/* Main editor area */}
-            <div className={`flex-1 space-y-6 ${KeniaOpen ? 'max-w-[calc(100%-380px)]' : ''}`}>
-              {/* Product image + basic info */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="flex gap-6 flex-col lg:flex-row">
-                  {/* Image section with AI search */}
-                  <div className="lg:w-80 shrink-0">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fotos del producto</label>
-                    <ProductPhotoUploader
-                      imageUrls={[modal.data.IMAGEURL || '', modal.data.IMAGEURL2 || '', modal.data.IMAGEURL3 || ''].filter(Boolean).slice(0, 3)}
-                      onChange={urls => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: urls[0] || '', IMAGEURL2: urls[1] || '', IMAGEURL3: urls[2] || '' } } : m)}
-                      compact
-                    />
-                  </div>
-                  {/* Name + Description */}
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-sm font-medium text-gray-700">Nombre del producto *</label>
-                      </div>
-                      <input value={modal.data.NAME || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, NAME: e.target.value } } : m)}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Nombre del producto" />
-                      {aiTitles.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {aiTitles.map((t, i) => (
-                            <button key={i} type="button" onClick={() => { setModal(m => m ? { ...m, data: { ...m.data, NAME: t } } : m); setAiTitles([]); }}
-                              className="text-xs px-2.5 py-1 bg-gray-50 text-gray-900 rounded-lg hover:bg-gray-100 border border-gray-100 transition-colors truncate max-w-full">
-                              {t}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-sm font-medium text-gray-700">Descripción</label>
-                      </div>
-                      <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
-                        rows={5} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none" placeholder="Describe tu producto..." />
-                    </div>
-                  </div>
-                </div>
+          <div className="flex gap-6 items-start">
+            {/* ══ Columna izquierda fija: fotos + asistente IA ══ */}
+            <div className="w-[300px] xl:w-[340px] shrink-0 space-y-4 sticky top-4 self-start">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center">1</span>
+                  Fotos del producto
+                </label>
+                <ProductPhotoUploader
+                  imageUrls={[modal.data.IMAGEURL || '', modal.data.IMAGEURL2 || '', modal.data.IMAGEURL3 || ''].filter(Boolean).slice(0, 3)}
+                  onChange={urls => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: urls[0] || '', IMAGEURL2: urls[1] || '', IMAGEURL3: urls[2] || '' } } : m)}
+                  compact
+                />
+                <p className="text-[11px] text-gray-400 mt-2">Hasta 3 fotos. La primera es la principal.</p>
               </div>
 
-              {/* Pricing & Inventory */}
+              {/* Panel IA Balatin */}
+              <div className="rounded-2xl border border-purple-200 bg-gradient-to-b from-purple-50 to-white p-5 space-y-2.5 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-purple-900">Asistente IA · Balatin</p>
+                    <p className="text-[10px] text-purple-500">Autocompleta este producto con IA</p>
+                  </div>
+                </div>
+                <button type="button" onClick={generateAllProductContent} disabled={aiLoading !== null || !editorHasPhoto}
+                  title={!editorHasPhoto ? 'Primero sube al menos una foto' : undefined}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition disabled:opacity-60 shadow-sm">
+                  {aiLoading === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : !editorHasPhoto ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                  {aiLoading === 'all' ? 'Generando...' : '✨ Generar todo con IA'}
+                </button>
+                <button type="button" onClick={generateTechnicalTabsOnly} disabled={aiLoading !== null || !editorHasPhoto}
+                  title={!editorHasPhoto ? 'Primero sube al menos una foto' : undefined}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white border border-purple-200 text-purple-700 text-xs font-semibold hover:bg-purple-50 transition disabled:opacity-60">
+                  {aiLoading === 'tabs' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                  Generar ficha técnica
+                </button>
+                <button type="button" onClick={() => aiEnhanceProduct()} disabled={aiLoading !== null || !editorHasPhoto}
+                  title={!editorHasPhoto ? 'Primero sube al menos una foto' : undefined}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white border border-purple-200 text-purple-700 text-xs font-semibold hover:bg-purple-50 transition disabled:opacity-60">
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  Buscar mejores imágenes con IA
+                </button>
+                <button type="button" onClick={() => setKeniaOpen(!KeniaOpen)}
+                  className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition ${KeniaOpen ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  {KeniaOpen ? 'Cerrar chat de Balatin' : 'Preguntar a Balatin'}
+                </button>
+                <p className="text-[10px] text-purple-400 text-center pt-1">{editorHasPhoto ? 'La IA usa las fotos y el nombre para autocompletar todo' : '🔒 Sube al menos 1 foto para desbloquear la IA'}</p>
+              </div>
+            </div>
+
+            {/* ══ Columna principal: secciones numeradas ══ */}
+            <div className="flex-1 min-w-0 space-y-6">
+              {!editorHasPhoto && modal.mode === 'add' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                    <Lock className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-amber-800">Formulario bloqueado</p>
+                    <p className="text-xs text-amber-600">Primero sube al menos 1 foto del producto en el paso 1. Luego se desbloquea todo y la IA puede autocompletarlo.</p>
+                  </div>
+                </div>
+              )}
+              <div className={`space-y-6 ${!editorHasPhoto && modal.mode === 'add' ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+              {/* 2. Precios e Inventario (lo primero que define el humano) */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-800" /> Precios e Inventario
+                  <span className="w-6 h-6 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center">2</span> Precios e Inventario
                 </h3>
                 {/* ── Costo + Margen → Precio ── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -2044,10 +2019,54 @@ export default function ProductsPage() {
                 </div>
               </div>
 
+              {/* 3. Información básica */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center">3</span>
+                  Información básica
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-sm font-medium text-gray-700">Nombre del producto *</label>
+                      <button type="button" onClick={generateTitlesAI} disabled={aiLoading !== null}
+                        className="flex items-center gap-1 text-xs font-semibold text-purple-700 hover:text-purple-900 transition disabled:opacity-50">
+                        {aiLoading === 'title' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        Sugerir nombres con IA
+                      </button>
+                    </div>
+                    <input value={modal.data.NAME || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, NAME: e.target.value } } : m)}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Nombre del producto" />
+                    {aiTitles.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {aiTitles.map((t, i) => (
+                          <button key={i} type="button" onClick={() => { setModal(m => m ? { ...m, data: { ...m.data, NAME: t } } : m); setAiTitles([]); }}
+                            className="text-xs px-2.5 py-1 bg-purple-50 text-purple-800 rounded-lg hover:bg-purple-100 border border-purple-100 transition-colors truncate max-w-full">
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-sm font-medium text-gray-700">Descripción</label>
+                      <button type="button" onClick={generateDescriptionAI} disabled={aiLoading !== null}
+                        className="flex items-center gap-1 text-xs font-semibold text-purple-700 hover:text-purple-900 transition disabled:opacity-50">
+                        {aiLoading === 'desc' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        Generar con IA
+                      </button>
+                    </div>
+                    <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
+                      rows={5} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none" placeholder="Describe tu producto..." />
+                  </div>
+                </div>
+              </div>
+
               {/* Organization & Details */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Organización y Detalles
+                  <span className="w-6 h-6 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center">4</span> Organización y Detalles
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
@@ -2100,8 +2119,6 @@ export default function ProductsPage() {
                       placeholder="Ej: 5"
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
                   </div>
-                  <div className="flex items-end">
-                  </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -2118,68 +2135,123 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Custom specs/info tabs */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="mb-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-800 animate-pulse" /> Pestañas de Información (Ficha Técnica)
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-2">
+              {/* 5. Custom specs/info tabs — colapsable */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <button type="button" onClick={() => setTechTabsOpen(!(techTabsOpen ?? !!(modal.data._details || modal.data._usage || modal.data._ingredients)))}
+                  className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center">5</span>
+                    Ficha Técnica (pestañas de información)
+                    {(modal.data._details || modal.data._usage || modal.data._ingredients) && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">con contenido</span>
+                    )}
+                  </h3>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${(techTabsOpen ?? !!(modal.data._details || modal.data._usage || modal.data._ingredients)) ? 'rotate-180' : ''}`} />
+                </button>
+                {(techTabsOpen ?? !!(modal.data._details || modal.data._usage || modal.data._ingredients)) && (
+                  <div className="px-6 pb-6 space-y-4 border-t border-gray-100 pt-4">
+                    <p className="text-xs text-gray-500">
                       Completa estos campos para mostrar pestañas dedicadas debajo de la descripción en el detalle de producto de Plantilla 5. Si los dejas vacíos, no se mostrarán.
                     </p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-gray-400" /> Detalles del Producto (Especificaciones / Características)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={modal.data._details || ''}
-                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _details: e.target.value } } : m)}
-                      placeholder="Ej: Material: 100% Algodón Orgánico&#10;Dimensiones: 15cm x 10cm&#10;Peso: 250g"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-gray-400" /> Detalles del Producto (Especificaciones / Características)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={modal.data._details || ''}
+                        onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _details: e.target.value } } : m)}
+                        placeholder="Ej: Material: 100% Algodón Orgánico&#10;Dimensiones: 15cm x 10cm&#10;Peso: 250g"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-gray-400" /> Modo de Uso (Instrucciones)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={modal.data._usage || ''}
-                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _usage: e.target.value } } : m)}
-                      placeholder="Ej: Aplicar sobre la piel limpia por la mañana y por la noche. Masajear suavemente hasta su completa absorción."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-gray-400" /> Modo de Uso (Instrucciones)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={modal.data._usage || ''}
+                        onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _usage: e.target.value } } : m)}
+                        placeholder="Ej: Aplicar sobre la piel limpia por la mañana y por la noche. Masajear suavemente hasta su completa absorción."
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-gray-400" /> Ingredientes (Composición / Tabla Nutricional)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={modal.data._ingredients || ''}
-                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _ingredients: e.target.value } } : m)}
-                      placeholder="Ej: Aqua, Glycerin, Niacinamide, Sodium Hyaluronate, Phenoxyethanol..."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
-                    />
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-gray-400" /> Ingredientes (Composición / Tabla Nutricional)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={modal.data._ingredients || ''}
+                        onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _ingredients: e.target.value } } : m)}
+                        placeholder="Ej: Aqua, Glycerin, Niacinamide, Sodium Hyaluronate, Phenoxyethanol..."
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 resize-none font-sans"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+
+              {/* 6. Opciones avanzadas — colapsable */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <button type="button" onClick={() => setAdvancedOpen(v => !v)}
+                  className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center">6</span>
+                    Opciones avanzadas
+                    {(modal.data.CURRENTPRICE || modal.data.DISABLE_DISCOUNTS) && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">activas</span>
+                    )}
+                  </h3>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {advancedOpen && (
+                  <div className="px-6 pb-6 space-y-4 border-t border-gray-100 pt-4">
+                    <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-red-600 mb-1">Precio oferta (CURRENTPRICE)</label>
+                        <input type="number" value={modal.data.CURRENTPRICE || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CURRENTPRICE: Number(e.target.value) || 0 } } : m)}
+                          placeholder="Vacío = sin oferta"
+                          className="w-full px-3 py-2 border border-red-200 bg-red-50/40 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <p className="text-[10px] text-gray-400 mt-1">Si es menor que el precio de venta, se muestra como oferta en la tienda.</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Precio mayorista</label>
+                        <input type="number" value={modal.data.WHOLESALEPRICE || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value) || 0 } } : m)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                        <p className="text-[10px] text-gray-400 mt-1">Se iguala al precio de venta si cambias el precio arriba.</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Cant. mínima mayorista</label>
+                        <input type="number" value={modal.data.WHOLESALEMINQUANTITY || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: Number(e.target.value) || 0 } } : m)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition">
+                      <input type="checkbox" checked={!!modal.data.DISABLE_DISCOUNTS}
+                        onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DISABLE_DISCOUNTS: e.target.checked } } : m)}
+                        className="w-4 h-4 accent-gray-900" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Desactivar descuentos para este producto</p>
+                        <p className="text-[11px] text-gray-400">No se le aplicarán cupones ni descuentos automáticos.</p>
+                      </div>
+                    </label>
+                  </div>
+                )}
+              </div>
               </div>
             </div>
 
-            {/* Kenia side panel */}
+            {/* Balatin side panel */}
             {KeniaOpen && (
               <div className="w-[360px] shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white text-xs font-bold">Y</div>
-                    <span className="text-sm font-semibold text-gray-800">Kenia</span>
+                    <span className="text-sm font-semibold text-gray-800">Balatin</span>
                     <span className="text-[10px] text-gray-400">para este producto</span>
                   </div>
                   <button onClick={() => setKeniaOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
@@ -2191,7 +2263,7 @@ export default function ProductsPage() {
                         <MessageSquare className="w-6 h-6 text-gray-800" />
                       </div>
                       <p className="text-sm text-gray-500">Pregúntale algo sobre este producto</p>
-                      <p className="text-xs text-gray-400 mt-1">Kenia ya sabe qué producto estás editando</p>
+                      <p className="text-xs text-gray-400 mt-1">Balatin ya sabe qué producto estás editando</p>
                       <div className="mt-4 space-y-2">
                         {['Mejora la descripción', 'Sugiere un precio competitivo', 'Genera tags para SEO'].map(s => (
                           <button key={s} onClick={() => { setKeniaInput(s); }} className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-50 text-gray-600 hover:text-gray-800 transition">
@@ -2494,9 +2566,9 @@ export default function ProductsPage() {
               IA
             </button>
             <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition shadow-sm" title="Categorizar productos usando IA">
-              <Sparkles className="w-4 h-4" /> Kenia
+              <Sparkles className="w-4 h-4" /> Balatin
             </button>
-            <button onClick={() => load(false)} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
+            <button onClick={() => load()} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
           </div>
@@ -2661,7 +2733,7 @@ export default function ProductsPage() {
       )}
 
       {/* Filtros — búsqueda, categorías y estado de stock en una sola tarjeta */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col-reverse gap-3">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3">
       <div className="flex gap-2 flex-wrap items-center">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mr-1">Stock</span>
         {([['all','Todos'], ['instock','En stock'], ['low','Stock bajo'], ['out','Agotados']] as const).map(([k, label]) => {
@@ -2712,12 +2784,12 @@ export default function ProductsPage() {
           <input value={search} onChange={e => setSearch(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter') {
-                load(false, null, search, catFilter, subCatFilter, stockFilter);
+                setCurrentPage(1);
               }
             }}
             placeholder="SKU, barra o nombre (Enter para buscar en BD)..."
             className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-          {search && <button onClick={() => { setSearch(''); load(false, null, '', catFilter, subCatFilter, stockFilter); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
+          {search && <button onClick={() => { setSearch(''); setCurrentPage(1); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
         </div>
         <div className="relative">
           <select value={catFilter} onChange={e => { setCatFilter(e.target.value); setSubCatFilter(''); }} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800">
@@ -2739,55 +2811,23 @@ export default function ProductsPage() {
 
       </div>{/* /Filtros */}
 
-      {/* Live Shopping Legend Indicator */}
-      <div className="bg-white border border-gray-150 rounded-xl p-3 flex flex-wrap gap-4 items-center text-xs">
-        <span className="font-semibold text-gray-700 flex items-center gap-1.5">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-800"></span>
-          </span>
-          Participan en Live Shopping de hoy:
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded-md bg-gray-50 border border-gray-200 border-l-4 border-l-gray-400 block shrink-0" />
-          <span className="text-gray-600">Nuevos agregados hoy</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded-md bg-amber-50 border border-amber-250 border-l-4 border-l-amber-400 block shrink-0" />
-          <span className="text-gray-600">Ya existían, actualizados hoy</span>
-        </div>
-      </div>
-
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
 
+      {/* ═══ MODO DUPLICADOS: tabla técnica ═══ */}
+      {showDuplicates ? (
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-50/50">
-                {showDuplicates ? (
-                  <>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto Repetido</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase" colSpan={2}>Motivo</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Precio</th>
                     <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Stock</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Producto a Conservar</th>
                     <th className="px-4 py-3" />
-                  </>
-                ) : (
-                  <>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Cód. barras</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Categoría</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('PRICE')}>Precio {sort.key === 'PRICE' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('STOCK')}>Stock {sort.key === 'STOCK' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell cursor-pointer" onClick={() => toggleSort('SOLDQUANTITY')}>Vendidos {sort.key === 'SOLDQUANTITY' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell cursor-pointer" onClick={() => toggleSort('MARGIN')}>Margen {sort.key === 'MARGIN' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                    <th className="px-4 py-3" />
-                  </>
-                )}
-              </tr>
-            </thead>
+                  </tr>
+                </thead>
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
@@ -2799,7 +2839,7 @@ export default function ProductsPage() {
                     ))}
                   </tr>
                 ))
-              ) : showDuplicates ? (
+              ) : (
                 duplicates.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
@@ -2903,247 +2943,6 @@ export default function ProductsPage() {
                     </Fragment>
                   ))
                 )
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
-                    No se encontraron productos
-                  </td>
-                </tr>
-              ) : (
-                filtered.map(p => {
-                  const liveStatus = getLiveStatus(p);
-                  let rowBgClass = '';
-                  if (liveStatus === 'new') {
-                    rowBgClass = 'bg-gray-50/60 hover:bg-gray-100/60 border-l-4 border-l-gray-400';
-                  } else if (liveStatus === 'existing') {
-                    rowBgClass = 'bg-amber-50/60 hover:bg-amber-100/60 border-l-4 border-l-amber-400';
-                  } else if ((p.STOCK ?? 0) === 0) {
-                    rowBgClass = 'bg-red-50/40';
-                  }
-
-                  return (
-                    <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${rowBgClass}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            openEdit(p);
-                            setTimeout(() => setKeniaOpen(true), 100);
-                          }}
-                          className="relative shrink-0 group"
-                          title="Preguntar a Kenia AI"
-                        >
-                          <div className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200 text-gray-900">
-                            <Sparkles className="w-5 h-5 animate-pulse" />
-                          </div>
-                          <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-gray-900 text-white rounded px-1 leading-tight">
-                            IA
-                          </span>
-                        </button>
-                        <div
-                          className="relative w-10 h-10 shrink-0 cursor-pointer group"
-                          onClick={() => {
-                            setImageDrawerTab('images');
-                            setImageDrawer({
-                              productId: p.$id,
-                              productName: p.NAME || '',
-                              img1: p.IMAGEURL || '',
-                              img2: p.IMAGEURL2 || '',
-                              img3: p.IMAGEURL3 || '',
-                              img4: (p as any).IMAGEURL4 || '',
-                              origImg1: p.IMAGEURL || '',
-                              origImg2: p.IMAGEURL2 || '',
-                              origImg3: p.IMAGEURL3 || '',
-                              origImg4: (p as any).IMAGEURL4 || '',
-                              description: p.DESCRIPTION || '',
-                              origDescription: p.DESCRIPTION || '',
-                              features: (Array.isArray(p.FEATURES) ? p.FEATURES : []).join('\n'),
-                              origFeatures: (Array.isArray(p.FEATURES) ? p.FEATURES : []).join('\n'),
-                              tags: (Array.isArray(p.TAGS) ? p.TAGS : []).join(', '),
-                              origTags: (Array.isArray(p.TAGS) ? p.TAGS : []).join(', '),
-                              sku: (p as any).SKU || '',
-                              origSku: (p as any).SKU || '',
-                              price: p.PRICE || 0,
-                              origPrice: p.PRICE || 0,
-                              stock: p.STOCK ?? 0,
-                              origStock: p.STOCK ?? 0,
-                            });
-                          }}
-                          title="Click para cambiar imagen"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
-                            {p.IMAGEURL ? (
-                              <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} className="w-full h-full object-cover" />
-                            ) : (
-                              <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />
-                            )}
-                          </div>
-                          {brokenImages[p.$id]?.length && (
-                            <div
-                              className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
-                              title={`${brokenImages[p.$id].length} imagen(es) rota(s)`}
-                            >
-                              <ImageOff className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Pencil className="w-3 h-3 text-white" />
-                          </div>
-                          {(() => {
-                            const cnt = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean).length;
-                            return cnt > 1 ? (
-                              <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-gray-900 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                                {cnt}
-                              </span>
-                            ) : null;
-                          })()}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="font-medium text-gray-900 truncate max-w-[170px]">{p.NAME}</p>
-                            {liveStatus === 'new' && (
-                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-white animate-pulse">
-                                Nuevo en Live
-                              </span>
-                            )}
-                            {liveStatus === 'existing' && (
-                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">
-                                Ya estaba (En Live)
-                              </span>
-                            )}
-                            {liveStatus && p.$createdAt && (
-                              <span className="text-[9px] text-gray-400 font-medium">
-                                ({new Date(p.$createdAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })})
-                              </span>
-                            )}
-                          </div>
-                          {p.TAGS && (
-                            <div className="flex flex-wrap gap-1 mt-0.5">
-                              {((Array.isArray(p.TAGS) ? p.TAGS : String(p.TAGS).split(',')) as string[])
-                                .map((t: string) => t.trim())
-                                .filter(Boolean)
-                                .slice(0, 3)
-                                .map((t: string) => (
-                                  <button
-                                    key={t}
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      setSearch(t);
-                                    }}
-                                    className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer"
-                                  >
-                                    {t}
-                                  </button>
-                                ))}
-                            </div>
-                          )}
-                          {p.CATALOGPRICE && p.CATALOGPRICE !== p.PRICE ? (
-                            <p className="text-xs text-amber-600 font-medium">Catálogo: {fmt(p.CATALOGPRICE)}</p>
-                          ) : null}
-                          {!p.IMAGEURL && <p className="text-[10px] text-amber-500 font-medium">sin imagen</p>}
-                          {getSku(p) && getSku(p) !== p.$id && (
-                            <p className="text-[10px] text-gray-400 font-mono mt-0.5">SKU: {getSku(p)}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      {getBarcode(p) ? (
-                        <span className="text-xs font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
-                          {getBarcode(p)}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-amber-500">sin código</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{catName(p.CATEGORYID)}</td>
-                    <td className="px-4 py-3 text-right">
-                      {p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE ? (
-                        <div>
-                          <span className="font-semibold text-red-600">{fmt(p.CURRENTPRICE)}</span>
-                          <span className="text-xs text-gray-400 line-through ml-1">{fmt(p.PRICE)}</span>
-                          <span className="ml-1 text-xs font-bold text-white bg-red-500 px-1 py-0.5 rounded">
-                            -{Math.round((1 - p.CURRENTPRICE / p.PRICE) * 100)}%
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="font-semibold text-gray-900">{fmt(p.PRICE)}</span>
-                      )}
-                      {p.COST && p.COST > 0 && p.PRICE > 0 ? (
-                        <p className="text-[10px] text-gray-400 mt-0.5 text-right">
-                          {Math.round(((p.PRICE - p.COST) / p.PRICE) * 100)}% margen
-                        </p>
-                      ) : (
-                        <p className="text-[10px] text-amber-500 mt-0.5 text-right">sin costo</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <span
-                          className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                            p.STOCK === 0 ? 'bg-red-100 text-red-700' : p.STOCK <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                          }`}
-                        >
-                          {p.STOCK}
-                        </span>
-                        {p.PACKQTY ? <span className="text-[9px] text-gray-400">×{p.PACKQTY}/pq</span> : null}
-                        {(() => {
-                          const loc = getSection(p);
-                          return loc ? (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-gray-900">
-                              <MapPin className="w-2.5 h-2.5" />G{loc.gondola} S{loc.section}
-                            </span>
-                          ) : null;
-                        })()}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell">{p.SOLDQUANTITY ?? 0}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <a
-                          href={`/productos/${p.$id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition inline-flex items-center justify-center"
-                          title="Ver en tienda"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </a>
-                        <button
-                          onClick={() => enhanceProductWithAI(p)}
-                          disabled={aiLoading !== null}
-                          className="p-1.5 rounded-lg hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition disabled:opacity-50"
-                          title="Mejorar con IA: buscar imágenes similares + autocompletar todo"
-                        >
-                          {aiLoading !== null ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => openEdit(p)}
-                          className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition"
-                          title="Editar"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => duplicate(p)}
-                          className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition"
-                          title="Duplicar"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => remove(p.$id)}
-                          disabled={deleteId === p.$id}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition disabled:opacity-50"
-                          title="Eliminar"
-                        >
-                          {deleteId === p.$id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  );
-                })
               )}
             </tbody>
           </table>
@@ -3153,8 +2952,194 @@ export default function ProductsPage() {
             <span>Se encontraron <span className="font-semibold text-rose-600">{duplicates.length}</span> productos repetidos en total.</span>
           </div>
         )}
-        {!isLoading && !showDuplicates && filtered.length > 0 && (
-          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
+      </div>
+      ) : (
+      /* ═══ MODO NORMAL: grid de tarjetas (simple y visual) ═══ */
+      <div>
+        {isLoading ? (
+          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
+                <div className="h-32 bg-gray-100" />
+                <div className="p-2.5 space-y-2">
+                  <div className="h-3.5 bg-gray-100 rounded" />
+                  <div className="h-3 bg-gray-100 rounded w-2/3" />
+                  <div className="h-7 bg-gray-100 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-16 text-center text-gray-400">
+            <Package className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+            No se encontraron productos
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+            {pagedProducts.map((p: Product) => {
+              const liveStatus = getLiveStatus(p);
+              let cardAccent = 'border-gray-200 hover:border-gray-300';
+              if (liveStatus === 'new') {
+                cardAccent = 'border-gray-400 ring-1 ring-gray-300';
+              } else if (liveStatus === 'existing') {
+                cardAccent = 'border-amber-300 ring-1 ring-amber-200';
+              } else if ((p.STOCK ?? 0) === 0) {
+                cardAccent = 'border-red-300 ring-1 ring-red-200';
+              }
+              const photoCount = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean).length;
+              const tagList = ((Array.isArray(p.TAGS) ? p.TAGS : String(p.TAGS || '').split(',')) as string[]).map((t: string) => t.trim()).filter(Boolean).slice(0, 2);
+              return (
+                <div key={p.$id} className={`bg-white rounded-xl border shadow-[0_1px_4px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150 ${cardAccent}`}>
+                  {/* Imagen con tamaño fijo: se adapta a cualquier proporción */}
+                  <div className="relative h-32 bg-gray-50/70 border-b border-gray-200 cursor-pointer group"
+                    onClick={() => {
+                      setImageDrawerTab('images');
+                      setImageDrawer({
+                        productId: p.$id,
+                        productName: p.NAME || '',
+                        img1: p.IMAGEURL || '',
+                        img2: p.IMAGEURL2 || '',
+                        img3: p.IMAGEURL3 || '',
+                        img4: (p as any).IMAGEURL4 || '',
+                        origImg1: p.IMAGEURL || '',
+                        origImg2: p.IMAGEURL2 || '',
+                        origImg3: p.IMAGEURL3 || '',
+                        origImg4: (p as any).IMAGEURL4 || '',
+                        description: p.DESCRIPTION || '',
+                        origDescription: p.DESCRIPTION || '',
+                        features: (Array.isArray(p.FEATURES) ? p.FEATURES : []).join('\n'),
+                        origFeatures: (Array.isArray(p.FEATURES) ? p.FEATURES : []).join('\n'),
+                        tags: (Array.isArray(p.TAGS) ? p.TAGS : []).join(', '),
+                        origTags: (Array.isArray(p.TAGS) ? p.TAGS : []).join(', '),
+                        sku: (p as any).SKU || '',
+                        origSku: (p as any).SKU || '',
+                        price: p.PRICE || 0,
+                        origPrice: p.PRICE || 0,
+                        stock: p.STOCK ?? 0,
+                        origStock: p.STOCK ?? 0,
+                      });
+                    }}
+                    title="Click para cambiar imagen">
+                    {p.IMAGEURL ? (
+                      <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
+                        <Package className="w-7 h-7" />
+                        <span className="text-[9px] text-amber-500 font-medium mt-1">sin imagen</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <Pencil className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    {(brokenImages[p.$id]?.length ?? 0) > 0 && (
+                      <div className="absolute top-1.5 left-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center" title={`${brokenImages[p.$id].length} imagen(es) rota(s)`}>
+                        <ImageOff className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    {photoCount > 1 && (
+                      <span className="absolute bottom-1.5 right-1.5 text-[9px] font-bold bg-black/60 text-white rounded-full px-1.5 py-0.5">{photoCount} fotos</span>
+                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        openEdit(p);
+                        setTimeout(() => setKeniaOpen(true), 100);
+                      }}
+                      className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-1 rounded-lg bg-purple-600 text-white text-[9px] font-bold shadow-lg hover:bg-purple-700 transition"
+                      title="Editar con ayuda de Balatin IA">
+                      <Sparkles className="w-3 h-3" /> IA
+                    </button>
+                    {liveStatus === 'new' && (
+                      <span className="absolute bottom-1.5 left-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-gray-800 text-white animate-pulse">Nuevo en Live</span>
+                    )}
+                    {liveStatus === 'existing' && (
+                      <span className="absolute bottom-1.5 left-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">Ya estaba (En Live)</span>
+                    )}
+                  </div>
+
+                  {/* Info del producto */}
+                  <div className="p-2.5 flex flex-col gap-1 flex-1">
+                    <p className="font-semibold text-gray-900 text-[13px] leading-snug line-clamp-2 min-h-[2.1rem]">{p.NAME}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">{catName(p.CATEGORYID)}</span>
+                      {tagList.map((t: string) => (
+                        <button key={t} onClick={e => { e.stopPropagation(); setSearch(t); }}
+                          className="text-[10px] px-1.5 py-0.5 bg-gray-50 border border-gray-100 text-gray-400 rounded-full hover:text-gray-900 transition cursor-pointer">
+                          {t}
+                        </button>
+                      ))}
+                      {getSku(p) && getSku(p) !== p.$id && (
+                        <span className="text-[10px] text-gray-400 font-mono">SKU: {getSku(p)}</span>
+                      )}
+                    </div>
+                    <div className="mt-auto pt-1">
+                      {p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE ? (
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-base font-bold text-red-600">{fmt(p.CURRENTPRICE)}</span>
+                          <span className="text-[11px] text-gray-400 line-through">{fmt(p.PRICE)}</span>
+                          <span className="text-[10px] font-bold text-white bg-red-500 px-1 py-0.5 rounded">-{Math.round((1 - p.CURRENTPRICE / p.PRICE) * 100)}%</span>
+                        </div>
+                      ) : (
+                        <span className="text-base font-bold text-gray-900">{fmt(p.PRICE)}</span>
+                      )}
+                      {p.CATALOGPRICE && p.CATALOGPRICE !== p.PRICE ? (
+                        <p className="text-[10px] text-amber-600 font-medium">Catálogo: {fmt(p.CATALOGPRICE)}</p>
+                      ) : null}
+                      <div className="flex items-center justify-between mt-1">
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${(p.STOCK ?? 0) === 0 ? 'bg-red-100 text-red-700' : (p.STOCK ?? 0) <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {(p.STOCK ?? 0) === 0 ? 'Agotado' : `${p.STOCK} en stock`}
+                        </span>
+                        {p.COST && p.COST > 0 && p.PRICE > 0 ? (
+                          <span className="text-[10px] text-gray-400">{Math.round(((p.PRICE - p.COST) / p.PRICE) * 100)}% margen</span>
+                        ) : (
+                          <span className="text-[10px] text-amber-500">sin costo</span>
+                        )}
+                      </div>
+                      {(p.PACKQTY || getSection(p)) && (
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400">
+                          {p.PACKQTY ? <span>×{p.PACKQTY}/paquete</span> : null}
+                          {(() => {
+                            const loc = getSection(p);
+                            return loc ? (
+                              <span className="inline-flex items-center gap-0.5 font-bold text-gray-500">
+                                <MapPin className="w-2.5 h-2.5" />G{loc.gondola} S{loc.section}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Acciones grandes y claras */}
+                  <div className="px-2.5 pb-2.5 flex items-center gap-1">
+                    <button onClick={() => openEdit(p)}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gray-900 text-white text-[11px] font-semibold hover:bg-gray-800 transition">
+                      <Pencil className="w-3 h-3" /> Editar
+                    </button>
+                    <a href={`/productos/${p.$id}`} target="_blank" rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition"
+                      title="Ver en tienda">
+                      <Eye className="w-3.5 h-3.5" />
+                    </a>
+                    <button onClick={() => disableProduct(p)}
+                      className="p-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition"
+                      title="Deshabilitar (Stock en 0)">
+                      <Ban className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => remove(p.$id)} disabled={deleteId === p.$id}
+                      className="p-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                      title="Eliminar">
+                      {deleteId === p.$id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {!isLoading && filtered.length > 0 && (
+          <div className="mt-4 px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 text-xs text-gray-500 flex-wrap">
             <span><span className="font-semibold text-gray-700">{filtered.length}</span> productos</span>
             <span>Stock: <span className="font-semibold text-gray-700">{totalUnits.toLocaleString('es-CL')} un.</span></span>
             <span>Valor: <span className="font-semibold text-gray-700">{fmt(totalInventoryValue)}</span></span>
@@ -3167,24 +3152,15 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
+      )}
 
       <EpicPagination
         currentPage={currentPage}
-        totalPages={lastCursor ? currentPage + 1 : currentPage}
-        onPageChange={(page) => {
-          if (page > currentPage && lastCursor) {
-            setCurrentPage(page);
-            load(true, lastCursor, search, catFilter, subCatFilter, stockFilter);
-          } else if (page < currentPage) {
-            // Going back — reload from page 1 up to target (simple approach: reload from scratch)
-            setCurrentPage(1);
-            pageCursorsRef.current = new Map([[1, null]]);
-            load(false, null, search, catFilter, subCatFilter, stockFilter);
-          }
-        }}
+        totalPages={totalPages}
+        onPageChange={(page) => setCurrentPage(page)}
         isLoading={isLoading}
         pageSize={PAGE_SIZE}
-        totalItems={totalCount}
+        totalItems={filtered.length}
       />
 
       {/* Bulk price modal */}
@@ -3538,7 +3514,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* AI Categorization Modal (Kenia) */}
+      {/* AI Categorization Modal (Balatin) */}
       {aiCategorizeModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -3549,7 +3525,7 @@ export default function ProductsPage() {
                   <Sparkles className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 text-base">Categorización Inteligente con Kenia</p>
+                  <p className="font-bold text-gray-900 text-base">Categorización Inteligente con Balatin</p>
                   <p className="text-xs text-gray-500 mt-0.5">Organiza tu catálogo de forma automática usando Inteligencia Artificial</p>
                 </div>
               </div>
@@ -3572,7 +3548,7 @@ export default function ProductsPage() {
                     <div>
                       <p className="font-semibold">¿Cómo funciona?</p>
                       <p className="text-gray-800/95 mt-1 leading-relaxed text-xs">
-                        Kenia analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
+                        Balatin analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
                       </p>
                     </div>
                   </div>
@@ -3611,7 +3587,7 @@ export default function ProductsPage() {
                 <div className="flex flex-col items-center justify-center py-16 space-y-6 max-w-md mx-auto">
                   <div className="w-16 h-16 rounded-full border-4 border-gray-100 border-t-gray-900 animate-spin" />
                   <div className="text-center">
-                    <p className="font-bold text-gray-800 text-lg">Kenia está analizando tu catálogo...</p>
+                    <p className="font-bold text-gray-800 text-lg">Balatin está analizando tu catálogo...</p>
                     <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
                       Este proceso se realiza en lotes eficientes de 10 productos para garantizar la máxima precisión. Por favor, no cierres esta ventana.
                     </p>
@@ -3652,7 +3628,7 @@ export default function ProductsPage() {
                             <th className="p-4">Producto</th>
                             <th className="p-4">Categoría Sugerida</th>
                             <th className="p-4">Subcategoría Sugerida</th>
-                            <th className="p-4">Justificación de Kenia</th>
+                            <th className="p-4">Justificación de Balatin</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
@@ -3755,30 +3731,30 @@ export default function ProductsPage() {
       {/* ═══ MOBILE PRODUCT LIST (tarjetas, solo < md) ═══ */}
       {!modal && (
         <MobileProductList
-          products={filtered}
+          products={pagedProducts}
           allProducts={products}
           isLoading={isLoading}
           search={search}
           onSearchChange={setSearch}
-          onSearchSubmit={() => load(false, null, search, catFilter, subCatFilter, stockFilter)}
-          onSearchClear={() => { setSearch(''); load(false, null, '', catFilter, subCatFilter, stockFilter); }}
+          onSearchSubmit={() => setCurrentPage(1)}
+          onSearchClear={() => { setSearch(''); setCurrentPage(1); }}
           categories={categories}
           catFilter={catFilter}
-          onCatChange={(v) => { setCatFilter(v); setSubCatFilter(''); }}
+          onCatChange={(v) => { setCatFilter(v); setSubCatFilter(''); setCurrentPage(1); }}
           stockFilter={stockFilter}
-          onStockFilterChange={setStockFilter}
+          onStockFilterChange={(v) => { setStockFilter(v); setCurrentPage(1); }}
           onEdit={openEdit}
           onEnhanceProduct={enhanceProductWithAI}
           onAdd={openAdd}
           onDelete={remove}
           deleteId={deleteId}
-          globalTotal={globalStats?.total}
+          globalTotal={products.length}
           aiLoading={aiLoading !== null}
-          onRefresh={() => load(false)}
+          onRefresh={() => load()}
           currentPage={currentPage}
-          hasMore={!!lastCursor}
-          onNextPage={() => { if (lastCursor) { setCurrentPage(currentPage + 1); load(true, lastCursor, search, catFilter, subCatFilter, stockFilter); } }}
-          onPrevPage={() => { if (currentPage > 1) { setCurrentPage(1); pageCursorsRef.current = new Map([[1, null]]); load(false, null, search, catFilter, subCatFilter, stockFilter); } }}
+          hasMore={currentPage < totalPages}
+          onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+          onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
         />
       )}
     </div>

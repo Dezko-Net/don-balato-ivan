@@ -81,7 +81,7 @@ export function getServices() {
             // Retry proxy up to 2 times before falling back to direct Appwrite
             for (let attempt = 0; attempt < 2; attempt++) {
               try {
-                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
+                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}&_t=${Date.now()}`, { cache: 'no-store' });
                 if (res.ok) {
                   return await res.json();
                 }
@@ -121,7 +121,7 @@ export function getServices() {
           try {
             for (let attempt = 0; attempt < 2; attempt++) {
               try {
-                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}`);
+                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}&_t=${Date.now()}`, { cache: 'no-store' });
                 if (res.ok) {
                   return await res.json();
                 }

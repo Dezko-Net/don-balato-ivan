@@ -25,6 +25,10 @@ interface Question {
   ANSWEREDAT?: number;
 }
 
+// Flag de módulo: si la colección no existe en Appwrite, se deshabilita
+// el componente para no generar spam de errores en consola ni lecturas fallidas.
+let _collectionExists: boolean | null = null;
+
 export default function ProductQuestions({ productId }: { productId: string }) {
   const { user, isLoggedIn } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -32,8 +36,11 @@ export default function ProductQuestions({ productId }: { productId: string }) {
   const [newQuestion, setNewQuestion] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  // Deshabilitado si ya sabemos que la colección no existe
+  const [disabled, setDisabled] = useState(_collectionExists === false);
 
   const load = useCallback(async () => {
+    if (_collectionExists === false) { setLoading(false); return; }
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
@@ -42,8 +49,19 @@ export default function ProductQuestions({ productId }: { productId: string }) {
         Query.orderDesc('$createdAt'),
         Query.limit(50),
       ]);
+      _collectionExists = true;
       setQuestions(res.documents as unknown as Question[]);
-    } catch (e) { console.warn('Error loading questions (handled gracefully):', e); }
+    } catch (e: any) {
+      if (e?.code === 404 || e?.message?.includes('could not be found')) {
+        // Colección no existe — silenciar permanentemente sin spam
+        _collectionExists = false;
+        setDisabled(true);
+      }
+      // Solo loguear en desarrollo, no en producción
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[ProductQuestions] Colección no disponible:', e?.message || e);
+      }
+    }
     finally { setLoading(false); }
   }, [productId]);
 
@@ -85,6 +103,9 @@ export default function ProductQuestions({ productId }: { productId: string }) {
     const days = Math.floor(hrs / 24);
     return `hace ${days}d`;
   };
+
+  // Si la colección no existe, no renderizar nada (sin spam, sin UI rota)
+  if (disabled) return null;
 
   return (
     <div style={{ background: '#fff', borderRadius: 4, padding: '24px 28px', marginBottom: 16 }}>

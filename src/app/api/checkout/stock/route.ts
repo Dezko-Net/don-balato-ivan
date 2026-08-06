@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
 import { PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
@@ -112,6 +113,9 @@ export async function POST(req: NextRequest) {
           await serverUpdateDocument(PRODUCTS_COLLECTION_ID, it.id, { STOCK: stock - it.qty });
           rollback.push({ id: it.id, prev: stock });
         }
+        try { revalidateTag('products'); } catch {}
+        try { revalidateTag('orders'); } catch {}
+        try { revalidateTag('appwrite-proxy'); } catch {}
       } catch (e: any) {
         // Revertir lo ya descontado para no dejar stock inconsistente
         for (const r of rollback) {
@@ -119,6 +123,9 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ ok: false, error: e?.message || 'Error al descontar stock' });
       }
+      try { revalidateTag('products'); } catch {}
+      try { revalidateTag('orders'); } catch {}
+      try { revalidateTag('appwrite-proxy'); } catch {}
       return NextResponse.json({ ok: true });
     }
 

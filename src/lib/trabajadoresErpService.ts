@@ -35,7 +35,28 @@ function deserialize(d: any): TrabajadorERP {
 }
 
 /** Carga todos los trabajadores (paginado con cursores). */
-export async function fetchTrabajadoresERP(): Promise<TrabajadorERP[]> {
+// ── Caché local 6h: los trabajadores casi nunca cambian; antes esto hacía
+// ⌈N/100⌉ lecturas directas a Appwrite EN CADA montaje del POS.
+const TRAB_CACHE_KEY = 'yaxsel_trabajadores_cache_v1'
+const TRAB_CACHE_TTL = 6 * 60 * 60 * 1000
+
+export function invalidateTrabajadoresCache(): void {
+  if (typeof window === 'undefined') return
+  try { localStorage.removeItem(TRAB_CACHE_KEY) } catch {}
+}
+
+export async function fetchTrabajadoresERP(forceRefresh = false): Promise<TrabajadorERP[]> {
+  if (!forceRefresh && typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(TRAB_CACHE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed?.timestamp && Date.now() - parsed.timestamp < TRAB_CACHE_TTL && Array.isArray(parsed.items)) {
+          return parsed.items
+        }
+      }
+    } catch {}
+  }
   try {
     const { databases } = getServices()
     const all: any[] = []
@@ -53,30 +74,46 @@ export async function fetchTrabajadoresERP(): Promise<TrabajadorERP[]> {
         hasMore = false
       }
     }
-    return all.map(deserialize)
+    const items = all.map(deserialize)
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(TRAB_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), items })) } catch {}
+    }
+    return items
   } catch (err) {
     console.error('[trabajadoresErpService] fetchTrabajadoresERP error:', err)
+    // Fallback a caché aunque esté expirada (mejor datos viejos que login roto)
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(TRAB_CACHE_KEY)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed?.items)) return parsed.items
+        }
+      } catch {}
+    }
     return []
   }
 }
 
-/** Crea un trabajador (para el futuro formulario de gestión de equipo). */
+/** Crea un trabajador (para la gestión de equipo). */
 export async function createTrabajadorERP(
   t: Omit<TrabajadorERP, '$id'>
 ): Promise<TrabajadorERP | null> {
   try {
     const { databases } = getServices()
+    const safeFotoUrl = String(t.fotoUrl || '').slice(0, 990)
     const doc = await databases.createDocument(DB_ID, TRABAJADORES_COLLECTION, ID.unique(), {
-      nombre: t.nombre,
-      cargo: t.cargo,
-      sede: t.sede,
-      sueldo: t.sueldo,
-      fotoUrl: t.fotoUrl,
-      activo: t.activo,
+      nombre: t.nombre || 'Sin nombre',
+      cargo: t.cargo || 'Operativo',
+      sede: t.sede || 'alameda',
+      sueldo: Number(t.sueldo) || 0,
+      fotoUrl: safeFotoUrl,
+      activo: t.activo !== false,
       nacionalidad: t.nacionalidad || '',
       genero: t.genero || '',
       fechaIngreso: t.fechaIngreso || '',
     })
+    invalidateTrabajadoresCache()
     return deserialize(doc)
   } catch (err) {
     console.error('[trabajadoresErpService] createTrabajadorERP error:', err)
@@ -89,6 +126,7 @@ export async function deleteTrabajadorERP(id: string): Promise<boolean> {
   try {
     const { databases } = getServices()
     await databases.deleteDocument(DB_ID, TRABAJADORES_COLLECTION, id)
+    invalidateTrabajadoresCache()
     return true
   } catch (err) {
     console.error('[trabajadoresErpService] deleteTrabajadorERP error:', err)
@@ -105,12 +143,13 @@ export async function updateTrabajadorERP(id: string, data: Partial<Omit<Trabaja
     if (data.cargo !== undefined) updates.cargo = data.cargo
     if (data.sede !== undefined) updates.sede = data.sede
     if (data.sueldo !== undefined) updates.sueldo = Number(data.sueldo)
-    if (data.fotoUrl !== undefined) updates.fotoUrl = data.fotoUrl
+    if (data.fotoUrl !== undefined) updates.fotoUrl = String(data.fotoUrl || '').slice(0, 990)
     if (data.activo !== undefined) updates.activo = data.activo
     if (data.nacionalidad !== undefined) updates.nacionalidad = data.nacionalidad
     if (data.genero !== undefined) updates.genero = data.genero
     if (data.fechaIngreso !== undefined) updates.fechaIngreso = data.fechaIngreso
     await databases.updateDocument(DB_ID, TRABAJADORES_COLLECTION, id, updates)
+    invalidateTrabajadoresCache()
     return true
   } catch (err) {
     console.error('[trabajadoresErpService] updateTrabajadorERP error:', err)

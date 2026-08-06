@@ -3,7 +3,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { fetchAllAppwriteErpProducts, updateAppwriteErpProduct, AppwriteErpProduct } from '@/lib/appwriteErpService'
-import { openReceiptPrintWindow } from '@/lib/posReceipt'
+import { fetchTrabajadoresERP } from '@/lib/trabajadoresErpService'
+import { getServices, Query } from '@/lib/appwrite'
+import { loadErpConfig } from '@/lib/posConfig'
+import { openReceiptPrintWindow, ReceiptData } from '@/lib/posReceipt'
 import { SEDES, SedeSlug } from '@/types'
 import {
   Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, ArrowRightLeft,
@@ -14,26 +17,12 @@ import {
 } from 'lucide-react'
 
 
-// Firebase Mocks
-const db = {} as any;
-const authReady = Promise.resolve();
-const collection = (d: any, p: any) => p;
-const doc = (...args: any[]) => args.join('/');
-const getDoc = async (...args: any[]) => ({ exists: () => false, data: () => ({}) });
-const getDocs = async (c: any): Promise<any> => ({ forEach: (cb: any) => {} });
-const onSnapshot = (c: any, cb: any, err?: any) => { cb({ forEach: () => {}, docs: [], exists: () => false, data: () => ({}) }); return () => {}; };
-const query = (...args: any[]) => args[0];
-const setDoc = async (...args: any[]) => {};
-const updateDoc = async (...args: any[]) => {};
-const where = (f: any, op: any, val: any) => f;
-const Timestamp = { now: () => ({ seconds: Date.now() / 1000 }), fromDate: (d: any) => ({ seconds: d.getTime() / 1000 }) };
-type Timestamp = any;
-const increment = (n: number) => n;
-const orderBy = (f: any, d?: any) => f;
-const fbLimit = (n: number) => n;
-const runTransaction = async (d: any, cb: any) => cb({ get: async () => ({ exists: () => false }), set: () => {}, update: () => {} });
-const serverTimestamp = () => ({ seconds: Date.now() / 1000 });
-const writeBatch = (d: any) => ({ update: () => {}, commit: async () => {} });
+import { db, authReady } from '@/lib/firebase';
+import {
+  collection, doc, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc,
+  where, orderBy, limit as fbLimit, serverTimestamp, Timestamp, increment,
+  writeBatch, runTransaction
+} from 'firebase/firestore';
 
 // Mock usePriceListConfig variables
 const listasActivas = [] as any[];
@@ -58,7 +47,9 @@ const POS_SESSION_KEY = 'asistora_pos_session'
 
 function getPosSession(sede: string): PosUserSession | null {
   try {
-    const raw = localStorage.getItem('yaxsel_pos_session')
+    // Bug corregido: antes leía 'yaxsel_pos_session' pero savePosSession escribe
+    // POS_SESSION_KEY ('asistora_pos_session') → la sesión guardada NUNCA se recuperaba.
+    const raw = localStorage.getItem(POS_SESSION_KEY) || localStorage.getItem('yaxsel_pos_session')
     if (!raw) return { id: 'default', nombre: 'Fernanda', cargo: 'Cajera', sede: sede, role: 'cajera', loginAt: Date.now() }
     const session = JSON.parse(raw) as PosUserSession
     return session
@@ -76,6 +67,7 @@ function clearPosSession() {
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface ProductDoc {
+  $id?: string
   sku: string
   nombre: string
   costo_uni: number
@@ -215,6 +207,23 @@ export default function PuntoDeVentaPage() {
   const router = useRouter()
   const sede = (sedeParam || '') as SedeSlug
   const sedeNombre = SEDES[sede] || sede
+
+  useEffect(() => {
+    loadErpConfig()
+      .then(parsed => {
+        if (parsed && Array.isArray(parsed.branches) && parsed.branches.length > 0) {
+          try {
+            const activeSlugs = parsed.branches.filter((b: any) => b.active !== false).map((b: any) => b.slug || b.name?.toLowerCase().replace(/\s+/g, '-'));
+            if (activeSlugs.length > 0 && !activeSlugs.includes(sede)) {
+              router.replace(`/pos/${activeSlugs[0]}`);
+            }
+          } catch (e) {
+            console.error('Error verifying POS branch:', e);
+          }
+        }
+      })
+      .catch(err => console.error('Error loading config:', err));
+  }, [sede, router]);
   
 
   // ─── POS Login ────────────────────────────────────────────────────────────────
@@ -254,11 +263,7 @@ export default function PuntoDeVentaPage() {
   const [cartSyncEnabled, setCartSyncEnabled] = useState<boolean>(() => {
     try { return localStorage.getItem('pos_cartSync') !== 'off' } catch { return true }
   })
-  const [modoLento, setModoLento] = useState<boolean>(() => {
-    try { return localStorage.getItem('pos_modoLento') === 'on' } catch { return false }
-  })
   const toggleCartSync = () => setCartSyncEnabled(v => { const n = !v; try { localStorage.setItem('pos_cartSync', n ? 'on' : 'off') } catch {} return n })
-  const toggleModoLento = () => setModoLento(v => { const n = !v; try { localStorage.setItem('pos_modoLento', n ? 'on' : 'off') } catch {} return n })
   const openCustomerVisualizer = () => {
     if (!posUser || !sede) return
     const url = `/pos-visualizer/${sede}/${encodeURIComponent(posUser.id)}`
@@ -303,6 +308,20 @@ export default function PuntoDeVentaPage() {
   const [selectedPriceBySku, setSelectedPriceBySku] = useState<Record<string, string>>({})
   const [lastPrintedSale, setLastPrintedSale] = useState<VentaPOS | null>(null)
   const [cartAddedItem, setCartAddedItem] = useState<{ nombre: string; precio: number } | null>(null)
+  const [revalidationNotice, setRevalidationNotice] = useState<{
+    items: Array<{
+      sku: string
+      nombre: string
+      imageUrl?: string
+      requestedQty: number
+      realStock: number
+      hasStockIssue: boolean
+      oldPrice: number
+      newPrice: number
+      hasPriceChange: boolean
+      actionTaken: 'removed' | 'adjusted_qty' | 'price_updated' | 'none'
+    }>
+  } | null>(null)
   const [empresaConfig, setEmpresaConfig] = useState<{
     nombreEmpresa: string
     rut: string
@@ -324,14 +343,29 @@ export default function PuntoDeVentaPage() {
   type ModoVentaPOS = 'cajera_cobra' | 'jefe_cobra'
   const [modoVentaPOS, setModoVentaPOS] = useState<ModoVentaPOS>('cajera_cobra')
 
-  // Cargar modo efectivo: override de sede o global
+  // Cargar modo efectivo: override de sede o global desde Appwrite API / Firestore
   useEffect(() => {
-    if (!db || !sede) return
+    if (!sede) return
     let cancelled = false
     ;(async () => {
       try {
+        // 1) Cargar desde Appwrite ERP Config (pos-admin config) — caché SWR 60s compartida
+        const parsed = await loadErpConfig()
+        if (parsed && !cancelled) {
+          const overrideMode = parsed.overrides?.[sede]?.modoVentaPOS
+          const globalMode = parsed.empresa?.modoVentaPOS
+          const effectiveMode = (overrideMode === 'cajera_cobra' || overrideMode === 'jefe_cobra')
+            ? overrideMode
+            : ((globalMode === 'cajera_cobra' || globalMode === 'jefe_cobra') ? globalMode : null)
+
+          if (effectiveMode) {
+            setModoVentaPOS(effectiveMode)
+            return
+          }
+        }
+
+        // 2) Fallback a Firestore config_pos
         await authReady
-        // 1) Override de sede
         const snapSede = await getDoc(doc(db!, 'config_pos', `sede_${sede}`))
         if (!cancelled && snapSede.exists()) {
           const ds = snapSede.data() as any
@@ -341,7 +375,6 @@ export default function PuntoDeVentaPage() {
             return
           }
         }
-        // 2) Global
         const snapGlobal = await getDoc(doc(db!, 'config_pos', 'empresa'))
         if (!cancelled && snapGlobal.exists()) {
           const dg = snapGlobal.data() as any
@@ -352,12 +385,14 @@ export default function PuntoDeVentaPage() {
           }
         }
         if (!cancelled) setModoVentaPOS('cajera_cobra')
-      } catch { /* silently fail */ }
+      } catch {
+        if (!cancelled) setModoVentaPOS('cajera_cobra')
+      }
     })()
     return () => { cancelled = true }
   }, [sede])
 
-  // Listener reactivo del modo (snapshot) — opcional, para que se aplique en vivo
+  // Listener reactivo del modo (snapshot Firestore)
   useEffect(() => {
     if (!db || !sede) return
     const unsubSede = onSnapshot(doc(db!, 'config_pos', `sede_${sede}`), (snap: any) => {
@@ -366,7 +401,6 @@ export default function PuntoDeVentaPage() {
         const ms = ds.modoVentaPOS as ModoVentaPOS | undefined | null
         if (ms === 'cajera_cobra' || ms === 'jefe_cobra') { setModoVentaPOS(ms); return }
       }
-      // Si sede no tiene override, leer global
       getDoc(doc(db!, 'config_pos', 'empresa')).then(s => {
         if (s.exists()) {
           const dg = s.data() as any
@@ -629,7 +663,7 @@ export default function PuntoDeVentaPage() {
   // Write cart to Firestore — debounced 1500ms so typing doesn't trigger Firestore at all
   useEffect(() => {
     if (!db || !posUser || !sede) return
-    if (!cartSyncEnabled || modoLento) return // sync desactivado
+    if (!cartSyncEnabled) return // sync desactivado
     const syncId = `${posUser.id}_${sede}`
     const timeout = setTimeout(async () => {
       cartSyncLastWrite.current = Date.now()
@@ -646,12 +680,12 @@ export default function PuntoDeVentaPage() {
       }
     }, 1500)
     return () => clearTimeout(timeout)
-  }, [cart, descuentoGlobalPct, posUser, sede, cartSyncEnabled, modoLento])
+  }, [cart, descuentoGlobalPct, posUser, sede, cartSyncEnabled])
 
   // Listen for remote cart changes
   useEffect(() => {
     if (!db || !posUser || !sede) return
-    if (!cartSyncEnabled || modoLento) return // sync desactivado
+    if (!cartSyncEnabled) return // sync desactivado
     const syncId = `${posUser.id}_${sede}`
     let firstSnapshot = true
     const unsub = onSnapshot(doc(db!, 'pos_cart_sync', syncId), (snap: any) => {
@@ -666,60 +700,70 @@ export default function PuntoDeVentaPage() {
       }
     })
     return () => unsub()
-  }, [posUser, sede, cartSyncEnabled, modoLento])
+  }, [posUser, sede, cartSyncEnabled])
 
-  // ─── Load POS login users (onSnapshot para sincronizar cambios de planilla) ──
+  // ─── Load POS login users from Appwrite (Trabajadores de la sucursal) ──────
   useEffect(() => {
-    if (!sede || !db) { setLoginLoading(false); return }
-    setLoginLoading(true)
+    if (!sede) { setLoginLoading(false); return; }
+    setLoginLoading(true);
 
-    // Query both slug variants for web-tiendas-3b-chile
-    const sedeVariants = sede === 'web-tiendas-3b-chile'
-      ? ['web-tiendas-3b-chile', 'web']
-      : [sede]
+    fetchTrabajadoresERP()
+      .then((allTrabajadores) => {
+        const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, '-');
+        const currentSedeNorm = norm(sede);
 
-    const unsubs: (() => void)[] = []
-    const snapResults = new Map<string, any[]>()
+        // Filter workers for this sucursal
+        const matched = allTrabajadores.filter((w) => {
+          if (!w.activo) return false;
+          const wSedeNorm = norm(w.sede || '');
+          if (wSedeNorm === currentSedeNorm) return true;
+          if (currentSedeNorm.includes(wSedeNorm) || wSedeNorm.includes(currentSedeNorm)) return true;
+          return false;
+        });
 
-    const merge = () => {
-      const all: any[] = []
-      snapResults.forEach(docs => all.push(...docs))
-      const users: typeof loginUsers = []
-      const seen = new Set<string>()
-      all.forEach(({ id, data }) => {
-        if (seen.has(id)) return
-        seen.add(id)
-        const cargo = String(data?.cargo || '').toUpperCase()
-        if (cargo.includes('CAJER') || cargo.includes('VENDEDOR') || cargo.includes('VENDEDORA') || cargo.includes('JEFE')) {
-          users.push({
-            id,
-            nombre: String(data?.nombre || 'Sin nombre'),
-            cargo: String(data?.cargo || ''),
-            fotoUrl: data?.fotoUrl || '',
-            posPassword: data?.posPassword || '',
-            posActivo: data?.posActivo !== false,
-          })
-        }
+        const activeWorkers = matched.length > 0 ? matched : allTrabajadores.filter(w => w.activo);
+
+        const users = activeWorkers
+          .map((w) => ({
+            id: w.$id,
+            nombre: w.nombre,
+            cargo: w.cargo || 'Cajera',
+            fotoUrl: w.fotoUrl || '',
+            posPassword: '',
+            posActivo: true,
+          }))
+          .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+        setLoginUsers(users);
+
+        // Update active POS user if empty or previously set to default fallback
+        setPosUser((prev) => {
+          if (!prev || prev.nombre === 'Fernanda') {
+            const first = users[0];
+            if (first) {
+              const session: PosUserSession = {
+                id: first.id,
+                nombre: first.nombre,
+                cargo: first.cargo,
+                fotoUrl: first.fotoUrl,
+                sede,
+                role: 'cajera',
+                loginAt: Date.now(),
+              };
+              savePosSession(session);
+              return session;
+            }
+          }
+          return prev;
+        });
       })
-      users.sort((a, b) => a.nombre.localeCompare(b.nombre))
-      setLoginUsers(users)
-      setLoginLoading(false)
-    }
-
-    sedeVariants.forEach(s => {
-      const q = query(collection(db!, 'trabajadores'), where('sede', '==', s))
-      const unsub = onSnapshot(q, (snap: any) => {
-        snapResults.set(s, snap.docs.map((d: any) => ({ id: d.id, data: d.data() })))
-        merge()
-      }, () => {
-        snapResults.set(s, [])
-        merge()
+      .catch((err) => {
+        console.error('Error cargando trabajadores de Appwrite:', err);
       })
-      unsubs.push(unsub)
-    })
-
-    return () => unsubs.forEach(u => u())
-  }, [sede])
+      .finally(() => {
+        setLoginLoading(false);
+      });
+  }, [sede]);
 
   const handlePosLogin = () => {
     if (!loginSelected) return
@@ -771,80 +815,128 @@ export default function PuntoDeVentaPage() {
     setTimeout(() => setToast(null), 3000)
   }, [])
 
-  // ─── Load products ─────────────────────────────────────────────────────────
+  // ─── Load products from Appwrite Cloud ─────────────────────────────────────
   useEffect(() => {
-    if (!db) return
-    let cancelled = false
-    const load = async () => {
-      try {
-        await authReady
-        if (cancelled) return
-        const snap = await getDocs(collection(db!, 'products'))
-        const map = new Map<string, ProductDoc>()
-        snap.forEach((d: any) => {
-          const raw: any = d.data()
-          const sku = normSku(raw?.sku || d.id)
-          if (!sku) return
-          map.set(sku, {
-            sku,
-            nombre: String(raw?.nombre || raw?.descripcion || sku),
-            costo_uni: Number(raw?.costo_uni) || 0,
-            precio_detalle: Number(raw?.precio_detalle) || 0,
-            precio_mayorista: Number(raw?.precio_mayorista) || 0,
-            precio_region: Number(raw?.precio_region || raw?.precio_segundo) || 0,
-            precio_segundo: Number(raw?.precio_segundo || raw?.precio_region) || 0,
-            ajuste_menos10: !!raw?.ajuste_menos10,
-            imageUrl: raw?.imageUrl || '',
-            codigo_barra: String(raw?.codigo_barra || '').trim(),
-          })
-        })
+    let cancelled = false;
+    setLoadingProducts(true);
+
+    fetchAllAppwriteErpProducts(true)
+      .then((appwriteProducts) => {
+        if (cancelled) return;
+        const map = new Map<string, ProductDoc>();
+        const stockMapTemp = new Map<string, number>();
+
+        appwriteProducts.forEach((p) => {
+          const rawSku = (p.sku && p.sku !== '-' && p.sku !== 'undefined') ? p.sku : p.$id;
+          const displaySku = (p.sku && p.sku !== 'undefined') ? p.sku : '-';
+          const primaryKey = p.$id || normSku(rawSku);
+          if (!primaryKey) return;
+
+          const itemStock = Number(p.stock) || 0;
+
+          const prodObj: ProductDoc = {
+            $id: p.$id,
+            sku: displaySku,
+            nombre: p.nombre || 'Sin nombre',
+            costo_uni: Number(p.costo_uni) || 0,
+            precio_detalle: Number(p.precio_venta_1) || 0,
+            precio_mayorista: Number(p.precio_venta_2) || Number(p.precio_venta_1) || 0,
+            precio_region: Number(p.precio_venta_3) || Number(p.precio_venta_1) || 0,
+            precio_segundo: Number(p.precio_venta_3) || Number(p.precio_venta_1) || 0,
+            imageUrl: p.imageUrl || '',
+            codigo_barra: (p.codigo_barra || '').trim(),
+          };
+
+          map.set(primaryKey, prodObj);
+          stockMapTemp.set(primaryKey, itemStock);
+
+          if (p.sku && p.sku !== '-' && p.sku !== primaryKey) {
+            const normS = normSku(p.sku);
+            map.set(normS, prodObj);
+            stockMapTemp.set(normS, itemStock);
+          }
+
+          const bcode = (p.codigo_barra || '').trim().toUpperCase();
+          if (bcode && bcode !== primaryKey) {
+            map.set(bcode, prodObj);
+            stockMapTemp.set(bcode, itemStock);
+          }
+        });
+
         if (!cancelled) {
-          setProducts(map)
-          setLoadingProducts(false)
+          setProducts(map);
+          setStockMap(stockMapTemp);
+          setLoadingProducts(false);
         }
-      } catch (e) {
-        console.error('Error loading products:', e)
-        if (!cancelled) setLoadingProducts(false)
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [])
-
-  // ─── Load stock for sede (polling — evita reconexiones con internet malo) ──
-  useEffect(() => {
-    if (!db || !sede) return
-    let cancelled = false
-    let intervalId: ReturnType<typeof setInterval> | null = null
-
-    const fetchStock = async () => {
-      try {
-        await authReady
-        if (cancelled) return
-        const q = query(collection(db!, 'stock'), where('sede', '==', sede))
-        const snap = await getDocs(q)
-        if (cancelled) return
-        const map = new Map<string, number>()
-        snap.forEach((d: any) => {
-          const raw: any = d.data()
-          const sku = normSku(raw?.sku)
-          if (sku) map.set(sku, Number(raw?.stock) || 0)
-        })
-        setStockMap(map)
-      } catch (e) {
-        console.error('Error loading stock:', e)
-      }
-    }
-
-    fetchStock()
-    // Modo lento: refrescar cada 5min; normal: cada 60s
-    intervalId = setInterval(fetchStock, modoLento ? 300_000 : 60_000)
+      })
+      .catch((err) => {
+        console.error('Error cargando productos de Appwrite para POS:', err);
+        if (!cancelled) setLoadingProducts(false);
+      });
 
     return () => {
-      cancelled = true
-      if (intervalId) clearInterval(intervalId)
+      cancelled = true;
+    };
+  }, []);
+
+  // ─── Load stock & products from Appwrite Cloud ───────────────────────────────────
+  const triggerFullCatalogRefresh = useCallback(async () => {
+    try {
+      const appwriteProducts = await fetchAllAppwriteErpProducts(true);
+      setProducts((prevMap) => {
+        const nextMap = new Map(prevMap);
+        appwriteProducts.forEach((p) => {
+          const rawSku = (p.sku && p.sku !== '-' && p.sku !== 'undefined') ? p.sku : p.$id;
+          const displaySku = (p.sku && p.sku !== 'undefined') ? p.sku : '-';
+          const primaryKey = p.$id || normSku(rawSku);
+          if (!primaryKey) return;
+
+          const prodObj: ProductDoc = {
+            $id: p.$id,
+            sku: displaySku,
+            nombre: p.nombre || 'Sin nombre',
+            costo_uni: Number(p.costo_uni) || 0,
+            precio_detalle: Number(p.precio_venta_1) || 0,
+            precio_mayorista: Number(p.precio_venta_2) || Number(p.precio_venta_1) || 0,
+            precio_region: Number(p.precio_venta_3) || Number(p.precio_venta_1) || 0,
+            precio_segundo: Number(p.precio_venta_3) || Number(p.precio_venta_1) || 0,
+            imageUrl: p.imageUrl || '',
+            codigo_barra: (p.codigo_barra || '').trim(),
+          };
+          nextMap.set(primaryKey, prodObj);
+          if (p.sku && p.sku !== '-' && p.sku !== primaryKey) nextMap.set(normSku(p.sku), prodObj);
+          const bcode = (p.codigo_barra || '').trim().toUpperCase();
+          if (bcode && bcode !== primaryKey) nextMap.set(bcode, prodObj);
+        });
+        return nextMap;
+      });
+
+      setStockMap((prevMap) => {
+        const nextMap = new Map(prevMap);
+        appwriteProducts.forEach((p) => {
+          const rawSku = (p.sku && p.sku !== '-' && p.sku !== 'undefined') ? p.sku : p.$id;
+          const primaryKey = p.$id || normSku(rawSku);
+          const itemStock = Number(p.stock) || 0;
+          if (primaryKey) nextMap.set(primaryKey, itemStock);
+          if (p.sku && p.sku !== '-') nextMap.set(normSku(p.sku), itemStock);
+        });
+        return nextMap;
+      });
+    } catch (e) {
+      console.error('Error refrescando stock y precios Appwrite:', e);
     }
-  }, [sede, modoLento])
+  }, []);
+
+  useEffect(() => {
+    if (!sede) return;
+    // Refresco pasivo cada 1h, pero SOLO con la pestaña visible (ahorra lecturas
+    // cuando el POS queda abierto en segundo plano durante la noche).
+    const intervalId = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      triggerFullCatalogRefresh();
+    }, 3600_000);
+    return () => clearInterval(intervalId);
+  }, [sede, triggerFullCatalogRefresh]);
 
   // ─── Load today's sales ────────────────────────────────────────────────────
   useEffect(() => {
@@ -887,33 +979,40 @@ export default function PuntoDeVentaPage() {
 
   // ─── Load active caja session ──────────────────────────────────────────────
   useEffect(() => {
-    if (!db || !sede) return
-    let unsub = () => {}
-    const load = async () => {
+    if (!sede) return;
+    let isCancelled = false;
+    (async () => {
       try {
-        await authReady
-        const q = query(
-          collection(db!, 'caja_sesiones'),
-          where('sede', '==', sede),
-          where('estado', '==', 'abierta'),
-          fbLimit(1),
-        )
-        unsub = onSnapshot(q, (snap: any) => {
-          if (snap.empty) {
-            setSesionCaja(null)
-          } else {
-            const d = snap.docs[0]
-            setSesionCaja({ id: d.id, ...d.data() } as any)
+        const raw = localStorage.getItem(`yaxsel_pos_caja_session_${sede}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.estado === 'abierta') {
+            setSesionCaja(parsed);
           }
-          setCajaLoaded(true)
-        })
-      } catch (e) {
-        console.error('Error loading caja:', e)
+        }
+        await authReady;
+        const activeRef = doc(db, 'caja_sesiones', `active_${sede}`);
+        const snap = await getDoc(activeRef);
+        if (snap.exists() && !isCancelled) {
+          const data = snap.data();
+          if (data && data.estado === 'abierta') {
+            setSesionCaja(data as any);
+            localStorage.setItem(`yaxsel_pos_caja_session_${sede}`, JSON.stringify(data));
+          } else {
+            setSesionCaja(null);
+            localStorage.removeItem(`yaxsel_pos_caja_session_${sede}`);
+          }
+        } else if (!raw && !isCancelled) {
+          setSesionCaja(null);
+        }
+      } catch (err) {
+        console.error('Error cargando sesión de caja desde Firestore:', err);
+      } finally {
+        if (!isCancelled) setCajaLoaded(true);
       }
-    }
-    load()
-    return () => unsub()
-  }, [sede])
+    })();
+    return () => { isCancelled = true; };
+  }, [sede]);
 
   // ─── Auto-open apertura when caja is closed ───────────────────────────────
   useEffect(() => {
@@ -974,52 +1073,60 @@ export default function PuntoDeVentaPage() {
 
   // ─── Search & filter products ──────────────────────────────────────────────
   const filteredProducts = useMemo(() => {
-    const term = searchTerm.trim().toUpperCase()
-    if (!term) return []
-    const results: (ProductDoc & { stock: number })[] = []
+    const term = searchTerm.trim().toUpperCase();
+    if (!term) return [];
+    const results: (ProductDoc & { stock: number })[] = [];
+    const seenIds = new Set<string>();
+
     products.forEach((p) => {
-      const cb = (p.codigo_barra || '').trim().toUpperCase()
-      if (p.sku.includes(term) || p.nombre.toUpperCase().includes(term) || (cb && cb.includes(term))) {
-        // Usar effectiveStockMap (stock Firestore - carrito local)
-        // Si no hay dato aún (internet lento), asumir stock disponible
-        const stock = effectiveStockMap.has(p.sku) ? (effectiveStockMap.get(p.sku) || 0) : -1
-        if (hideNoStock && stock === 0) return
-        results.push({ ...p, stock: stock < 0 ? 999 : stock })
+      const uid = p.$id || p.sku;
+      if (seenIds.has(uid)) return;
+
+      const cb = (p.codigo_barra || '').trim().toUpperCase();
+      const pSkuUpper = (p.sku || '').toUpperCase();
+      if (pSkuUpper.includes(term) || p.nombre.toUpperCase().includes(term) || (cb && cb.includes(term))) {
+        seenIds.add(uid);
+        const stockKey = p.$id || p.sku;
+        const stock = effectiveStockMap.has(stockKey)
+          ? (effectiveStockMap.get(stockKey) ?? 0)
+          : (effectiveStockMap.get(p.sku) ?? (stockMap.get(stockKey) ?? (stockMap.get(p.sku) ?? 0)));
+        if (hideNoStock && stock <= 0) return;
+        results.push({ ...p, stock });
       }
-    })
+    });
     return results.sort((a, b) => {
-      const aExact = a.sku === term ? -1 : 0
-      const bExact = b.sku === term ? -1 : 0
-      if (aExact !== bExact) return aExact - bExact
-      return b.stock - a.stock
-    }).slice(0, 50)
-  }, [searchTerm, products, effectiveStockMap, hideNoStock])
+      const aExact = a.sku === term ? -1 : 0;
+      const bExact = b.sku === term ? -1 : 0;
+      if (aExact !== bExact) return aExact - bExact;
+      return b.stock - a.stock;
+    }).slice(0, 50);
+  }, [searchTerm, products, effectiveStockMap, stockMap, hideNoStock]);
 
   const quickTopProducts = useMemo(() => {
-    const acc = new Map<string, { sku: string; cantidad: number }>()
+    const acc = new Map<string, { sku: string; cantidad: number }>();
     ventasHoy.forEach((venta) => {
-      if (venta.estado === 'anulada') return
+      if (venta.estado === 'anulada') return;
       ;(venta.items || []).forEach((item) => {
-        const sku = normSku(item?.sku)
-        if (!sku) return
-        const prev = acc.get(sku)
+        const sku = normSku(item?.sku);
+        if (!sku) return;
+        const prev = acc.get(sku);
         acc.set(sku, {
           sku,
           cantidad: (prev?.cantidad || 0) + Number(item?.cantidad || 0),
-        })
-      })
-    })
+        });
+      });
+    });
 
     return Array.from(acc.values())
       .map(({ sku, cantidad }) => {
-        const product = products.get(sku)
-        if (!product) return null
-        const stock = effectiveStockMap.has(sku) ? (effectiveStockMap.get(sku) || 0) : 999
+        const product = products.get(sku);
+        if (!product) return null;
+        const stock = effectiveStockMap.has(sku) ? (effectiveStockMap.get(sku) ?? 0) : (stockMap.get(sku) ?? 0);
         return {
           ...product,
           stock,
           cantidadVendidaHoy: cantidad,
-        }
+        };
       })
       .filter((item): item is ProductDoc & { stock: number; cantidadVendidaHoy: number } => !!item && (!hideNoStock || item.stock > 0))
       .sort((a, b) => {
@@ -1061,9 +1168,9 @@ export default function PuntoDeVentaPage() {
   const getDefaultPriceOption = useCallback((p: ProductDoc) => {
     const options = getPriceOptions(p)
     if (options.length === 0) return null
-    return options.find((o: any) => o.field === 'precio_segundo')
-      || options.find((o: any) => o.field === 'precio_detalle')
+    return options.find((o: any) => o.field === 'precio_detalle')
       || options.find((o: any) => o.field === 'precio_mayorista')
+      || options.find((o: any) => o.field === 'precio_segundo')
       || options[0]
   }, [getPriceOptions])
 
@@ -1084,16 +1191,14 @@ export default function PuntoDeVentaPage() {
       return
     }
     // stockMap.has() = false cuando el listener aún no cargó (internet lento) → no bloquear
-    const stockKnown = p.stock !== undefined ? true : stockMap.has(p.sku)
-    const stockDisp = p.stock ?? (stockKnown ? (effectiveStockMap.get(p.sku) ?? 0) : 999)
+    const stockDisp = p.stock ?? (effectiveStockMap.get(p.sku) ?? (stockMap.get(p.sku) ?? 0));
     setCart(prev => {
       const existing = prev.find(c => c.sku === p.sku && (c.priceField || '') === (priceOption?.field || ''))
       if (existing) {
-        // Comparar contra stock bruto total, no efectivo
-        const totalStockForSku = stockKnown ? (stockMap.get(p.sku) ?? stockDisp) : stockDisp
-        if (stockKnown && existing.cantidad >= totalStockForSku) {
-          showToast(`Stock insuficiente: solo ${totalStockForSku} ud${totalStockForSku !== 1 ? 's' : ''} disponibles`, 'err')
-          return prev
+        const totalStockForSku = stockMap.get(p.sku) ?? stockDisp;
+        if (existing.cantidad >= totalStockForSku) {
+          showToast(`Stock insuficiente: solo ${totalStockForSku} ud${totalStockForSku !== 1 ? 's' : ''} disponibles`, 'err');
+          return prev;
         }
         return prev.map(c => c.sku === p.sku && (c.priceField || '') === (priceOption?.field || '') ? {
           ...c,
@@ -1101,7 +1206,7 @@ export default function PuntoDeVentaPage() {
           subtotal: (c.cantidad + 1) * c.precioUnitario * (1 - c.descuentoPct / 100),
         } : c)
       }
-      if (stockKnown && stockDisp <= 0) {
+      if (stockDisp <= 0) {
         showToast(`${p.sku} sin stock disponible`, 'err')
         return prev
       }
@@ -1248,14 +1353,14 @@ export default function PuntoDeVentaPage() {
 
   // ─── Caja operations ──────────────────────────────────────────────────────
   const handleAbrirCaja = async () => {
-    if (!db || !sede) return
-    const nombre = posUser ? posUser.nombre : cajeroNombre.trim()
-    const monto = Number(montoApertura) || 0
-    if (!nombre) { showToast('Ingresa el nombre del cajero', 'err'); return }
+    if (!sede) return;
+    const nombre = posUser ? posUser.nombre : (cajeroNombre.trim() || 'Cajera');
+    const monto = Number(montoApertura) || 0;
     try {
-      await authReady
-      const id = genId()
-      const data: any = {
+      await authReady;
+      const id = genId();
+      const sessionData: any = {
+        id,
         sede,
         cajeroNombre: nombre,
         estado: 'abierta',
@@ -1265,18 +1370,24 @@ export default function PuntoDeVentaPage() {
         totalEfectivo: 0,
         totalDebito: 0,
         totalTransferencia: 0,
-        aperturaAt: serverTimestamp(),
+        aperturaAt: Date.now(),
         fechaStr: todayStr(),
-      }
-      await setDoc(doc(db!, 'caja_sesiones', id), data)
-      showToast(`Caja abierta por ${nombre}`, 'ok')
-      setShowApertura(false)
-      setCajeroNombre('')
-      setMontoApertura('')
+      };
+      
+      // Guardar en la nube para que cualquier otro dispositivo sepa que la caja está abierta
+      const activeRef = doc(db, 'caja_sesiones', `active_${sede}`);
+      await setDoc(activeRef, sessionData);
+
+      localStorage.setItem(`yaxsel_pos_caja_session_${sede}`, JSON.stringify(sessionData));
+      setSesionCaja(sessionData);
+      showToast(`Caja abierta por ${nombre} (${fmtCLP(monto)})`, 'ok');
+      setShowApertura(false);
+      setCajeroNombre('');
+      setMontoApertura('');
     } catch (e: any) {
-      showToast(`Error: ${e.message}`, 'err')
+      showToast(`Error abriendo caja: ${e?.message || String(e)}`, 'err');
     }
-  }
+  };
 
   const handleCerrarCaja = async () => {
     if (!db || !sesionCaja) return
@@ -1418,7 +1529,9 @@ export default function PuntoDeVentaPage() {
       await setDoc(reportRef, reportData, { merge: true })
       await setDoc(reportRefNew, reportData, { merge: true })
 
-      await updateDoc(doc(db!, 'caja_sesiones', sesionCaja.id), {
+      const activeRef = doc(db, 'caja_sesiones', `active_${sede}`);
+      await setDoc(activeRef, {
+        ...sesionCaja,
         estado: 'cerrada',
         cierreAt: serverTimestamp(),
         montoCierre: efectivoRealNum,
@@ -1427,40 +1540,55 @@ export default function PuntoDeVentaPage() {
         totalEfectivo,
         totalDebito,
         totalTransferencia,
-      })
+      }, { merge: true });
 
-      showToast('Caja cerrada y corte guardado correctamente', 'ok')
-      setShowCierre(false)
-      setEfectivoReal('')
-      setItemsCierre([])
+      try {
+        await updateDoc(doc(db, 'caja_sesiones', sesionCaja.id), {
+          estado: 'cerrada',
+          cierreAt: serverTimestamp(),
+          montoCierre: efectivoRealNum,
+          ventasCount: ventasCompletadas.length,
+          totalVentas,
+          totalEfectivo,
+          totalDebito,
+          totalTransferencia,
+        });
+      } catch {}
+
+      try { localStorage.removeItem(`yaxsel_pos_caja_session_${sede}`); } catch {}
+      setSesionCaja(null);
+      showToast('Caja cerrada y corte guardado correctamente', 'ok');
+      setShowCierre(false);
+      setEfectivoReal('');
+      setItemsCierre([]);
     } catch (e: any) {
       showToast(`Error: ${e.message}`, 'err')
     }
   }
 
   // ─── Print receipt ─────────────────────────────────────────────────────────
-  const printReceipt = (venta: VentaPOS, existingWindow?: Window | null, esPreVenta = false) => openReceiptPrintWindow({
-    ventaId: venta.id,
-    boletaNumero: Number(venta.boletaNumero) || 0,
-    debitoOrdenNumero: venta.debitoOrdenNumero ?? null,
-    cajero: venta.cajeroNombre,
-    sedeNombre,
-    fecha: venta.fecha?.toDate ? venta.fecha.toDate() : new Date(),
-    subtotal: Number(venta.subtotal || 0),
-    descuentoGlobalPct: Number(venta.descuentoGlobalPct || 0),
-    descuentoGlobal: Number(venta.descuentoGlobal || 0),
-    total: Number(venta.total || 0),
-    vuelto: Number(venta.vuelto || 0),
-    pagos: (venta.pagos || []).map(p => ({ metodo: p.metodo, monto: Number(p.monto || 0) })),
-    items: (venta.items || []).map(it => ({
-      sku: it.sku,
-      nombre: it.nombre,
-      cantidad: Number(it.cantidad || 0),
-      precioUnitario: Number(it.precioUnitario || 0),
-      subtotal: Number(it.subtotal || 0),
-    })),
-    esPreVenta,
-  } as any)
+  const printReceipt = (venta: VentaPOS, existingWindow?: Window | null, esPreVenta = false) => {
+    const formattedData: ReceiptData = {
+      tipoComprobante: 'boleta',
+      folio: Number(venta.boletaNumero) || Math.floor(Math.random() * 90000) + 10000,
+      fechaHora: new Date().toLocaleString('es-CL'),
+      cajeraNombre: venta.cajeroNombre || 'Cajera',
+      sedeNombre,
+      items: (venta.items || []).map(it => ({
+        nombre: it.nombre,
+        cantidad: Number(it.cantidad || 0),
+        precioUnitario: Number(it.precioUnitario || 0),
+        subtotal: Number(it.subtotal || 0),
+      })),
+      subtotal: Number(venta.subtotal || 0),
+      descuentoGlobalMonto: Number(venta.descuentoGlobal || 0),
+      total: Number(venta.total || 0),
+      metodoPago: (venta.pagos || []).map(p => p.metodo).join(' / ') || 'Efectivo',
+      efectivoPagado: Number(venta.total || 0) + Number(venta.vuelto || 0),
+      vuelto: Number(venta.vuelto || 0),
+    };
+    return openReceiptPrintWindow(formattedData, existingWindow);
+  };
 
   // ─── Complete Sale ─────────────────────────────────────────────────────────
   const handleCompleteSale = async () => {
@@ -1495,8 +1623,174 @@ export default function PuntoDeVentaPage() {
     const esCobroPreventa = isJefe && !!cobrandoPreventaId
 
     // Open popup before any async ops so browser doesn't block it
-    const receiptWindow = openReceiptPrintWindow(null as any) as any
+    const receiptWindow = openReceiptPrintWindow(undefined, null)
     setProcessing(true)
+
+    // ═══ Revalidación de Stock y Precios en Tiempo Real antes de Cobrar ═══
+    const finalCartItems: CartItem[] = [];
+    try {
+      const { databases } = getServices();
+      const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28';
+
+      // ═══ OPTIMIZACIÓN CUOTA: Revalidación BATCH (máx. 2 lecturas Appwrite por cobro) ═══
+      // Una sola llamada server-side resuelve TODO el carrito con datos FRESCOS
+      // (sin el caché de 24h del proxy). Si el endpoint falla, cae al modo
+      // legacy (1 lectura por ítem) para nunca bloquear una venta.
+      let batchDocs: any[] | null = null;
+      try {
+        const batchRes = await fetch('/api/pos/revalidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+          body: JSON.stringify({
+            items: cart.map((ci) => ({
+              id: (products.get(ci.sku) || products.get(normSku(ci.sku)))?.$id || '',
+              sku: ci.sku,
+            })),
+          }),
+        });
+        const batchJson = await batchRes.json().catch(() => null);
+        if (batchJson?.ok && Array.isArray(batchJson.docs)) batchDocs = batchJson.docs;
+      } catch {
+        batchDocs = null;
+      }
+      const noticeItems: Array<{
+        sku: string
+        nombre: string
+        imageUrl?: string
+        requestedQty: number
+        realStock: number
+        hasStockIssue: boolean
+        oldPrice: number
+        newPrice: number
+        hasPriceChange: boolean
+        actionTaken: 'removed' | 'adjusted_qty' | 'price_updated' | 'none'
+      }> = [];
+
+      for (let i = 0; i < cart.length; i++) {
+        const item = cart[i];
+        const prod = products.get(item.sku) || products.get(normSku(item.sku));
+        let doc: any = batchDocs ? (batchDocs[i] ?? null) : null;
+
+        // Fallback legacy solo si el batch no está disponible (endpoint caído)
+        if (!batchDocs) {
+          if (prod?.$id) {
+            doc = await databases.getDocument(dbId, 'products', prod.$id).catch(() => null);
+          }
+
+          if (!doc && item.sku) {
+            const listRes = await databases.listDocuments(dbId, 'products', [Query.equal('SKU', item.sku), Query.limit(1)]).catch(() => null);
+            if (listRes && listRes.documents && listRes.documents.length > 0) {
+              doc = listRes.documents[0];
+            }
+          }
+        }
+
+        if (doc) {
+          // 1. Validar Stock Real
+          const currentRealStock = Number(doc.STOCK ?? doc.stock ?? 0);
+          const hasStockIssue = currentRealStock < item.cantidad;
+
+          // 2. Validar y Sincronizar Precio en Tiempo Real
+          const liveDetailPrice = Number(doc.PRICE ?? doc.CURRENTPRICE ?? doc.precio_venta_1 ?? 0);
+          const liveWholesalePrice = Number(doc.WHOLESALEPRICE ?? doc.precio_venta_2 ?? liveDetailPrice);
+          const liveThirdPrice = Number(doc.EMPRENDEDORPRICE ?? doc.precio_venta_3 ?? liveDetailPrice);
+          const liveCost = Number(doc.COST ?? doc.cost ?? 0);
+
+          let livePrice = liveDetailPrice;
+          if (item.priceField === 'precio_mayorista' && liveWholesalePrice > 0) livePrice = liveWholesalePrice;
+          else if (item.priceField === 'precio_segundo' && liveThirdPrice > 0) livePrice = liveThirdPrice;
+
+          const hasPriceChange = livePrice > 0 && livePrice !== item.precioUnitario;
+
+          // Sincronizar estado en memoria del producto (actualiza atajos rápidos y lista al instante)
+          setStockMap((prevMap) => {
+            const nextMap = new Map(prevMap);
+            if (prod?.$id) nextMap.set(prod.$id, currentRealStock);
+            if (item.sku) nextMap.set(item.sku, currentRealStock);
+            nextMap.set(normSku(item.sku), currentRealStock);
+            return nextMap;
+          });
+
+          setProducts((prevMap) => {
+            const nextMap = new Map(prevMap);
+            const updatedProdDoc: ProductDoc = {
+              $id: doc.$id || prod?.$id || item.sku,
+              sku: item.sku,
+              nombre: doc.NAME || doc.name || item.nombre,
+              costo_uni: liveCost,
+              precio_detalle: liveDetailPrice,
+              precio_mayorista: liveWholesalePrice > 0 ? liveWholesalePrice : liveDetailPrice,
+              precio_region: liveThirdPrice > 0 ? liveThirdPrice : liveDetailPrice,
+              precio_segundo: liveThirdPrice > 0 ? liveThirdPrice : liveDetailPrice,
+              imageUrl: doc.IMAGEURL || doc.imageUrl || prod?.imageUrl || '',
+              codigo_barra: (doc.BARCODE || doc.barcode || prod?.codigo_barra || '').trim(),
+            };
+            if (prod?.$id) nextMap.set(prod.$id, updatedProdDoc);
+            if (item.sku) nextMap.set(item.sku, updatedProdDoc);
+            nextMap.set(normSku(item.sku), updatedProdDoc);
+            return nextMap;
+          });
+
+          // Determinar cantidad real y acción tomada
+          let targetQty = item.cantidad;
+          let actionTaken: 'removed' | 'adjusted_qty' | 'price_updated' | 'none' = 'none';
+
+          if (currentRealStock <= 0) {
+            targetQty = 0;
+            actionTaken = 'removed';
+          } else if (currentRealStock < item.cantidad) {
+            targetQty = currentRealStock;
+            actionTaken = 'adjusted_qty';
+          } else if (hasPriceChange) {
+            actionTaken = 'price_updated';
+          }
+
+          const activePrice = livePrice > 0 ? livePrice : item.precioUnitario;
+          const subtotal = Math.round(activePrice * targetQty * (1 - (item.descuentoPct || 0) / 100));
+
+          if (targetQty > 0) {
+            finalCartItems.push({
+              ...item,
+              cantidad: targetQty,
+              precioUnitario: activePrice,
+              costoUnitario: liveCost,
+              subtotal,
+              stockDisponible: currentRealStock,
+            });
+          }
+
+          if (hasStockIssue || hasPriceChange) {
+            noticeItems.push({
+              sku: item.sku,
+              nombre: item.nombre,
+              imageUrl: prod?.imageUrl,
+              requestedQty: item.cantidad,
+              realStock: currentRealStock,
+              hasStockIssue,
+              oldPrice: item.precioUnitario,
+              newPrice: activePrice,
+              hasPriceChange,
+              actionTaken,
+            });
+          }
+        } else {
+          finalCartItems.push(item);
+        }
+      }
+
+      if (noticeItems.length > 0) {
+        setProcessing(false);
+        if (receiptWindow) receiptWindow.close();
+        setCart(finalCartItems);
+        setRevalidationNotice({ items: noticeItems });
+        triggerFullCatalogRefresh();
+        return;
+      }
+    } catch (err) {
+      console.warn('Advertencia en revalidación de stock y precios:', err);
+    }
+
     try {
       await authReady
       const ventaId = esCobroPreventa ? cobrandoPreventaId! : genId()
@@ -1506,7 +1800,7 @@ export default function PuntoDeVentaPage() {
         sesionCajaId: sesionCaja.id,
         fecha: serverTimestamp(),
         fechaStr: todayStr(),
-        items: cart.map(c => ({
+        items: finalCartItems.map((c: CartItem) => ({
           sku: c.sku,
           nombre: c.nombre,
           cantidad: c.cantidad,
@@ -1515,10 +1809,10 @@ export default function PuntoDeVentaPage() {
           descuentoPct: c.descuentoPct,
           subtotal: Math.round(c.subtotal),
         })),
-        subtotal: Math.round(subtotalCart),
+        subtotal: Math.round(finalCartItems.reduce((sum: number, item: CartItem) => sum + item.subtotal, 0)),
         descuentoGlobalPct,
         descuentoGlobal: descuentoGlobalMonto,
-        total: totalCart,
+        total: Math.max(0, Math.round(finalCartItems.reduce((sum: number, item: CartItem) => sum + item.subtotal, 0)) - descuentoGlobalMonto),
         pagos: esPreVenta ? [] : finalPagos.map(p => ({ metodo: p.metodo, monto: Math.round(p.monto) })),
         vuelto: esPreVenta ? 0 : (splitMode ? Math.max(0, totalPagado - totalCart) : Math.max(0, (Number(montoRecibido) || totalCart) - totalCart)),
         estado: esPreVenta ? 'pre_venta' : 'completada',
@@ -1540,22 +1834,15 @@ export default function PuntoDeVentaPage() {
         await setDoc(doc(db!, 'ventas_pos', ventaId), ventaData)
       } else {
         // VENTA NORMAL o cobro de pre-venta: descontar stock + actualizar caja
-        const stockUpdates = cart.map(async (item) => {
-          const stockId = `${sede}__${item.sku}`
-          const stockRef = doc(db!, 'stock', stockId)
-          try {
-            await updateDoc(stockRef, { stock: increment(-item.cantidad) })
-          } catch {
-            try {
-              const snap = await getDoc(stockRef)
-              if (!snap.exists()) {
-                await setDoc(stockRef, { sku: item.sku, sede, stock: -item.cantidad })
-              }
-            } catch {}
-          }
-        })
-        await Promise.all(stockUpdates)
-
+        // Deduct sold quantities from local stockMap state
+        setStockMap((prevMap) => {
+          const nextMap = new Map(prevMap);
+          cart.forEach((item) => {
+            const currentStock = nextMap.get(item.sku) || 0;
+            nextMap.set(item.sku, Math.max(0, currentStock - item.cantidad));
+          });
+          return nextMap;
+        });
         const efectivoTotal = finalPagos.filter(p => p.metodo === 'efectivo').reduce((s, p) => s + p.monto, 0)
         const debitoTotal = finalPagos.filter(p => p.metodo === 'debito').reduce((s, p) => s + p.monto, 0)
         const transTotal = finalPagos.filter(p => p.metodo === 'transferencia').reduce((s, p) => s + p.monto, 0)
@@ -1569,13 +1856,18 @@ export default function PuntoDeVentaPage() {
         } else {
           await setDoc(doc(db!, 'ventas_pos', ventaId), ventaData)
         }
-        await updateDoc(doc(db!, 'caja_sesiones', sesionCaja.id), {
-          ventasCount: increment(1),
-          totalVentas: increment(totalCart),
-          totalEfectivo: increment(efectivoTotal),
-          totalDebito: increment(debitoTotal),
-          totalTransferencia: increment(transTotal),
-        })
+        if (sesionCaja) {
+          const updatedSession: SesionCaja = {
+            ...sesionCaja,
+            ventasCount: (sesionCaja.ventasCount || 0) + 1,
+            totalVentas: (sesionCaja.totalVentas || 0) + totalCart,
+            totalEfectivo: (sesionCaja.totalEfectivo || 0) + efectivoTotal,
+            totalDebito: (sesionCaja.totalDebito || 0) + debitoTotal,
+            totalTransferencia: (sesionCaja.totalTransferencia || 0) + transTotal,
+          };
+          setSesionCaja(updatedSession);
+          try { localStorage.setItem(`yaxsel_pos_caja_session_${sede}`, JSON.stringify(updatedSession)); } catch {}
+        }
       }
 
       // Print receipt
@@ -1805,25 +2097,25 @@ export default function PuntoDeVentaPage() {
   // ─── RENDER ────────────────────────────────────────────────────────────────
   if (!sede || !SEDES[sede]) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-md w-full shadow-xl shadow-slate-100">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
-              <Store size={20} className="text-white" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <Store size={22} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">Punto de Venta</h1>
+            <h1 className="text-2xl font-bold text-white">Punto de Venta</h1>
           </div>
-          <p className="text-slate-500 text-sm mb-6 ml-1">Selecciona la sucursal para abrir el POS:</p>
+          <p className="text-slate-400 text-sm mb-6 ml-1">Selecciona la sucursal para abrir el POS:</p>
           <div className="space-y-3">
             {Object.entries(SEDES).map(([slug, name]) => (
               <button key={slug} onClick={() => router.push(`/pos/${slug}`)}
-                className="w-full flex items-center gap-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-xl px-4 py-4 text-left transition-all group shadow-sm hover:shadow-md">
-                <div className="w-9 h-9 rounded-lg bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center shrink-0 transition">
-                  <Store size={18} className="text-blue-600" />
+                className="w-full flex items-center gap-3 bg-white/5 hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-400/50 rounded-2xl px-4 py-4 text-left transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 group-hover:bg-indigo-500/30 flex items-center justify-center shrink-0 transition">
+                  <Store size={18} className="text-indigo-300" />
                 </div>
                 <div>
-                  <div className="text-slate-800 font-semibold">{name}</div>
-                  <div className="text-slate-400 text-xs">{slug}</div>
+                  <div className="text-white font-semibold">{name}</div>
+                  <div className="text-slate-500 text-xs">{slug}</div>
                 </div>
               </button>
             ))}
@@ -1836,14 +2128,13 @@ export default function PuntoDeVentaPage() {
   // ─── POS Loading Screen ────────────────────────────────────────────────────
   if (loginLoading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <div className="w-48 h-48 sm:w-64 sm:h-64">
-          <RefreshCw className='animate-spin' />
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-5">
+          <Store size={28} className="text-white" />
         </div>
-        <p className="mt-4 text-sm text-gray-500 font-medium animate-pulse">Cargando punto de venta...</p>
-        {/* Barra de progreso indeterminada */}
-        <div className="mt-3 w-48 sm:w-64 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 animate-[loadingBar_1.5s_ease-in-out_infinite] rounded-full" style={{ width: '40%' }} />
+        <p className="text-sm text-slate-300 font-medium animate-pulse">Cargando punto de venta...</p>
+        <div className="mt-4 w-48 sm:w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-indigo-400 to-violet-500 animate-[loadingBar_1.5s_ease-in-out_infinite] rounded-full" style={{ width: '40%' }} />
         </div>
         <style>{`
           @keyframes loadingBar {
@@ -1861,19 +2152,19 @@ export default function PuntoDeVentaPage() {
   if (!posUser && anyHasPassword && !loginLoading) {
     const selectedUser = loginUsers.find(u => u.id === loginSelected)
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50/30 flex flex-col items-center justify-center px-4 py-8">
-        <button onClick={() => router.push(`/pos-admin/${sede || 'alameda'}`)} className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center px-4 py-8">
+        <button onClick={() => router.push(`/pos-admin/${sede || 'chacabuco-08'}`)} className="absolute top-4 left-4 text-slate-400 hover:text-white transition">
           <ChevronLeft size={24} />
         </button>
 
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4">
             <Store size={28} className="text-white" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Punto de Venta</h2>
-          <p className="text-sm text-gray-500 mt-1">{sedeNombre}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Selecciona tu cuenta para ingresar</p>
+          <h2 className="text-xl font-bold text-white">Punto de Venta</h2>
+          <p className="text-sm text-slate-400 mt-1">{sedeNombre}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Selecciona tu cuenta para ingresar</p>
         </div>
 
         {!loginSelected ? (
@@ -1966,11 +2257,11 @@ export default function PuntoDeVentaPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 text-gray-900 overflow-hidden select-none">
+    <div className="h-screen flex flex-col bg-slate-100 text-gray-900 overflow-hidden select-none">
       {/* ─── Top Bar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between bg-white border-b border-gray-200 px-3 lg:px-6 py-2.5 lg:py-3 shrink-0 shadow-sm">
+      <div className="flex items-center justify-between bg-white border-b border-slate-200 px-3 lg:px-5 py-2 lg:py-2.5 shrink-0 shadow-sm z-30">
         <div className="flex items-center gap-2 lg:gap-4 min-w-0">
-          <button onClick={() => router.push(`/pos-admin/${sede || 'alameda'}`)} className="text-gray-400 hover:text-gray-600 transition shrink-0">
+          <button onClick={() => router.push(`/pos-admin/${sede || 'chacabuco-08'}`)} className="text-gray-400 hover:text-gray-600 transition shrink-0">
             <ChevronLeft size={22} />
           </button>
           {/* Mobile: user avatar + name + sucursal */}
@@ -1978,9 +2269,9 @@ export default function PuntoDeVentaPage() {
             {posUser ? (
               <>
                 {posUser.fotoUrl ? (
-                  <img src={posUser.fotoUrl} alt={posUser.nombre} className="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-gray-200" />
+                  <img src={posUser.fotoUrl} alt={posUser.nombre} className="w-9 h-9 rounded-full object-cover shrink-0 ring-2 ring-indigo-200" />
                 ) : (
-                  <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white ${posUser.role === 'cajera' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
+                  <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white ring-2 ring-indigo-200 ${posUser.role === 'cajera' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' : 'bg-gradient-to-br from-indigo-500 to-violet-500'}`}>
                     {posUser.nombre.charAt(0)}
                   </div>
                 )}
@@ -2000,15 +2291,15 @@ export default function PuntoDeVentaPage() {
           {posUser && (
             <div className="hidden lg:flex items-center gap-3 min-w-0">
               {posUser.fotoUrl ? (
-                <img src={posUser.fotoUrl} alt={posUser.nombre} className="w-14 h-14 rounded-full object-cover ring-4 ring-sky-200 shadow-md" />
+                <img src={posUser.fotoUrl} alt={posUser.nombre} className="w-12 h-12 rounded-2xl object-cover ring-2 ring-indigo-200 shadow-md" />
               ) : (
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-md ${posUser.role === 'cajera' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-md ${posUser.role === 'cajera' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' : 'bg-gradient-to-br from-indigo-500 to-violet-500'}`}>
                   {posUser.nombre.charAt(0)}
                 </div>
               )}
               <div className="min-w-0">
-                <div className="font-bold text-lg text-gray-900 truncate">{posUser.nombre}</div>
-                <div className="text-xs text-gray-500">{sedeNombre}</div>
+                <div className="font-bold text-base text-gray-900 truncate leading-tight">{posUser.nombre}</div>
+                <div className="text-[11px] text-gray-500">{sedeNombre} · Punto de Venta</div>
               </div>
             </div>
           )}
@@ -2187,22 +2478,22 @@ export default function PuntoDeVentaPage() {
       )}
 
       {/* ─── Main area: 3 columns (desktop) / tabs (mobile) ─────────────── */}
-      <div className="flex-1 flex overflow-hidden min-h-0 pb-14 lg:pb-0">
+      <div className={`flex-1 flex overflow-hidden min-h-0 lg:pb-0 ${cart.length > 0 && mobileTab !== 'payment' ? 'pb-[134px]' : 'pb-[70px]'}`}>
 
         {/* ═══ LEFT: Products search + grid ═══════════════════════════════ */}
         <div className={`flex-1 flex flex-col border-r border-gray-200 min-w-0 bg-gradient-to-b from-slate-50 to-blue-50/30 lg:bg-white ${mobileTab !== 'products' ? 'hidden lg:flex' : 'flex'}`}>
           {/* Search bar */}
-          <div className="p-3 lg:p-4 border-b border-blue-100 lg:border-gray-200 bg-white/80 lg:bg-white backdrop-blur-sm">
+          <div className="p-3 lg:p-4 border-b border-slate-200 bg-white">
             <div className="relative">
-              <ScanBarcode size={18} className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-blue-400 lg:text-gray-400" />
+              <ScanBarcode size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400" />
               <input
                 ref={searchRef}
                 type="text"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Buscar producto..."
-                className="w-full bg-white border-2 border-blue-200 lg:border-gray-300 rounded-xl pl-10 lg:pl-12 pr-10 lg:pr-12 py-3 lg:py-3.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm lg:text-base shadow-sm"
+                placeholder="Buscar o escanear producto…"
+                className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl pl-12 pr-12 py-3.5 lg:py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 text-base lg:text-lg font-medium shadow-sm transition-all"
                 autoComplete="off"
               />
               {searchTerm ? (
@@ -2229,23 +2520,19 @@ export default function PuntoDeVentaPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] lg:text-xs text-gray-500">Ocultar sin stock</span>
-              <button onClick={() => setHideNoStock(v => !v)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hideNoStock ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${hideNoStock ? 'translate-x-4' : 'translate-x-0'}`} />
-              </button>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] lg:text-xs text-gray-500" title="Sincroniza el carrito entre telefono y PC">Sync multi-dispositivo</span>
-              <button onClick={toggleCartSync} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${cartSyncEnabled && !modoLento ? 'bg-emerald-500' : 'bg-gray-300'}`}>
-                <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cartSyncEnabled && !modoLento ? 'translate-x-4' : 'translate-x-0'}`} />
-              </button>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] lg:text-xs text-amber-600 font-semibold" title="Desactiva sync y reduce consultas. Ideal con internet lento">Modo internet lento</span>
-              <button onClick={toggleModoLento} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${modoLento ? 'bg-amber-400' : 'bg-gray-300'}`}>
-                <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${modoLento ? 'translate-x-4' : 'translate-x-0'}`} />
-              </button>
+            <div className="flex items-center justify-between gap-3 mt-2.5 px-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <button onClick={() => setHideNoStock(v => !v)} className={`relative w-10 h-[22px] rounded-full transition-colors shrink-0 ${hideNoStock ? 'bg-indigo-500' : 'bg-gray-300'}`}>
+                  <div className={`absolute top-[3px] left-[3px] w-4 h-4 bg-white rounded-full shadow transition-transform ${hideNoStock ? 'translate-x-[18px]' : 'translate-x-0'}`} />
+                </button>
+                <span className="text-[11px] lg:text-xs text-gray-600 font-medium">Ocultar sin stock</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer" title="Sincroniza el carrito entre teléfono y PC en tiempo real (Firebase, 0 lecturas Appwrite)">
+                <span className="text-[11px] lg:text-xs text-gray-600 font-medium">Sync multi-dispositivo</span>
+                <button onClick={toggleCartSync} className={`relative w-10 h-[22px] rounded-full transition-colors shrink-0 ${cartSyncEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                  <div className={`absolute top-[3px] left-[3px] w-4 h-4 bg-white rounded-full shadow transition-transform ${cartSyncEnabled ? 'translate-x-[18px]' : 'translate-x-0'}`} />
+                </button>
+              </label>
             </div>
           </div>
 
@@ -2286,35 +2573,39 @@ export default function PuntoDeVentaPage() {
                     <span className="text-[10px] lg:text-xs text-gray-500 mt-1">Escanea código o escribe nombre</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-1.5 lg:gap-2">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 lg:gap-2.5">
                     {quickTopProducts.map((p) => {
                       return (
                       <button
                         key={p.sku}
                         onClick={() => addToCart(p, selectedPriceBySku[p.sku] || getDefaultPriceOption(p)?.field)}
-                        className="w-full rounded-lg border border-gray-200 bg-white hover:bg-blue-50 hover:border-blue-300 active:scale-[0.97] px-2 py-2 lg:px-2.5 lg:py-2.5 text-left transition-all duration-150 relative overflow-hidden"
+                        className="w-full rounded-2xl border border-slate-200 bg-white hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100 active:scale-[0.96] p-2.5 text-left transition-all duration-150 relative overflow-hidden group"
                       >
-                        {p.imageUrl && (
+                        {p.imageUrl ? (
                           <img
                             src={p.imageUrl} alt={p.nombre}
-                            className="w-full h-20 object-cover rounded-md mb-1.5 cursor-zoom-in active:scale-95 transition-transform"
+                            className="w-full h-24 lg:h-28 object-cover rounded-xl mb-2 cursor-zoom-in active:scale-95 transition-transform bg-slate-50"
                             loading="lazy"
                             onClick={e => { e.stopPropagation(); setLightboxUrl(p.imageUrl!) }}
                           />
+                        ) : (
+                          <div className="w-full h-24 lg:h-28 rounded-xl mb-2 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+                            <Package size={28} className="text-slate-300" />
+                          </div>
                         )}
-                        <div className="font-semibold text-gray-900 text-[11px] lg:text-[12px] leading-tight line-clamp-1 mb-1">{p.nombre}</div>
+                        <div className="font-semibold text-gray-900 text-[12px] lg:text-[13px] leading-tight line-clamp-2 mb-1.5 min-h-[2.2em]">{p.nombre}</div>
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-[11px] lg:text-xs text-blue-600">{fmtCLP(getPrice(p))}</span>
-                          <span className="text-[8px] lg:text-[9px] text-gray-400">{fmtN(p.cantidadVendidaHoy)}x</span>
+                          <span className="font-extrabold text-sm lg:text-base text-indigo-600">{fmtCLP(getPrice(p))}</span>
+                          <span className="text-[9px] text-gray-400 font-semibold">{fmtN(p.cantidadVendidaHoy)}x hoy</span>
                         </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="font-mono text-[8px] text-gray-400">{p.sku}</span>
-                          <div className={`px-1 py-0 rounded text-[8px] font-bold ${
-                            p.stock > 10 ? 'bg-green-100 text-green-700' :
+                        <div className="flex items-center justify-between mt-1.5">
+                          <span className="font-mono text-[9px] text-gray-400">{p.sku}</span>
+                          <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                            p.stock > 10 ? 'bg-emerald-100 text-emerald-700' :
                             p.stock > 0 ? 'bg-amber-100 text-amber-700' :
                             'bg-red-100 text-red-700'
                           }`}>
-                            {p.stock > 0 ? `${fmtN(p.stock)}u` : '0'}
+                            {p.stock > 0 ? `${fmtN(p.stock)} uds` : 'Agotado'}
                           </div>
                         </div>
                         {getPriceOptions(p).length > 1 && (
@@ -2323,7 +2614,7 @@ export default function PuntoDeVentaPage() {
                             value={selectedPriceBySku[p.sku] || getDefaultPriceOption(p)?.field || ''}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => { e.stopPropagation(); setSelectedPriceBySku(prev => ({ ...prev, [p.sku]: e.target.value })) }}
-                            className="w-full bg-gray-50 border border-gray-200 rounded px-1 py-0.5 text-[9px] text-gray-600 mt-1"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-[10px] text-gray-600 mt-1.5"
                           >
                             {getPriceOptions(p).map((opt) => (
                               <option key={opt.field} value={opt.field}>{opt.label} · {fmtCLP(opt.value)}</option>
@@ -2339,28 +2630,30 @@ export default function PuntoDeVentaPage() {
             )}
             {filteredProducts.map(p => (
               <button key={p.sku} onClick={() => addToCart(p, selectedPriceBySku[p.sku] || getDefaultPriceOption(p)?.field)}
-                className="w-full animated-gradient bg-gradient-to-r from-white via-sky-50/30 to-white hover:bg-white/90 border border-sky-100/30 hover:border-sky-200/50 rounded-xl text-left transition-all duration-200 group shadow-sm hover:shadow-md active:scale-[0.98] overflow-hidden">
+                className="w-full bg-white hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-300 rounded-2xl text-left transition-all duration-150 group shadow-sm hover:shadow-md active:scale-[0.98] overflow-hidden">
                 <div className="flex items-stretch">
-                  {/* Color accent bar on mobile */}
-                  <div className="w-1 lg:w-0 bg-gradient-to-b from-sky-300 to-sky-400 shrink-0 rounded-l-xl" />
-                  <div className="flex-1 flex items-center gap-2.5 px-3 py-3">
+                  <div className="flex-1 flex items-center gap-3 px-3.5 py-3.5">
                     {/* Imagen del producto */}
-                    {p.imageUrl && (
+                    {p.imageUrl ? (
                       <img
                         src={p.imageUrl} alt={p.nombre}
-                        className="w-12 h-12 lg:w-14 lg:h-14 rounded-lg object-cover shrink-0 border border-gray-100 active:scale-95 transition-transform cursor-zoom-in"
+                        className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl object-cover shrink-0 border border-slate-100 active:scale-95 transition-transform cursor-zoom-in bg-slate-50"
                         loading="lazy"
                         onClick={e => { e.stopPropagation(); setLightboxUrl(p.imageUrl!) }}
                       />
+                    ) : (
+                      <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                        <Package size={22} className="text-slate-300" />
+                      </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 text-[13px] lg:text-sm leading-snug line-clamp-2 mb-1">{p.nombre}</div>
+                      <div className="font-semibold text-gray-900 text-sm lg:text-[15px] leading-snug line-clamp-2 mb-1">{p.nombre}</div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-blue-600 font-bold text-sm">{fmtCLP(getPrice(p))}</span>
+                        <span className="text-indigo-600 font-extrabold text-base lg:text-lg">{fmtCLP(getPrice(p))}</span>
                         <span className="font-mono text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{p.sku}</span>
                         {p.costo_uni > 0 && <span className="text-gray-400 text-[9px] hidden sm:inline">C: {fmtCLP(p.costo_uni)}</span>}
-                        <div className={`shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
-                          p.stock > 10 ? 'bg-green-100 text-green-700' :
+                        <div className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          p.stock > 10 ? 'bg-emerald-100 text-emerald-700' :
                           p.stock > 0 ? 'bg-amber-100 text-amber-700' :
                           'bg-red-100 text-red-700'
                         }`}>
@@ -2383,8 +2676,8 @@ export default function PuntoDeVentaPage() {
                         </div>
                       )}
                     </div>
-                    <div className="w-9 h-9 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors">
-                      <Plus size={18} className="text-blue-500 group-hover:text-blue-600" />
+                    <div className="w-11 h-11 rounded-2xl bg-indigo-50 group-hover:bg-indigo-500 flex items-center justify-center shrink-0 transition-colors self-center">
+                      <Plus size={22} className="text-indigo-500 group-hover:text-white" />
                     </div>
                   </div>
                 </div>
@@ -2402,14 +2695,16 @@ export default function PuntoDeVentaPage() {
         </div>
 
         {/* ═══ CENTER: Cart ═══════════════════════════════════════════════ */}
-        <div className={`w-full lg:w-[420px] flex-col bg-white border-r border-gray-200 lg:shrink-0 ${mobileTab !== 'cart' ? 'hidden lg:flex' : 'flex'}`}>
+        <div className={`w-full lg:w-[440px] flex-col bg-white border-r border-slate-200 lg:shrink-0 ${mobileTab !== 'cart' ? 'hidden lg:flex' : 'flex'}`}>
           {/* Cart header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <ShoppingCart size={20} className="text-blue-600" />
+          <div className="flex items-center justify-between px-4 lg:px-5 py-3.5 border-b border-slate-200 bg-white">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <ShoppingCart size={18} className="text-indigo-600" />
+              </div>
               <span className="font-bold text-lg text-gray-900">Carrito</span>
               {totalItemsCount > 0 && (
-                <span className="bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-bold">{totalItemsCount}</span>
+                <span className="bg-indigo-600 text-white text-xs px-2.5 py-1 rounded-full font-bold">{totalItemsCount}</span>
               )}
               {cart.length > 0 && (
                 <button
@@ -2438,7 +2733,7 @@ export default function PuntoDeVentaPage() {
           </div>
 
           {/* Cart items */}
-          <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="flex-1 overflow-y-auto bg-slate-50">
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
                 <ShoppingCart size={48} className="mb-3 opacity-20" />
@@ -2446,16 +2741,16 @@ export default function PuntoDeVentaPage() {
                 <span className="text-sm text-gray-400 mt-1">Agrega productos para comenzar</span>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-slate-100">
                 {cart.map((item, idx) => (
-                  <div key={`${item.sku}-${item.priceField || 'default'}`} className="px-4 py-3 hover:bg-white/80 transition animated-gradient bg-gradient-to-r from-white via-sky-50/30 to-white border-b border-sky-100/30">
+                  <div key={`${item.sku}-${item.priceField || 'default'}`} className="px-4 py-3.5 bg-white hover:bg-indigo-50/40 transition border-b border-slate-100">
                     <div className="flex items-start gap-3">
-                      <span className="text-gray-400 text-xs mt-1 w-5 text-right shrink-0 font-medium">{idx + 1}</span>
+                      <span className="text-gray-300 text-xs mt-1.5 w-4 text-right shrink-0 font-bold">{idx + 1}</span>
                       {products.get(item.sku)?.imageUrl && (
                         <img
                           src={products.get(item.sku)!.imageUrl}
                           alt={item.nombre}
-                          className="w-10 h-10 rounded-lg object-cover shrink-0 border border-gray-100 cursor-zoom-in active:scale-95 transition-transform mt-0.5"
+                          className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-100 cursor-zoom-in active:scale-95 transition-transform mt-0.5 bg-slate-50"
                           loading="lazy"
                           onClick={() => setLightboxUrl(products.get(item.sku)!.imageUrl!)}
                         />
@@ -2484,31 +2779,31 @@ export default function PuntoDeVentaPage() {
                         <X size={16} />
                       </button>
                     </div>
-                    <div className="flex items-center justify-between mt-2 ml-8">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-between mt-2.5 ml-7">
+                      <div className="flex items-center gap-2">
                         <button onClick={() => updateCartQty(item.sku, item.priceField, -1)}
-                          className="w-8 h-8 rounded-lg bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-gray-700">
-                          <Minus size={14} />
+                          className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200 active:scale-90 flex items-center justify-center text-gray-700 transition">
+                          <Minus size={16} />
                         </button>
                         <input type="number" value={item.cantidad} min={1} max={stockMap.get(item.sku) ?? item.stockDisponible}
                           onChange={e => setCartQty(item.sku, item.priceField, Number(e.target.value))}
-                          className="w-14 bg-white border border-gray-300 rounded-lg text-center text-sm text-gray-900 font-semibold py-1.5 focus:outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="w-16 bg-white border-2 border-slate-200 rounded-xl text-center text-base text-gray-900 font-bold py-2 focus:outline-none focus:border-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         <button onClick={() => updateCartQty(item.sku, item.priceField, 1)}
-                          className="w-8 h-8 rounded-lg bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-gray-700">
-                          <Plus size={14} />
+                          className="w-10 h-10 rounded-xl bg-indigo-100 border border-indigo-200 hover:bg-indigo-200 active:scale-90 flex items-center justify-center text-indigo-700 transition">
+                          <Plus size={16} />
                         </button>
                         {/* Discount */}
-                        <div className="flex items-center gap-1 ml-2">
+                        <div className="flex items-center gap-1 ml-1 bg-orange-50 border border-orange-200 rounded-xl px-2 py-1">
                           <Percent size={12} className="text-orange-500" />
                           <input type="number" value={item.descuentoPct || ''} min={0} max={100}
                             placeholder="0"
                             onChange={e => setCartDiscount(item.sku, item.priceField, Number(e.target.value))}
-                            className="w-12 bg-white border border-gray-300 rounded-lg text-center text-xs text-orange-600 font-semibold py-1.5 focus:outline-none focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-10 bg-transparent text-center text-sm text-orange-600 font-bold py-1 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
                       </div>
-                      <span className="font-bold text-gray-900 text-base">{fmtCLP(item.subtotal)}</span>
+                      <span className="font-extrabold text-gray-900 text-lg">{fmtCLP(item.subtotal)}</span>
                     </div>
                   </div>
                 ))}
@@ -2518,8 +2813,8 @@ export default function PuntoDeVentaPage() {
 
           {/* Cart totals */}
           {cart.length > 0 && (
-            <div className="border-t border-gray-200 bg-white px-5 py-4 space-y-3">
-              <div className="flex justify-between text-sm text-gray-600">
+            <div className="border-t border-slate-200 bg-white px-5 py-4 space-y-3 shadow-[0_-8px_24px_rgba(0,0,0,0.04)]">
+              <div className="flex justify-between text-sm text-gray-500">
                 <span>Subtotal ({totalItemsCount} items)</span>
                 <span className="font-semibold text-gray-900">{fmtCLP(subtotalCart)}</span>
               </div>
@@ -2539,9 +2834,9 @@ export default function PuntoDeVentaPage() {
                   <span className="text-orange-600 font-semibold">-{fmtCLP(descuentoGlobalMonto)}</span>
                 )}
               </div>
-              <div className="flex justify-between text-2xl font-bold pt-2 border-t border-gray-200">
-                <span className="text-gray-700">TOTAL</span>
-                <span className="text-blue-600">{fmtCLP(totalCart)}</span>
+              <div className="flex justify-between items-center text-2xl font-black pt-3 border-t border-slate-200">
+                <span className="text-gray-800">TOTAL</span>
+                <span className="text-indigo-600">{fmtCLP(totalCart)}</span>
               </div>
             </div>
           )}
@@ -2691,18 +2986,18 @@ export default function PuntoDeVentaPage() {
             </div>
             <div className="grid grid-cols-3 gap-2">
               {([
-                { key: 'efectivo' as MetodoPago, icon: <Banknote size={20} />, label: 'Efectivo', color: 'green' },
-                { key: 'debito' as MetodoPago, icon: <CreditCard size={20} />, label: 'Débito', color: 'blue' },
-                { key: 'transferencia' as MetodoPago, icon: <ArrowRightLeft size={20} />, label: 'Transfer', color: 'purple' },
+                { key: 'efectivo' as MetodoPago, icon: <Banknote size={24} />, label: 'Efectivo', activeCls: 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-md shadow-emerald-100' },
+                { key: 'debito' as MetodoPago, icon: <CreditCard size={24} />, label: 'Débito', activeCls: 'bg-blue-50 border-blue-500 text-blue-700 shadow-md shadow-blue-100' },
+                { key: 'transferencia' as MetodoPago, icon: <ArrowRightLeft size={24} />, label: 'Transfer', activeCls: 'bg-violet-50 border-violet-500 text-violet-700 shadow-md shadow-violet-100' },
               ]).map(m => (
                 <button key={m.key} onClick={() => setPagoActivo(m.key)}
-                  className={`flex flex-col items-center gap-2 py-3.5 rounded-xl border-2 transition-all ${
+                  className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all active:scale-95 ${
                     pagoActivo === m.key
-                      ? `bg-${m.color}-50 border-${m.color}-500 text-${m.color}-700`
-                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                      ? m.activeCls
+                      : 'bg-white border-slate-200 text-gray-500 hover:border-slate-300'
                   }`}>
                   {m.icon}
-                  <span className="text-xs font-semibold">{m.label}</span>
+                  <span className="text-xs font-bold">{m.label}</span>
                 </button>
               ))}
             </div>
@@ -2722,12 +3017,12 @@ export default function PuntoDeVentaPage() {
                 <div className="flex flex-wrap gap-2 mt-3">
                   {quickAmounts.map(a => (
                     <button key={a} onClick={() => setMontoRecibido(String(a))}
-                      className="bg-gray-100 hover:bg-blue-100 border border-gray-300 hover:border-blue-400 rounded-lg px-3 py-2 text-xs text-gray-700 font-bold transition">
+                      className="bg-slate-100 hover:bg-indigo-100 border border-slate-200 hover:border-indigo-400 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 font-bold transition active:scale-95">
                       {fmtN(a)}
                     </button>
                   ))}
                   <button onClick={() => setMontoRecibido(String(totalCart))}
-                    className="bg-green-100 hover:bg-green-200 border border-green-400 rounded-lg px-3 py-2 text-xs text-green-700 font-bold transition">
+                    className="bg-emerald-100 hover:bg-emerald-200 border border-emerald-400 rounded-xl px-3.5 py-2.5 text-sm text-emerald-700 font-extrabold transition active:scale-95">
                     Exacto
                   </button>
                 </div>
@@ -2797,15 +3092,15 @@ export default function PuntoDeVentaPage() {
             <button
               onClick={handleCompleteSale}
               disabled={cart.length === 0 || !sesionCaja || processing}
-              className={`w-full py-4 rounded-xl text-lg font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`w-full py-5 rounded-2xl text-xl font-black tracking-wide transition-all flex items-center justify-center gap-3 ${
                 cart.length > 0 && sesionCaja && !processing
-                  ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200 active:scale-[0.98]'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-xl shadow-emerald-200 active:scale-[0.97]'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}>
               {processing ? (
-                <><Loader2 size={20} className="animate-spin" /> Procesando...</>
+                <><Loader2 size={22} className="animate-spin" /> Procesando...</>
               ) : (
-                <><Receipt size={20} /> COBRAR {totalCart > 0 ? fmtCLP(totalCart) : ''}</>
+                <><Receipt size={22} /> COBRAR {totalCart > 0 ? fmtCLP(totalCart) : ''}</>
               )}
             </button>
             {!sesionCaja && cart.length > 0 && (
@@ -2886,29 +3181,48 @@ export default function PuntoDeVentaPage() {
         </div>
       </div>
 
+      {/* ═══ MOBILE: sticky total bar (confort cajera: total + cobro siempre visible) ═══ */}
+      {cart.length > 0 && mobileTab !== 'payment' && (
+        <div className="fixed bottom-[64px] left-0 right-0 lg:hidden z-40 px-3 pb-2">
+          <button
+            onClick={() => setMobileTab('payment')}
+            className="w-full flex items-center justify-between bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl px-5 py-3.5 shadow-xl shadow-emerald-500/30 active:scale-[0.98] transition-transform"
+          >
+            <span className="flex items-center gap-2 text-sm font-bold">
+              <ShoppingCart size={18} />
+              {totalItemsCount} ítem{totalItemsCount !== 1 ? 's' : ''}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="text-lg font-black tabular-nums">{fmtCLP(totalCart)}</span>
+              <span className="bg-white/25 rounded-lg px-2.5 py-1 text-xs font-extrabold">COBRAR →</span>
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* ═══ MOBILE BOTTOM NAV ═══════════════════════════════════════════ */}
-      <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/95 backdrop-blur-lg border-t border-blue-100 flex z-40 shadow-[0_-4px_20px_rgba(59,130,246,0.1)]">
+      <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/95 backdrop-blur-lg border-t border-slate-200 flex z-40 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <button
           onClick={() => setMobileTab('products')}
-          className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold transition-all duration-200 relative ${
-            mobileTab === 'products' ? 'text-blue-600' : 'text-gray-400'
+          className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-bold transition-all duration-200 relative ${
+            mobileTab === 'products' ? 'text-indigo-600' : 'text-gray-400'
           }`}
         >
-          {mobileTab === 'products' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-500 rounded-full" />}
-          <div className={`p-1.5 rounded-lg transition-all ${mobileTab === 'products' ? 'bg-blue-100 scale-110' : ''}`}>
-            <ScanBarcode size={19} />
+          {mobileTab === 'products' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-indigo-500 rounded-b-full" />}
+          <div className={`p-1.5 rounded-xl transition-all ${mobileTab === 'products' ? 'bg-indigo-100 scale-110' : ''}`}>
+            <ScanBarcode size={20} />
           </div>
           Productos
         </button>
         <button
           onClick={() => setMobileTab('cart')}
-          className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold transition-all duration-200 relative ${
+          className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-bold transition-all duration-200 relative ${
             mobileTab === 'cart' ? 'text-indigo-600' : 'text-gray-400'
           }`}
         >
-          {mobileTab === 'cart' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-500 rounded-full" />}
-          <div className={`p-1.5 rounded-lg transition-all relative ${mobileTab === 'cart' ? 'bg-indigo-100 scale-110' : ''}`}>
-            <ShoppingCart size={19} />
+          {mobileTab === 'cart' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-indigo-500 rounded-b-full" />}
+          <div className={`p-1.5 rounded-xl transition-all relative ${mobileTab === 'cart' ? 'bg-indigo-100 scale-110' : ''}`}>
+            <ShoppingCart size={20} />
             {totalItemsCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1 shadow-sm animate-bounce" style={{animationDuration:'2s'}}>
                 {totalItemsCount > 9 ? '9+' : totalItemsCount}
@@ -2919,16 +3233,16 @@ export default function PuntoDeVentaPage() {
         </button>
         <button
           onClick={() => setMobileTab('payment')}
-          className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold transition-all duration-200 relative ${
+          className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-bold transition-all duration-200 relative ${
             mobileTab === 'payment' ? 'text-emerald-600' : 'text-gray-400'
           }`}
         >
-          {mobileTab === 'payment' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-500 rounded-full" />}
-          <div className={`p-1.5 rounded-lg transition-all ${mobileTab === 'payment' ? 'bg-emerald-100 scale-110' : ''}`}>
-            <DollarSign size={19} />
+          {mobileTab === 'payment' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-emerald-500 rounded-b-full" />}
+          <div className={`p-1.5 rounded-xl transition-all ${mobileTab === 'payment' ? 'bg-emerald-100 scale-110' : ''}`}>
+            <DollarSign size={20} />
           </div>
           {cart.length > 0 && totalCart > 0 ? (
-            <span className="text-[9px] font-extrabold text-emerald-600">{fmtCLP(totalCart)}</span>
+            <span className="text-[10px] font-extrabold text-emerald-600 tabular-nums">{fmtCLP(totalCart)}</span>
           ) : 'Cobrar'}
         </button>
       </div>
@@ -3711,6 +4025,108 @@ export default function PuntoDeVentaPage() {
       )}
 
       {/* OCR Scanner Modal */}
+
+      {/* Modal de Revalidación: Tarjetas de Stock Real y Precio Nuevo en Pantalla Completa */}
+      {revalidationNotice && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[500] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200 my-auto">
+            {/* Header */}
+            <div className="flex items-center gap-4 pb-5 border-b border-gray-100 mb-6">
+              <div className="p-3.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-white shadow-lg shadow-amber-500/20 shrink-0">
+                <AlertCircle className="w-8 h-8 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-xl sm:text-2xl text-slate-900 tracking-tight">
+                  Revalidación de Stock y Precios
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+                  Se detectaron cambios en el servidor justo antes de cobrar. Por favor notifica al cliente:
+                </p>
+              </div>
+            </div>
+
+            {/* Product Cards List */}
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 mb-6">
+              {revalidationNotice.items.map((item, idx) => (
+                <div key={idx} className="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
+                  <div className="flex items-start gap-4">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.nombre} className="w-16 h-16 rounded-xl object-cover bg-white border border-slate-200 shrink-0" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl bg-slate-200 flex items-center justify-center text-slate-400 font-bold shrink-0">
+                        <Package size={24} />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h4 className="font-bold text-slate-900 text-base truncate">{item.nombre}</h4>
+                        <span className="text-[10px] font-mono font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md shrink-0">SKU: {item.sku}</span>
+                      </div>
+
+                      {/* Grid de Métricas Reales */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
+                        {/* Tarjeta de Stock */}
+                        <div className={`p-3 rounded-xl border ${item.actionTaken === 'removed' ? 'bg-red-500/10 border-red-300 text-red-900' : (item.hasStockIssue ? 'bg-orange-500/10 border-orange-300 text-orange-900' : 'bg-emerald-500/10 border-emerald-200 text-emerald-900')}`}>
+                          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider mb-1">
+                            <Package size={14} className={item.actionTaken === 'removed' ? 'text-red-600' : (item.hasStockIssue ? 'text-orange-600' : 'text-emerald-600')} />
+                            <span>Stock Real Actual</span>
+                          </div>
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-xs text-slate-600">En Carrito: <strong>{item.requestedQty}</strong></span>
+                            <span className={`text-sm font-black ${item.actionTaken === 'removed' ? 'text-red-700' : (item.hasStockIssue ? 'text-orange-700' : 'text-emerald-700')}`}>
+                              Real: {item.realStock} ud(s)
+                            </span>
+                          </div>
+                          {item.actionTaken === 'removed' && (
+                            <p className="text-[11px] font-bold text-red-600 mt-1">🚫 Producto Agotado (Stock: 0). Eliminado automáticamente del carrito.</p>
+                          )}
+                          {item.actionTaken === 'adjusted_qty' && (
+                            <p className="text-[11px] font-semibold text-orange-600 mt-1">⚠️ Cantidad ajustada de {item.requestedQty} a {item.realStock} ud(s)</p>
+                          )}
+                        </div>
+
+                        {/* Tarjeta de Precio */}
+                        <div className={`p-3 rounded-xl border ${item.hasPriceChange ? 'bg-amber-500/10 border-amber-300 text-amber-900' : 'bg-slate-100 border-slate-200 text-slate-800'}`}>
+                          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider mb-1">
+                            <DollarSign size={14} className={item.hasPriceChange ? 'text-amber-600' : 'text-slate-600'} />
+                            <span>{item.hasPriceChange ? 'Nuevo Precio Real' : 'Precio Sincronizado'}</span>
+                          </div>
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-xs text-slate-500 line-through">{item.hasPriceChange ? fmtCLP(item.oldPrice) : ''}</span>
+                            <span className="text-base font-black text-amber-700">{fmtCLP(item.newPrice)}</span>
+                          </div>
+                          {item.hasPriceChange && (
+                            <p className="text-[11px] font-semibold text-amber-700 mt-1">✨ Actualizado al precio vigente</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Texto informativo */}
+            <p className="text-xs text-slate-500 mb-6 bg-slate-100 p-3 rounded-xl border border-slate-200 font-medium">
+              ℹ️ El carrito ha sido actualizado automáticamente con los nuevos precios y stocks reales del servidor. Comunica los cambios al cliente antes de intentar cobrar nuevamente.
+            </p>
+
+            {/* Botón de Confirmación */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => {
+                  setRevalidationNotice(null);
+                  triggerFullCatalogRefresh();
+                }}
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-xl shadow-slate-900/10 transition flex items-center justify-center gap-2"
+              >
+                <Check size={18} />
+                Entendido, ya notifiqué al cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* POS mobile keyframes */}
       <style>{`

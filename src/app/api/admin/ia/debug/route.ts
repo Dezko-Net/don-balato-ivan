@@ -55,8 +55,8 @@ export async function PUT(req: NextRequest) {
         isRegistered,
         debugMode: config.debugMode,
         message: isRegistered
-          ? 'El cliente YA está registrado. Si envía un mensaje, Kenia lo saludará por nombre y mostrará el menú de bienvenida (si es primera interacción).'
-          : 'El cliente NO está registrado. Si envía un mensaje, Kenia le pedirá que se registre en la página web.',
+          ? 'El cliente YA está registrado. Si envía un mensaje, Balatin lo saludará por nombre y mostrará el menú de bienvenida (si es primera interacción).'
+          : 'El cliente NO está registrado. Si envía un mensaje, Balatin le pedirá que se registre en la página web.',
       });
     }
 

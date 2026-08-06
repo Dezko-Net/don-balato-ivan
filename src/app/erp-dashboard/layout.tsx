@@ -21,13 +21,13 @@ function mapRoute(to?: string): string {
     '/': '/erp-dashboard',
     '/_admin': '/erp',                 // Ver Cortes / Cuadres
     '/admin': '/erp',                  // Corregir Corte
-    '/pos-admin': '/admin/pos-admin',
-    '/pos': '/admin/pos-admin',
+    '/pos-admin': '/pos-admin',
+    '/pos': '/pos',
     '/admin-supreme': '/admin-supreme',
     '/dashboard-login': '/admin/login',
-    '/inventario': '/admin/inventario-erp',
-    '/base-datos': '/admin/inventario-erp',
-    '/control-datos': '/admin/inventario-erp',
+    '/inventario': '/base-datos',
+    '/base-datos': '/base-datos',
+    '/control-datos': '/base-datos',
     '/cajeras': '/erp/nuevo',                        // Realizar Corte → nuevo cuadre
     '/planilla-unificada': '/erp-dashboard/equipo',  // Trabajadores → gestión de equipo
     '/informe-general-trabajadores': '/erp-dashboard/equipo',
@@ -35,7 +35,7 @@ function mapRoute(to?: string): string {
   }
   if (MAP[path]) return MAP[path]
   if (path.startsWith('/top-products') || path.startsWith('/ganancias')) return '/erp'
-  // IA (CONTADOR IA / Cerebro IA / ASIS) → módulo Kenia IA de Yaxsel
+  // IA (CONTADOR IA / Cerebro IA / ASIS) → módulo Balatin IA de Yaxsel
   if (path.startsWith('/whatsapp')) return '/admin/ia/whatsapp'
   if (/^\/(chat-ia|cerebro-ia|ia-consultor|asis-monitor|telegram)/.test(path)) return '/admin/ia'
   if (/^\/(alameda|copiapo|la-florida)$/.test(path)) return '/erp/nuevo'  // "hacer corte" de una sede → nuevo cuadre

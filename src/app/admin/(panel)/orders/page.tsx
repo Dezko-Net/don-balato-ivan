@@ -120,6 +120,11 @@ function OrdersContent() {
   const [drawerOrderId, setDrawerOrderId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [cashierPickerOrderId, setCashierPickerOrderId] = useState<string | null>(null);
+  const [shippingProofOrderId, setShippingProofOrderId] = useState<string | null>(null);
+  const [shippingProofMode, setShippingProofMode] = useState<'photo' | 'tracking' | null>(null);
+  const [shippingProofFile, setShippingProofFile] = useState<File | null>(null);
+  const [shippingProofTracking, setShippingProofTracking] = useState('');
+  const [shippingProofUploading, setShippingProofUploading] = useState(false);
   const [cashierPickerMode, setCashierPickerMode] = useState<'stock' | 'shipping'>('stock');
   const [waShortcutOrderId, setWaShortcutOrderId] = useState<string | null>(null);
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
@@ -404,36 +409,15 @@ function OrdersContent() {
     if (selected.size === 0) return;
     setBulkUpdating(true);
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      // If bulk cancelling, restore stock for all selected orders
-      // (only for products with real stock, not the 99999 ilimitado sentinel)
-      if (newStatus === 'cancelled') {
-        const selectedOrders = orders.filter(o => selected.has(o.$id));
-        for (const order of selectedOrders) {
-          let items: { id?: string; qty?: number }[] = [];
-          try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
-          for (const item of items) {
-            if (item.id && item.qty) {
-              try {
-                const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
-                const currentStock = (product as any).STOCK || 0;
-                // No restituir si el producto tiene stock ilimitado (sentinel 99999)
-                if (currentStock === 99999) continue;
-                await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
-                  STOCK: currentStock + item.qty,
-                });
-              } catch (err) { console.error('Error restoring stock for product', item.id, err); }
-            }
-          }
-        }
-      }
-
       const selectedOrders = orders.filter(o => selected.has(o.$id));
       await Promise.all(selectedOrders.map(o =>
-        databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, o.$id, { STATUS: newStatus, UPDATEDAT: Date.now() })
+        fetch('/api/admin/orders/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: o.$id, newStatus }),
+        })
       ));
+
       const { notifyOrderStatusChange } = await import('@/services/notificationService');
       await Promise.all(
         selectedOrders.map(o =>
@@ -442,49 +426,37 @@ function OrdersContent() {
       );
       setOrders(prev => prev.map(o => selected.has(o.$id) ? { ...o, STATUS: newStatus as OrderStatus } : o));
       setSelected(new Set());
-      // Invalidar caché del badge "Pagar tu pedido" (my-orders-status).
       try { await fetch('/api/revalidate?tag=orders'); } catch {}
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setBulkUpdating(false); }
   };
 
   const updateStatus = async (orderId: string, newStatus: string) => {
+    // Client-side validation: cannot set to "delivered" without shipping proof or tracking
+    if (newStatus === 'delivered') {
+      const orderBefore = orders.find(o => o.$id === orderId);
+      const hasShippingProof = !!(orderBefore as any)?.SHIPPINGPROOFURL;
+      const hasTrackingNumber = !!(orderBefore as any)?.TRACKINGNUMBER;
+      if (!hasShippingProof && !hasTrackingNumber) {
+        setShippingProofOrderId(orderId);
+        return;
+      }
+    }
     setUpdatingId(orderId);
     const orderBefore = orders.find(o => o.$id === orderId);
     const prevStatus = orderBefore?.STATUS;
-    // Optimistic update — update UI immediately
     setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: newStatus as OrderStatus } : o));
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      // If cancelling, restore stock (only for products with real stock, not the 99999 sentinel)
-      if (newStatus === 'cancelled') {
-        const order = orderBefore;
-        if (order) {
-          let items: { id?: string; qty?: number }[] = [];
-          try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
-          for (const item of items) {
-            if (item.id && item.qty) {
-              try {
-                const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
-                const currentStock = (product as any).STOCK || 0;
-                // No restituir si el producto tiene stock ilimitado (sentinel 99999)
-                if (currentStock === 99999) continue;
-                await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
-                  STOCK: currentStock + item.qty,
-                });
-              } catch (err) { console.error('Error restoring stock for product', item.id, err); }
-            }
-          }
-        }
+      const res = await fetch('/api/admin/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al actualizar estado del pedido');
       }
 
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
-        STATUS: newStatus,
-        UPDATEDAT: Date.now(),
-      });
-      // Invalidar caché del badge "Pagar tu pedido" (my-orders-status).
       try { await fetch('/api/revalidate?tag=orders'); } catch {}
       if (orderBefore) {
         const { notifyOrderStatusChange } = await import('@/services/notificationService');
@@ -495,6 +467,49 @@ function OrdersContent() {
       alert('Error: ' + e.message);
     }
     finally { setUpdatingId(null); }
+  };
+
+  const submitShippingProof = async () => {
+    if (!shippingProofOrderId) return;
+    if (shippingProofMode === 'photo' && !shippingProofFile) { alert('Selecciona una foto'); return; }
+    if (shippingProofMode === 'tracking' && !shippingProofTracking.trim()) { alert('Ingresa el número de seguimiento'); return; }
+    setShippingProofUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('orderId', shippingProofOrderId);
+      if (shippingProofMode === 'photo' && shippingProofFile) {
+        formData.append('file', shippingProofFile);
+      }
+      if (shippingProofMode === 'tracking' && shippingProofTracking.trim()) {
+        formData.append('trackingNumber', shippingProofTracking.trim());
+      }
+      const res = await fetch('/api/admin/orders/shipping-proof', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Error al guardar');
+      // Update local state
+      setOrders(prev => prev.map(o => o.$id === shippingProofOrderId ? {
+        ...o,
+        SHIPPINGPROOFURL: data.shippingProofUrl || (o as any).SHIPPINGPROOFURL,
+        TRACKINGNUMBER: data.trackingNumber || (o as any).TRACKINGNUMBER,
+      } as any : o));
+      // Close modal and proceed to delivered
+      const orderId = shippingProofOrderId;
+      closeShippingProofModal();
+      // Now change status to delivered
+      updateStatus(orderId, 'delivered');
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setShippingProofUploading(false);
+    }
+  };
+
+  const closeShippingProofModal = () => {
+    setShippingProofOrderId(null);
+    setShippingProofMode(null);
+    setShippingProofFile(null);
+    setShippingProofTracking('');
+    setShippingProofUploading(false);
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
@@ -763,6 +778,7 @@ function OrdersContent() {
       if (sourceFilter === 'whatsapp' && !isWa) return false;
       if (sourceFilter === 'lissy' && !(isWa && cashier.toLowerCase().includes('lissy'))) return false;
       if (sourceFilter === 'fer' && !(isWa && cashier.toLowerCase().includes('fernanda'))) return false;
+      if (sourceFilter === 'balatin' && !(isWa && cashier.toLowerCase().includes('balatin'))) return false;
       if (sourceFilter === 'web' && isWa) return false;
     }
     if (regionFilter !== 'all') {
@@ -1292,6 +1308,10 @@ function OrdersContent() {
           <button onClick={() => setSourceFilter('fer')}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition bg-pink-100 text-pink-700 border border-pink-200 ${sourceFilter === 'fer' ? 'ring-2 ring-pink-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
             👩 Fernanda (WA)
+          </button>
+          <button onClick={() => setSourceFilter('balatin')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition bg-amber-100 text-amber-700 border border-amber-200 ${sourceFilter === 'balatin' ? 'ring-2 ring-amber-500 ring-inset shadow-sm' : 'hover:opacity-80'}`}>
+            🐱 Balatin (WA)
           </button>
         </div>
         {orders.some(o => (o as any).PURCHASEDFROMLIVE) && (
@@ -2424,6 +2444,85 @@ function OrdersContent() {
           className="border-t border-gray-100"
         />
       </div>
+
+      {/* Shipping proof modal — shown when trying to set "delivered" without proof/tracking */}
+      {shippingProofOrderId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={closeShippingProofModal}></div>
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg text-gray-800">Entregar a Agencia</h3>
+              <button onClick={closeShippingProofModal} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-5">Necesitas una de estas dos opciones para marcar el pedido como entregado a agencia:</p>
+
+            {!shippingProofMode && (
+              <div className="space-y-3">
+                <button onClick={() => setShippingProofMode('photo')}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-blue-100 hover:border-blue-400 hover:bg-blue-50 transition text-left">
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl">📷</div>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-800 text-sm">Subir foto del comprobante de envío</div>
+                    <div className="text-xs text-gray-400">Foto del comprobante de la agencia</div>
+                  </div>
+                </button>
+                <button onClick={() => setShippingProofMode('tracking')}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-green-100 hover:border-green-400 hover:bg-green-50 transition text-left">
+                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl">📋</div>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-800 text-sm">Ingresar número de seguimiento</div>
+                    <div className="text-xs text-gray-400">Código de tracking de la agencia</div>
+                  </div>
+                </button>
+                <button onClick={() => { window.open(`/admin/orders/${shippingProofOrderId}`, '_self'); closeShippingProofModal(); }}
+                  className="w-full text-center py-3 rounded-2xl text-gray-400 font-semibold text-sm hover:bg-gray-50 transition">
+                  Ir al detalle del pedido →
+                </button>
+              </div>
+            )}
+
+            {shippingProofMode === 'photo' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Foto del comprobante de envío</label>
+                  <input type="file" accept="image/*" onChange={(e) => setShippingProofFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 file:font-bold hover:file:bg-blue-100" />
+                  {shippingProofFile && (
+                    <p className="text-xs text-green-600 mt-2 font-semibold">✓ {shippingProofFile.name}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShippingProofMode(null)} className="flex-1 py-3 rounded-2xl text-gray-500 font-semibold text-sm hover:bg-gray-50 border border-gray-200">Atrás</button>
+                  <button onClick={submitShippingProof} disabled={shippingProofUploading || !shippingProofFile}
+                    className="flex-1 py-3 rounded-2xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 disabled:opacity-50">
+                    {shippingProofUploading ? 'Subiendo...' : 'Subir y entregar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {shippingProofMode === 'tracking' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Número de seguimiento</label>
+                  <input type="text" value={shippingProofTracking} onChange={(e) => setShippingProofTracking(e.target.value)}
+                    placeholder="Ej: 1234567890" autoFocus
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-green-400 focus:outline-none font-semibold" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShippingProofMode(null)} className="flex-1 py-3 rounded-2xl text-gray-500 font-semibold text-sm hover:bg-gray-50 border border-gray-200">Atrás</button>
+                  <button onClick={submitShippingProof} disabled={shippingProofUploading || !shippingProofTracking.trim()}
+                    className="flex-1 py-3 rounded-2xl bg-green-600 text-white font-bold text-sm hover:bg-green-700 disabled:opacity-50">
+                    {shippingProofUploading ? 'Guardando...' : 'Guardar y entregar'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

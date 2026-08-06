@@ -12,36 +12,22 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // HTML pages — Service Worker maneja caché inteligentemente
-        source: '/:path*',
+        // Dynamic HTML pages - permitir revalidación en CDN sin forzar re-descarga de no-store
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            value: 'public, max-age=0, must-revalidate',
           },
         ],
       },
       {
-        // API routes — nunca cachear, excepto las optimizadas para Edge Caching público
-        source: '/api/((?!appwrite-proxy|public-data|version|template|store-settings|theme-config|ofertas|agencies).*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          },
-        ],
-      },
-      {
-        // JS/CSS assets: en PRODUCCIÓN llevan hash en el nombre → immutable OK.
-        // En DEV los chunks NO llevan hash (app/carrito/page.js) — cachearlos
-        // 1 año hacía que el navegador ejecutara código viejo tras cada cambio.
+        // Static assets & Next.js chunks - Cache público e inmutable en Vercel CDN
         source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: process.env.NODE_ENV === 'production'
-              ? 'public, max-age=31536000, immutable'
-              : 'no-store, must-revalidate',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

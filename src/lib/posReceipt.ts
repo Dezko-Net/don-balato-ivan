@@ -83,7 +83,11 @@ export function drawPDF417BarcodeCanvas(canvas: HTMLCanvasElement, textSeed?: st
   }
 }
 
-export function generateReceiptHTML(data: ReceiptData): string {
+export function generateReceiptHTML(data?: ReceiptData | any): string {
+  if (!data) {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Imprimiendo Boleta...</title></head><body style="font-family:sans-serif;padding:20px;text-align:center;"><h2>Generando boleta...</h2></body></html>`;
+  }
+
   const fmtCLP = (n: number) =>
     new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -91,11 +95,14 @@ export function generateReceiptHTML(data: ReceiptData): string {
       maximumFractionDigits: 0,
     }).format(Math.round(Number(n) || 0))
 
-  const seed = `${data.folio || 12345}_${data.total}_${Date.now()}`
+  const folioNum = data.folio || data.boletaNumero || 12345
+  const totalMonto = Number(data.total) || 0
+  const seed = `${folioNum}_${totalMonto}_${Date.now()}`
+  const itemsList: ReceiptItem[] = Array.isArray(data.items) ? data.items : []
 
-  const itemsRows = data.items
+  const itemsRows = itemsList
     .map(
-      (item) => `
+      (item: ReceiptItem) => `
       <tr>
         <td style="padding: 3px 0; text-align: left;">${item.nombre}</td>
         <td style="padding: 3px 0; text-align: center;">${item.cantidad}</td>
@@ -279,12 +286,17 @@ export function generateReceiptHTML(data: ReceiptData): string {
   `
 }
 
-export function openReceiptPrintWindow(data: ReceiptData) {
-  const html = generateReceiptHTML(data)
-  const win = window.open('', '_blank', 'width=400,height=600')
-  if (win) {
+export function openReceiptPrintWindow(data?: any, existingWindow?: Window | null): Window | null {
+  let win = existingWindow || null
+  if (!win && typeof window !== 'undefined') {
+    win = window.open('', '_blank', 'width=400,height=600')
+  }
+
+  if (win && data) {
+    const html = generateReceiptHTML(data)
     win.document.open()
     win.document.write(html)
     win.document.close()
   }
+  return win
 }

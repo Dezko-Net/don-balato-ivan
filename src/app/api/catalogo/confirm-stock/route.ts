@@ -3,6 +3,8 @@ import { revalidateTag } from 'next/cache';
 import { serverListDocuments, serverUpdateDocument } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
+import { deductStockForOrder } from '@/lib/order-stock-service';
+
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
@@ -44,14 +46,13 @@ export async function POST(request: NextRequest) {
       ITEMS: JSON.stringify(itemsData),
       SUBTOTAL: subtotal,
       TOTAL: subtotal,
-      // 'paid' es el estado interno que TODA la app (admin, página del cliente y
-      // checkout) mapea a la etiqueta "Stock Confirmado" y que activa el paso
-      // siguiente (datos de transferencia / temporizador de pago en pedido/[id]).
-      // Antes se escribía 'stock_confirmed', un estado huérfano que no está en
-      // STATUS_FLOW ni en statusOrder, por lo que el pedido quedaba sin pintar
-      // y el cliente no podía continuar al pago.
       STATUS: 'paid',
       UPDATEDAT: Date.now(),
+    });
+
+    // Descontar inventario real en Appwrite Cloud
+    await deductStockForOrder(order.$id, availableItems).catch((err) => {
+      console.error('[confirm-stock] Error al descontar stock:', err);
     });
 
     // Invalidar la caché del badge "Pagar tu pedido" (my-orders-status).

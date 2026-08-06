@@ -8,7 +8,6 @@ import type { CartItem } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { useCartItemPrice } from '@/hooks/useCartItemPrice';
-import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
 const BLUE = '#2563eb';
 
@@ -66,11 +65,6 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
           {p.IMAGEURL
             ? <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4, position: 'absolute', inset: 0 }} />
             : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</span>}
-          {pricing.hasDiscount && pricing.fromApertura && (
-            <span style={{ position: 'absolute', top: 2, left: 2, zIndex: 2 }}>
-              <AperturaDiscountBadge percent={pricing.discountPercent} size="sm" />
-            </span>
-          )}
         </div>
 
         {/* Name + Price — NO navigation */}

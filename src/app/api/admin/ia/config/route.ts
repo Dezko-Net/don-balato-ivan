@@ -7,7 +7,7 @@ export async function GET() {
     const config = await getKeniaConfig();
     return NextResponse.json({ success: true, config });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'No se pudo cargar la configuración de Kenia' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error?.message || 'No se pudo cargar la configuración de Balatin' }, { status: 500 });
   }
 }
 
@@ -26,6 +26,6 @@ export async function PUT(req: NextRequest) {
     revalidateTag('kenia-status');
     return NextResponse.json({ success: true, config });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'No se pudo guardar la configuración de Kenia' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error?.message || 'No se pudo guardar la configuración de Balatin' }, { status: 500 });
   }
 }

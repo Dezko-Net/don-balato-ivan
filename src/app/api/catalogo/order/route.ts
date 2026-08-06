@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments, serverCreateDocument } from '@/lib/appwrite-server';
 import { isNightNow } from '@/lib/night-mode';
+import { deductStockForOrder } from '@/lib/order-stock-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
       ORDERINDEX: orderIndex,
       SUBTOTAL: total,
       TOTAL: total,
-      STATUS: night ? 'paid' : 'processing',
+      STATUS: night ? 'pending_stock' : 'processing',
       CREATEDAT: now,
       PAYMENTMETHOD: 'WhatsApp',
       SHIPPINGAGENCY: '',
@@ -92,6 +94,13 @@ export async function POST(request: NextRequest) {
       ...(night ? { NIGHTORDER: true } : {}),
       ...(assignedCashier ? { ASSIGNEDCASHIER: assignedCashier } : {}),
     });
+
+    await deductStockForOrder(docId, itemsData).catch((err) => {
+      console.error('[catalogo/order] Error al descontar stock en pedido:', err);
+    });
+
+    try { revalidateTag('products'); } catch {}
+    try { revalidateTag('orders'); } catch {}
 
     return NextResponse.json({
       success: true,

@@ -201,10 +201,29 @@ export function flushPendingRevalidate(): void {
 export function invalidateProductCache(): void {
   cacheInvalidate('products:');
   if (isBrowser()) {
+    // 1. Limpiar caché de la lista en el panel de administración (sessionStorage y localStorage)
+    try {
+      Object.keys(sessionStorage).forEach((k) => {
+        if (k.startsWith('admin_products_')) sessionStorage.removeItem(k);
+      });
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith('yaxsel_pos_products_') || k.startsWith('yaxsel_cache:')) localStorage.removeItem(k);
+      });
+    } catch {}
+
+    // 2. Limpiar caché en memoria de peticiones públicas del cliente (ClientFetchCache)
+    try {
+      window.dispatchEvent(new CustomEvent('clear-client-cache'));
+    } catch {}
+
+    // 3. Disparar revalidación inmediata en el servidor (Next.js revalidateTag)
+    fetch('/api/admin/revalidate', { method: 'POST' }).catch(() => {});
     requestProductsRevalidate();
+
+    // 4. Revalidar SWR
     import('swr').then(({ mutate }) => {
       mutate(
-        (key: any) => typeof key === 'string' && key.startsWith('/api/public-data/products'),
+        (key: any) => typeof key === 'string' && (key.startsWith('/api/public-data/products') || key.startsWith('/api/public-data/product-detail')),
         undefined,
         { revalidate: true }
       );

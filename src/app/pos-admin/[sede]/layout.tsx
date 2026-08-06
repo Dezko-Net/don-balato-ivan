@@ -119,7 +119,48 @@ export default function PosAdminSedeLayout({ children }: { children: React.React
   const router = useRouter();
   const pathname = usePathname();
   const currentSede = ((params?.sede) || DEFAULT_SEDE) as SedeSlug;
-  const sedeNombre = SEDES[currentSede] || currentSede.replace(/-/g, ' ');
+
+  const [dynamicBranches, setDynamicBranches] = useState<Array<{ slug: string; name: string }>>([
+    { slug: 'chacabuco-08', name: 'CHACABUCO 08' },
+  ]);
+
+  React.useEffect(() => {
+    fetch('/api/admin-supreme/load-config')
+      .then(res => res.json())
+      .then(res => {
+        if (res.ok && res.data) {
+          try {
+            const parsed = JSON.parse(res.data);
+            if (Array.isArray(parsed.branches) && parsed.branches.length > 0) {
+              const active = parsed.branches
+                .filter((b: any) => b.active !== false)
+                .map((b: any) => ({
+                  slug: b.slug || b.name?.toLowerCase().replace(/\s+/g, '-'),
+                  name: b.name || b.slug,
+                }));
+              if (active.length > 0) setDynamicBranches(active);
+            }
+          } catch (e) {
+            console.error('Error parsing POS Admin config:', e);
+          }
+        }
+      })
+      .catch(err => console.error('Error fetching POS Admin config:', err));
+  }, []);
+
+  React.useEffect(() => {
+    if (dynamicBranches.length > 0) {
+      const isCurrentActive = dynamicBranches.some(b => b.slug === currentSede);
+      if (!isCurrentActive) {
+        const pathParts = pathname.split('/');
+        const subPath = pathParts.slice(3).join('/') || 'ventas';
+        router.replace(`/pos-admin/${dynamicBranches[0].slug}/${subPath}`);
+      }
+    }
+  }, [dynamicBranches, currentSede, pathname, router]);
+
+  const activeBranchObj = dynamicBranches.find(b => b.slug === currentSede);
+  const sedeNombre = activeBranchObj ? activeBranchObj.name : (SEDES[currentSede] || currentSede.replace(/-/g, ' '));
   const basePath = `/pos-admin/${currentSede}`;
   const theme = getSedeTheme(currentSede);
 
@@ -204,15 +245,29 @@ export default function PosAdminSedeLayout({ children }: { children: React.React
         </button>
       </div>
 
-      {/* Sucursal fija: Alameda */}
+      {/* Sucursal activa */}
       {!collapsed && (
         <div className={`px-3 py-3 border-b ${borderColor}`}>
           <div className={`text-xs font-semibold uppercase tracking-wide px-1 mb-2 ${textSecondary}`}>Sucursal</div>
-          <div className={`flex items-center gap-2.5 w-full rounded-xl px-3 py-2 text-sm font-medium ${theme.accent} ${theme.accentBorder} ${theme.accentText} border shadow-sm`}>
-            <Store size={15} className={theme.accentText} />
-            <span className="truncate">{sedeNombre}</span>
-            <span className={`ml-auto w-2 h-2 rounded-full ${theme.dot} shrink-0`} />
-          </div>
+          {dynamicBranches.length > 1 ? (
+            <select
+              value={currentSede}
+              onChange={(e) => router.push(`/pos-admin/${e.target.value}/ventas`)}
+              className={`w-full rounded-xl px-3 py-2 text-sm font-medium ${theme.accent} ${theme.accentBorder} ${theme.accentText} border shadow-sm focus:outline-none cursor-pointer`}
+            >
+              {dynamicBranches.map(b => (
+                <option key={b.slug} value={b.slug}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className={`flex items-center gap-2.5 w-full rounded-xl px-3 py-2 text-sm font-medium ${theme.accent} ${theme.accentBorder} ${theme.accentText} border shadow-sm`}>
+              <Store size={15} className={theme.accentText} />
+              <span className="truncate">{sedeNombre}</span>
+              <span className={`ml-auto w-2 h-2 rounded-full ${theme.dot} shrink-0`} />
+            </div>
+          )}
         </div>
       )}
 

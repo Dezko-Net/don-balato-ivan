@@ -23,7 +23,6 @@ import StockIndicator from '@/components/StockIndicator';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice, isDisableDiscounts } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
-import AperturaPromoBanner from '@/components/AperturaPromoBanner';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 
@@ -71,7 +70,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
   const { addItem } = useCart();
   const [activeOffer, setActiveOffer] = useState<TimedOffer | null>(null);
-  const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
+  const { settings: apertura } = useAperturaPromotion();
 
   // Stock Request State
   const [isStockRequestModalOpen, setIsStockRequestModalOpen] = useState(false);
@@ -263,7 +262,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const numReviews = product.NUMREVIEWS ?? 0;
   const soldQty = product.SOLDQUANTITY ?? 0;
   const stockColor = stock > 10 ? '#10b981' : stock > 5 ? '#f59e0b' : stock > 0 ? '#ef4444' : '#9ca3af';
-  const stockLabel = stock > 10 ? 'Stock disponible' : stock > 5 ? 'Stock limitado' : stock > 0 ? 'Últimas unidades' : 'Sin stock';
+  const stockLabel = stock > 0 ? `Stock disponible (${stock} uds.)` : 'Sin stock';
   const isBestSeller = soldQty >= 20;
   const hasOffer = hasDisc && discPct >= 10;
   const outOfStock = stock <= 0;
@@ -615,9 +614,6 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             </div>
 
             {/* Price */}
-            {aperturaActive && priceResolved.fromApertura && (
-              <AperturaPromoBanner percent={aperturaPct} />
-            )}
             {hasOffer && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `linear-gradient(135deg, ${PINK_BG_DARK}, ${PINK_BG})`, border: `1px solid ${ORANGE_PRIMARY}`, borderRadius: 8, padding: '4px 10px', marginBottom: 10 }}>
                 <Sparkles size={12} color={ORANGE_PRIMARY} />

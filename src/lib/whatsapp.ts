@@ -295,6 +295,57 @@ export async function sendWhatsAppList(
   console.log('[WhatsApp] List sent successfully. Response:', JSON.stringify(data));
 }
 
+// ─── Send an Interactive Reply Buttons message (máx 3 botones) ─────────────────
+export interface WhatsAppButton {
+  id: string;
+  title: string; // máx 20 chars
+}
+export async function sendWhatsAppButtons(
+  to: string,
+  opts: { header?: string; body: string; footer?: string; buttons: WhatsAppButton[] },
+  token: string,
+): Promise<void> {
+  if (!token || !WA_PHONE_NUMBER_ID) {
+    throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
+  }
+
+  const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;
+  const clip = (s: string, n: number) => String(s || '').slice(0, n);
+
+  const interactive: any = {
+    type: 'button',
+    body: { text: clip(opts.body, 1024) },
+    action: {
+      buttons: opts.buttons.slice(0, 3).map(b => ({
+        type: 'reply',
+        reply: { id: clip(b.id, 200), title: clip(b.title, 20) },
+      })),
+    },
+  };
+  if (opts.header) interactive.header = { type: 'text', text: clip(opts.header, 60) };
+  if (opts.footer) interactive.footer = { text: clip(opts.footer, 60) };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'interactive',
+      interactive,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('[WhatsApp] sendButtons error:', err);
+    throw new Error(`WhatsApp API Error: ${err}`);
+  }
+  const data = await res.json();
+  console.log('[WhatsApp] Buttons sent successfully. Response:', JSON.stringify(data));
+}
+
 // ─── Mark message as read ──────────────────────────────────────────────────────
 export async function markAsRead(messageId: string, token: string): Promise<void> {
   if (!token || !WA_PHONE_NUMBER_ID) return;

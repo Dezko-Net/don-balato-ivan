@@ -10,21 +10,9 @@ import {
   Check, X, RotateCcw,
 } from 'lucide-react';
 
-// ─── Firebase mocks ────────────────────────────────────────────────────────────
-const db = {} as any;
-const collection = (d: any, p: any) => p;
-const query = (...args: any[]) => args[0];
-const where = (f: any, op: any, val: any) => f;
-const onSnapshot = (c: any, cb: any, err?: any) => {
-  cb({ docs: [], forEach: () => {} });
-  return () => {};
-};
-const doc = (...args: any[]) => args.join('/');
-const deleteDoc = async (...args: any[]) => {};
-const updateDoc = async (...args: any[]) => {};
-const runTransaction = async (d: any, cb: any) => cb({ get: async () => ({ exists: () => false, data: () => ({}) }), set: () => {}, update: () => {} });
-const arrayUnion = (...args: any[]) => args;
-const serverTimestamp = () => ({ seconds: Date.now() / 1000 });
+// ─── Firebase ──────────────────────────────────────────────────────────────────
+import { db, authReady } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 type Timestamp = { toDate?: () => Date; seconds?: number };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -176,22 +164,29 @@ export default function HistorialVentasPage() {
   }, [ventasRaw, fechaDesde, fechaHasta]);
 
   useEffect(() => {
-    if (!db) return;
-    const unsub = onSnapshot(
-      query(collection(db, 'ventas_pos'), where('sede', '==', currentSede)),
-      (snap: any) => {
-        const list = (snap.docs || []).map((d: any) => ({ id: d.id, ...d.data() } as VentaPOS));
-        list.sort((a: any, b: any) => {
-          const aMs = a?.fecha?.toDate ? a.fecha.toDate().getTime() : 0;
-          const bMs = b?.fecha?.toDate ? b.fecha.toDate().getTime() : 0;
-          return bMs - aMs;
-        });
-        setVentasRaw(list);
-        setLoading(false);
-      },
-      () => setLoading(false)
-    );
-    return unsub;
+    let unsub = () => {};
+    let active = true;
+    (async () => {
+      try {
+        await authReady;
+        if (!active || !db) return;
+        unsub = onSnapshot(
+          query(collection(db, 'ventas_pos'), where('sede', '==', currentSede)),
+          (snap: any) => {
+            const list = (snap.docs || []).map((d: any) => ({ id: d.id, ...d.data() } as VentaPOS));
+            list.sort((a: any, b: any) => {
+              const aMs = a?.fecha?.toDate ? a.fecha.toDate().getTime() : 0;
+              const bMs = b?.fecha?.toDate ? b.fecha.toDate().getTime() : 0;
+              return bMs - aMs;
+            });
+            setVentasRaw(list);
+            setLoading(false);
+          },
+          () => setLoading(false)
+        );
+      } catch { setLoading(false); }
+    })();
+    return () => { active = false; unsub(); };
   }, [currentSede]);
 
   const DELETE_PIN = '988189813';

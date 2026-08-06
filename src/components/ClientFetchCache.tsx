@@ -42,6 +42,12 @@ export default function ClientFetchCache() {
     const cacheMap = new Map<string, { data: any; timestamp: number }>();
     const pendingRequests = new Map<string, Promise<any>>();
 
+    const clearCacheHandler = () => {
+      cacheMap.clear();
+      pendingRequests.clear();
+    };
+    window.addEventListener('clear-client-cache', clearCacheHandler);
+
     window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
       const urlString = typeof input === 'string' 
         ? input 
@@ -121,6 +127,7 @@ export default function ClientFetchCache() {
 
     return () => {
       // Restore on unmount if hot reloaded
+      window.removeEventListener('clear-client-cache', clearCacheHandler);
       window.fetch = originalFetch;
       (window as any).__fetchCacheInitialized = false;
     };

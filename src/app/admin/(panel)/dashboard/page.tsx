@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { Order, Product, DashboardStats } from '@/types/admin';
 import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, AlertTriangle, RefreshCw, ArrowRight, Plus, ChevronRight, Users, Megaphone, BarChart3, Zap, Globe, Search, MapPin, ShoppingBag, Eye, Database, Coins, Activity, Calendar } from 'lucide-react';
@@ -1428,7 +1428,6 @@ function AnimatedGlobe() {
 
 interface DashboardCacheData {
   openSupport: number;
-  unreadNotifs: number;
   newUsers: number;
   allOrders: any[];
   totalProducts: number;
@@ -1460,7 +1459,6 @@ export default function DashboardPage() {
   const [lastRefresh, setLastRefresh]         = useState<Date>(new Date());
   const [dateRange, setDateRange]             = useState<DateRange>('30d');
   const [openSupport, setOpenSupport]         = useState(0);
-  const [unreadNotifs, setUnreadNotifs]       = useState(0);
   const [newUsers, setNewUsers]               = useState(0);
   const [prevRevenue, setPrevRevenue]         = useState(0);
   const [prevOrders, setPrevOrders]           = useState(0);
@@ -1486,7 +1484,6 @@ export default function DashboardPage() {
     if (!force && dashboardCache && Date.now() - dashboardCache.timestamp < 180_000) {
       const cached = dashboardCache.data;
       setOpenSupport(cached.openSupport);
-      setUnreadNotifs(cached.unreadNotifs);
       setNewUsers(cached.newUsers);
       setAllOrders(cached.allOrders);
       setStats(s => ({
@@ -1514,7 +1511,6 @@ export default function DashboardPage() {
         timestamp: Date.now(),
         data: {
           openSupport: 0,
-          unreadNotifs: 0,
           newUsers: 0,
           allOrders: [],
           totalProducts: 0,
@@ -1687,8 +1683,8 @@ export default function DashboardPage() {
           <h1 className="db-greeting" style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {greeting}, {userName}
             <img 
-              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781844152550-pegada-1781844145289.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=SfrE7ZUCdWW0i%2FYWztIYRhbwTcByM7bthoiQc%2FjPQJEXV1fT4J3jmJCJlDsf01pffNwLLUfmmc6XeKYBIPqcXPVTVsdSPvigAxDkEEJgz4Lc9jEs0t9YOpd5BagWiOrWXG1yDBfozFypuodOyeO%2FJKDoPY3QKhP9t8yWGEd2NprwzaEbAd%2BclP90ZkGhmEuWdeDwJbW07QNIiC2NLo4wlAegxL2%2FDMIYBd2DGMAgP5Zo8EjA17BT690P%2BBGBJOuTYpsynxXe7KvdlBt7JVVoJoLHP525kpVVu8O5Wp0rEKpPaRUx0dCx%2BC7H1tTOKes0UDrp%2BW7T7HeRnMoDXvFWWA%3D%3D" 
-              alt="Kenia Alert" 
+              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785925265101-pegada-1785925258751.png"
+              alt="Balatin Alert"
               style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', objectFit: 'cover' }} 
               className={`db-icon db-icon-${dashStatus}`} 
             />
@@ -2216,7 +2212,6 @@ export default function DashboardPage() {
             { label: 'Agregar producto', href: '/admin/products', color: '#6366f1', bg: '#eef2ff', icon: <Plus size={16} color="#6366f1" /> },
             { label: 'Ver pedidos', href: '/admin/orders', color: '#0891b2', bg: '#ecfeff', icon: <ShoppingCart size={16} color="#0891b2" /> },
             { label: 'Ver analytics', href: '/admin/analytics', color: '#059669', bg: '#ecfdf5', icon: <BarChart3 size={16} color="#059669" /> },
-            { label: 'Crear oferta', href: '/admin/timed-offers', color: '#d97706', bg: '#fffbeb', icon: <Zap size={16} color="#d97706" /> },
           ].map(a => (
             <Link key={a.href} href={a.href} style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       {
         type: "body",
         parameters: [
-          { type: "text", text: "Cliente Prueba 🌸" }, // Variable {{1}}
+          { type: "text", text: "Cliente Prueba 🐾" }, // Variable {{1}}
           { type: "text", text: "#TEST-001" },         // Variable {{2}}
           { type: "text", text: "En Camino 🚚✨" }      // Variable {{3}}
         ]
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       token
     );
 
-    const logText = "🌸 [Plantilla Enviada] ¡Hola! Soy Kenia de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #TEST-001 ya cambió de estado a: En Camino 🚚✨ 🥳🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo! Estoy atenta para ayudarte. 💖";
+    const logText = "🐾 [Plantilla Enviada] ¡Hola! Soy Balatin de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pedido #TEST-001 ya cambió de estado a: En Camino 🚚✨ 🎉\n\nSi tienes cualquier duda o quieres saber más, ¡escríbeme por aquí mismo! Estoy atento para ayudarte. �";
     await addToHistory(phone, 'assistant', logText);
 
     return NextResponse.json({ success: true });

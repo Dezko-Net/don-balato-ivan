@@ -32,7 +32,15 @@ import PopupBanner from '@/components/PopupBanner';
 export default function StoreShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { getSectionTemplate } = useTemplate();
-  const isAdmin       = pathname.startsWith('/admin') || pathname.startsWith('/pos-admin') || pathname.startsWith('/pos') || pathname.startsWith('/erp');
+  const isAdmin =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/pos-admin') ||
+    pathname.startsWith('/pos') ||
+    pathname.startsWith('/erp') ||
+    pathname.startsWith('/base-datos') ||
+    pathname.startsWith('/inventario') ||
+    pathname.startsWith('/control-datos') ||
+    pathname.startsWith('/admin-supreme');
   const isAuth        = pathname.startsWith('/login');
   const isCatalogo    = pathname.startsWith('/catalogo');
   // Flujo de checkout del catálogo WhatsApp: páginas dedicadas sin navbar ni footer.

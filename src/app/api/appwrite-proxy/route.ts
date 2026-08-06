@@ -8,7 +8,7 @@ const getCachedList = (colId: string, parsedQueries: string[]) => unstable_cache
     return await serverListDocuments(colId, parsedQueries);
   },
   ['appwrite-list-documents', colId, JSON.stringify(parsedQueries)],
-  { revalidate: 86400, tags: ['appwrite-proxy'] }
+  { revalidate: 86400, tags: ['appwrite-proxy', colId, 'products', `appwrite-proxy-${colId}`] }
 )();
 
 const getCachedDoc = (colId: string, docId: string) => unstable_cache(
@@ -16,7 +16,7 @@ const getCachedDoc = (colId: string, docId: string) => unstable_cache(
     return await serverGetDocument(colId, docId);
   },
   ['appwrite-get-document', colId, docId],
-  { revalidate: 86400, tags: ['appwrite-proxy'] }
+  { revalidate: 86400, tags: ['appwrite-proxy', colId, 'products', `appwrite-proxy-${colId}`] }
 )();
 
 export async function GET(req: Request) {
@@ -48,13 +48,18 @@ export async function GET(req: Request) {
       data = await getCachedList(colId, parsedQueries);
     }
 
-    // Still return Edge cache headers just in case
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
   } catch (error: any) {
+    // Si la colección no existe devolver 404 limpio (no 500), así el cliente
+    // puede detectarlo y silenciarse sin generar alertas innecesarias.
+    const is404 = error?.code === 404 || error?.message?.includes('could not be found') || error?.type === 'collection_not_found';
+    if (is404) {
+      return NextResponse.json({ error: 'Collection not found', code: 404 }, { status: 404 });
+    }
     console.error('[appwrite-proxy] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

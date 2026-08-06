@@ -3446,7 +3446,6 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <SH>Contenido</SH>
         <Field icon={<Type size={13} />} label="TÃ­tulo ofertas" value={s.title || ''} onChange={v => onUpdate({ title: v })} placeholder="Oferta limitada" />
         <Field icon={<Type size={13} />} label="TÃ­tulo destacados" value={s.subtitle || ''} onChange={v => onUpdate({ subtitle: v })} placeholder="Productos destacados" />
-        <AdminLink href="/admin/timed-offers" label="Las ofertas se gestionan desde Ofertas" />
       </div>);
 
     case 'collage':
@@ -3550,9 +3549,6 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
               return <option key={o.$id} value={o.$id}>{o.title} — {o.productName} ({status})</option>;
             })}
           </select>
-          <p style={{ fontSize: 10, color: '#9ca3af', margin: '2px 0 0' }}>
-            Las ofertas se gestionan en <a href="/admin/timed-offers" target="_blank" style={{ color: '#6366f1', textDecoration: 'underline' }}>/admin/timed-offers</a>. Al vincular, el countdown usará automáticamente la fecha de fin, el producto y el descuento.
-          </p>
         </div>
         <SH>Texto de la sección</SH>
         <Field icon={<Type size={13} />} label="Texto del slider superior" value={s.countdownSlideText || ''} onChange={v => onUpdate({ countdownSlideText: v })} placeholder="COMPRA UNO Y LLEVA OTRO GRATIS" />

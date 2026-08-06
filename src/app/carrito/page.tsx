@@ -56,10 +56,10 @@ function CarritoPageContent() {
           ]);
         }
 
-        // 3. Fallback to userId
+        // 3. Fallback to USERID
         if (res.documents.length === 0) {
           res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-            Query.equal('userId', user.id),
+            Query.equal('USERID', user.id),
             Query.orderDesc('$createdAt'),
             Query.limit(50),
           ]);

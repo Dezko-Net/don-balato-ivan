@@ -5326,7 +5326,7 @@ export default function HomePage1() {
       const mediaImg = block.querySelector('.media-img') as HTMLElement;
       if (mediaImg && item.mediaUrl) {
         if (item.mediaType === 'video') {
-          // Don't create video yet â€” show poster + play icon only
+          // Don't create video yet - show poster + play icon only
           // Video is only created when user clicks (prevents browser autoplay)
           mediaImg.innerHTML = '';
           mediaImg.style.position = 'relative';
@@ -5343,14 +5343,14 @@ export default function HomePage1() {
             mediaImg.appendChild(posterImg);
           }
 
-          // Play icon â€” always visible until video plays
+          // Play icon - always visible until video plays
           const playIcon = document.createElement('div');
           playIcon.className = 'tpl1-video-play-icon';
           playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
           playIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white" style="margin-left:3px;"><polygon points="2,0 24,14 2,28"/></svg>`;
           mediaImg.appendChild(playIcon);
 
-          // Pause icon â€” hidden until video plays
+          // Pause icon - hidden until video plays
           const pauseIcon = document.createElement('div');
           pauseIcon.className = 'tpl1-video-pause-icon';
           pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:none;align-items:center;justify-content:center;';
@@ -5371,17 +5371,13 @@ export default function HomePage1() {
               video.setAttribute('muted', '');
               video.preload = 'auto';
               video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;background:#000;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.15s ease;';
-              // Insert video â€” hidden (opacity:0) until it actually plays
               const posterImg = mediaImg.querySelector('img');
               if (posterImg) posterImg.style.position = 'relative';
               mediaImg.insertBefore(video, playIcon);
-              // Set up play/pause event handlers BEFORE calling play
-              // Use onplaying (not onplay) â€” fires when video actually renders a frame, preventing black flash
               video.onplaying = () => { video.style.opacity = '1'; playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; if (posterImg && posterImg.parentNode) posterImg.remove(); };
               video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
               video.play().catch(() => { });
               videoCreated = true;
-              // Subsequent clicks on mediaImg
               mediaImg.onclick = (e2) => {
                 e2.stopPropagation();
                 if (video.paused) { video.play().catch(() => { }); }
@@ -5407,88 +5403,6 @@ export default function HomePage1() {
       const button = block.querySelector('.button_primary') as HTMLElement;
       if (button) {
         button.style.display = 'none';
-      }
-
-      const galleryItem = block.querySelector('.media-gallery-item') as HTMLElement;
-      if (galleryItem) {
-        galleryItem.style.position = 'relative';
-        let notifyBtn = block.querySelector('.notify-arrival-btn') as HTMLButtonElement;
-        if (!notifyBtn) {
-          notifyBtn = document.createElement('button');
-          notifyBtn.className = 'notify-arrival-btn';
-          notifyBtn.textContent = 'AvÃ­same cuando llegue';
-          notifyBtn.style.cssText = `
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            background: rgba(255, 192, 203, 0.3);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 25px;
-            color: #ffffff;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 8px 32px rgba(219, 39, 119, 0.2);
-            transition: all 0.3s ease;
-            z-index: 20;
-          `;
-          notifyBtn.onmouseenter = () => {
-            notifyBtn.style.background = 'rgba(255, 192, 203, 0.4)';
-            notifyBtn.style.transform = 'translateY(-2px)';
-            notifyBtn.style.boxShadow = '0 12px 40px rgba(219, 39, 119, 0.25)';
-          };
-          notifyBtn.onmouseleave = () => {
-            notifyBtn.style.background = 'rgba(255, 192, 203, 0.3)';
-            notifyBtn.style.transform = 'translateY(0)';
-            notifyBtn.style.boxShadow = '0 8px 32px rgba(219, 39, 119, 0.2)';
-            notifyBtn.style.color = '#ffffff';
-          };
-          notifyBtn.onclick = async () => {
-            const productTitle = item.title || '';
-            notifyBtn.disabled = true;
-            notifyBtn.textContent = 'Registrando...';
-
-            try {
-              const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
-              const response = await fetch('/api/product-votes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  productTitle,
-                  userId: user?.$id || null,
-                  userName: user?.NAME || null,
-                  userEmail: user?.EMAIL || null,
-                }),
-              });
-
-              const data = await response.json();
-              if (response.ok) {
-                notifyBtn.textContent = 'âœ“ Â¡Registrado!';
-                notifyBtn.style.background = 'rgba(34, 197, 94, 0.25)';
-                notifyBtn.style.color = '#16a34a';
-                setTimeout(() => {
-                  notifyBtn.textContent = 'AvÃ­same cuando llegue';
-                  notifyBtn.style.background = 'rgba(255, 192, 203, 0.3)';
-                  notifyBtn.style.color = '#ffffff';
-                  notifyBtn.disabled = false;
-                }, 3000);
-              } else {
-                alert(data.error || 'Error al registrar voto');
-                notifyBtn.textContent = 'AvÃ­same cuando llegue';
-                notifyBtn.disabled = false;
-              }
-            } catch (error) {
-              console.error('Error voting:', error);
-              alert('Error al registrar voto');
-              notifyBtn.textContent = 'AvÃ­same cuando llegue';
-              notifyBtn.disabled = false;
-            }
-          };
-          galleryItem.appendChild(notifyBtn);
-        }
       }
     });
 
@@ -6872,11 +6786,11 @@ export default function HomePage1() {
       if (heroEl) {
         const hs = heroSec.settings || {};
 
-        // Define Kenia's promotional slide as herobanner 2
+        // Define Balatin's promotional slide as herobanner 2
         const KENIA_PHONE = '56962293893';
-        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
-        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D';
-        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D';
+        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON BALATIN')}`;
+        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785925265101-pegada-1785925258751.png';
+        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785925265101-pegada-1785925258751.png';
 
         const keniaSlide = {
           imageUrl: KENIA_IMG_PC,
@@ -7417,7 +7331,7 @@ export default function HomePage1() {
               slide.classList.add(`${sl.alignment}-content`);
             }
 
-            // Whole-slide click handler (e.g. for Kenia banner)
+            // Whole-slide click handler (e.g. for Balatin banner)
             if (sl.buttonLink) {
               slide.style.cursor = 'pointer';
               slide.onclick = (e) => {
@@ -8288,7 +8202,7 @@ export default function HomePage1() {
     );
   }, [bodyHtml, sectionCfg, countdownOffer, countdownProduct]);
 
-  // Removed redundant static Kenia banner injection as it is now integrated as Slide 2 (herobanner 2)
+  // Removed redundant static Balatin banner injection as it is now integrated as Slide 2 (herobanner 2)
 
   /* â”€â”€ Fetch products with CURRENTPRICE offers for home carousel â”€â”€ */
   useEffect(() => {
@@ -8491,7 +8405,7 @@ export default function HomePage1() {
     };
   }, [bodyHtml, sectionCfg, keniaEnabled]);
 
-  /* â”€â”€ Anular enlaces de WhatsApp de Kenia si estÃ¡ desactivada â”€â”€ */
+  /* â”€â”€ Anular enlaces de WhatsApp de Balatin si estÃ¡ desactivada â”€â”€ */
   useEffect(() => {
     if (!keniaEnabled) {
       const keniaLinks = document.querySelectorAll('a[href*="56962293893"]');

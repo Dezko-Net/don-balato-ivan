@@ -16,13 +16,28 @@ async function getAuth() {
     const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     if (credentialsJson) {
       try {
-        // Vercel a veces dobla el JSON o usa \\n — limpiar y parsear
-        const cleaned = credentialsJson.trim().replace(/\\n/g, '\n');
-        const credentials = JSON.parse(cleaned);
+        let raw = credentialsJson.trim();
+        if ((raw.startsWith("'") && raw.endsWith("'")) || (raw.startsWith('"') && raw.endsWith('"') && !raw.startsWith('{"'))) {
+          raw = raw.slice(1, -1).trim();
+        }
+        let credentials;
+        try {
+          credentials = JSON.parse(raw);
+        } catch {
+          const cleaned = raw.replace(/\\n/g, '\n').replace(/\n/g, '\\n');
+          try {
+            credentials = JSON.parse(cleaned);
+          } catch {
+            credentials = JSON.parse(raw.replace(/\\n/g, '\\n'));
+          }
+        }
+        if (credentials.private_key && typeof credentials.private_key === 'string') {
+          credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+        }
         _auth = new GoogleAuth({ scopes: [GEMINI_SCOPE], credentials });
-      } catch (parseErr) {
+      } catch (parseErr: any) {
         console.error('[google-auth] Error parsing GOOGLE_APPLICATION_CREDENTIALS_JSON:', parseErr);
-        throw new Error('GOOGLE_APPLICATION_CREDENTIALS_JSON no es un JSON válido. Revisa el formato en Vercel.');
+        throw new Error(`GOOGLE_APPLICATION_CREDENTIALS_JSON no es un JSON válido: ${parseErr.message || 'Error de sintaxis'}`);
       }
     } else {
       // Sin credenciales — intentar ADC (solo funciona local con gcloud auth)
@@ -33,7 +48,8 @@ async function getAuth() {
 }
 
 export async function getGeminiAccessToken(forceOAuth = false) {
-  if (GEMINI_API_KEY && !forceOAuth) return ''; // Bypassed by API key
+  const isAiStudioKey = Boolean(GEMINI_API_KEY && GEMINI_API_KEY.startsWith('AIza'));
+  if (isAiStudioKey && !forceOAuth) return ''; // Bypassed by AI Studio API key
   
   if (_cachedToken && Date.now() < _cachedToken.expiry - TOKEN_REFRESH_BUFFER_MS) {
     return _cachedToken.token;
@@ -55,12 +71,13 @@ export async function getGeminiAccessToken(forceOAuth = false) {
 }
 
 export async function getGeminiAuthHeaders() {
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json'
   };
   
-  if (GEMINI_API_KEY) {
-    return headers; // API key is passed in URL
+  const isAiStudioKey = Boolean(GEMINI_API_KEY && GEMINI_API_KEY.startsWith('AIza'));
+  if (isAiStudioKey) {
+    return headers; // API key is passed in URL for AI Studio
   }
   
   const token = await getGeminiAccessToken();
@@ -72,10 +89,9 @@ export async function getGeminiAuthHeaders() {
   return headers;
 }
 
-export function buildGeminiUrl(model, method = 'generateContent') {
-  // If we have an API Key, use AI Studio URL always
-  if (GEMINI_API_KEY) {
-    // Strip models/ prefix if passed, as AI Studio sometimes prefers bare name, but we append it
+export function buildGeminiUrl(model: string, method = 'generateContent') {
+  const isAiStudioKey = Boolean(GEMINI_API_KEY && GEMINI_API_KEY.startsWith('AIza'));
+  if (isAiStudioKey) {
     const cleanModel = model.replace('models/', '');
     return `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:${method}?key=${GEMINI_API_KEY}`;
   }
@@ -85,8 +101,9 @@ export function buildGeminiUrl(model, method = 'generateContent') {
     const base = GCP_REGION === 'global'
       ? 'https://aiplatform.googleapis.com'
       : `https://${GCP_REGION}-aiplatform.googleapis.com`;
-    return `${base}/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/${model}:${method}`;
+    const cleanModel = model.replace('models/', '');
+    return `${base}/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/${cleanModel}:${method}`;
   }
   
-  throw new Error("Missing GEMINI_API_KEY or GCP_PROJECT_ID credentials.");
+  throw new Error("Missing valid GEMINI_API_KEY or GCP_PROJECT_ID credentials.");
 }

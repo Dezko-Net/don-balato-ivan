@@ -50,8 +50,7 @@ export async function POST(req: NextRequest) {
         body,
       });
       if (res.ok) break;
-      if (res.status === 503 || res.status === 429) { console.warn(`Model ${model} unavailable (${res.status}), trying fallback...`); continue; }
-      break;
+      console.warn(`Model ${model} unavailable (${res.status}), trying fallback...`);
     }
 
     if (!res || !res.ok) {

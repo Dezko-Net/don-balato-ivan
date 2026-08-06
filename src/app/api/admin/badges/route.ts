@@ -30,7 +30,6 @@ export async function GET() {
     const data = {
       pendingOrders: ordersPending.total,
       processingOrders: ordersProcessing.total,
-      unreadNotifs: 0,
       pendingWholesale: wholesalePending.total,
       pendingRequests: 0,
       pendingAlerts: 0,

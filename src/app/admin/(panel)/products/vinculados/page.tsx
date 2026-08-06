@@ -218,11 +218,11 @@ export default function VinculadosPage() {
       <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/products/vinculacion"
+            href="/admin/products"
             className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft size={18} />
-            Volver a Vinculación
+            Volver a Productos
           </Link>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -261,11 +261,7 @@ export default function VinculadosPage() {
           <Package size={40} className="mx-auto mb-4 text-gray-300" />
           <p className="font-medium">No hay grupos vinculados todavía.</p>
           <p className="text-sm mt-1">
-            Ve a{' '}
-            <Link href="/admin/products/vinculacion" className="text-indigo-600 underline">
-              Vinculación de Productos
-            </Link>{' '}
-            para crear grupos.
+            No hay grupos vinculados todavía.
           </p>
         </div>
       ) : (

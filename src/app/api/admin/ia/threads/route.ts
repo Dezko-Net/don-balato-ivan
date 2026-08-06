@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ADMIN_CHAT_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { ADMIN_CHAT_COLLECTION_ID, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { getKeniaRuntimeSnapshot, normalizePhone } from '@/lib/kenia-runtime';
 
@@ -58,13 +58,32 @@ export async function GET(req: NextRequest) {
       map.set(phone, thread);
     }
 
+    // Build a map of phone -> customerName from orders (fallback when kenia_config doesn't exist)
+    const phoneToName = new Map<string, string>();
+    try {
+      const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+      const qLimit200 = JSON.stringify({ method: 'limit', values: [200] });
+      const ordersRes = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit200]);
+      for (const o of (ordersRes.documents || []) as any[]) {
+        const phone = normalizePhone(String(o.CUSTOMERPHONE || ''));
+        const name = String(o.CUSTOMERNAME || '').trim();
+        if (phone && name && name.length >= 2 && !phoneToName.has(phone)) {
+          phoneToName.set(phone, name);
+        }
+      }
+    } catch (e) {
+      console.warn('[threads] Could not fetch orders for name lookup:', e);
+    }
+
     const threads = Array.from(map.values())
       .map((thread) => {
         const usage = runtime.usage[thread.phone] || null;
         const tokenLimit = runtime.config.tokenLimitPerCustomer;
         const totalTokens = usage?.totalTokens || 0;
+        const nameFromOrders = phoneToName.get(thread.phone) || '';
         return {
           ...thread,
+          displayName: usage?.customerName || nameFromOrders || thread.displayName,
           blocked: usage?.blocked || false,
           adminTakeover: usage?.adminTakeover || false,
           escalated: usage?.escalated || false,
@@ -98,6 +117,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, threads, stats });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'No se pudieron cargar las conversaciones de Kenia' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error?.message || 'No se pudieron cargar las conversaciones de Balatin' }, { status: 500 });
   }
 }

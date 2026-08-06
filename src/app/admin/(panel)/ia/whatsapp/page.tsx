@@ -1,5 +1,5 @@
 'use client';
-/* Kenia WhatsApp Business Admin - Premium light UI
+/* Balatin WhatsApp Business Admin - Premium light UI
    100dvh, fully responsive (desktop split-view + mobile view-switch + drawer) */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -423,7 +423,7 @@ export default function AdminIAWhatsAppPage() {
       const data = await res.json();
       if (!data?.success) throw new Error(data?.error || 'No se pudo guardar');
       setConfig(data.config);
-      showToast('success', 'Configuración de Kenia guardada');
+      showToast('success', 'Configuración de Balatin guardada');
     } catch (error: any) {
       showToast('error', error?.message || 'No se pudo guardar la configuración');
     } finally {
@@ -442,12 +442,12 @@ export default function AdminIAWhatsAppPage() {
       const data = await res.json();
       if (data?.success) {
         setConfig(data.config);
-        showToast('success', newValue ? 'Kenia activada' : 'Kenia desactivada');
+        showToast('success', newValue ? 'Balatin activada' : 'Balatin desactivada');
       } else {
-        showToast('error', 'No se pudo cambiar el estado de Kenia');
+        showToast('error', 'No se pudo cambiar el estado de Balatin');
       }
     } catch {
-      showToast('error', 'Error al cambiar el estado de Kenia');
+      showToast('error', 'Error al cambiar el estado de Balatin');
     }
   }
 
@@ -486,7 +486,7 @@ export default function AdminIAWhatsAppPage() {
       if (!data?.success) throw new Error(data?.error || 'No se pudo interactuar');
       await loadThread(selectedPhone);
       await loadThreads(true);
-      showToast('success', 'Kenia leyó el contexto y respondió al cliente');
+      showToast('success', 'Balatin leyó el contexto y respondió al cliente');
     } catch (error: any) {
       showToast('error', error?.message || 'No se pudo interactuar');
     } finally {
@@ -693,7 +693,7 @@ export default function AdminIAWhatsAppPage() {
     thread?.usage.spamBlocked ? '🚫 Bloqueado por spam' :
     thread?.usage.blocked ? '🔒 IA bloqueada' :
     thread?.usage.overLimit ? '⚡ Límite de tokens alcanzado' :
-    '🟢 Kenia activa';
+    '🟢 Balatin activa';
 
   return (
     <div className="wa-root">
@@ -969,11 +969,11 @@ export default function AdminIAWhatsAppPage() {
           <div className="wa-side-head">
             <div style={{ display:'flex', alignItems:'center', gap:11, minWidth:0 }}>
               <div style={{ position:'relative', flexShrink:0 }}>
-                <img src="/kenia-avatar.png" alt="Kenia" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:'2px solid rgba(255,255,255,0.5)' }} />
+                <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785925265101-pegada-1785925258751.png" alt="Balatin" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:'2px solid rgba(255,255,255,0.5)' }} />
                 <span style={{ position:'absolute', bottom:0, right:0, width:12, height:12, borderRadius:'50%', background: keniaOn ? '#4ade80' : '#9ca3af', border:'2px solid #06a983' }} />
               </div>
               <div style={{ minWidth:0 }}>
-                <p style={{ fontSize:16, fontWeight:800, color:'#fff', lineHeight:1.15, letterSpacing:'-.01em' }}>Kenia IA</p>
+                <p style={{ fontSize:16, fontWeight:800, color:'#fff', lineHeight:1.15, letterSpacing:'-.01em' }}>Balatin IA</p>
                 <p style={{ fontSize:12, color:'rgba(255,255,255,0.88)', display:'flex', alignItems:'center', gap:5 }}>
                   <span style={{ width:7, height:7, background:'#fff', borderRadius:'50%', animation:'wa-pulse 2s infinite' }} />
                   {keniaOn ? 'Activa · respondiendo' : 'En mantenimiento'}
@@ -1100,7 +1100,7 @@ export default function AdminIAWhatsAppPage() {
                 <MessageCircle className="h-12 w-12" style={{ color:'#00a884' }} />
               </div>
               <div style={{ animation:'wa-pop .4s ease' }}>
-                <p style={{ fontSize:26, fontWeight:700, color:'#1f2937', marginBottom:8, letterSpacing:'-.02em' }}>Kenia Business Admin</p>
+                <p style={{ fontSize:26, fontWeight:700, color:'#1f2937', marginBottom:8, letterSpacing:'-.02em' }}>Balatin Business Admin</p>
                 <p style={{ fontSize:14.5, color:'#6b7280', maxWidth:360, lineHeight:1.6 }}>Selecciona una conversación para ver los mensajes y gestionar a tus clientes con inteligencia artificial.</p>
               </div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
@@ -1141,15 +1141,15 @@ export default function AdminIAWhatsAppPage() {
               {/* Status banners */}
               {thread?.usage.adminTakeover && (
                 <div className="wa-banner blue">
-                  <span style={{ display:'flex', alignItems:'center', gap:8 }}><UserCheck className="h-4 w-4" /> Control manual activo — Kenia está pausada</span>
-                  <button className="wa-banner-btn" onClick={() => handleSetBlock(false)} disabled={savingBlock}>Devolver a Kenia</button>
+                  <span style={{ display:'flex', alignItems:'center', gap:8 }}><UserCheck className="h-4 w-4" /> Control manual activo — Balatin está pausada</span>
+                  <button className="wa-banner-btn" onClick={() => handleSetBlock(false)} disabled={savingBlock}>Devolver a Balatin</button>
                 </div>
               )}
               {thread?.usage.escalated && !thread?.usage.adminTakeover && (
                 <div className="wa-banner amber"><span style={{ display:'flex', alignItems:'center', gap:8 }}><AlertTriangle className="h-4 w-4" /> Conversación escalada — Se necesita atención humana</span></div>
               )}
               {thread?.usage.spamBlocked && (
-                <div className="wa-banner red"><span style={{ display:'flex', alignItems:'center', gap:8 }}><Ban className="h-4 w-4" /> Número bloqueado por spam — Kenia ignora los mensajes</span></div>
+                <div className="wa-banner red"><span style={{ display:'flex', alignItems:'center', gap:8 }}><Ban className="h-4 w-4" /> Número bloqueado por spam — Balatin ignora los mensajes</span></div>
               )}
 
               {/* Messages */}
@@ -1238,13 +1238,13 @@ export default function AdminIAWhatsAppPage() {
             </div>
 
             <div className="wa-drawer-body wa-sb">
-              {/* Kenia per-client switch */}
+              {/* Balatin per-client switch */}
               <div className="wa-psec">
-                <p className="wa-plabel"><Sparkles className="h-3.5 w-3.5" /> Asistente Kenia {selectedPhone ? `· +${selectedPhone}` : ''}</p>
+                <p className="wa-plabel"><Sparkles className="h-3.5 w-3.5" /> Asistente Balatin {selectedPhone ? `· +${selectedPhone}` : ''}</p>
                 {selectedPhone ? (
                   <label style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background: (!thread?.usage.blocked) ? 'rgba(0,168,132,0.07)' : '#f9fafb', border:`1.5px solid ${(!thread?.usage.blocked) ? 'rgba(0,168,132,0.25)' : 'var(--line)'}`, borderRadius:'var(--r)', padding:'13px 15px', cursor:'pointer' }}>
                     <div>
-                      <span style={{ fontSize:14, fontWeight:700, color:'var(--ink)', display:'block' }}>{!thread?.usage.blocked ? 'Kenia activa para este cliente' : 'Kenia en pausa para este cliente'}</span>
+                      <span style={{ fontSize:14, fontWeight:700, color:'var(--ink)', display:'block' }}>{!thread?.usage.blocked ? 'Balatin activa para este cliente' : 'Balatin en pausa para este cliente'}</span>
                       <span style={{ fontSize:11.5, color:'#6b7280' }}>{!thread?.usage.blocked ? 'Responde automáticamente' : 'No responderá hasta reactivar'}</span>
                     </div>
                     <span className="wa-switch">
@@ -1255,7 +1255,7 @@ export default function AdminIAWhatsAppPage() {
                 ) : (
                   <label style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background: keniaOn ? 'rgba(0,168,132,0.07)' : '#f9fafb', border:`1.5px solid ${keniaOn ? 'rgba(0,168,132,0.25)' : 'var(--line)'}`, borderRadius:'var(--r)', padding:'13px 15px', cursor:'pointer' }}>
                     <div>
-                      <span style={{ fontSize:14, fontWeight:700, color:'var(--ink)', display:'block' }}>{keniaOn ? 'Kenia activa (global)' : 'Kenia en pausa (global)'}</span>
+                      <span style={{ fontSize:14, fontWeight:700, color:'var(--ink)', display:'block' }}>{keniaOn ? 'Balatin activa (global)' : 'Balatin en pausa (global)'}</span>
                       <span style={{ fontSize:11.5, color:'#6b7280' }}>Selecciona un chat para controlar por cliente</span>
                     </div>
                     <span className="wa-switch">
@@ -1372,7 +1372,7 @@ export default function AdminIAWhatsAppPage() {
                       {thread?.usage.adminTakeover && <span className="badge" style={{ background:'rgba(59,130,246,0.2)' }}><span style={{ color:'#1d4ed8' }}>ACTIVO</span></span>}
                     </button>
                     <button className={`wa-btn${(!thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked)?' green':''}`} onClick={() => handleSetBlock(false)} disabled={!selectedPhone||savingBlock||(!thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked)}>
-                      <Bot className="h-4 w-4" style={{ flexShrink:0 }} /> <span>Devolver a Kenia</span>
+                      <Bot className="h-4 w-4" style={{ flexShrink:0 }} /> <span>Devolver a Balatin</span>
                       {(!thread?.usage.blocked && !thread?.usage.adminTakeover && !thread?.usage.spamBlocked) && <span className="badge" style={{ background:'rgba(0,168,132,0.2)' }}><span style={{ color:'#047857' }}>ACTIVO</span></span>}
                     </button>
                     <button className={`wa-btn${thread?.usage.spamBlocked?' red':''}`} onClick={() => handleSetBlock(true,'spam')} disabled={!selectedPhone||savingBlock||!!thread?.usage.spamBlocked}>
@@ -1394,7 +1394,7 @@ export default function AdminIAWhatsAppPage() {
                   <div style={{ background: thread.usage.overLimit?'rgba(239,68,68,0.07)':thread.usage.escalated?'rgba(245,158,11,0.07)':'rgba(0,168,132,0.07)', border:`1px solid ${thread.usage.overLimit?'rgba(239,68,68,0.2)':thread.usage.escalated?'rgba(245,158,11,0.2)':'rgba(0,168,132,0.2)'}`, borderRadius:'var(--r)', padding:'13px 15px', display:'flex', alignItems:'flex-start', gap:10 }}>
                     {thread.usage.overLimit ? <TrendingUp className="h-4 w-4" style={{ color:'#dc2626', flexShrink:0, marginTop:2 }} /> : thread.usage.escalated ? <AlertTriangle className="h-4 w-4" style={{ color:'#b45309', flexShrink:0, marginTop:2 }} /> : <Shield className="h-4 w-4" style={{ color:'#059669', flexShrink:0, marginTop:2 }} />}
                     <p style={{ fontSize:13, lineHeight:1.55, color: thread.usage.overLimit?'#dc2626':thread.usage.escalated?'#b45309':'#059669' }}>
-                      {thread.usage.overLimit ? 'Límite de tokens superado. Sube el límite o bloquea al cliente para detener el consumo.' : thread.usage.escalated ? 'Conversación escalada. El cliente necesita atención humana urgente.' : 'Kenia está respondiendo con normalidad. Todo en orden.'}
+                      {thread.usage.overLimit ? 'Límite de tokens superado. Sube el límite o bloquea al cliente para detener el consumo.' : thread.usage.escalated ? 'Conversación escalada. El cliente necesita atención humana urgente.' : 'Balatin está respondiendo con normalidad. Todo en orden.'}
                     </p>
                   </div>
                 </div>
@@ -1434,7 +1434,7 @@ export default function AdminIAWhatsAppPage() {
                   <p className="wa-plabel"><MessageCircle className="h-3.5 w-3.5" /> Conversación</p>
                   <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
                     <button className="wa-btn" style={{ background:'linear-gradient(135deg,rgba(227,150,191,0.12),rgba(245,168,207,0.08))', border:'1.5px solid rgba(227,150,191,0.3)' }} onClick={handleInteract} disabled={!selectedPhone || interacting}>
-                      <Sparkles className="h-4 w-4" style={{ flexShrink:0, color:'#e396bf' }} /> <span>Kenia interactúe</span>
+                      <Sparkles className="h-4 w-4" style={{ flexShrink:0, color:'#e396bf' }} /> <span>Balatin interactúe</span>
                       {interacting && <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ marginLeft:'auto' }} />}
                     </button>
                     <button className="wa-btn" onClick={() => selectedPhone && handleLoadOrders(selectedPhone)}>

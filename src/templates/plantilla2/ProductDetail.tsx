@@ -23,7 +23,6 @@ import StockIndicator from '@/components/StockIndicator';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
-import AperturaPromoBanner from '@/components/AperturaPromoBanner';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 
@@ -59,7 +58,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
   const [activeOffer, setActiveOffer] = useState<TimedOffer | null>(null);
-  const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
+  const { settings: apertura } = useAperturaPromotion();
 
   // Keyboard navigation for image gallery
   useEffect(() => {
@@ -432,9 +431,6 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
             )}
 
             {/* Price section */}
-            {aperturaActive && priceResolved.fromApertura && (
-              <AperturaPromoBanner percent={aperturaPct} />
-            )}
             {hasOffer && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ddeeff', border: '1px solid #3483fa', borderRadius: 6, padding: '5px 12px', marginBottom: 12 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="#3483fa"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>

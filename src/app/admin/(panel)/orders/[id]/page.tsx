@@ -101,6 +101,11 @@ export default function OrderDetailPage() {
   const [shippingProofIsPdf, setShippingProofIsPdf] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [uploadingShippingProof, setUploadingShippingProof] = useState(false);
+  const [deliveredModalOpen, setDeliveredModalOpen] = useState(false);
+  const [deliveredModalMode, setDeliveredModalMode] = useState<'photo' | 'tracking' | null>(null);
+  const [deliveredModalFile, setDeliveredModalFile] = useState<File | null>(null);
+  const [deliveredModalTracking, setDeliveredModalTracking] = useState('');
+  const [deliveredModalUploading, setDeliveredModalUploading] = useState(false);
   const [uploadingBoxPhoto, setUploadingBoxPhoto] = useState(false);
   const [detectedAddr, setDetectedAddr] = useState<{ region: string; comuna: string; full: string } | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -1222,44 +1227,25 @@ export default function OrderDetailPage() {
     const prevStatus = order.STATUS;
     setUpdating(true);
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      // If cancelling, restore stock (only for products with real stock, not 99999 sentinel)
-      if (newStatus === 'cancelled') {
-        let items: { id?: string; qty?: number }[] = [];
-        try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
-        for (const item of items) {
-          if (item.id && item.qty) {
-            try {
-              const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
-              const currentStock = (product as any).STOCK || 0;
-              // No restituir si el producto tiene stock ilimitado (sentinel 99999)
-              if (currentStock === 99999) continue;
-              await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
-                STOCK: currentStock + item.qty,
-              });
-            } catch (err) { console.error('Error restoring stock for product', item.id, err); }
-          }
-        }
+      const res = await fetch('/api/admin/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.$id, newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al actualizar el estado del pedido');
       }
 
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
-        STATUS: newStatus,
-        UPDATEDAT: Date.now(),
-      });
       setOrder(prev => prev ? { ...prev, STATUS: newStatus as OrderStatus } : prev);
 
-      // Purgar los cachés de pedidos del cliente (5 min de TTL) para que el
-      // badge "esperando pago" del nav móvil y el banner de canje reaccionen al
-      // instante en vez de esperar la revalidación.
+      // Purgar los cachés de pedidos del cliente
       fetch('/api/revalidate?tag=orders').catch(() => {});
       if (newStatus === 'negotiation' || prevStatus === 'negotiation') {
         fetch('/api/revalidate?tag=canje').catch(() => {});
       }
 
-      const { notifyOrderStatusChange } = await import('@/services/notificationService');
-      await notifyOrderStatusChange(order, prevStatus, newStatus).catch(() => {});
+      // WhatsApp notification is now sent server-side by /api/admin/orders/update-status
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -1430,7 +1416,48 @@ export default function OrderDetailPage() {
       return;
     }
 
+    // Validate: cannot set to "delivered" without shipping proof photo or tracking number
+    if (newStatus === 'delivered') {
+      const hasShippingProof = !!(order as any)?.SHIPPINGPROOFURL;
+      const hasTrackingNumber = !!(order as any)?.TRACKINGNUMBER;
+      if (!hasShippingProof && !hasTrackingNumber) {
+        setDeliveredModalOpen(true);
+        return;
+      }
+    }
+
     updateStatus(newStatus);
+  };
+
+  const submitDeliveredModal = async () => {
+    if (!order) return;
+    if (deliveredModalMode === 'photo' && !deliveredModalFile) { alert('Selecciona una foto'); return; }
+    if (deliveredModalMode === 'tracking' && !deliveredModalTracking.trim()) { alert('Ingresa el número de seguimiento'); return; }
+    setDeliveredModalUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('orderId', order.$id);
+      if (deliveredModalMode === 'photo' && deliveredModalFile) formData.append('file', deliveredModalFile);
+      if (deliveredModalMode === 'tracking' && deliveredModalTracking.trim()) formData.append('trackingNumber', deliveredModalTracking.trim());
+      const res = await fetch('/api/admin/orders/shipping-proof', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Error al guardar');
+      setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: data.shippingProofUrl || prev.SHIPPINGPROOFURL, TRACKINGNUMBER: data.trackingNumber || (prev as any).TRACKINGNUMBER } as any : prev);
+      closeDeliveredModal();
+      updateStatus('delivered');
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setDeliveredModalUploading(false);
+    }
+  };
+
+  const closeDeliveredModal = () => {
+    setDeliveredModalOpen(false);
+    setDeliveredModalMode(null);
+    setDeliveredModalFile(null);
+    setDeliveredModalTracking('');
+    setDeliveredModalUploading(false);
   };
 
   const handleAdminUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3357,6 +3384,79 @@ export default function OrderDetailPage() {
         )}
       </div>
     </div>
+
+    {/* Delivered modal — shown when trying to set "delivered" without proof/tracking */}
+    {deliveredModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/50" onClick={closeDeliveredModal}></div>
+        <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg text-gray-800">Entregar a Agencia</h3>
+            <button onClick={closeDeliveredModal} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mb-5">Necesitas una de estas dos opciones:</p>
+
+          {!deliveredModalMode && (
+            <div className="space-y-3">
+              <button onClick={() => setDeliveredModalMode('photo')}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-blue-100 hover:border-blue-400 hover:bg-blue-50 transition text-left">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl">📷</div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-800 text-sm">Subir foto del comprobante de envío</div>
+                  <div className="text-xs text-gray-400">Foto del comprobante de la agencia</div>
+                </div>
+              </button>
+              <button onClick={() => setDeliveredModalMode('tracking')}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-green-100 hover:border-green-400 hover:bg-green-50 transition text-left">
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl">📋</div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-800 text-sm">Ingresar número de seguimiento</div>
+                  <div className="text-xs text-gray-400">Código de tracking de la agencia</div>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {deliveredModalMode === 'photo' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Foto del comprobante de envío</label>
+                <input type="file" accept="image/*" onChange={(e) => setDeliveredModalFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 file:font-bold hover:file:bg-blue-100" />
+                {deliveredModalFile && <p className="text-xs text-green-600 mt-2 font-semibold">✓ {deliveredModalFile.name}</p>}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setDeliveredModalMode(null)} className="flex-1 py-3 rounded-2xl text-gray-500 font-semibold text-sm hover:bg-gray-50 border border-gray-200">Atrás</button>
+                <button onClick={submitDeliveredModal} disabled={deliveredModalUploading || !deliveredModalFile}
+                  className="flex-1 py-3 rounded-2xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 disabled:opacity-50">
+                  {deliveredModalUploading ? 'Subiendo...' : 'Subir y entregar'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {deliveredModalMode === 'tracking' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Número de seguimiento</label>
+                <input type="text" value={deliveredModalTracking} onChange={(e) => setDeliveredModalTracking(e.target.value)}
+                  placeholder="Ej: 1234567890" autoFocus
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-green-400 focus:outline-none font-semibold" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setDeliveredModalMode(null)} className="flex-1 py-3 rounded-2xl text-gray-500 font-semibold text-sm hover:bg-gray-50 border border-gray-200">Atrás</button>
+                <button onClick={submitDeliveredModal} disabled={deliveredModalUploading || !deliveredModalTracking.trim()}
+                  className="flex-1 py-3 rounded-2xl bg-green-600 text-white font-bold text-sm hover:bg-green-700 disabled:opacity-50">
+                  {deliveredModalUploading ? 'Guardando...' : 'Guardar y entregar'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
     </>
   );
 }

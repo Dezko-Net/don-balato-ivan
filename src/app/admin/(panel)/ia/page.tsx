@@ -197,7 +197,7 @@ export default function AdminIAPage() {
       const data = await res.json();
       if (data?.success) {
         setConfig(data.config);
-        showToast('success', data.config.isEnabled ? 'Kenia activada ✅' : 'Kenia desactivada ⏸️');
+        showToast('success', data.config.isEnabled ? 'Balatin activada ✅' : 'Balatin desactivada ⏸️');
       } else {
         setConfig(config);
         showToast('error', 'No se pudo cambiar el estado');
@@ -266,7 +266,7 @@ export default function AdminIAPage() {
           </div>
         </div>
 
-        {/* ═══ KENIA STATUS HERO ═══ */}
+        {/* ═══ BALATIN STATUS HERO ═══ */}
         <div className="ia-card" style={{ marginBottom: 20, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, borderLeft: `4px solid ${config.isEnabled ? '#22c55e' : '#ef4444'}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 48, height: 48, borderRadius: 14, background: config.isEnabled ? 'linear-gradient(135deg,#dcfce7,#bbf7d0)' : 'linear-gradient(135deg,#fee2e2,#fecaca)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -274,7 +274,7 @@ export default function AdminIAPage() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <p style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>Kenia</p>
+                <p style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>Balatin</p>
                 <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: config.isEnabled ? '#dcfce7' : '#fee2e2', color: config.isEnabled ? '#16a34a' : '#dc2626' }}>
                   {config.isEnabled ? '● ACTIVA' : '● PAUSADA'}
                 </span>
@@ -332,7 +332,7 @@ export default function AdminIAPage() {
             <div className="ia-card" style={{ padding: '20px 22px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                 <div>
-                  <p className="ia-section-title"><FileText style={{ width: 13, height: 13 }} /> Instrucciones de Kenia</p>
+                  <p className="ia-section-title"><FileText style={{ width: 13, height: 13 }} /> Instrucciones de Balatin</p>
                   <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: -4 }}>Editor de prompts</h3>
                 </div>
                 <div style={{ display: 'inline-flex', background: '#f1f5f9', borderRadius: 12, padding: 3, gap: 2 }}>
@@ -353,8 +353,8 @@ export default function AdminIAPage() {
                 className="ia-input"
                 style={{ resize: 'vertical', lineHeight: 1.6, fontFamily: 'inherit' }}
                 placeholder={promptTab === 'customer'
-                  ? 'Escribe aqui las instrucciones para Kenia cuando atiende a clientes... Puedes usar {{SITE_URL}} para insertar automaticamente la URL de tu tienda.'
-                  : 'Instrucciones para cuando Kenia detecta que el mensaje viene del numero admin...'}
+                  ? 'Escribe aqui las instrucciones para Balatin cuando atiende a clientes... Puedes usar {{SITE_URL}} para insertar automaticamente la URL de tu tienda.'
+                  : 'Instrucciones para cuando Balatin detecta que el mensaje viene del numero admin...'}
               />
               {promptTab === 'customer' && (
                 <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -515,7 +515,7 @@ export default function AdminIAPage() {
                 <button onClick={() => handleDebugAction('simulateRegisterClick')} disabled={debugLoading}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '10px 14px', borderRadius: 12, border: '1px solid #c7d2fe', background: '#eef2ff', color: '#4f46e5', fontSize: 13, fontWeight: 700, cursor: debugLoading ? 'not-allowed' : 'pointer', transition: 'all .15s' }}>
                   {debugLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <PlayCircle style={{ width: 14, height: 14 }} />}
-                  Simular click "Registrate con Kenia"
+                  Simular click "Registrate con Balatin"
                 </button>
 
                 {debugResult && (

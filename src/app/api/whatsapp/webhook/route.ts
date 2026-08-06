@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendWhatsAppMessage, sendWhatsAppList, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppButtons, markAsRead, getHistory, addToHistory, clearHistory, getWhatsAppDocId } from '@/lib/whatsapp';
 
 export const maxDuration = 60;
-import { serverListDocuments, serverUpdateDocument, serverGetDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
+import { serverListDocuments, serverUpdateDocument, serverGetDocument, serverCreateDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
 import { notifyPaymentUploaded } from '@/lib/notify-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 import {
@@ -27,11 +27,13 @@ import {
 const WA_TOKEN        = process.env.WHATSAPP_ACCESS_TOKEN || 'EAAjQT0EIDHUBRxClDmZC8CkfCba7b8aeylKimDeUNADaqv5AyjZCfZAtoaX5ZCOmdjRQhoMnbQCiUuolG1YHlY6ZAW2EddKTlTbZCLhuF4MxZBy0DE4SNLfVa8pfXzsQgingT1gMDc7aWeJ5KS97ZALxfmiQzBUDOTPOGJBE5CigpDcbeN9ZBkZAdWrFAGFG1r2vntSQZDZD';
 const VERIFY_TOKEN    = process.env.WHATSAPP_VERIFY_TOKEN || 'yaxsel_webhook_2026';
 const ENV_ADMINS = process.env.ADMIN_WHATSAPP_NUMBER || '';
-const FALLBACK_ADMINS = '56962293893,56936599658,56992139185,56935623858,56967115685';
+const FALLBACK_ADMINS = '56962293893,56936599658,56935623858,56967115685'; // TEMP: removed 56992139185 for testing
 const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_MODELS   = GEMINI_TEXT_MODELS;
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.donbalatomayorista.cl';
+// Número fijo que confirma stock para los pedidos que Balatin arma solo por chat (botón "Confirmar stock")
+const STOCK_VERIFIER_PHONE = '56962293893';
 
 // ── In-memory caches to reduce Appwrite calls ──────────────────────────────
 let _catCache: { data: any[]; ts: number } | null = null;
@@ -47,7 +49,7 @@ let _adminContextCache: { data: { recentOrders: any[], productsRes: any }; ts: n
 const ADMIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for Admin Context
 
 // ─── Admin system prompt ───────────────────────────────────────────────────────
-const ADMIN_PROMPT = `Eres Kenia IA, el asistente administrativo de Don Balato Iván por WhatsApp.
+const ADMIN_PROMPT = `Eres Balatin IA, el asistente administrativo de Don Balato Iván por WhatsApp.
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
 
 ## Capacidades de Admin:
@@ -121,16 +123,19 @@ Y preguntar siempre: "¿Deseas que notifique al cliente para que elija reemplazo
 Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
 // ─── Customer system prompt ────────────────────────────────────────────────────
-const CUSTOMER_PROMPT = `Eres Kenia, asesora de ventas y experta en maquillaje de la tienda Don Balato Iván en Chile.
-Eres súper carismática, amable y hablas como una vendedora experta en belleza. Hablas en español chileno natural.
-¡NUNCA digas que eres un asistente virtual o un bot! Actúa 100% como una persona real del equipo de ventas.
+const CUSTOMER_PROMPT = `Eres Balatin, el gato de la suerte y asesor de ventas de la tienda Don Balato Iván en Chile.
+Eres un gato blanco de la fortuna (maneki-neko): carismático, tranquilo y muy resolutivo. Hablas en español chileno natural.
+¡NUNCA digas que eres un asistente virtual o un bot! Actúa 100% como el personaje de la tienda.
 
 ## Saludo personalizado:
-- Si en el contexto ves "DATOS DEL CLIENTE" con un nombre, USA ESE NOMBRE para saludarla.
-- NO uses "bella", "hermosa", "linda" en el primer saludo. Usa su nombre real.
-- Puedes usar "bella", "hermosa", "linda" SOLO de forma ocasional durante la conversación, no en cada frase.
-- Ejemplo correcto: "¡Hola María! ¿En qué te puedo ayudar hoy?"
+- Si en el contexto ves "DATOS DEL CLIENTE" con un nombre, USA ESE NOMBRE para saludar.
+- En el primer saludo preséntate brevemente como Balatin, el gato de la suerte.
+- Ejemplo correcto: "¡Hola María! 🐾 Soy Balatin, tu gato de la suerte. ¿En qué te ayudo hoy?"
 - Ejemplo incorrecto: "¡Hola bella! ¿Cómo estás hermosa?"
+
+## TU FORMA DE HABLAR:
+- Juguetón, tranquilo y MUY resolutivo. Frases cortas y directas.
+- Expresiones felinas con moderación y naturalidad: "miau", "prr", emojis 🐾🐱✨ (máximo 1-2 por mensaje).
 
 ## Puedes ayudar con:
 - Información de productos (precios, disponibilidad, descripción)
@@ -142,26 +147,49 @@ Eres súper carismática, amable y hablas como una vendedora experta en belleza.
 ## Negociación de productos faltantes:
 Si en el contexto ves que el cliente tiene un pedido en estado "negotiation" (En negociación / mod.) con productos faltantes, debes iniciar o continuar la negociación inmediatamente en tu respuesta (incluso si el cliente solo te saluda, te da una respuesta corta, o pregunta qué pasa):
 1. Dile de forma muy carismática y natural que lamentablemente nos quedamos sin stock de esos productos específicos.
-2. Explícale que puede reemplazarlos ella misma entrando a los detalles de su pedido desde la página web, o si lo prefiere, tú misma puedes ayudarla a elegir y hacer los cambios por aquí en el chat.
+2. Explícale que puede reemplazarlos él mismo entrando a los detalles de su pedido desde la página web, o si lo prefiere, tú mismo puedes ayudarlo a elegir y hacer los cambios por aquí en el chat.
 3. Pregúntale qué prefiere.
-4. Solo si ella te dice explícitamente que prefiere hacerlo ella misma por la web, le envías su enlace: ${SITE_URL}/pedido/ID_DEL_PEDIDO (usa el ID del pedido del contexto).
-5. Si ella te dice que la ayudes tú, muéstrale alternativas disponibles del catálogo y ayúdala a decidir.
+4. Solo si te dice explícitamente que prefiere hacerlo él mismo por la web, le envías su enlace: ${SITE_URL}/pedido/ID_DEL_PEDIDO (usa el ID del pedido del contexto).
+5. Si te dice que lo ayudes tú, muéstrale alternativas disponibles del catálogo y ayúdalo a decidir.
 
 ## Información de la tienda:
-- Tienda: Don Balato Iván
+- Tienda: Don Balato Iván — artículos de hogar, aseo y variedad (NO somos tienda de belleza ni cosméticos).
 - Sitio web: ${SITE_URL}
 - País: Chile
+
+## 🛒 CÓMO TOMAR UN PEDIDO POR CHAT (SIN LINKS, SIN FORMULARIOS)
+Tú mismo tomas los pedidos conversando, como si fueras el vendedor. NUNCA envíes al cliente al carrito de la web ni le pidas que llene un formulario. NUNCA digas "no puedo tomar pedidos" — ¡SÍ puedes y DEBES tomarlos! Sigue este flujo EN ESTE ORDEN:
+1. Cuando el cliente te diga qué productos quiere (o venga desde el catálogo de WhatsApp con una lista), identifica los productos EXACTOS del catálogo que se te inyecta como contexto (usa su "id" real). Si no tienes el id de un producto porque no está en tu contexto, usa [ACTION:SEARCH_SKU] o pide que te confirme el nombre exacto — NUNCA inventes un id. Si el cliente vino del catálogo con una lista de productos, esos productos DEBERÍAN estar en tu contexto (se buscaron automáticamente). Confírmalos con el cliente.
+2. Confirma con el cliente la lista final de productos y cantidades.
+3. Pídele su NOMBRE COMPLETO (nada más por ahora, el teléfono ya lo tienes tú automáticamente).
+4. En cuanto tengas los productos + el nombre, genera EXACTAMENTE este bloque oculto al final de tu respuesta (no esperes a tener dirección ni nada más):
+[ACTION:CREATE_ORDER]{"items":[{"id":"ID_REAL_DEL_PRODUCTO","qty":2}],"customerName":"Nombre Completo"}[/ACTION]
+Dile al cliente que ya registraste su pedido y que estás confirmando el stock con el equipo — NUNCA inventes un código de pedido ni confirmes el stock tú mismo, eso lo hace el sistema.
+5. Cuando el equipo confirme el stock, verás en el historial que ya se le avisó al cliente y se le pidieron los datos de envío que falten (dirección, comuna, región, agencia). A partir de ahí, tu trabajo es recolectar esos datos UNO A LA VEZ de forma conversacional (nunca los pidas todos juntos en una lista fría).
+6. Si el cliente escribe un dato incompleto o ambiguo (ej. le falta el número de la casa, o pone una comuna que no existe), pídele amablemente que lo repita o aclare antes de seguir con el siguiente dato.
+7. Cada vez que el cliente te dé uno o más datos de envío nuevos, guárdalos de inmediato generando este bloque oculto (solo incluye los campos que el cliente te acaba de dar, no inventes los demás):
+[ACTION:UPDATE_SHIPPING]{"address":"Calle 123, depto 4","comuna":"Comuna","region":"Región","shippingAgency":"Starken","customerRut":"12.345.678-9"}[/ACTION]
+8. Cuando ya tengas dirección, comuna y región (el RUT y la agencia intenta conseguirlos pero no bloquees si el cliente no los quiere dar), pídele que haga la transferencia y te mande la foto del comprobante por este mismo chat — nunca lo mandes a subir el comprobante a la web.
+9. Cuando el cliente te mande la foto del comprobante, el sistema ya la detecta y la asocia automáticamente al pedido, tú solo agradécele.
+10. Si el equipo te avisa (verás el aviso en el historial de la conversación) que algún producto no tiene stock, activa la sección "Negociación de productos faltantes" de arriba con ese cliente.
+
+## Información de pago (solo cuando el pedido ya tenga el stock confirmado):
+- Titular: DON BALATO IVAN
+- RUT: 78.267.426-9
+- Banco: Mercado Pago (Cuenta Vista)
+- Número de cuenta: 1037879898
+- Email: donbalatosoporte@gmail.com
 
 ## ⛔ REGLAS ABSOLUTAS (PROHIBIDO ROMPER):
 1. NUNCA inventes nombres de productos. Solo menciona productos que aparezcan EXACTAMENTE en el catálogo que se te inyecta como contexto. Si no hay productos en el contexto, di que puedes mostrarle el catálogo en la web.
 2. NUNCA inventes URLs. Solo usa ${SITE_URL} y las rutas reales del sitio (como ${SITE_URL}/productos o ${SITE_URL}/pedido/ID).
 3. NUNCA inventes precios, stock, políticas de envío ni métodos de pago que no estén en tu contexto.
-4. Si NO tienes la información que el cliente pide (ej: precios por mayor, catálogo completo, info que no está en tu contexto), ADMÍTELO HONESTAMENTE y di algo como: "Esa información la maneja directamente nuestro equipo, déjame conectarte con la persona indicada para que te ayude personalmente 🌸" y añade al final: [ACTION:ESCALATE_ADMIN][/ACTION]
+4. Si NO tienes la información que el cliente pide (ej: precios por mayor, catálogo completo, info que no está en tu contexto), ADMÍTELO HONESTAMENTE y di algo como: "Esa información la maneja directamente nuestro equipo, déjame conectarte con la persona indicada para que te ayude personalmente 🐾" y añade al final: [ACTION:ESCALATE_ADMIN][/ACTION]
 5. NUNCA des vueltas ni digas "dame un minutito" o "ya casi lo tengo" si no puedes obtener la información. Si no la tienes, escala inmediatamente.
 6. Si el cliente te pide algo por segunda vez y no puedes responderlo, ESCALA INMEDIATAMENTE al admin.
-7. Sé cálida, cercana y carismática. Evita respuestas muy largas o robóticas.
+7. Sé cálido, cercano y carismático. Evita respuestas muy largas o robóticas.
 8. Siempre termina con una pregunta o invitación para seguir la conversación.
-- Si hay un problema muy grande que no puedes resolver o manejar con el cliente, dile al cliente amablemente que lo conectarás con una persona del equipo para que lo ayude mejor, y DEBES añadir al final de tu respuesta EXACTAMENTE este bloque oculto: [ACTION:ESCALATE_ADMIN][/ACTION]
+- Si hay un problema muy grande que no puedes resolver o manejar con el cliente, dile amablemente que lo conectarás con una persona del equipo para que lo ayude mejor, y DEBES añadir al final de tu respuesta EXACTAMENTE este bloque oculto: [ACTION:ESCALATE_ADMIN][/ACTION]
 
 Los datos de productos y pedidos del cliente te serán inyectados como contexto.`;
 
@@ -170,14 +198,14 @@ function needsDbContext(text: string): boolean {
   const cleaned = text.toLowerCase().trim();
   if (cleaned.length < 3) return false;
 
-  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+kenia|kenia|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
+  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+balatin|balatin|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
   return !pureChitchat.test(cleaned);
 }
 
 // Helper: detect if a text is a greeting
 function isGreeting(text: string): boolean {
   const cleaned = text.toLowerCase().trim();
-  return /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|hey|hi|holi|hola\s+kenia|holaa|hola+a|ola|ola\s+kenia)\b/i.test(cleaned)
+  return /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|hey|hi|holi|hola\s+balatin|holaa|hola+a|ola|ola\s+balatin)\b/i.test(cleaned)
     || /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|hey|hi|holi|holaa|ola)$/i.test(cleaned);
 }
 
@@ -382,13 +410,13 @@ async function linkWhatsappToOrders(whatsappPhone: string, orders: any[]): Promi
 
 // Helper: send welcome menu as interactive list
 async function sendWelcomeMenu(phone: string, customerName: string, token: string, customBody?: string) {
-  const firstName = customerName.split(' ')[0] || customerName || 'bella';
-  const body = customBody || ('Estas son las cosas que puedo hacer por ti, ' + firstName + ' 🌸 toca una opción para saber más:');
+  const firstName = customerName.split(' ')[0] || customerName || 'amigo';
+  const body = customBody || ('Estas son las cosas que puedo hacer por ti, ' + firstName + ' 🐾 toca una opción para saber más:');
   await sendWhatsAppList(phone, {
-    header: '✨ Bienvenida a Kenia',
+    header: '🐾 ¡Hola! Soy Balatin',
     body,
-    footer: 'Don Balato Iván · Tu tienda de belleza',
-    buttonText: 'Opciones de Ayuda 🌸',
+    footer: 'Don Balato Iván · Hogar, aseo y variedad',
+    buttonText: 'Opciones de ayuda 🐾',
     sections: [
       {
         title: 'Mis funciones',
@@ -495,7 +523,7 @@ export async function POST(req: NextRequest) {
           await setKeniaBlocked(fromPhone, true);
           await sendWhatsAppMessage(
             fromPhone,
-            '¡Uy bella! 🌸 Ya me enviaste muchas fotitos por hoy y se me llenó un poquito la memoria 🥺. Dame un momentito cortito que estoy revisando todo con las chicas de tienda para ayudarte súper bien 🏃‍♀️💨',
+            '¡Miau! 🐾 Ya me enviaste muchas fotitos por hoy y se me llenó la memoria. Dame un momentito que lo reviso con el equipo de tienda para ayudarte bien.',
             WA_TOKEN
           );
           // Notify admin
@@ -523,6 +551,12 @@ export async function POST(req: NextRequest) {
             let pendingOrderId = usageState.awaitingComprobante ? usageState.pendingOrderId : null;
             let orderCode = pendingOrderId || '';
 
+            // Balatin flow: if user is in awaiting_payment step, use the balatin order
+            if (!pendingOrderId && usageState.balatinOrderFlow === true && usageState.balatinStep === 'awaiting_payment') {
+              pendingOrderId = usageState.balatinOrderId || null;
+              orderCode = usageState.balatinOrderCode || '';
+            }
+
             if (!pendingOrderId && usageState.hasNoPendingOrders !== true) {
               const { serverListDocuments } = await import('@/lib/appwrite-server');
               const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
@@ -535,16 +569,17 @@ export async function POST(req: NextRequest) {
                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit5]);
                 const myOrders = resOrders.documents || [];
                 // First: pending orders without payment proof
-                const pending = myOrders.find((o: any) => o.STATUS === 'pending' && !o.PAYMENTPROOFURL);
+                const pending = myOrders.find((o: any) => (o.STATUS === 'pending' || o.STATUS === 'pending_stock') && !o.PAYMENTPROOFURL);
                 if (pending) {
                   pendingOrderId = String(pending.$id);
                   orderCode = String(pending.ORDERCODE || pending.$id);
                 } else {
-                  // Also check processing orders without proof (client may have paid but not uploaded)
-                  const processingNoProof = myOrders.find((o: any) => o.STATUS === 'processing' && !o.PAYMENTPROOFURL);
-                  if (processingNoProof) {
-                    pendingOrderId = String(processingNoProof.$id);
-                    orderCode = String(processingNoProof.ORDERCODE || processingNoProof.$id);
+                  // Also check processing/paid orders without proof (client may have paid but not uploaded,
+                  // or Balatin already confirmed stock — STATUS 'paid' — and is waiting for the transfer proof)
+                  const awaitingProof = myOrders.find((o: any) => (o.STATUS === 'processing' || o.STATUS === 'paid') && !o.PAYMENTPROOFURL);
+                  if (awaitingProof) {
+                    pendingOrderId = String(awaitingProof.$id);
+                    orderCode = String(awaitingProof.ORDERCODE || awaitingProof.$id);
                   } else {
                     // Mark so we don't query again this session when they send more images
                     await recordKeniaUsage(fromPhone, { hasNoPendingOrders: true });
@@ -556,8 +591,10 @@ export async function POST(req: NextRequest) {
             }
 
             // Use Gemini Vision to verify the image is actually a payment receipt
+            // Skip vision check for Balatin flow (paused per user request)
+            const isBalatinFlow = usageState.balatinOrderFlow === true && usageState.balatinStep === 'awaiting_payment';
             let isComprobante = false;
-            if (pendingOrderId) {
+            if (pendingOrderId && !isBalatinFlow) {
               try {
                 const base64Check = Buffer.from(buffer).toString('base64');
                 const visionHeaders = await getGeminiAuthHeaders();
@@ -582,33 +619,106 @@ export async function POST(req: NextRequest) {
                 console.warn('[WhatsApp Webhook] Vision check failed, assuming comprobante:', e);
                 isComprobante = true; // Fallback: assume it is if we can't verify
               }
+            } else if (isBalatinFlow) {
+              // Balatin flow: skip vision check, assume any image is the comprobante
+              isComprobante = true;
             }
 
             if (pendingOrderId && isComprobante) {
               const fileName = `comprobante_${Date.now()}.jpg`;
               const uploadRes = await serverUploadFile(MEDIA_BUCKET_ID, buffer, fileName);
               const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, uploadRes.$id);
-              
+
+              if (isBalatinFlow) {
+                // Balatin flow: save comprobante, change status to payment_review
+                await serverUpdateDocument(ORDERS_COLLECTION_ID, pendingOrderId, {
+                  PAYMENTPROOFURL: fileUrl,
+                  STATUS: 'payment_review',
+                });
+
+                const customerName = usageState.customerName || '';
+
+                // Check if customer already has shipping data from a previous order
+                let prevData: any = null;
+                try {
+                  const cleanedPhoneForLookup = fromPhone.replace(/\D/g, '');
+                  const qOrderDescPrev = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+                  const qPhonePrev = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhoneForLookup] });
+                  const qLimitPrev = JSON.stringify({ method: 'limit', values: [10] });
+                  const prevOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDescPrev, qPhonePrev, qLimitPrev]);
+                  // Find the most recent order that has all required shipping data (email optional)
+                  prevData = (prevOrders.documents || []).find((o: any) =>
+                    o.CUSTOMERRUT && o.ADDRESS && o.COMUNA && o.REGION && o.SHIPPINGAGENCY
+                  );
+                } catch (e) {
+                  console.warn('[Balatin Catalog Flow] Could not fetch previous orders for data lookup:', e);
+                }
+
+                if (prevData) {
+                  // Returning customer with full data — copy to new order and go straight to confirmation
+                  try {
+                    await serverUpdateDocument(ORDERS_COLLECTION_ID, pendingOrderId, {
+                      CUSTOMERRUT: prevData.CUSTOMERRUT,
+                      ADDRESS: prevData.ADDRESS,
+                      COMUNA: prevData.COMUNA,
+                      REGION: prevData.REGION,
+                      SHIPPINGAGENCY: prevData.SHIPPINGAGENCY,
+                      CUSTOMEREMAIL: prevData.CUSTOMEREMAIL,
+                      CUSTOMERNAME: prevData.CUSTOMERNAME || customerName,
+                    });
+                  } catch (e) {
+                    console.warn('[Balatin Catalog Flow] Could not copy previous data to new order:', e);
+                  }
+
+                  await recordKeniaUsage(fromPhone, {
+                    balatinComprobanteReceived: true,
+                    balatinStep: 'awaiting_data_confirm',
+                  });
+
+                  const emailLine = prevData.CUSTOMEREMAIL ? `\n• *Email:* ${prevData.CUSTOMEREMAIL}` : '';
+                  const dataMsg = `¡Comprobante recibido, ${customerName}! 🐾✨\n\nNuestro equipo va a revisar tu pago. Cuando esté confirmado, te avisaré por este medio.\n\nTengo tus datos de tu pedido anterior:\n\n• *RUT:* ${prevData.CUSTOMERRUT}\n• *Dirección:* ${prevData.ADDRESS}\n• *Comuna:* ${prevData.COMUNA}\n• *Región:* ${prevData.REGION}\n• *Agencia:* ${prevData.SHIPPINGAGENCY}${emailLine}\n\n¿Usamos estos mismos datos? Responde *CORRECTO* para confirmar, o dime qué quieres cambiar. ✏️`;
+                  await sendWhatsAppMessage(fromPhone, dataMsg, WA_TOKEN);
+                  await addToHistory(fromPhone, 'user', '[Imagen Comprobante]', msgId);
+                  await addToHistory(fromPhone, 'assistant', dataMsg, `balatin-data-${Date.now()}`);
+                  await markAsRead(msgId, WA_TOKEN);
+                  return NextResponse.json({ status: 'balatin_comprobante_saved_returning' });
+                }
+
+                // New customer or no previous data — ask for all data
+                await recordKeniaUsage(fromPhone, {
+                  balatinComprobanteReceived: true,
+                  balatinStep: 'awaiting_data',
+                });
+
+                const dataMsg = `¡Comprobante recibido, ${customerName}! 🐾✨\n\nNuestro equipo va a revisar tu pago. Cuando esté confirmado, te avisaré por este medio.\n\nMientras tanto, necesito tus datos para el envío:\n\n• *RUT* (ej: 12.345.678-9 o 12345678-9)\n• *Dirección* (calle, número, depto)\n• *Comuna*\n• *Región*\n• *Agencia de envío* (Starken, Chilexpress, BluExpress, o retiro en tienda)\n• Email (opcional)\n\nPuedes escribirlos todos juntos o uno por uno, como prefieras. 📝\n\nCuando termines, escribe *TERMINÉ*.`;
+                await sendWhatsAppMessage(fromPhone, dataMsg, WA_TOKEN);
+                await addToHistory(fromPhone, 'user', '[Imagen Comprobante]', msgId);
+                await addToHistory(fromPhone, 'assistant', dataMsg, `balatin-data-${Date.now()}`);
+                await markAsRead(msgId, WA_TOKEN);
+                return NextResponse.json({ status: 'balatin_comprobante_saved' });
+              }
+
+              // Non-Balatin flow: original behavior
               await serverUpdateDocument(ORDERS_COLLECTION_ID, pendingOrderId, {
                 PAYMENTPROOFURL: fileUrl,
                 STATUS: 'payment_review'
               });
-              
+
               if (!orderCode || orderCode === pendingOrderId) {
                 try {
                   const doc = await serverGetDocument(ORDERS_COLLECTION_ID, pendingOrderId);
                   if (doc.ORDERCODE) orderCode = String(doc.ORDERCODE);
                 } catch (e) {}
               }
-              
+
               await notifyPaymentUploaded(orderCode, 'Cliente (vía WhatsApp)', fileUrl, pendingOrderId);
               await recordKeniaUsage(fromPhone, { awaitingComprobante: false, pendingOrderId: undefined });
-              
-              const reply = `¡Listo bella! 💖 Recibí tu comprobante y se ha guardado en tu pedido #${orderCode}. Apenas finanzas lo valide, te avisaremos para continuar con el envío. ¡Muchas gracias! 🥰💸`;
+
+              const reply = `¡Listo! 🐾 Recibí tu comprobante y quedó guardado en tu pedido #${orderCode}. Apenas finanzas lo valide, te aviso para seguir con el envío. ¡Muchas gracias! ✨💸`;
               await sendWhatsAppMessage(fromPhone, reply, WA_TOKEN);
               await addToHistory(fromPhone, 'user', '[Imagen Comprobante]', msgId);
               await addToHistory(fromPhone, 'assistant', reply, `comprobante-${Date.now()}`);
-              
+
               return NextResponse.json({ status: 'comprobante_uploaded' });
             }
 
@@ -667,7 +777,7 @@ export async function POST(req: NextRequest) {
     // Procesar comandos de modo cliente
     if (isAdmin && userText.toUpperCase() === 'MODO CLIENTE') {
       await recordKeniaUsage(fromPhone, { testAsClient: true });
-      const reply = 'Kenia: Modo cliente activado para ti. Te trataré como a un cliente a partir de ahora, incluso si la IA está desactivada. Escribe "MODO ADMIN" para volver al modo administrador. 🌸';
+      const reply = 'Balatin: Modo cliente activado para ti. Te trataré como a un cliente a partir de ahora, incluso si la IA está desactivada. Escribe "MODO ADMIN" para volver al modo administrador. 🐾';
       await sendWhatsAppMessage(fromPhone, reply, WA_TOKEN);
       await addToHistory(fromPhone, 'assistant', reply, msgId);
       return NextResponse.json({ status: 'mode_client_activated' });
@@ -675,7 +785,7 @@ export async function POST(req: NextRequest) {
 
     if (isAdmin && userText.toUpperCase() === 'MODO ADMIN') {
       await recordKeniaUsage(fromPhone, { testAsClient: false });
-      const reply = 'Kenia: Modo administrador reactivado. Volverás a recibir los reportes y poder ejecutar comandos de administración. 🛡️';
+      const reply = 'Balatin: Modo administrador reactivado. Volverás a recibir los reportes y poder ejecutar comandos de administración. 🛡️';
       await sendWhatsAppMessage(fromPhone, reply, WA_TOKEN);
       await addToHistory(fromPhone, 'assistant', reply, msgId);
       return NextResponse.json({ status: 'mode_admin_activated' });
@@ -686,12 +796,424 @@ export async function POST(req: NextRequest) {
       isAdmin = false;
     }
 
+    // ── BALATIN CATALOG FLOW (no AI, programmed logic) ──────────────────────────
+    // Detect catalog order message: "*Hola Balatin!* ... Codigo: WA-XXXX"
+    const balatinCatalogMatch = userText.match(/\*\s*Hola\s+Balatin!?\s*\*/i);
+    const catCodeMatch = userText.match(/(?:Codigo|C[oó]digo)[:\s]*\*?(WA-\d{4,8})\*?/i);
+    const waCodeMatch = userText.match(/WA-\d{6,8}/i);
+
+    if ((balatinCatalogMatch || catCodeMatch) && (catCodeMatch || waCodeMatch)) {
+      const orderCode = (catCodeMatch?.[1] || waCodeMatch?.[0] || '').toUpperCase();
+      console.log(`[Balatin Catalog Flow] Detected catalog order: ${orderCode} from ${fromPhone}`);
+      console.log(`[Balatin Catalog Flow] balatinCatalogMatch:`, !!balatinCatalogMatch, 'catCodeMatch:', !!catCodeMatch, 'waCodeMatch:', !!waCodeMatch);
+      console.log(`[Balatin Catalog Flow] userText first 100 chars:`, userText.substring(0, 100));
+
+      try {
+        const { serverListDocuments, serverUpdateDocument, serverGetDocument } = await import('@/lib/appwrite-server');
+        const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+        const { isNightNow, santiagoHour } = await import('@/lib/night-mode');
+
+        // Find the order
+        const qEqual = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [orderCode] });
+        const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+        const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qEqual, qLimit1]);
+        console.log(`[Balatin Catalog Flow] Order search result:`, res.documents?.length || 0, 'documents found for code', orderCode);
+
+        if (res.documents && res.documents.length > 0) {
+          const order = res.documents[0] as any;
+          const orderId = order.$id;
+          const night = isNightNow();
+          const hour = santiagoHour();
+
+          // Link phone to order (LINKED_WHATSAPP may not exist as attribute, so try without it)
+          try {
+            await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+              CUSTOMERPHONE: `+${cleanedFrom}`,
+            });
+          } catch (updErr) {
+            console.warn('[Balatin Catalog Flow] Phone update failed, continuing anyway:', updErr);
+          }
+
+          // Check if customer already has a name from a previous order
+          let existingCustomerName = usage.customerName || '';
+          if (!existingCustomerName) {
+            try {
+              const qOrderDescPrev = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+              const qPhonePrev = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedFrom] });
+              const qLimitPrev = JSON.stringify({ method: 'limit', values: [5] });
+              const prevOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDescPrev, qPhonePrev, qLimitPrev]);
+              const prevWithName = (prevOrders.documents || []).find((o: any) => o.CUSTOMERNAME && String(o.CUSTOMERNAME).trim().length >= 2);
+              if (prevWithName) {
+                existingCustomerName = String(prevWithName.CUSTOMERNAME).trim();
+                console.log(`[Balatin Catalog Flow] Found existing customer name from previous order: ${existingCustomerName}`);
+              }
+            } catch (e) {
+              console.warn('[Balatin Catalog Flow] Could not fetch previous orders for name lookup:', e);
+            }
+          }
+
+          // If we already know the customer's name, skip name collection and update the order
+          if (existingCustomerName) {
+            // Save the name to the new order
+            try {
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+                CUSTOMERNAME: existingCustomerName,
+              });
+            } catch (e) {
+              console.warn('[Balatin Catalog Flow] Could not save existing name to new order:', e);
+            }
+
+            // Get order total
+            let orderTotal = 0;
+            try {
+              const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId);
+              orderTotal = Number(orderDoc?.TOTAL || orderDoc?.SUBTOTAL || 0);
+            } catch (e) {}
+
+            await recordKeniaUsage(fromPhone, {
+              isGuestWithOrders: true,
+              isRegistered: true,
+              customerName: existingCustomerName,
+              balatinOrderFlow: true,
+              balatinOrderId: orderId,
+              balatinOrderCode: orderCode,
+              balatinStep: 'awaiting_payment',
+              balatinComprobanteReceived: false,
+            });
+
+            await markAsRead(msgId, WA_TOKEN);
+            await addToHistory(fromPhone, 'user', userText, msgId);
+
+            const night = isNightNow();
+            if (night) {
+              // Night: returning customer, skip name, go straight to payment
+              const welcomeMsg = `¡Hola, ${existingCustomerName}! 🐾 ¡Qué bueno verte de nuevo!\n\n¡Ya tomé tu pedido *${orderCode}*! Como ya te conozco, no necesito pedirte tus datos de nuevo. 🎉\n\nPara continuar, haz la transferencia:\n\n💳 *Datos para la transferencia:*\nTitular: DON BALATO IVAN\nRUT: 78.267.426-9\nBanco: Mercado Pago (Cuenta Vista)\nCuenta: 1037879898\nEmail: donbalatosoporte@gmail.com\n\nMonto total: $${orderTotal.toLocaleString('es-CL')}\n\nCuando transfieras, mándame la *foto del comprobante* por aquí. 📸`;
+              await sendWhatsAppMessage(fromPhone, welcomeMsg, WA_TOKEN);
+              await addToHistory(fromPhone, 'assistant', welcomeMsg, `balatin-returning-${Date.now()}`);
+              return NextResponse.json({ status: 'balatin_catalog_returning_night' });
+            } else {
+              // Day: returning customer, verify stock first, then payment
+              await recordKeniaUsage(fromPhone, { balatinStep: 'awaiting_stock_confirmation' });
+
+              const dayMsg = `¡Hola, ${existingCustomerName}! 🐾 ¡Qué bueno verte de nuevo!\n\n¡Ya tomé tu pedido *${orderCode}*! Ahora mismo estamos verificando el stock de tus productos.\n\nEn cuanto la cajera lo confirme, te aviso altiro para seguir. ¡Un momentito! ✨`;
+              await sendWhatsAppMessage(fromPhone, dayMsg, WA_TOKEN);
+              await addToHistory(fromPhone, 'assistant', dayMsg, `balatin-returning-day-${Date.now()}`);
+
+              // Notify admin (cajera) about new order
+              const orderLink = `${SITE_URL}/admin/orders/${orderId}`;
+              try {
+                const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
+                await recordKeniaUsage(STOCK_VERIFIER_PHONE, { pendingOrderId: orderId });
+                const components = [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: String(orderCode) },
+                      { type: 'text', text: existingCustomerName },
+                    ]
+                  }
+                ];
+                await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es', components, WA_TOKEN);
+                await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `🔗 Revisa el pedido aquí:\n${orderLink}`, WA_TOKEN);
+              } catch (tplErr) {
+                console.error('[Balatin Catalog Flow] Error sending template to admin:', tplErr);
+                const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: ${existingCustomerName}\nTeléfono: +${cleanedFrom}\n\nRevisa y confirma el stock aquí:\n${orderLink}`;
+                await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, adminMsg, WA_TOKEN);
+              }
+
+              return NextResponse.json({ status: 'balatin_catalog_returning_day' });
+            }
+          }
+
+          // New customer — ask for name
+          // Mark this user as a Balatin catalog customer in usage
+          await recordKeniaUsage(fromPhone, {
+            isGuestWithOrders: true,
+            isRegistered: false,
+            balatinOrderFlow: true,
+            balatinOrderId: orderId,
+            balatinOrderCode: orderCode,
+            balatinStep: night ? 'awaiting_name_night' : 'awaiting_name_day',
+          });
+
+          await markAsRead(msgId, WA_TOKEN);
+          await addToHistory(fromPhone, 'user', userText, msgId);
+
+          if (night) {
+            // Night flow (6pm-9am): no stock verification, go straight to data
+            const nightMsg = `¡Hola! 🐾 Soy Balatin, el gato de la suerte de Don Balato Iván.\n\n¡Ya tomé tu pedido *${orderCode}*! Para ir adelantando, ¿me das tu *nombre completo* por favor?`;
+            await sendWhatsAppMessage(fromPhone, nightMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'assistant', nightMsg, `balatin-night-${Date.now()}`);
+            return NextResponse.json({ status: 'balatin_catalog_night' });
+          } else {
+            // Day flow (9am-6pm): verify stock, ask for name while waiting
+            const dayMsg = `¡Hola! 🐾 Soy Balatin, el gato de la suerte de Don Balato Iván.\n\n¡Ya tomé tu pedido *${orderCode}*! Ahora mismo estamos verificando el stock de tus productos.\n\nMientras tanto, ¿me darías tu *nombre completo* por favor?`;
+            await sendWhatsAppMessage(fromPhone, dayMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'assistant', dayMsg, `balatin-day-${Date.now()}`);
+
+            // Notify admin (cajera) about new order using approved template
+            const orderLink = `${SITE_URL}/admin/orders/${orderId}`;
+            try {
+              const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
+              const { recordKeniaUsage } = await import('@/lib/kenia-runtime');
+
+              // Store the pending order ID for the cajera so when she clicks CONFIRMAR STOCK we know which order
+              await recordKeniaUsage(STOCK_VERIFIER_PHONE, { pendingOrderId: orderId });
+
+              const components = [
+                {
+                  type: 'body',
+                  parameters: [
+                    { type: 'text', text: String(orderCode) },
+                    { type: 'text', text: '(pendiente de nombre)' },
+                  ]
+                }
+              ];
+
+              await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es', components, WA_TOKEN);
+
+              // Send the order link in a follow-up message (template doesn't have a link variable)
+              await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `🔗 Revisa el pedido aquí:\n${orderLink}`, WA_TOKEN);
+            } catch (tplErr) {
+              console.error('[Balatin Catalog Flow] Error sending template to admin:', tplErr);
+              // Fallback: plain text
+              const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: (pendiente de nombre)\nTeléfono: +${cleanedFrom}\n\nRevisa y confirma el stock aquí:\n${orderLink}`;
+              await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, adminMsg, WA_TOKEN);
+            }
+
+            return NextResponse.json({ status: 'balatin_catalog_day' });
+          }
+        } else {
+          console.warn(`[Balatin Catalog Flow] Order ${orderCode} not found in DB`);
+        }
+      } catch (e) {
+        console.error('[Balatin Catalog Flow] Error:', e);
+      }
+    }
+
+    // ── BALATIN NAME COLLECTION (no AI) ─────────────────────────────────────────
+    // If user is in Balatin flow and we're waiting for their name
+    if (usage.balatinOrderFlow === true && usage.balatinStep && usage.balatinStep.startsWith('awaiting_name')) {
+      const orderId = usage.balatinOrderId;
+      const orderCode = usage.balatinOrderCode;
+      const name = userText.trim();
+
+      if (name.length >= 2 && name.length <= 80 && !/^(finalizar|termin[eé]|modo|admin|cliente|hola|balatin)/i.test(name)) {
+        try {
+          const { serverUpdateDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const { isNightNow } = await import('@/lib/night-mode');
+
+          // Save name to order
+          await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId!, {
+            CUSTOMERNAME: name,
+          });
+
+          // Get order total for the payment message
+          let orderTotal = 0;
+          try {
+            const { serverGetDocument } = await import('@/lib/appwrite-server');
+            const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId!);
+            orderTotal = Number(orderDoc?.TOTAL || orderDoc?.SUBTOTAL || 0);
+          } catch (e) {
+            console.warn('[Balatin Catalog Flow] Could not fetch order total:', e);
+          }
+
+          await markAsRead(msgId, WA_TOKEN);
+          await addToHistory(fromPhone, 'user', userText, msgId);
+
+          const night = isNightNow();
+          if (night) {
+            // Night: go to payment first, then data
+            await recordKeniaUsage(fromPhone, {
+              customerName: name,
+              balatinStep: 'awaiting_payment',
+              balatinComprobanteReceived: false,
+            });
+
+            const payMsg = `¡Gracias, ${name}! 🐾\n\nPara continuar con tu pedido, haz la transferencia:\n\n💳 *Datos para la transferencia:*\nTitular: DON BALATO IVAN\nRUT: 78.267.426-9\nBanco: Mercado Pago (Cuenta Vista)\nCuenta: 1037879898\nEmail: donbalatosoporte@gmail.com\n\nMonto total: $${orderTotal.toLocaleString('es-CL')}\n\nCuando transfieras, mándame la *foto del comprobante* por aquí. 📸`;
+            await sendWhatsAppMessage(fromPhone, payMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'assistant', payMsg, `balatin-pay-${Date.now()}`);
+
+            return NextResponse.json({ status: 'balatin_name_saved_night' });
+          } else {
+            // Day: name saved, waiting for stock confirmation
+            await recordKeniaUsage(fromPhone, {
+              customerName: name,
+              balatinStep: 'awaiting_stock_confirmation',
+            });
+
+            const waitMsg = `¡Gracias, ${name}! 🐾\n\nYa anoté tu nombre. Estamos verificando el stock de tu pedido, en cuanto la cajera lo confirme te aviso altiro para seguir. ¡Un momentito! ✨`;
+            await sendWhatsAppMessage(fromPhone, waitMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'assistant', waitMsg, `balatin-wait-${Date.now()}`);
+
+            return NextResponse.json({ status: 'balatin_name_saved_day' });
+          }
+        } catch (e) {
+          console.error('[Balatin Catalog Flow] Error saving name:', e);
+        }
+      }
+    }
+
+    // ── BALATIN PAYMENT STEP (waiting for comprobante image) ────────────────────
+    if (usage.balatinOrderFlow === true && usage.balatinStep === 'awaiting_payment') {
+      const customerName = usage.customerName || '';
+
+      // If it's an image, let the image handler below process it (it will save comprobante and move to awaiting_data)
+      if (msgType === 'image') {
+        // Fall through to image handler
+      } else {
+        // Not an image — remind the client to send the comprobante photo
+        const remindMsg = `¡Perfecto, ${customerName}! 🐾\n\nCuando termines la transferencia, mándame la *foto del comprobante* por aquí. 📸`;
+        await sendWhatsAppMessage(fromPhone, remindMsg, WA_TOKEN);
+        await addToHistory(fromPhone, 'user', userText, msgId);
+        await addToHistory(fromPhone, 'assistant', remindMsg, `balatin-remind-${Date.now()}`);
+        await markAsRead(msgId, WA_TOKEN);
+        return NextResponse.json({ status: 'balatin_payment_remind' });
+      }
+    }
+
+    // ── BALATIN DATA CONFIRM (returning customer confirms or changes previous data) ──
+    if (usage.balatinOrderFlow === true && usage.balatinStep === 'awaiting_data_confirm') {
+      const orderId = usage.balatinOrderId;
+      const orderCode = usage.balatinOrderCode;
+      const customerName = usage.customerName || '';
+      const wantsConfirm = /\b(correcto|correcta|ok|si|s[ií]|est[aá] bien|perfecto|los mismos|igual)\b/i.test(userText.trim().toLowerCase());
+
+      if (wantsConfirm && userText.trim().length <= 25) {
+        // Confirm — check all data is present
+        try {
+          const { serverGetDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId!);
+
+          const missingFields: string[] = [];
+          if (!orderDoc?.CUSTOMERRUT) missingFields.push('RUT');
+          if (!orderDoc?.ADDRESS) missingFields.push('dirección');
+          if (!orderDoc?.COMUNA) missingFields.push('comuna');
+          if (!orderDoc?.REGION) missingFields.push('región');
+          if (!orderDoc?.SHIPPINGAGENCY) missingFields.push('agencia de envío');
+          // Email is optional — not required
+
+          if (missingFields.length > 0) {
+            // Some data missing — go to normal data collection, clear buffer
+            await recordKeniaUsage(fromPhone, { balatinStep: 'awaiting_data', balatinDataBuffer: '' });
+            const missingMsg = `¡Casi! 🐾 Me faltan algunos datos:\n\n${missingFields.map(f => `• ${f}`).join('\n')}\n\nMándamelos y escribe *TERMINÉ*. 📝`;
+            await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', missingMsg, `balatin-missing-${Date.now()}`);
+            await markAsRead(msgId, WA_TOKEN);
+            return NextResponse.json({ status: 'balatin_missing_data' });
+          } else {
+            // All data present — done!
+            const doneMsg = `¡Perfecto, ${customerName}! 🐾✨\n\nTu pedido *${orderCode}* está listo:\n✅ Comprobante recibido\n✅ Datos de envío guardados\n\nNuestro equipo va a revisar tu pago. Cuando esté confirmado, te avisaré por aquí.\n\nTe mantendré informado en cada paso:\n📦 Pago confirmado\n📦 Pedido armado/embalado\n🚚 Entregado a la agencia (con foto y código de seguimiento)\n\nCualquier consulta sobre tu pedido, escríbeme por aquí nomás. ¡Gracias por confiar en este gatito! 🐾💖`;
+            await sendWhatsAppMessage(fromPhone, doneMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', doneMsg, `balatin-done-${Date.now()}`);
+            await recordKeniaUsage(fromPhone, { balatinStep: 'completed', balatinDataBuffer: '' });
+            await markAsRead(msgId, WA_TOKEN);
+            return NextResponse.json({ status: 'balatin_completed' });
+          }
+        } catch (e) {
+          console.error('[Balatin Catalog Flow] Error checking data on confirm:', e);
+        }
+      }
+
+      // Not confirming — user wants to change something. Go to normal data collection.
+      await recordKeniaUsage(fromPhone, { balatinStep: 'awaiting_data', balatinDataBuffer: userText });
+      const changeMsg = `¡Entendido! 🐾 Dime qué datos quieres cambiar. Puedes mandarlos todos juntos o uno por uno.\n\nCuando termines, escribe *TERMINÉ*.`;
+      await sendWhatsAppMessage(fromPhone, changeMsg, WA_TOKEN);
+      await addToHistory(fromPhone, 'user', userText, msgId);
+      await addToHistory(fromPhone, 'assistant', changeMsg, `balatin-change-${Date.now()}`);
+      await markAsRead(msgId, WA_TOKEN);
+      return NextResponse.json({ status: 'balatin_data_change' });
+    }
+
+    // ── BALATIN DATA COLLECTION (accumulate without AI, parse on "terminé") ────
+    if (usage.balatinOrderFlow === true && usage.balatinStep === 'awaiting_data') {
+      const orderId = usage.balatinOrderId;
+      const orderCode = usage.balatinOrderCode;
+      const customerName = usage.customerName || '';
+
+      // Check if user wrote "correcto" to confirm their data
+      const wantsConfirm = /\b(correcto|correcta|ok|si|s[ií]|est[aá] bien|perfecto)\b/i.test(userText.trim().toLowerCase());
+
+      // Check if user wrote "terminé/acabé/finalizar" to trigger AI parsing
+      const wantsParse = /\b(termin[eé]|acab[eé]|finalizar|listo|ya)\b/i.test(userText.trim().toLowerCase());
+
+      if (wantsConfirm && userText.trim().length <= 20) {
+        // User is confirming their data — check if all required data is present
+        try {
+          const { serverGetDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId!);
+
+          const missingFields: string[] = [];
+          if (!orderDoc?.CUSTOMERRUT) missingFields.push('RUT');
+          if (!orderDoc?.ADDRESS) missingFields.push('dirección');
+          if (!orderDoc?.COMUNA) missingFields.push('comuna');
+          if (!orderDoc?.REGION) missingFields.push('región');
+          if (!orderDoc?.SHIPPINGAGENCY) missingFields.push('agencia de envío');
+          // Email is optional — not required
+
+          if (missingFields.length > 0) {
+            await recordKeniaUsage(fromPhone, { balatinDataBuffer: '' });
+            const missingMsg = `¡Casi! 🐾 Me faltan algunos datos aún:\n\n${missingFields.map(f => `• ${f}`).join('\n')}\n\nMándamelos y escribe *TERMINÉ*. 📝`;
+            await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', missingMsg, `balatin-missing-${Date.now()}`);
+            await markAsRead(msgId, WA_TOKEN);
+            return NextResponse.json({ status: 'balatin_missing_data' });
+          } else {
+            // Everything complete!
+            const doneMsg = `¡Perfecto, ${customerName}! 🐾✨\n\nTu pedido *${orderCode}* está listo:\n✅ Comprobante recibido\n✅ Datos de envío guardados\n\nNuestro equipo va a revisar tu pago. Cuando esté confirmado, te avisaré por aquí.\n\nTe mantendré informado en cada paso:\n📦 Pago confirmado\n📦 Pedido armado/embalado\n🚚 Entregado a la agencia (con foto y código de seguimiento)\n\nCualquier consulta sobre tu pedido, escríbeme por aquí nomás. ¡Gracias por confiar en este gatito! 🐾💖`;
+            await sendWhatsAppMessage(fromPhone, doneMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'user', userText, msgId);
+            await addToHistory(fromPhone, 'assistant', doneMsg, `balatin-done-${Date.now()}`);
+            await recordKeniaUsage(fromPhone, { balatinStep: 'completed', balatinDataBuffer: '' });
+            await markAsRead(msgId, WA_TOKEN);
+            return NextResponse.json({ status: 'balatin_completed' });
+          }
+        } catch (e) {
+          console.error('[Balatin Catalog Flow] Error checking data on confirm:', e);
+        }
+      }
+
+      if (wantsParse) {
+        // User says they're done — send accumulated buffer + this message to AI for parsing
+        const accumulatedData = (usage.balatinDataBuffer || '') + '\n' + userText;
+        // Put the accumulated data into userText so the AI section processes it all
+        (usage as any)._balatinDataMode = true;
+        (usage as any)._balatinOrderId = orderId;
+        (usage as any)._balatinOrderCode = orderCode;
+        (usage as any)._balatinAccumulatedData = accumulatedData.trim();
+        // Clear the buffer
+        await recordKeniaUsage(fromPhone, { balatinDataBuffer: '' });
+        // Don't return — fall through to AI section which will use _balatinAccumulatedData
+      } else {
+        // Not "terminé" — accumulate the data without calling AI (save API tokens)
+        const currentBuffer = usage.balatinDataBuffer || '';
+        const newBuffer = currentBuffer ? currentBuffer + '\n' + userText : userText;
+        await recordKeniaUsage(fromPhone, { balatinDataBuffer: newBuffer });
+
+        // Brief programmed acknowledgment (no AI)
+        const ackMsg = `¡Anotado! 📝 Sigue mandándome tus datos. Cuando termines, escribe *TERMINÉ*.`;
+        await sendWhatsAppMessage(fromPhone, ackMsg, WA_TOKEN);
+        await addToHistory(fromPhone, 'user', userText, msgId);
+        await addToHistory(fromPhone, 'assistant', ackMsg, `balatin-ack-${Date.now()}`);
+        await markAsRead(msgId, WA_TOKEN);
+        return NextResponse.json({ status: 'balatin_data_buffered' });
+      }
+    }
+
     // ── Deep Linking / Auto-Linking Interceptors ──
     const userTextLower = userText.toLowerCase().trim();
 
-    // Auto-link catalog orders: detect WA-XXXX code in message and link phone
+    // Auto-link catalog orders: detect WA-XXXX code in message (legacy fallback)
+    // Note: The main Balatin catalog flow is handled above.
+    // This is a fallback for messages that contain a WA- code but weren't caught by the Balatin flow
     const catMatch = userText.match(/WA-\d{6,8}/i);
-    if (catMatch) {
+    if (catMatch && !usage.balatinOrderFlow) {
       try {
         const { serverListDocuments, serverUpdateDocument } = await import('@/lib/appwrite-server');
         const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
@@ -709,7 +1231,12 @@ export async function POST(req: NextRequest) {
           }
           await markAsRead(msgId, WA_TOKEN);
 
-          const replyMsg = `¡Hola! 💖 Recibí tu pedido *${catMatch[0]}*. Ya registré tu número de WhatsApp. Estamos verificando la disponibilidad de los productos y te avisaremos muy pronto. 🥰`;
+          // Respect night mode: don't say "verificando" at night
+          const { isNightNow } = await import('@/lib/night-mode');
+          const night = isNightNow();
+          const replyMsg = night
+            ? `¡Hola! 🐾 Recibí tu pedido *${catMatch[0]}*. Ya registré tu número. Como estamos fuera de horario de atención, lo dejamos listo para verificar a primera hora. ¿Me das tu *nombre completo* por favor?`
+            : `¡Hola! 🐾 Recibí tu pedido *${catMatch[0]}*. Ya registré tu número de WhatsApp. Estamos verificando la disponibilidad de los productos y te avisamos muy pronto. ✨`;
           await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
           await addToHistory(fromPhone, 'user', userText, msgId);
           await addToHistory(fromPhone, 'assistant', replyMsg, `cat-link-${Date.now()}`);
@@ -740,7 +1267,7 @@ export async function POST(req: NextRequest) {
             await resetKeniaUsage(fromPhone);
             await setKeniaBlocked(fromPhone, false);
 
-            const replyMsg = `¡Listo hermosa! 💖 Ya corregí tu número y vinculé tu WhatsApp a tu pedido *#${order.ORDERCODE || orderId}*. Ahora sí estamos conectadas y te avisaré de cualquier novedad de tu compra. 🥰`;
+            const replyMsg = `¡Listo! 🐾 Ya corregí tu número y vinculé tu WhatsApp a tu pedido *#${order.ORDERCODE || orderId}*. Ahora sí estamos conectados y te aviso de cualquier novedad de tu compra. ✨`;
             await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
             await addToHistory(fromPhone, 'user', userText, msgId);
             await addToHistory(fromPhone, 'assistant', replyMsg, `link-order-${Date.now()}`);
@@ -772,7 +1299,7 @@ export async function POST(req: NextRequest) {
             await resetKeniaUsage(fromPhone);
             await setKeniaBlocked(fromPhone, false);
 
-            const replyMsg = `¡Listo ${userDoc.name || 'bella'}! 💖 Ya corregí tu número y vinculé tu WhatsApp a tu cuenta. Ahora sí estamos conectadas y te ayudaré con lo que necesites. 🥰`;
+            const replyMsg = `¡Listo${userDoc.name ? ` ${userDoc.name}` : ''}! 🐾 Ya corregí tu número y vinculé tu WhatsApp a tu cuenta. Ahora sí estamos conectados y te ayudo con lo que necesites. ✨`;
             await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
             await addToHistory(fromPhone, 'user', userText, msgId);
             await addToHistory(fromPhone, 'assistant', replyMsg, `link-account-${Date.now()}`);
@@ -788,20 +1315,20 @@ export async function POST(req: NextRequest) {
     if (!isAdmin && interactiveId) {
       let interceptReply = '';
       if (interactiveId === 'func_pedido') {
-        interceptReply = '📦 *¡Tu pedido, reina!*\n\nNo te estreses, yo te aviso de todito automáticamente:\n1️⃣ *Pago*: Cuando las chicas validen tus moneditas.\n2️⃣ *Armado*: Cuando estemos juntando tus tesoros.\n3️⃣ *Stock*: Si falta alguito te chismeo altiro.\n4️⃣ *Despacho*: Cuando salga volando hacia ti 🏃‍♀️💨\n\nSi quieres saber de un pedido específico AHORA, solo dímelo y lo busco amor. ✨';
+        interceptReply = '📦 *¡Tu pedido!*\n\nNo te estreses, yo te aviso de todo automáticamente:\n1️⃣ *Pago*: Cuando el equipo valide tu pago.\n2️⃣ *Armado*: Cuando estemos juntando tus productos.\n3️⃣ *Stock*: Si falta algo te aviso al tiro.\n4️⃣ *Despacho*: Cuando salga hacia tu dirección 🚚\n\nSi quieres saber de un pedido específico AHORA, solo dímelo y lo busco. 🐾';
       } else if (interactiveId === 'func_comprobante') {
-        interceptReply = '🧾 *Tus comprobantes bella*\n\n¡Súper fácil! Entra a tu pedido en la web y sube la fotito del comprobante ahí. Yo lo veo al instante y te aviso por aquí apenas finanzas lo valide. ¡Cero estrés! 🥰💸';
+        interceptReply = '🧾 *Tus comprobantes*\n\n¡Súper fácil! Entra a tu pedido en la web y sube la fotito del comprobante ahí. Yo lo veo al instante y te aviso por aquí apenas finanzas lo valide. ¡Cero estrés! 🐾💸';
       } else if (interactiveId === 'func_ofertas') {
-        interceptReply = '🔥 *¡Ofertas y Remates!*\n\nUy amor, prepárate. Cuando tengamos cositas a precio de infarto o el jefe se vuelva loco con los descuentos, serás la primera en saberlo por aquí. ¡A cazar gangas se ha dicho! 💄🛍️';
+        interceptReply = '🔥 *¡Ofertas y Remates!*\n\nPrepárate. Cuando tengamos productos a precio de regalo o descuentazos, serás de los primeros en saberlo por aquí. ¡Este gato te trae buena suerte! 🐾🛍️';
       } else if (interactiveId === 'func_negociacion') {
-        interceptReply = '🔄 *¿Falta algo? ¡Ni te estreses!*\n\nSi justo se nos agotó ese labial que querías, te voy a escribir rapidísimo para mostrarte otras opciones súper bellas para que elijas. ¡Te prometo que no te quedas sin tus regalitos! 💅💕';
+        interceptReply = '🔄 *¿Falta algo? ¡Ni te estreses!*\n\nSi justo se nos agotó algún producto de tu pedido, te voy a escribir rapidito para mostrarte otras opciones y que elijas. ¡Te prometo que no te quedas sin tu compra! 🐾';
       } else if (interactiveId === 'func_humano') {
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
         const alertMsg = `🚨 *ASISTENCIA REQUERIDA*\n\nEl cliente +${fromPhone} presionó el botón de "Hablar con persona".\n🔗 ${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.donbalatomayorista.cl'}/admin/ia/whatsapp`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
         
         await setKeniaBlocked(fromPhone, true, 'admin_takeover');
-        interceptReply = '👤 *Hablar con una persona*\n\n¡Entendido! Acabo de notificar a alguien del equipo para que te atienda personalmente. Por favor dame un momentito mientras se conectan y te responden por aquí mismo. 🌸';
+        interceptReply = '👤 *Hablar con una persona*\n\n¡Entendido! Acabo de notificar a alguien del equipo para que te atienda personalmente. Por favor dame un momentito mientras se conectan y te responden por aquí mismo. 🐾';
       }
 
       if (interceptReply) {
@@ -827,7 +1354,7 @@ export async function POST(req: NextRequest) {
         if (pendingOrder) {
           const orderId = String(pendingOrder.$id);
           const link = `${SITE_URL}/pedido/${orderId}`;
-          const interceptReply = `¡Súper bella! 🛍️✨\n\nAquí tienes el link directo a tu pedido donde encontrarás los datos de transferencia y podrás subir el comprobante:\n🔗 ${link}\n\nO si prefieres, **puedes enviarme la foto del comprobante de transferencia directamente por aquí mismo** y yo lo adjunto a tu pedido. ¿Qué te parece más fácil? 🥰`;
+          const interceptReply = `¡Perfecto! 🐾\n\nAquí tienes el link directo a tu pedido donde encontrarás los datos de transferencia y podrás subir el comprobante:\n🔗 ${link}\n\nO si prefieres, **puedes enviarme la foto del comprobante de transferencia directamente por aquí mismo** y yo lo adjunto a tu pedido. ¿Qué te parece más fácil? ✨`;
           
           await recordKeniaUsage(fromPhone, { awaitingComprobante: true, pendingOrderId: orderId });
           
@@ -837,7 +1364,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ status: 'comprobante_link_sent' });
         } else {
            // No pending order found
-           const interceptReply = `Uy bella, busqué en mis registros pero no encontré un pedido pendiente de pago a tu nombre 🥺. Si ya lo pagaste o tienes dudas, dímelo y te ayudo.`;
+           const interceptReply = `Mmm, busqué en mis registros pero no encontré un pedido pendiente de pago a tu nombre 🥺. Si ya lo pagaste o tienes dudas, dímelo y te ayudo. 🐾`;
            await sendWhatsAppMessage(fromPhone, interceptReply, WA_TOKEN);
            await addToHistory(fromPhone, 'user', userText, msgId);
            await addToHistory(fromPhone, 'assistant', interceptReply, `intercept-comp-${Date.now()}`);
@@ -906,6 +1433,46 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Intercept Cajera clicking "CONFIRMAR STOCK" template button (alerta_pago_admin)
+    if (cleanedFrom === STOCK_VERIFIER_PHONE && msgType === 'button' && userText.toUpperCase().includes('CONFIRMAR STOCK')) {
+      try {
+        const cajeraUsage = await getKeniaUsage(fromPhone);
+        const orderId = cajeraUsage.pendingOrderId;
+        if (orderId) {
+          const { serverGetDocument, serverUpdateDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId);
+          const orderCode = orderDoc.ORDERCODE || orderId;
+          const customerPhone = String(orderDoc.CUSTOMERPHONE || '').replace(/\D/g, '');
+          const customerFirstName = String(orderDoc.CUSTOMERNAME || '').split(' ')[0] || 'amigo';
+
+          // Mark stock as confirmed
+          await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, { STATUS: 'paid', UPDATEDAT: Date.now() });
+
+          // Update customer's Balatin flow step to awaiting_payment (payment first, then data)
+          if (customerPhone) {
+            await recordKeniaUsage(`+${customerPhone}`, { balatinStep: 'awaiting_payment', balatinComprobanteReceived: false });
+          }
+
+          const orderTotal = Number(orderDoc.TOTAL || orderDoc.SUBTOTAL || 0);
+          let customerMsg = `¡Hola ${customerFirstName}! 🐾 ¡Buenas noticias! Confirmamos el stock de tu pedido *#${orderCode}*. Todo está disponible. ✅\n\n`;
+          customerMsg += `Para continuar, haz la transferencia:\n\n💳 *Datos para la transferencia:*\nTitular: DON BALATO IVAN\nRUT: 78.267.426-9\nBanco: Mercado Pago (Cuenta Vista)\nCuenta: 1037879898\nEmail: donbalatosoporte@gmail.com\n\nMonto total: $${orderTotal.toLocaleString('es-CL')}\n\nCuando transfieras, mándame la *foto del comprobante* por aquí. 📸`;
+
+          if (customerPhone) {
+            await sendWhatsAppMessage(customerPhone, customerMsg, WA_TOKEN);
+            await addToHistory(`+${customerPhone}`, 'assistant', customerMsg, `stockok-${Date.now()}`);
+          }
+          await sendWhatsAppMessage(fromPhone, `✅ Stock confirmado para el pedido #${orderCode}. Ya le avisé al cliente.`, WA_TOKEN);
+          return NextResponse.json({ status: 'stock_confirmed_via_template' });
+        } else {
+          await sendWhatsAppMessage(fromPhone, `No encontré ningún pedido pendiente de confirmación. 🥺`, WA_TOKEN);
+          return NextResponse.json({ status: 'no_pending_order_for_stock' });
+        }
+      } catch (e) {
+        console.error('[WhatsApp] Failed to process CONFIRMAR STOCK button:', e);
+      }
+    }
+
     // Intercept Worker clicking "CONFIRMAR PAGO" or "PAGO CONFIRMADO" template button
     const isWorker = cleanedFrom === '56935623858';
     const isConfirmPayment = msgType === 'button' && (userText.toUpperCase().includes('CONFIRMAR') || userText.toUpperCase().includes('CONFIRMADO') || userText.toUpperCase().includes('REVISADO'));
@@ -961,10 +1528,69 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Intercept stock-verifier (Lizzy) tapping "✅ Confirmar stock" / "❌ Falta stock" on a Balatin-created order
+    if (cleanedFrom === STOCK_VERIFIER_PHONE && interactiveId && (interactiveId.startsWith('stockok:') || interactiveId.startsWith('stockmiss:') || interactiveId.startsWith('stockok_') || interactiveId.startsWith('stockmiss_'))) {
+      try {
+        const separator = interactiveId.includes(':') ? ':' : '_';
+        const [action, orderRef] = interactiveId.split(separator);
+        
+        // orderRef can be an orderCode (WA-XXXX) or an orderId (wa_XXXX)
+        let order: any = null;
+        try {
+          // Try by ORDERCODE first
+          const qCode = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [orderRef] });
+          const resOrder = await serverListDocuments(ORDERS_COLLECTION_ID, [qCode, JSON.stringify({ method: 'limit', values: [1] })]);
+          order = resOrder.documents?.[0];
+        } catch {}
+        if (!order) {
+          // Try by document ID
+          try {
+            order = await serverGetDocument(ORDERS_COLLECTION_ID, orderRef);
+          } catch {}
+        }
+
+        if (!order) {
+          await sendWhatsAppMessage(fromPhone, `No encontré el pedido #${orderRef}. 🥺`, WA_TOKEN);
+          return NextResponse.json({ status: 'stock_button_order_not_found' });
+        }
+
+        const orderCode = order.ORDERCODE || order.$id;
+        const customerPhone = String(order.CUSTOMERPHONE || '').replace(/\D/g, '');
+        const customerFirstName = String(order.CUSTOMERNAME || '').split(' ')[0] || 'amigo';
+
+        if (action === 'stockok') {
+          await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, { STATUS: 'paid', UPDATEDAT: Date.now() });
+
+          // Update the customer's Balatin flow step to awaiting_payment (payment first, then data)
+          if (customerPhone) {
+            await recordKeniaUsage(`+${customerPhone}`, { balatinStep: 'awaiting_payment', balatinComprobanteReceived: false });
+          }
+
+          const orderTotal = Number(order.TOTAL || order.SUBTOTAL || 0);
+          let customerMsg = `¡Hola ${customerFirstName}! 🐾 ¡Buenas noticias! Confirmamos el stock de tu pedido *#${orderCode}*. Todo está disponible. ✅\n\n`;
+          customerMsg += `Para continuar, haz la transferencia:\n\n💳 *Datos para la transferencia:*\nTitular: DON BALATO IVAN\nRUT: 78.267.426-9\nBanco: Mercado Pago (Cuenta Vista)\nCuenta: 1037879898\nEmail: donbalatosoporte@gmail.com\n\nMonto total: $${orderTotal.toLocaleString('es-CL')}\n\nCuando transfieras, mándame la *foto del comprobante* por aquí. 📸`;
+
+          if (customerPhone) {
+            await sendWhatsAppMessage(customerPhone, customerMsg, WA_TOKEN);
+            await addToHistory(`+${customerPhone}`, 'assistant', customerMsg, `stockok-${Date.now()}`);
+          }
+          await sendWhatsAppMessage(fromPhone, `✅ Stock confirmado para el pedido #${orderCode}. Ya le avisé al cliente.`, WA_TOKEN);
+        } else {
+          await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, { STATUS: 'negotiation', UPDATEDAT: Date.now() });
+          await sendWhatsAppMessage(fromPhone, `Ok, dime qué producto(s) no hay del pedido #${orderCode} escribiendo por ejemplo: "en el pedido #${orderCode} no hay tal producto".`, WA_TOKEN);
+        }
+
+        return NextResponse.json({ status: 'stock_button_processed' });
+      } catch (e) {
+        console.error('[WhatsApp Webhook] Failed to process stock-check button:', e);
+        return NextResponse.json({ status: 'stock_button_error' });
+      }
+    }
+
     // Mark as read
     await markAsRead(msgId, WA_TOKEN);
 
-    // Check if Kenia is globally disabled
+    // Check if Balatin is globally disabled
     if (keniaConfig.isEnabled === false) {
       // Debug phone bypasses maintenance when debugMode is active
       if (!(debugMode && cleanedFrom === DEBUG_PHONE)) {
@@ -995,7 +1621,7 @@ Muchas gracias por tu interés.`;
               
               // Notificar al humano (asesor)
               const alertMsg = `⚠️ *CLIENTE REQUIERE ATENCIÓN*
-El cliente +${fromPhone} le escribió a Kenia (pero Kenia está en pruebas).
+El cliente +${fromPhone} le escribió a Balatin (pero Balatin está en pruebas).
 Por favor contáctalo para ayudarle.
 
 👉 Link de WhatsApp: https://wa.me/${fromPhone}`;
@@ -1025,7 +1651,7 @@ Por favor contáctalo para ayudarle.
       let isGuestWithOrders = false;
 
       if (usage.isRegistered === true) {
-         customerName = usage.customerName || 'bella';
+         customerName = usage.customerName || '';
       } else if (usage.isRegistered === false) {
          // Ya revisamos en esta sesión que no está registrado
          if (usage.isGuestWithOrders === true) {
@@ -1072,11 +1698,20 @@ Por favor contáctalo para ayudarle.
       }
 
       if (!usage.isRegistered && !registeredUser && !isGuestWithOrders) {
+        // ── Bypass: customer wants to CREATE a new order → skip registration, go to AI ──
+        const wantsNewOrder = /\b(quiero\s+hacer\s+(este|un|mi)\s+pedido|quiero\s+pedir|hacer\s+un\s+pedido|quiero\s+comprar|me\s+gustar[ií]a\s+comprar)/i.test(userText)
+          || /\*\s*Hola\s+Balatin!?\s*\*/i.test(userText); // catalog message starts with *Hola Balatin!*
+        if (wantsNewOrder) {
+          console.log('[WhatsApp Webhook] New order intent from unregistered user, bypassing registration flow');
+          // Mark as guest so we don't re-check registration on every message
+          await recordKeniaUsage(fromPhone, { isGuestWithOrders: true, isRegistered: false });
+          // Fall through to AI processing below (don't return)
+        } else {
         // If the user is specifically asking for human help while blocked:
         const userTextLower = userText.toLowerCase().trim();
         if (userTextLower.includes('ayuda') || userTextLower.includes('humano') || userTextLower.includes('asesor') || userTextLower.includes('persona')) {
           await setKeniaBlocked(fromPhone, true);
-          const helpMsg = '👤 Entiendo hermosa. He notificado a nuestro equipo de atención al cliente. Por favor espera un momentito y una persona real te ayudará por aquí mismo para revisar tu caso. 🌸';
+          const helpMsg = '👤 Entiendo. Ya notifiqué a nuestro equipo de atención al cliente. Por favor espera un momentito y una persona real te ayudará por aquí mismo para revisar tu caso. 🐾';
           await addToHistory(fromPhone, 'user', userText, msgId);
           await addToHistory(fromPhone, 'assistant', helpMsg);
           await sendWhatsAppMessage(fromPhone, helpMsg, WA_TOKEN);
@@ -1113,13 +1748,13 @@ Por favor contáctalo para ayudarle.
             const orderCount = foundOrders.length;
             const orderCodes = foundOrders.slice(0, 3).map((o: any) => `#${o.ORDERCODE || String(o.$id).slice(-6).toUpperCase()}`).join(', ');
 
-            let linkMsg = `¡Te encontré bella! 💖✨\n\n`;
+            let linkMsg = `¡Te encontré! 🐾✨\n\n`;
             if (customerNameFound) linkMsg += `Hola *${customerNameFound}* 👋\n\n`;
             linkMsg += `Vinculé tu WhatsApp a ${linkedOrders} pedido${linkedOrders !== 1 ? 's' : ''} que tenías con nosotros`;
             if (orderCodes) linkMsg += ` (${orderCodes}${orderCount > 3 ? ` y ${orderCount - 3} más` : ''})`;
             linkMsg += `.\n\n`;
             if (linkedUser) linkMsg += `También actualicé tu número en tu cuenta. 📱\n\n`;
-            linkMsg += `Ahora puedo avisarte sobre tus pedidos, ofertas y todo lo que necesites. ¿En qué te puedo ayudar? 🌸`;
+            linkMsg += `Ahora puedo avisarte sobre tus pedidos, ofertas y todo lo que necesites. ¿En qué te puedo ayudar? 🐾`;
 
             await addToHistory(fromPhone, 'user', userText, msgId);
             await addToHistory(fromPhone, 'assistant', linkMsg, `link-${searchMethod}-${Date.now()}`);
@@ -1134,7 +1769,7 @@ Por favor contáctalo para ayudarle.
             return NextResponse.json({ status: `linked_by_${searchMethod}` });
           } else {
             // Email/RUT not found in orders or users
-            const notFoundMsg = `Uy bella, busqué en mis registros con ese ${searchMethod} pero no lo encontré 🥺.\n\n¿Podrías revisarlo? A veces hay un pequeño error de tipeo. También puedes intentar con:\n• Tu *email* de compra (ej: tuemail@gmail.com)\n• Tu *RUT* (ej: 12.345.678-9)\n• El *código de tu pedido* (ej: ORD-00123)\n\nO si prefieres, escribe *Ayuda* y una asesora real te atenderá. 🌸`;
+            const notFoundMsg = `Mmm, busqué en mis registros con ese ${searchMethod} pero no lo encontré 🥺.\n\n¿Podrías revisarlo? A veces hay un pequeño error de tipeo. También puedes intentar con:\n• Tu *email* de compra (ej: tuemail@gmail.com)\n• Tu *RUT* (ej: 12.345.678-9)\n• El *código de tu pedido* (ej: ORD-00123)\n\nO si prefieres, escribe *Ayuda* y alguien del equipo te atenderá. 🐾`;
 
             await addToHistory(fromPhone, 'user', userText, msgId);
             await addToHistory(fromPhone, 'assistant', notFoundMsg, `not-found-${searchMethod}-${Date.now()}`);
@@ -1161,11 +1796,11 @@ Por favor contáctalo para ayudarle.
                 const guestName = String(altOrders[0]?.CUSTOMERNAME || '');
                 const orderCodes = altOrders.slice(0, 3).map((o: any) => `#${o.ORDERCODE || String(o.$id).slice(-6).toUpperCase()}`).join(', ');
 
-                let linkMsg = `¡Te encontré bella! 💖✨\n\n`;
+                let linkMsg = `¡Te encontré! 🐾✨\n\n`;
                 if (guestName) linkMsg += `Hola *${guestName}* 👋\n\n`;
                 linkMsg += `Vinculé tu WhatsApp a ${linked} pedido${linked !== 1 ? 's' : ''} que tenías con nosotros`;
                 if (orderCodes) linkMsg += ` (${orderCodes}${altOrders.length > 3 ? ` y ${altOrders.length - 3} más` : ''})`;
-                linkMsg += `.\n\nAhora puedo ayudarte con tus pedidos. ¿En qué te puedo ayudar? 🌸`;
+                linkMsg += `.\n\nAhora puedo ayudarte con tus pedidos. ¿En qué te puedo ayudar? 🐾`;
 
                 await addToHistory(fromPhone, 'user', userText, msgId);
                 await addToHistory(fromPhone, 'assistant', linkMsg, `link-altphone-${Date.now()}`);
@@ -1174,7 +1809,7 @@ Por favor contáctalo para ayudarle.
                 await recordKeniaUsage(fromPhone, { awaitingAltPhone: false, isGuestWithOrders: true, customerName: guestName || undefined });
                 return NextResponse.json({ status: 'linked_by_altphone' });
               } else {
-                const notFoundAltMsg = `Uy bella, busqué pedidos con ese número pero no encontré ninguno 🥺.\n\n¿Podrías revisar el número? A veces hay un pequeño error de tipeo. También puedes intentar con:\n• Tu *email* de compra\n• Tu *RUT*\n• El *código de tu pedido* (ej: ORD-00123)\n\nO escribe *Ayuda* y una asesora te atenderá. 🌸`;
+                const notFoundAltMsg = `Mmm, busqué pedidos con ese número pero no encontré ninguno 🥺.\n\n¿Podrías revisar el número? A veces hay un pequeño error de tipeo. También puedes intentar con:\n• Tu *email* de compra\n• Tu *RUT*\n• El *código de tu pedido* (ej: ORD-00123)\n\nO escribe *Ayuda* y alguien del equipo te atenderá. 🐾`;
                 await addToHistory(fromPhone, 'user', userText, msgId);
                 await addToHistory(fromPhone, 'assistant', notFoundAltMsg, `not-found-altphone-${Date.now()}`);
                 await sendWhatsAppMessage(fromPhone, notFoundAltMsg, WA_TOKEN);
@@ -1185,7 +1820,7 @@ Por favor contáctalo para ayudarle.
               console.warn('[WhatsApp Webhook] Alt phone search error:', e);
             }
           } else {
-            const tooShortMsg = `Bella, ese número parece muy corto 🥺. ¿Podrías escribirlo completo? Por ejemplo: 9 1234 5678 📱`;
+            const tooShortMsg = `Mmm, ese número parece muy corto 🥺. ¿Podrías escribirlo completo? Por ejemplo: 9 1234 5678 📱`;
             await addToHistory(fromPhone, 'user', userText, msgId);
             await addToHistory(fromPhone, 'assistant', tooShortMsg);
             await sendWhatsAppMessage(fromPhone, tooShortMsg, WA_TOKEN);
@@ -1194,9 +1829,11 @@ Por favor contáctalo para ayudarle.
         }
 
         // Detect if user mentions they have an order / made a purchase (trigger alt phone flow)
+        // BUT skip if the user wants to CREATE a new order (not look up an existing one)
+        const newOrderPhrases = /\b(quiero\s+hacer\s+(este|un|mi)\s+pedido|quiero\s+pedir|hacer\s+un\s+pedido|quiero\s+comprar|me\s+gustar[ií]a\s+comprar|balatin!?\*?\s*\n)/i;
         const orderKeywords = /\b(pedido|compra|orden|compr[eé]|pagu[eé]|transferencia|env[ií]o|despacho)\b/i;
-        if (orderKeywords.test(userText) && !usage.awaitingAltPhone) {
-          const askAltPhoneMsg = `¡Ah! ¿Tienes un pedido con nosotros? 🛍️ Genial bella.\n\nA veces los clientes ponen un número distinto al hacer su pedido (el de la casa, el de un familiar, etc). \n\n¿Podrías escribirme el *número de teléfono que usaste al hacer tu pedido*? Con ese te lo busco altiro 📱✨\n\nO si prefieres, también puedo buscarte por tu *email* o *RUT* de compra. 🌸`;
+        if (orderKeywords.test(userText) && !usage.awaitingAltPhone && !newOrderPhrases.test(userText)) {
+          const askAltPhoneMsg = `¡Ah! ¿Tienes un pedido con nosotros? 🛍️ ¡Genial!\n\nA veces los clientes ponen un número distinto al hacer su pedido (el de la casa, el de un familiar, etc). \n\n¿Podrías escribirme el *número de teléfono que usaste al hacer tu pedido*? Con ese te lo busco altiro 📱✨\n\nO si prefieres, también puedo buscarte por tu *email* o *RUT* de compra. 🐾`;
           await addToHistory(fromPhone, 'user', userText, msgId);
           await addToHistory(fromPhone, 'assistant', askAltPhoneMsg, `ask-altphone-${Date.now()}`);
           await sendWhatsAppMessage(fromPhone, askAltPhoneMsg, WA_TOKEN);
@@ -1208,38 +1845,39 @@ Por favor contáctalo para ayudarle.
         const now = Date.now();
         const lastPrompted = usage.registerPromptedAt || 0;
         if (now - lastPrompted > 24 * 60 * 60 * 1000) {
-          const registerMsg = '¡Hola hermosa! 🌸 Mis sistemas me indican que aún no estás registrada en nuestra página web. Para poder atenderte de forma más personalizada y no estar pidiéndote tus datitos todo el tiempo 😅 necesito solamente que te registres aquí 👇\n\n' + SITE_URL + '/login?tab=register\n\n💡 *¿Ya hiciste un pedido o tienes cuenta pero pusiste mal tu número?* ¡No te preocupes! Puedo buscarte por tu *email* o *RUT* de compra. Escríbeme cualquiera de los dos y te vinculo altiro. 📧🆔\n\n👩‍💻 *¿Necesitas ayuda de un humano?* Simplemente escribe la palabra *Ayuda* y una asesora real te atenderá.\n\nLuego vuelve, escríbeme y te atenderé como una reina se merece 👑✨';
+          const registerMsg = '¡Hola! 🐾 Soy Balatin, el gato de la suerte de Don Balato Iván. Mis sistemas me indican que aún no estás registrado/a en nuestra página web. Para poder atenderte de forma más personalizada y no estar pidiéndote tus datos todo el tiempo 😅 necesito solamente que te registres aquí 👇\n\n' + SITE_URL + '/login?tab=register\n\n💡 *¿Ya hiciste un pedido o tienes cuenta pero pusiste mal tu número?* ¡No te preocupes! Puedo buscarte por tu *email* o *RUT* de compra. Escríbeme cualquiera de los dos y te vinculo altiro. 📧🆔\n\n👤 *¿Necesitas ayuda de un humano?* Simplemente escribe la palabra *Ayuda* y alguien del equipo te atenderá.\n\nLuego vuelve, escríbeme y este gato te traerá buena suerte en tus compras 🐾✨';
           await addToHistory(fromPhone, 'user', userText, msgId);
           await addToHistory(fromPhone, 'assistant', registerMsg);
           await sendWhatsAppMessage(fromPhone, registerMsg, WA_TOKEN);
           await recordKeniaUsage(fromPhone, { registerPromptedAt: now });
         }
         return NextResponse.json({ status: 'not_registered' });
+        } // end else (not wantsNewOrder)
       }
       if (!customerName && registeredUser) {
-        customerName = registeredUser.name || 'bella';
+        customerName = registeredUser.name || '';
       }
     }
 
     // ── First interaction welcome menu for registered customers ─────────────────
     if (!isAdmin && !usage.welcomeShown && isGreeting(userText)) {
-      const displayName = customerName || 'bella';
+      const displayName = customerName || 'amigo';
       await addToHistory(fromPhone, 'user', userText, msgId);
 
       // Generate a vibrant personalized greeting with Gemini
       let welcomeGreeting = '';
       try {
-        const welcomePrompt = `Eres Kenia, la súper mejor amiga virtual y asesora estrella de Don Balato Iván. Tienes una vibra SÚPER viva, atrevida, graciosa y llena de picardía. Eres la típica amiga amante del maquillaje. Cero formal, cero aburrida.
+        const welcomePrompt = `Eres Balatin, el gato de la suerte y asesor estrella de Don Balato Iván, una tienda de artículos de hogar, aseo y variedad. Eres un gato blanco de la fortuna (maneki-neko): juguetón, tranquilo y muy resolutivo. Cero formal, cero aburrido.
  
- Es tu PRIMERA vez hablando con "${displayName}". Escribe un saludo SIMPLE, divertidísimo y cortito.
+ Es tu PRIMERA vez hablando con "${displayName}". Escribe un saludo SIMPLE, simpático y cortito.
  REGLAS:
  1. Usa un diminutivo cariñoso de su primer nombre (Ej: Janpol -> Jan, Guadalupe -> Lupe).
- 2. Preséntate como Kenia con muchísima energía. Trátala de "amor", "bella" o "cariño".
- 3. OPCIONAL Y SOLO SI TIENE SENTIDO: Lánzate un dato curioso o piropo gracioso y muy corto sobre su nombre o el maquillaje. Si su nombre es raro, sáltatelo. ¡Cero cosas aburridas o técnicas!
- 4. Dile rapidito que estás para chismearle de sus pedidos, ofertas y ayudarla en todo.
- 5. Dile que si necesita más información le dé al botón de abajo, y si no, que te pregunte lo que quiera. Usa emojis femeninos (💅💋✨).
+ 2. Preséntate como Balatin, el gato de la suerte que le traerá buenas compras. 
+ 3. OPCIONAL Y SOLO SI TIENE SENTIDO: Lánzate un dato curioso o comentario gracioso y muy corto sobre su nombre o la buena suerte. Si su nombre es raro, sáltatelo. ¡Cero cosas aburridas o técnicas!
+ 4. Dile rapidito que estás para contarle de sus pedidos, ofertas y ayudarlo/a en todo.
+ 5. Dile que si necesita más información le dé al botón de abajo, y si no, que te pregunte lo que quiera. Usa emojis felinos con moderación (🐾🐱✨).
  
- Escribe con confianza total, frescura y humor. ¡Que se sienta viva!`;
+ Escribe con confianza total, frescura y humor. ¡Que se sienta la buena suerte!`;
         const welcomeBody = {
           system_instruction: { parts: [{ text: welcomePrompt }] },
           contents: [{ role: 'user', parts: [{ text: userText }] }],
@@ -1269,7 +1907,7 @@ Por favor contáctalo para ayudarle.
  
       // Fallback if AI failed
       if (!welcomeGreeting) {
-        welcomeGreeting = `¡Hola ${displayName}! 🌸 ¡Qué emoción conocerte! Soy Kenia, tu asesora personal de Don Balato Iván. Si necesitas más información dale al botón de abajo, sino pregúntame lo que quieras. ✨`;
+        welcomeGreeting = `¡Hola ${displayName}! 🐾 ¡Qué buena suerte conocerte! Soy Balatin, el gato de la fortuna de Don Balato Iván. Si necesitas más información dale al botón de abajo, sino pregúntame lo que quieras. ✨`;
       }
 
       // Send the AI greeting fused into the interactive list menu (single message)
@@ -1591,7 +2229,46 @@ ${products.join('\n') || 'Sin productos.'}`;
         // 2. Fetch/search catalog products
         let relevantProducts: any[] = [];
         let searched = false;
-        if (keywords.length > 0) {
+        
+        // ── Special case: catalog order message → extract product names from lines ──
+        const isCatalogOrderMsg = /\*\s*Hola\s+Balatin!?\s*\*/i.test(userText) || /quiero\s+hacer\s+(este|un|mi)\s+pedido/i.test(userText);
+        if (isCatalogOrderMsg) {
+          // Extract product names from lines starting with "- " (format: "- PRODUCT NAME\n  QTY x $PRICE = $TOTAL")
+          const productLines: string[] = [];
+          const lines = userText.split('\n');
+          for (const line of lines) {
+            const m = line.match(/^\s*-\s+(.+?)\s*$/);
+            if (m && !m[1].match(/^\d/)) {
+              // Clean the product name: remove trailing price/qty info
+              let name = m[1].trim();
+              // Remove patterns like "2 x $32.500 = $65.000" that might be on the same line
+              name = name.replace(/\d+\s*x\s*\$[\d.]+.*$/i, '').trim();
+              if (name.length > 2) productLines.push(name);
+            }
+          }
+          if (productLines.length > 0) {
+            console.log('[WhatsApp Webhook] Catalog order detected, searching products:', productLines);
+            for (const prodName of productLines) {
+              try {
+                const qSearch = JSON.stringify({ method: 'search', attribute: 'NAME', values: [prodName] });
+                const qLimit10 = JSON.stringify({ method: 'limit', values: [10] });
+                const resSearch = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qSearch, qLimit10]);
+                if (resSearch.documents && resSearch.documents.length > 0) {
+                  for (const doc of resSearch.documents) {
+                    if (!relevantProducts.some(p => p.$id === doc.$id)) {
+                      relevantProducts.push(doc);
+                    }
+                  }
+                  searched = true;
+                }
+              } catch (e) {
+                console.warn('[WhatsApp Webhook] Catalog product search failed for:', prodName, e);
+              }
+            }
+          }
+        }
+        
+        if (!searched && keywords.length > 0) {
           try {
             const stopwords = ['precios', 'precio', 'mayor', 'catalogo', 'completo', 'todos', 'quiero', 'saber', 'imagen', 'imagenes', 'fotos', 'costos', 'costo', 'hola', 'como', 'estas', 'bien', 'gracias'];
             const searchKeywords = keywords.filter(k => !stopwords.includes(k));
@@ -1667,7 +2344,7 @@ ${products.join('\n') || 'Sin productos.'}`;
             if (wholesalePrice > 0) {
               priceText += ` (Precio por mayor: $${Number(wholesalePrice).toLocaleString('es-CL')})`;
             }
-            return `• *${p.NAME}* — ${priceText} | ${stockLabel}`;
+            return `• *${p.NAME}* (id: ${p.$id}) — ${priceText} | ${stockLabel}`;
           });
           contextBlockAdditions = `## 🛍️ PRODUCTOS BUSCADOS (${finalProducts.length} encontrados):\n${productList.join('\n')}`;
         } else if (categoriesList.length > 0) {
@@ -1741,10 +2418,10 @@ ${products.join('\n') || 'Sin productos.'}`;
           return NextResponse.json({ status: 'spam_blocked' });
         }
         if (usageCheck.adminTakeover || usageCheck.escalated) {
-          // Admin tomó control o Kenia escaló: responder UNA sola vez y luego silencio total
+          // Admin tomó control o Balatin escaló: responder UNA sola vez y luego silencio total
           const lastStallTs = usageCheck.lastStallReplyTs || 0;
           if (lastStallTs === 0) {
-            const takeoverReply = '¡Amor! 🌸 Dame un segundito que estoy revisando un par de cositas con las chicas de tienda para poder ayudarte mejor con esto 🏃‍♀️💨. ¡Ahorita vuelvo contigo!';
+            const takeoverReply = '¡Miau! 🐾 Dame un segundito que estoy revisando un par de cosas con el equipo de tienda para poder ayudarte mejor con esto. ¡Ahorita vuelvo contigo!';
             await addToHistory(fromPhone, 'assistant', takeoverReply, `stall-${Date.now()}`);
             await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
             const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
@@ -1770,24 +2447,71 @@ ${products.join('\n') || 'Sin productos.'}`;
       }
     }
 
-    let basePrompt = isAdmin
-      ? (keniaConfig.adminPrompt || ADMIN_PROMPT)
-      : hydratePrompt(keniaConfig.customerPrompt || CUSTOMER_PROMPT, SITE_URL);
+    // ── BALATIN DATA MODE: override prompt for data parsing ────────────────────
+    const balatinDataMode = (usage as any)._balatinDataMode === true;
+    const balatinOrderId = (usage as any)._balatinOrderId;
+    const balatinOrderCode = (usage as any)._balatinOrderCode;
+
+    let basePrompt: string;
+    if (balatinDataMode) {
+      // Special Balatin prompt for parsing shipping data
+      basePrompt = `Eres Balatin, el gato de la suerte de Don Balato Iván. Estás ayudando al cliente ${customerName} a completar los datos de envío de su pedido ${balatinOrderCode}.
+
+## TU ÚNICA TAREA AHORA:
+El cliente te mandó todos sus datos de envío juntos. Debes EXTRAER los datos y guardarlos con la acción UPDATE_SHIPPING. Luego mostrar un resumen y pedir confirmación.
+
+## Datos obligatorios que necesitas:
+1. *RUT* (formato chileno: acepta con o sin puntos, con o sin guión. Ej válidos: 12.345.678-9, 12345678-9, 123456789. Solo recházalo si tiene menos de 7 dígitos antes del dígito verificador)
+2. *Nombre completo* (nombres y apellidos) — si ya tienes el nombre del cliente, no lo pidas de nuevo
+3. *Dirección* (calle, número, depto/casa)
+4. *Comuna*
+5. *Región*
+6. *Agencia de envío* (Starken, Chilexpress, BluExpress, o "retiro en tienda")
+7. Email (correo electrónico) — *OPCIONAL, no obligatorio*
+
+## Cómo responder:
+1. Extrae TODOS los datos del mensaje del cliente.
+2. Guárdalos con [ACTION:UPDATE_SHIPPING].
+3. Muestra un RESUMEN claro con todos los datos extraídos.
+4. Si faltan datos obligatorios (RUT, dirección, comuna, región, agencia), dile cuáles faltan. NO pidas email si no lo dio.
+5. Si todos los datos obligatorios están completos, pregúntale: "¿Estos datos están correctos? Responde *CORRECTO* para confirmar."
+6. NO analices ni valides comprobantes de pago. NO menciones montos.
+7. Datos extra (observaciones, instrucciones especiales) → inclúyelos en "observations".
+
+## Formato de la acción (incluye todos los campos que extraíste):
+[ACTION:UPDATE_SHIPPING]{"address":"Calle 123, depto 4","comuna":"Santiago","region":"Metropolitana","shippingAgency":"Starken","customerRut":"12.345.678-9","customerName":"Juan Pérez","customerEmail":"juan@email.com","observations":"Timbre 2"}[/ACTION]
+
+## REGLAS:
+- NO inventes datos. Solo usa lo que el cliente te escribió.
+- NO pidas el teléfono (ya lo tienes).
+- Sé cálido y breve. Usa su nombre.
+- Acepta el RUT en cualquier formato (con puntos, sin puntos, con guión, sin guión).
+- El email es OPCIONAL: si el cliente lo da, lo guardas; si no lo da, NO se lo pidas.
+- Cuando tengas todos los datos obligatorios (RUT, dirección, comuna, región, agencia), muestra el resumen y pide confirmación con "CORRECTO".`;
+    } else {
+      basePrompt = isAdmin
+        ? (keniaConfig.adminPrompt || ADMIN_PROMPT)
+        : hydratePrompt(keniaConfig.customerPrompt || CUSTOMER_PROMPT, SITE_URL);
+    }
 
     if (!isAdmin) {
-      basePrompt += `\n\n## ⚠️ REGLA ESTRICTA DE ANTI-ALUCINACIÓN PARA PEDIDOS:\nSi la clienta pregunta por su pedido y la sección "MIS PEDIDOS ACTIVOS" está vacía o no existe en tu contexto, **TIENES ESTRICTAMENTE PROHIBIDO INVENTAR ENLACES O FALTANTES DE STOCK**. Debes responder EXACTAMENTE: "Uy hermosa, estoy buscando con tu numerito pero no logro encontrar tu pedido activo en el sistema 🥺. Déjame pedirle ayuda a las chicas para que lo busquen manualmente, ¡dame unos minutitos! 🏃‍♀️💨" y luego **AÑADIR OBLIGATORIAMENTE** al final de tu respuesta: [ACTION:ASK_ADMIN]El cliente pregunta por su pedido pero no encuentro ninguno activo en la base de datos.[/ACTION].`;
-      basePrompt += `\n\n## 🔇 REGLA DE CIERRE DE CONVERSACIÓN:\n**NUNCA** hagas preguntas abiertas al final de tu respuesta (Ej: "¿te ayudo con algo más?", "¿qué más necesitas?", "¿cuéntame?"). Responde PUNTUALMENTE lo que te preguntaron y cierra el mensaje. Si la clienta no pregunta nada nuevo, la conversación termina ahí.`;
-      basePrompt += `\n\n## 📦 REGLA DE SEGUIMIENTO DE PEDIDOS:\nCuando una clienta pregunte por su pedido, basa tu respuesta **ÚNICAMENTE** en el estado que aparece en "MIS PEDIDOS ACTIVOS". \n**TIENES ESTRICTAMENTE PROHIBIDO:**\n- Inventar que el pedido fue enviado si el estado NO es "Enviado" o "Entregado a agencia de transporte".\n- Inventar números de seguimiento que no aparecen en el contexto.\n- Enviar o mencionar URLs de comprobantes o fotos que no estén explícitamente en el contexto.\n- Decir que el pedido está en camino si el estado es "Pagado", "Procesando", "En preparación" o "Pendiente de pago".\n\n**Según el estado real del pedido:**\n- "Pendiente de pago" → El cliente aún no ha pagado. Dile que está pendiente de pago.\n- "Procesando" → El comprobante de pago fue recibido y está siendo validado por finanzas.\n- "Pagado" → El pago fue verificado. Dile que el equipo está preparando su pedido y pronto saldrá en camino. NO digas que ya fue enviado.\n- "En preparación" → El equipo está armando el pedido.\n- "Listo para enviar" → El pedido está empacado y listo para salir.\n- "Enviado" o "Entregado a agencia de transporte" → Si hay número de seguimiento, dilo con el link de la agencia. Si no hay número, dile que fue enviado pero no tienes el número de seguimiento aún.\n- Links de seguimiento por agencia:\n  - BluExpress: https://www.blue.cl/enviar/seguimiento?n_seguimiento=NUMERO\n  - Starken: https://www.starken.cl/seguimiento?n_seguimiento=NUMERO\n  - Chilexpress: https://www.chilexpress.cl/centro-de-ayuda/seguimiento-de-envios\n  - Retiro en tienda: diles que está listo para retirar en la tienda.\n\n**NUNCA envíes links de comprobantes de pago como si fueran comprobantes de envío.**`;
+      basePrompt += `\n\n## ⚠️ REGLA ESTRICTA DE ANTI-ALUCINACIÓN PARA PEDIDOS:\nSi el cliente pregunta por su pedido y la sección "MIS PEDIDOS ACTIVOS" está vacía o no existe en tu contexto, **TIENES ESTRICTAMENTE PROHIBIDO INVENTAR ENLACES O FALTANTES DE STOCK**. Debes responder EXACTAMENTE: "Mmm, estoy buscando con tu número pero no logro encontrar tu pedido activo en el sistema 🥺. Déjame pedirle ayuda al equipo para que lo busquen manualmente, ¡dame unos minutitos! 🐾" y luego **AÑADIR OBLIGATORIAMENTE** al final de tu respuesta: [ACTION:ASK_ADMIN]El cliente pregunta por su pedido pero no encuentro ninguno activo en la base de datos.[/ACTION].`;
+      basePrompt += `\n\n## 🔇 REGLA DE CIERRE DE CONVERSACIÓN:\n**NUNCA** hagas preguntas abiertas al final de tu respuesta (Ej: "¿te ayudo con algo más?", "¿qué más necesitas?", "¿cuéntame?"). Responde PUNTUALMENTE lo que te preguntaron y cierra el mensaje. Si el cliente no pregunta nada nuevo, la conversación termina ahí.`;
+      basePrompt += `\n\n## 📦 REGLA DE SEGUIMIENTO DE PEDIDOS:\nCuando un cliente pregunte por su pedido, basa tu respuesta **ÚNICAMENTE** en el estado que aparece en "MIS PEDIDOS ACTIVOS". \n**TIENES ESTRICTAMENTE PROHIBIDO:**\n- Inventar que el pedido fue enviado si el estado NO es "Enviado" o "Entregado a agencia de transporte".\n- Inventar números de seguimiento que no aparecen en el contexto.\n- Enviar o mencionar URLs de comprobantes o fotos que no estén explícitamente en el contexto.\n- Decir que el pedido está en camino si el estado es "Pagado", "Procesando", "En preparación" o "Pendiente de pago".\n\n**Según el estado real del pedido:**\n- "Pendiente de pago" → El cliente aún no ha pagado. Dile que está pendiente de pago.\n- "Procesando" → El comprobante de pago fue recibido y está siendo validado por finanzas.\n- "Pagado" → El pago fue verificado. Dile que el equipo está preparando su pedido y pronto saldrá en camino. NO digas que ya fue enviado.\n- "En preparación" → El equipo está armando el pedido.\n- "Listo para enviar" → El pedido está empacado y listo para salir.\n- "Enviado" o "Entregado a agencia de transporte" → Si hay número de seguimiento, dilo con el link de la agencia. Si no hay número, dile que fue enviado pero no tienes el número de seguimiento aún.\n- Links de seguimiento por agencia:\n  - BluExpress: https://www.blue.cl/enviar/seguimiento?n_seguimiento=NUMERO\n  - Starken: https://www.starken.cl/seguimiento?n_seguimiento=NUMERO\n  - Chilexpress: https://www.chilexpress.cl/centro-de-ayuda/seguimiento-de-envios\n  - Retiro en tienda: diles que está listo para retirar en la tienda.\n\n**NUNCA envíes links de comprobantes de pago como si fueran comprobantes de envío.**`;
     }
-    const customerNameBlock = (!isAdmin && customerName) ? '\n\n## 👤 DATOS DEL CLIENTE:\nNombre: ' + customerName + '\n(Usa su nombre real para saludarla. Usa expresiones como "bella", "hermosa", "linda" solo ocasionalmente, no en cada frase.)' : '';
+    const customerNameBlock = (!isAdmin && customerName) ? '\n\n## 👤 DATOS DEL CLIENTE:\nNombre: ' + customerName + '\n(Usa su nombre real para saludar. Puedes usar expresiones felinas con moderación, no en cada frase.)' : '';
     const systemPrompt = basePrompt + timeBlock + contextBlock + customerNameBlock;
+
+    // If Balatin data mode with accumulated data, use that instead of just the last message
+    const balatinAccumulatedData = (usage as any)._balatinAccumulatedData as string | undefined;
+    const effectiveUserText = (balatinDataMode && balatinAccumulatedData) ? balatinAccumulatedData : userText;
 
     const rawContents = [
       ...history.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content || '...' }],
       })),
-      { role: 'user', parts: [{ text: userText || '...' }, ...inlineDataParts] },
+      { role: 'user', parts: [{ text: effectiveUserText || '...' }, ...inlineDataParts] },
     ];
 
     // Fix Gemini history strict alternating rules (must start with user, must alternate user/model)
@@ -1822,7 +2546,7 @@ ${products.join('\n') || 'Sin productos.'}`;
     };
 
     // ── Call Gemini ────────────────────────────────────────────────────────────
-    let aiReply = '¡Ay bella! 🌸 Tuve un problemita técnico para procesar tu mensaje ahora mismo 🥺. Dame un momentito cortito y vuelve a intentarlo, ¡pronto estaremos charlando! 💖';
+    let aiReply = '¡Miau! 🐾 Tuve un problemita técnico para procesar tu mensaje 🥺. Dame un momentito y vuelve a intentarlo, ¡pronto estaremos conversando! ✨';
     let rawText = '';
     let usageMetadata: any = null;
     const geminiHeaders = await getGeminiAuthHeaders();
@@ -1857,7 +2581,7 @@ ${products.join('\n') || 'Sin productos.'}`;
     if (!rawText && !isAdmin) {
       try {
         const MAIN_ADMIN_PHONE = (keniaConfig.adminAlertPhone || '56992139185').replace(/\D/g, '');
-        const failAlert = `⚠️ *KENIA: Error de Gemini*\n\nNo pude responder a +${fromPhone}. Todos los modelos fallaron.\n\nMensaje del cliente: "${userText.substring(0, 100)}"\n\nRevisa el log del servidor para más detalles.`;
+        const failAlert = `⚠️ *BALATIN: Error de Gemini*\n\nNo pude responder a +${fromPhone}. Todos los modelos fallaron.\n\nMensaje del cliente: "${userText.substring(0, 100)}"\n\nRevisa el log del servidor para más detalles.`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, failAlert, WA_TOKEN);
       } catch {}
     }
@@ -2049,13 +2773,190 @@ ${products.join('\n') || 'Sin productos.'}`;
 
             if (foundProd) {
               const prodLink = `${SITE_URL}/producto/${foundProd.$id}`;
-              aiReply = `¡Aquí tienes el producto que buscas amor! ✨\n*${foundProd.NAME}*\n🔗 ${prodLink}\n\n${aiReply}`.trim();
+              aiReply = `¡Aquí tienes el producto que buscas! 🐾\n*${foundProd.NAME}*\n🔗 ${prodLink}\n\n${aiReply}`.trim();
             } else {
-              aiReply = `Mmm, busqué el código ${skuCode} amor, pero no logro encontrar el link exacto 🥺. ${aiReply}`.trim();
+              aiReply = `Mmm, busqué el código ${skuCode}, pero no logro encontrar el link exacto 🥺. ${aiReply}`.trim();
             }
           } catch (e) {
             console.error('[WhatsApp Webhook] SEARCH_SKU intercept error:', e);
           }
+        }
+      }
+    }
+
+    // ── Action Parsing & Execution (CREATE_ORDER) ────────────────────────────
+    // Balatin crea el pedido apenas tiene los productos y el nombre del cliente (no espera dirección/comuna/región).
+    // Esos datos se piden DESPUÉS, una vez el equipo confirma stock (ver ACTION:UPDATE_SHIPPING más abajo).
+    if (!isAdmin) {
+      const createOrderRegex = /\[ACTION:CREATE_ORDER\]([\s\S]*?)\[\/ACTION\]/;
+      const createOrderMatch = rawText.match(createOrderRegex);
+      if (createOrderMatch) {
+        try {
+          const orderData = JSON.parse(createOrderMatch[1]);
+          const { items, customerName, customerRut, address, comuna, region, shippingAgency } = orderData as {
+            items: Array<{ id?: string; qty: number }>;
+            customerName?: string;
+            customerRut?: string;
+            address?: string;
+            comuna?: string;
+            region?: string;
+            shippingAgency?: string;
+          };
+
+          if (!Array.isArray(items) || items.length === 0 || !customerName) {
+            aiReply += `\n⚠️ (Info interna: Faltan datos obligatorios (productos y/o nombre) para crear el pedido — sigue pidiéndolos al cliente).`;
+          } else {
+            // Resolve real product data from DB to avoid hallucinated prices/names
+            const itemsData: Array<{ id: string; sku: string; name: string; qty: number; price: number; total: number; img: string }> = [];
+            const notFoundItems: string[] = [];
+            for (const it of items) {
+              if (!it.id) continue;
+              try {
+                const prod: any = await serverGetDocument(PRODUCTS_COLLECTION_ID, it.id);
+                const qty = Math.max(1, Number(it.qty) || 1);
+                const price = Number(prod.CURRENTPRICE || prod.PRICE || 0);
+                itemsData.push({
+                  id: it.id,
+                  sku: prod.SKU || '',
+                  name: prod.NAME || 'Producto',
+                  qty,
+                  price,
+                  total: price * qty,
+                  img: prod.IMAGEURL || '',
+                });
+              } catch {
+                notFoundItems.push(it.id);
+              }
+            }
+
+            if (itemsData.length === 0) {
+              aiReply += `\n⚠️ (Info interna: No pude encontrar ninguno de los productos por ID para crear el pedido).`;
+            } else {
+              const now = Date.now();
+              const orderCode = `BAL-${String(now).slice(-8)}`;
+              const docId = `bal_${now}_${Math.random().toString(36).slice(2, 10)}`;
+              const total = itemsData.reduce((sum, i) => sum + i.total, 0);
+
+              let orderIndex = now;
+              try {
+                const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: 'ORDERINDEX' });
+                const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+                const resIdx = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit1]);
+                if (resIdx.documents && resIdx.documents.length > 0) {
+                  const doc = resIdx.documents[0] as any;
+                  orderIndex = (doc.ORDERINDEX || resIdx.total || 0) + 1;
+                }
+              } catch {}
+
+              await serverCreateDocument(ORDERS_COLLECTION_ID, docId, {
+                USERID: 'balatin-whatsapp-guest',
+                ITEMS: JSON.stringify(itemsData),
+                CUSTOMERNAME: customerName,
+                CUSTOMERPHONE: fromPhone,
+                CUSTOMERRUT: customerRut || '',
+                CUSTOMEREMAIL: '',
+                ORDERCODE: orderCode,
+                ORDERINDEX: orderIndex,
+                SUBTOTAL: total,
+                TOTAL: total,
+                STATUS: 'pending_stock',
+                CREATEDAT: now,
+                PAYMENTMETHOD: 'WhatsApp Balatin',
+                SHIPPINGAGENCY: shippingAgency || '',
+                REGION: region || '',
+                COMUNA: comuna || '',
+                ADDRESS: address || '',
+                LINKED_WHATSAPP: [fromPhone],
+              });
+
+              // Enviar botón interactivo al verificador de stock (Lizzy) para confirmar/rechazar de un toque
+              const itemsList = itemsData.map(i => `- ${i.qty}x ${i.name} ($${i.total.toLocaleString('es-CL')})`).join('\n');
+              try {
+                await sendWhatsAppButtons(STOCK_VERIFIER_PHONE, {
+                  header: '📦 Nuevo pedido de Balatin',
+                  body: `Pedido *#${orderCode}*\nCliente: ${customerName} (+${fromPhone})\n\nProductos:\n${itemsList}\n\nTotal: $${total.toLocaleString('es-CL')}\n\n¿Está todo en stock?`,
+                  footer: 'Don Balato Iván',
+                  buttons: [
+                    { id: `stockok:${orderCode}`, title: '✅ Confirmar stock' },
+                    { id: `stockmiss:${orderCode}`, title: '❌ Falta stock' },
+                  ],
+                }, WA_TOKEN);
+              } catch (btnErr) {
+                console.error('[WhatsApp Webhook] Failed to send stock-check buttons:', btnErr);
+                // Fallback a texto plano si fallan los botones
+                await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `📦 *NUEVO PEDIDO DE BALATIN — Confirmar Stock*\n\nPedido: #${orderCode}\nCliente: ${customerName} (+${fromPhone})\n\nProductos:\n${itemsList}\n\nTotal: $${total.toLocaleString('es-CL')}\n\n👉 Si hay stock, responde "confirma el pedido #${orderCode}".\n👉 Si falta algo, dime "en el pedido #${orderCode} no hay [producto]".`, WA_TOKEN);
+              }
+
+              aiReply += `\n\n✅ ¡Listo! Registré tu pedido *#${orderCode}* por un total de $${total.toLocaleString('es-CL')}. Voy a confirmar el stock con el equipo y te aviso apenas esté listo para que hagas la transferencia. 🐾`;
+              if (notFoundItems.length > 0) {
+                aiReply += `\n(Nota: no pude agregar algunos productos, dime cuáles faltan y los reviso).`;
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[WhatsApp Webhook] CREATE_ORDER parsing/execution error:', err);
+          aiReply += `\n❌ Hubo un error al registrar tu pedido. Por favor inténtalo de nuevo o dime si necesitas ayuda.`;
+        }
+      }
+    }
+
+    // ── Action Parsing & Execution (UPDATE_SHIPPING) ─────────────────────────
+    // Balatin usa esto para ir completando dirección/comuna/región/agencia/RUT del pedido activo,
+    // normalmente después de que el equipo confirmó stock.
+    if (!isAdmin) {
+      const updateShippingRegex = /\[ACTION:UPDATE_SHIPPING\]([\s\S]*?)\[\/ACTION\]/;
+      const updateShippingMatch = rawText.match(updateShippingRegex);
+      if (updateShippingMatch) {
+        try {
+          const shipData = JSON.parse(updateShippingMatch[1]);
+          const { address, comuna, region, shippingAgency, customerRut, customerEmail, customerName: shipCustomerName, observations } = shipData as {
+            address?: string; comuna?: string; region?: string; shippingAgency?: string; customerRut?: string;
+            customerEmail?: string; customerName?: string; observations?: string;
+          };
+
+          // Use balatinOrderId directly if in Balatin flow, otherwise search by phone
+          let targetOrder: any = null;
+          const balatinOId = (usage as any)._balatinOrderId || usage.balatinOrderId;
+          if (balatinOId) {
+            try {
+              const { serverGetDocument } = await import('@/lib/appwrite-server');
+              targetOrder = await serverGetDocument(ORDERS_COLLECTION_ID, balatinOId);
+            } catch (e) {
+              console.warn('[UPDATE_SHIPPING] Could not fetch order by balatinOrderId, falling back to phone search:', e);
+            }
+          }
+          if (!targetOrder) {
+            const cleanedPhone = fromPhone.replace(/\D/g, '');
+            const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+            const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhone] });
+            const qLimit5 = JSON.stringify({ method: 'limit', values: [5] });
+            const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit5]);
+            const myOrders = resOrders.documents || [];
+            targetOrder = myOrders.find((o: any) => ['pending_stock', 'paid', 'payment_review'].includes(o.STATUS));
+          }
+
+          if (!targetOrder) {
+            aiReply += `\n⚠️ (Info interna: No encontré un pedido activo de este cliente para actualizar sus datos de envío).`;
+          } else {
+            const updates: Record<string, any> = {};
+            if (address) updates.ADDRESS = address;
+            if (comuna) updates.COMUNA = comuna;
+            if (region) updates.REGION = region;
+            if (shippingAgency) updates.SHIPPINGAGENCY = shippingAgency;
+            if (customerRut) updates.CUSTOMERRUT = customerRut;
+            if (customerEmail) updates.CUSTOMEREMAIL = customerEmail;
+            if (shipCustomerName) {
+              updates.CUSTOMERNAME = shipCustomerName;
+              // Also save to usage for future orders
+              await recordKeniaUsage(fromPhone, { customerName: shipCustomerName, isRegistered: true });
+            }
+            if (observations) updates.OBSERVATIONS = observations;
+            if (Object.keys(updates).length > 0) {
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, targetOrder.$id, updates);
+            }
+          }
+        } catch (err) {
+          console.error('[WhatsApp Webhook] UPDATE_SHIPPING parsing/execution error:', err);
         }
       }
     }
@@ -2089,7 +2990,7 @@ ${products.join('\n') || 'Sin productos.'}`;
       if (askAdminMatch) {
         const questionSummary = askAdminMatch[1]?.trim() || "Tiene una duda que no puedo responder";
         const customerNameDisp = customerName ? `${customerName} (+${fromPhone})` : `+${fromPhone}`;
-        const alertMsg = `🚨 *KENIA NECESITA AYUDA*\n\n¡Amor! El cliente ${customerNameDisp} me preguntó esto y no sé qué decirle:\n"${questionSummary}"\n\n¿Qué le digo? (Respóndeme "dile que..." y yo le paso el chisme tal cual 🏃‍♀️)`;
+        const alertMsg = `🚨 *BALATIN NECESITA AYUDA*\n\nEl cliente ${customerNameDisp} me preguntó esto y no sé qué decirle:\n"${questionSummary}"\n\n¿Qué le digo? (Respóndeme "dile que..." y yo le paso el mensaje tal cual 🐾)`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
       } else if (escalateRegex.test(rawText)) {
         // Fallback for old prompt structure
@@ -2099,22 +3000,23 @@ ${products.join('\n') || 'Sin productos.'}`;
         const lastMsgs = (await getHistory(fromPhone)).slice(-4).map(m =>
           `${m.role === 'user' ? '👤' : '🤖'} ${m.content.slice(0, 120)}`
         ).join('\n');
-        const alertMsg = `🚨 *KENIA NECESITA AYUDA*\n\nEl cliente +${fromPhone} tiene un caso que no puedo resolver.\n\n📋 *Últimos mensajes:*\n${lastMsgs}\n\n💬 *Mi última respuesta:*\n"${aiReply.slice(0, 200)}"\n\n⚡ Kenia se desactivó para este cliente. Responde desde el panel:\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+        const alertMsg = `🚨 *BALATIN NECESITA AYUDA*\n\nEl cliente +${fromPhone} tiene un caso que no puedo resolver.\n\n📋 *Últimos mensajes:*\n${lastMsgs}\n\n💬 *Mi última respuesta:*\n"${aiReply.slice(0, 200)}"\n\n⚡ Balatin se desactivó para este cliente. Responde desde el panel:\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
       } else if (keniaConfig.smartNotifications) {
         // Smart notifications: only notify on key events, not every message
         // usage (line 655) + 1 for current message (recordKeniaUsage at 1529 already incremented)
         const msgCount = (usage.messageCount || 0) + 1;
-        const threshold = keniaConfig.messageThresholdForPause || 10;
+        const threshold = keniaConfig.messageThresholdForPause || 25;
 
         if (msgCount === 1) {
           // New conversation started
-          const notifyMsg = `🆕 *Nueva conversación iniciada*\nCliente: +${fromPhone}\nMensaje: "${userText.slice(0, 150)}"\n\n🤖 Kenia está atendiendo. Te avisaré si necesito ayuda.\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+          const notifyMsg = `🆕 *Nueva conversación iniciada*\nCliente: +${fromPhone}\nMensaje: "${userText.slice(0, 150)}"\n\n🤖 Balatin está atendiendo. Te avisaré si necesito ayuda.\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
           await sendWhatsAppMessage(MAIN_ADMIN_PHONE, notifyMsg, WA_TOKEN);
-        } else if (msgCount >= threshold && !usage.adminTakeover) {
-          // Threshold reached — pause Kenia and ask admin what to do
+        } else if (msgCount >= threshold && !usage.adminTakeover && !usage.balatinOrderFlow) {
+          // Threshold reached — pause Balatin and ask admin what to do
+          // (skip if user is in Balatin order flow — they're paying, don't interrupt)
           await setKeniaBlocked(fromPhone, true, 'admin_takeover');
-          const pauseMsg = `⏸️ *Conversación larga detectada*\n\nCliente: +${fromPhone}\nMensajes intercambiados: ${msgCount}\n\nHe estado conversando con esta persona por un tiempo. ¿Qué quieres que haga?\n\n✅ *Devolver a Kenia* → responde "continuar"\n🚫 *Bloquear* → responde "bloquear"\n👤 *Tomar control* → responde "tomar"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+          const pauseMsg = `⏸️ *Conversación larga detectada*\n\nCliente: +${fromPhone}\nMensajes intercambiados: ${msgCount}\n\nHe estado conversando con esta persona por un tiempo. ¿Qué quieres que haga?\n\n✅ *Devolver a Balatin* → responde "continuar"\n🚫 *Bloquear* → responde "bloquear"\n👤 *Tomar control* → responde "tomar"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
           await sendWhatsAppMessage(MAIN_ADMIN_PHONE, pauseMsg, WA_TOKEN);
         }
       }

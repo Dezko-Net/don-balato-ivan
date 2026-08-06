@@ -58,6 +58,7 @@ const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'pending_stock',
   'paid',
   'payment_confirmed',
+  'shipped',
   'delivered',
 ];
 
@@ -198,14 +199,30 @@ export async function notifyOrderStatusChange(
       message = `Tu pedido ${code} está listo para ser retirado en tienda.`;
     }
 
-    await createNotificationClient({
-      title,
-      message,
-      type: 'order',
-      userId,
-      link: `/cuenta/pedidos`,
-      refKey,
-    });
+    try {
+      // Try server-side first (works when called from API route), fallback to client
+      await createNotificationServer({
+        title,
+        message,
+        type: 'order',
+        userId,
+        link: `/cuenta/pedidos`,
+        refKey,
+      });
+    } catch {
+      try {
+        await createNotificationClient({
+          title,
+          message,
+          type: 'order',
+          userId,
+          link: `/cuenta/pedidos`,
+          refKey,
+        });
+      } catch (e2) {
+        console.warn('[notifyOrderStatusChange] In-app notification failed:', e2);
+      }
+    }
   }
 
   // ── 2. Send Automatic WhatsApp Notification (works for guests too) ──
@@ -226,7 +243,7 @@ export async function notifyOrderStatusChange(
     }
 
     if (!alreadySent) {
-      const customerName = order.CUSTOMERNAME ? order.CUSTOMERNAME.split(' ')[0] : 'bella';
+      const customerName = order.CUSTOMERNAME ? order.CUSTOMERNAME.split(' ')[0] : '';
       const phone = formatWhatsAppPhone(order.CUSTOMERPHONE);
       const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
       const lang = 'es_CL';
@@ -238,22 +255,24 @@ export async function notifyOrderStatusChange(
         pending_stock: 'Pedido Recibido',
         paid: 'Stock Confirmado',
         payment_confirmed: 'Pago Confirmado',
+        shipped: 'Pedido Embalado',
         delivered: 'Entregado a Agencia',
       };
 
       const generateAIMessage = async (status: string, name: string, orderCode: string): Promise<string> => {
         const fallbackMessages: Record<string, string> = {
-          pending_stock: `¡Hola ${name}! 🌸 ¡Recibimos tu pedido #${orderCode}! 💖 Estamos revisando el stock de tus productos y te aviso apenas quede confirmado ✔️`,
-          paid: `¡Hola ${name}! 🌸 ¡Buenas noticias! El stock de tu pedido #${orderCode} está confirmado ✔️ Ya puedes realizar la transferencia y subir tu comprobante para avanzar 📦💖`,
-          payment_confirmed: `¡Hola ${name}! 🌸 Soy Kenia de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pago del pedido #${orderCode} fue verificado con éxito 💖 Ahora empezamos a preparar tu pedido con mucho cariño. ¡Pronto te avisaré del avance! 👑`,
-          delivered: `¡Hola ${name}! 🌸 Tu pedido #${orderCode} fue entregado a la agencia de transporte 🚚💨 Te adjunto el comprobante para que puedas rastrear tu envío. ¡Pronto lo tendrás en tus manos! 👑💖`,
+          pending_stock: `¡Hola ${name}! 🐾 ¡Recibimos tu pedido #${orderCode}! Estamos revisando el stock de tus productos y te aviso apenas quede confirmado ✔️`,
+          paid: `¡Hola ${name}! 🐾 ¡Buenas noticias! El stock de tu pedido #${orderCode} está confirmado ✔️ Ya puedes realizar la transferencia y subir tu comprobante para avanzar 📦✨`,
+          payment_confirmed: `¡Hola ${name}! 🐾 Soy Balatin de Don Balato Iván Chile 🇨🇱✨ Te escribo feliz para contarte que tu pago del pedido #${orderCode} fue verificado con éxito. Ahora empezamos a preparar tu pedido con mucho cuidado. ¡Pronto te aviso del avance! �`,
+          delivered: `¡Hola ${name}! 🐾 Tu pedido #${orderCode} fue entregado a la agencia de transporte 🚚💨 Te adjunto el comprobante para que puedas rastrear tu envío. ¡Pronto lo tendrás en tus manos! ✨`,
+          shipped: `¡Hola ${name}! 🐾 Tu pedido #${orderCode} ya está embaladito y listo para salir 📦✨ En cuanto lo entreguemos a la agencia te mando el comprobante con el código de seguimiento. ¡Miau!`,
         };
 
         try {
           const { getGeminiAuthHeaders, buildGeminiUrl } = await import(/* webpackIgnore: true */ '@/lib/google-auth');
           const GEMINI_MODELS = GEMINI_TEXT_MODELS;
           const statusLabel = STATUS_LABELS[status] || status;
-          const prompt = `Eres Kenia, asistente de Don Balato Iván Chile (tienda de cosméticos). Escribe un mensaje corto (máx 3 líneas) para notificar a ${name} que su pedido #${orderCode} cambió de estado a: ${statusLabel}. Personalidad: cercana, femenina, usa emojis (🌸💖✨). No inventes información. Sé breve y alegre. Solo el mensaje, sin saludo separado.`;
+          const prompt = `Eres Balatin, el gato de la suerte y asistente de Don Balato Iván Chile (tienda de artículos de hogar, aseo y variedad). Escribe un mensaje corto (máx 3 líneas) para notificar a ${name} que su pedido #${orderCode} cambió de estado a: ${statusLabel}. Personalidad: cercana, tranquila, usa emojis felinos con moderación (�✨📦). No inventes información. Sé breve y alegre. Solo el mensaje, sin saludo separado.`;
 
           const geminiHeaders = await getGeminiAuthHeaders();
           for (const model of GEMINI_MODELS) {
@@ -277,7 +296,7 @@ export async function notifyOrderStatusChange(
           console.warn('[notifyOrderStatusChange] AI message generation failed:', e);
         }
 
-        return fallbackMessages[status] || `¡Hola ${name}! 🌸 Tu pedido #${orderCode} cambió de estado a: ${STATUS_LABELS[status] || status} 💖`;
+        return fallbackMessages[status] || `¡Hola ${name}! 🐾 Tu pedido #${orderCode} cambió de estado a: ${STATUS_LABELS[status] || status} ✨`;
       };
 
       if (newStatus === 'pending') {
@@ -347,26 +366,35 @@ export async function notifyOrderStatusChange(
         const simulatedMessage = `[Notificación de Estado] ${aiMessage}`;
         await addToHistory(phone, 'assistant', simulatedMessage, msgId);
 
-        // ── Send photo for ready_to_ship (caja embalada = SHIPPINGPROOFURL) ──
-        if (newStatus === 'paid' && order.SHIPPINGPROOFURL) {
+        // ── Send photo for shipped (caja embalada = SHIPPINGPROOFURL) ──
+        if (newStatus === 'shipped' && order.SHIPPINGPROOFURL) {
           try {
             const { sendWhatsAppImage } = await import('@/lib/whatsapp');
             const photoCaption = `¡Aquí está tu pedido #${code} todo embaladito y listo! 📦✨`;
             await sendWhatsAppImage(phone, order.SHIPPINGPROOFURL, photoCaption, WA_TOKEN);
           } catch (e) {
-            console.warn('[notifyOrderStatusChange] Photo send failed (ready_to_ship):', e);
+            console.warn('[notifyOrderStatusChange] Photo send failed (shipped):', e);
           }
         }
 
-        // ── Send photo for delivered (comprobante de agencia = PAYMENTPROOFURL) ──
-        if (newStatus === 'delivered' && order.PAYMENTPROOFURL) {
+        // ── Send photo for delivered (comprobante de agencia = SHIPPINGPROOFURL or PAYMENTPROOFURL) ──
+        if (newStatus === 'delivered') {
           try {
             const { sendWhatsAppImage } = await import('@/lib/whatsapp');
             const trackingInfo = (order as any).TRACKINGNUMBER ? `\n\n📋 N° de seguimiento: ${(order as any).TRACKINGNUMBER}` : '';
-            const photoCaption = `¡Tu pedido #${code} fue entregado a la agencia! 🚚💨 Aquí va el comprobante para que rastrees tu envío 👇${trackingInfo}`;
-            await sendWhatsAppImage(phone, order.PAYMENTPROOFURL, photoCaption, WA_TOKEN);
+            const agency = order.SHIPPINGAGENCY ? `\n🚚 Agencia: ${order.SHIPPINGAGENCY}` : '';
+            const photoUrl = order.SHIPPINGPROOFURL || (order as any).AGENCYPROOFURL;
+            if (photoUrl) {
+              const photoCaption = `¡Tu pedido #${code} fue entregado a la agencia! 🚚💨 Aquí va el comprobante para que rastrees tu envío 👇${trackingInfo}${agency}`;
+              await sendWhatsAppImage(phone, photoUrl, photoCaption, WA_TOKEN);
+            } else {
+              // No photo, just text with tracking info
+              const { sendWhatsAppMessage } = await import('@/lib/whatsapp');
+              const textMsg = `¡Tu pedido #${code} fue entregado a la agencia! 🚚💨${trackingInfo}${agency}\n\n¡Pronto lo tendrás en tus manos! ✨`;
+              await sendWhatsAppMessage(phone, textMsg, WA_TOKEN);
+            }
           } catch (e) {
-            console.warn('[notifyOrderStatusChange] Photo send failed (delivered):', e);
+            console.warn('[notifyOrderStatusChange] Photo/text send failed (delivered):', e);
           }
         }
       }

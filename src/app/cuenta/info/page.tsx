@@ -166,7 +166,7 @@ export default function InfoPage() {
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111' }}>Conectar WhatsApp</h3>
           </div>
           <p style={{ margin: '0 0 16px', fontSize: 14, color: '#555', lineHeight: 1.5 }}>
-            ¿Escribiste mal tu número al registrarte? Haz click aquí para vincular tu WhatsApp actual a Kenia y recibir notificaciones.
+            ¿Escribiste mal tu número al registrarte? Haz click aquí para vincular tu WhatsApp actual a Balatin y recibir notificaciones.
           </p>
           <a
             href={`https://wa.me/56962293893?text=vincular_cuenta%20${user.id}`}

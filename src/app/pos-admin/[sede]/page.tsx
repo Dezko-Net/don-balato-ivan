@@ -12,7 +12,7 @@ const fmtCLP = (n: number) =>
 
 export default function PosAdminSedeDashboardPage() {
   const params = useParams();
-  const sedeSlug = (params?.sede || 'alameda') as SedeSlug;
+  const sedeSlug = (params?.sede || 'chacabuco-08') as SedeSlug;
   const sedeNombre = SEDES[sedeSlug] || sedeSlug;
 
   const [products, setProducts] = useState<AppwriteErpProduct[]>([]);

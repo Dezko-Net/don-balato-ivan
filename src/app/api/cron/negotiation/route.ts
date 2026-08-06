@@ -193,7 +193,7 @@ export async function GET(req: NextRequest) {
           try {
             const historyMsg = sendError
               ? messageText
-              : `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Don Balato Iván. ¿Cómo estás?`;
+              : `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Balatin, del equipo de Don Balato Iván. ¿Cómo estás?`;
             await addToHistory(formattedPhone, 'assistant', historyMsg);
 
             if (targetOrderId) {

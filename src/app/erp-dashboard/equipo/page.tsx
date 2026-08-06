@@ -8,19 +8,21 @@ import {
   deleteTrabajadorERP,
   updateTrabajadorERP,
 } from '@/lib/trabajadoresErpService'
+import { getServices, MEDIA_BUCKET_ID, getAppwriteConfig, ID } from '@/lib/appwrite'
 import { Users, Save, Edit, Trash2, Plus, X, Building2, FileText, Download, Bot, Send, Search, Brain, Zap, TrendingUp, TrendingDown, AlertTriangle, Shield, Star, Clock, ArrowLeft, ChevronRight, Sparkles, MessageCircle, BarChart3, Calendar, DollarSign, Award, Heart, ArrowRightLeft, Palette, CheckSquare, Image, Repeat, Eye, Loader2 } from 'lucide-react'
 import { SEDES } from '@/types'
 const IS_DEMO_PROJECT = false
 
 const BASE_PLANILLA_SEDES = [
-  { id: 'copiapo', name: 'Copiapó', color: 'amber', icon: '🏜️' },
+  { id: 'todas', name: 'Todas', color: 'slate', icon: '🌍' },
   { id: 'alameda', name: 'Alameda', color: 'green', icon: '🌳' },
+  { id: 'copiapo', name: 'Copiapó', color: 'amber', icon: '🏜️' },
   { id: 'la-florida', name: 'La Florida', color: 'pink', icon: '🌺' },
   { id: 'web', name: 'Web / Tiendas 3B', color: 'indigo', icon: '🌐' },
 ] as const
 
-const SEDICONS: Record<string, string> = { 'copiapo': '🏜️', 'alameda': '🌳', 'la-florida': '🌺', 'web': '🌐', 'web-tiendas-3b-chile': '🌐' }
-const SEDICOLORS: Record<string, string> = { 'copiapo': 'amber', 'alameda': 'green', 'la-florida': 'pink', 'web': 'indigo', 'web-tiendas-3b-chile': 'indigo' }
+const SEDICONS: Record<string, string> = { 'todas': '🌍', 'copiapo': '🏜️', 'alameda': '🌳', 'la-florida': '🌺', 'web': '🌐', 'web-tiendas-3b-chile': '🌐' }
+const SEDICOLORS: Record<string, string> = { 'todas': 'slate', 'copiapo': 'amber', 'alameda': 'green', 'la-florida': 'pink', 'web': 'indigo', 'web-tiendas-3b-chile': 'indigo' }
 
 // Build sedes from runtime config (SEDES), falling back to hardcoded list
 function buildPlanillaSedes() {
@@ -36,7 +38,7 @@ function buildPlanillaSedes() {
 
 const PLANILLA_SEDES = buildPlanillaSedes()
 
-const DEFAULT_PLANILLA_SEDE = (PLANILLA_SEDES[0]?.id || 'alameda') as 'alameda' | 'copiapo' | 'la-florida' | 'web'
+const DEFAULT_PLANILLA_SEDE = 'todas'
 
 interface Trabajador {
   id: string
@@ -45,7 +47,7 @@ interface Trabajador {
   genero: 'HOMBRE' | 'MUJER'
   cargo: string
   sueldo: number
-  sede: 'alameda' | 'copiapo' | 'la-florida' | 'web'
+  sede: string
   telefono?: string
   fechaNacimiento?: string
   fotoUrl?: string
@@ -71,13 +73,46 @@ async function mockAiResponse(payload: string): Promise<string> {
 export default function PlanillaUnificadaPage() {
   const navigate = useRouter()
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([])
-  const [selectedSede, setSelectedSede] = useState<'alameda' | 'copiapo' | 'la-florida' | 'web'>(DEFAULT_PLANILLA_SEDE)
-  const [countsBySede, setCountsBySede] = useState<Record<'alameda' | 'copiapo' | 'la-florida' | 'web', number>>({
-    'alameda': 0,
-    'copiapo': 0,
-    'la-florida': 0,
-    'web': 0,
-  })
+  const [selectedSede, setSelectedSede] = useState<string>('todas')
+  const [dynamicSedes, setDynamicSedes] = useState<Array<{ id: string; name: string; color: string; icon: string }>>([
+    { id: 'todas', name: 'Todas', color: 'slate', icon: '🌍' },
+    { id: 'chacabuco-08', name: 'CHACABUCO 08', color: 'blue', icon: '🏪' },
+  ])
+  const [countsBySede, setCountsBySede] = useState<Record<string, number>>({})
+
+  // Cargar sucursales dinámicas configuradas desde /admin-supreme (Appwrite erp_config)
+  useEffect(() => {
+    const fetchSedes = async () => {
+      try {
+        const res = await fetch('/api/admin-supreme/load-config')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.ok && json.data) {
+            const parsed = JSON.parse(json.data)
+            if (Array.isArray(parsed.branches) && parsed.branches.length > 0) {
+              const activeBranches = parsed.branches
+                .filter((b: any) => b.active !== false)
+                .map((b: any) => ({
+                  id: b.slug,
+                  name: b.name || String(b.slug).toUpperCase(),
+                  color: b.color || 'blue',
+                  icon: b.icon || '🏪',
+                }))
+              if (activeBranches.length > 0) {
+                setDynamicSedes([
+                  { id: 'todas', name: 'Todas', color: 'slate', icon: '🌍' },
+                  ...activeBranches,
+                ])
+              }
+            }
+          }
+        }
+      } catch {
+        /* Fallback si falla la red */
+      }
+    }
+    fetchSedes()
+  }, [])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -342,25 +377,7 @@ export default function PlanillaUnificadaPage() {
     return `${yyyy}-${mm}-${dd}`
   }
 
-  useEffect(() => {
-    const loadCounts = async () => {
-      try {
-        const items = await fetchTrabajadoresERP()
-        const next: Record<'alameda' | 'copiapo' | 'la-florida' | 'web', number> = { 'alameda': 0, 'copiapo': 0, 'la-florida': 0, 'web': 0 }
-        for (const item of items) {
-          const sedeRaw = String(item.sede || '')
-          if (sedeRaw === 'alameda' || sedeRaw === 'copiapo' || sedeRaw === 'la-florida' || sedeRaw === 'web') {
-            next[sedeRaw as 'alameda' | 'copiapo' | 'la-florida' | 'web']++
-          }
-        }
-        setCountsBySede(next)
-      } catch {
-        setCountsBySede({ 'copiapo': 0, 'alameda': 0, 'la-florida': 0, 'web': 0 })
-      }
-    }
 
-    loadCounts()
-  }, [])
 
   const easterSunday = (year: number) => {
     const f = Math.floor
@@ -890,13 +907,43 @@ export default function PlanillaUnificadaPage() {
         alert(`La imagen es muy pesada. Máximo ${maxMb}MB.`)
         return
       }
-      const reader = new FileReader()
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-      await handleSave(trabajadorId, 'fotoUrl', dataUrl)
+
+      let finalUrl = ''
+
+      // Strategy 1: Upload to Appwrite Storage Bucket
+      try {
+        const { storage } = getServices()
+        const { endpoint, projectId } = getAppwriteConfig()
+        const fileId = ID.unique()
+        const created = await storage.createFile(MEDIA_BUCKET_ID, fileId, file)
+        finalUrl = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${created.$id}/view?project=${projectId}`
+      } catch (storageErr) {
+        console.warn('Upload a Appwrite Storage falló, usando compresión canvas fallback:', storageErr)
+        // Strategy 2: Resize image to 96x96px thumbnail dataUrl < 950 chars
+        finalUrl = await new Promise<string>((resolve) => {
+          const img = new window.Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = 96
+            canvas.height = 96
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, 96, 96)
+              resolve(canvas.toDataURL('image/jpeg', 0.6).slice(0, 990))
+            } else {
+              resolve('')
+            }
+          }
+          img.onerror = () => resolve('')
+          img.src = URL.createObjectURL(file)
+        })
+      }
+
+      if (finalUrl) {
+        await handleSave(trabajadorId, 'fotoUrl', finalUrl)
+      } else {
+        alert('No se pudo procesar la foto.')
+      }
     } catch (e: any) {
       console.error('Error subiendo foto:', e)
       const msg = e?.message ? String(e.message) : String(e)
@@ -929,180 +976,45 @@ export default function PlanillaUnificadaPage() {
     }
   }, [pendingPhotoPickId, isDesktop, trabajadores.length])
 
-  // Datos iniciales para cada sede
+  // Datos iniciales para cada sede (se llenan desde Appwrite)
   var datosIniciales: Record<string, Trabajador[]> = {
+    'todas': [],
     'copiapo': [],
-    'alameda': [
-      {
-        id: '1',
-        nombre: 'Alejandra',
-        nacionalidad: 'VENEZOLANA',
-        genero: 'MUJER',
-        cargo: 'CAJERA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '2',
-        nombre: 'Paola',
-        nacionalidad: 'VENEZOLANA',
-        genero: 'MUJER',
-        cargo: 'CAJERA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '3',
-        nombre: 'Skarlet',
-        nacionalidad: 'VENEZOLANA',
-        genero: 'MUJER',
-        cargo: 'REPONEDORA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '4',
-        nombre: 'Fernanda',
-        nacionalidad: 'COLOMBIANA',
-        genero: 'MUJER',
-        cargo: 'REPONEDORA',
-        sueldo: 700000,
-        sede: 'alameda'
-      },
-      {
-        id: '5',
-        nombre: 'Susneydi',
-        nacionalidad: 'VENEZOLANA',
-        genero: 'MUJER',
-        cargo: 'CAJERA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '6',
-        nombre: 'Gustavo',
-        nacionalidad: 'VENEZOLANO',
-        genero: 'HOMBRE',
-        cargo: 'BODEGUERO',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '7',
-        nombre: 'Anderson',
-        nacionalidad: 'VENEZOLANO',
-        genero: 'HOMBRE',
-        cargo: 'BODEGUERO',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '8',
-        nombre: 'Edy',
-        nacionalidad: 'ECUATORIANO',
-        genero: 'HOMBRE',
-        cargo: 'CUSTODIA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '9',
-        nombre: 'Jose manuel',
-        nacionalidad: 'ECUATORIANO',
-        genero: 'HOMBRE',
-        cargo: 'BODEGUERO',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '10',
-        nombre: 'Lisy',
-        nacionalidad: 'VENEZOLANA',
-        genero: 'MUJER',
-        cargo: 'VENDEDORA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '11',
-        nombre: 'Jose',
-        nacionalidad: 'VENEZOLANO',
-        genero: 'HOMBRE',
-        cargo: 'BODEGUERO',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '12',
-        nombre: 'Elizabeth',
-        nacionalidad: 'ECUATORIANA',
-        genero: 'MUJER',
-        cargo: 'VENDEDORA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '13',
-        nombre: 'Luisa',
-        nacionalidad: 'COLOMBIANA',
-        genero: 'MUJER',
-        cargo: 'VENDEDORA',
-        sueldo: 600000,
-        sede: 'alameda'
-      },
-      {
-        id: '14',
-        nombre: 'Hector',
-        nacionalidad: 'VENEZOLANO',
-        genero: 'HOMBRE',
-        cargo: 'BODEGUERO',
-        sueldo: 600000,
-        sede: 'alameda'
-      }
-    ],
+    'alameda': [],
     'web': [],
-    'la-florida': [
-      {
-        id: '1',
-        nombre: 'Edgardo',
-        nacionalidad: 'CHILENO',
-        genero: 'HOMBRE',
-        cargo: 'CAJERO',
-        sueldo: 600000,
-        sede: 'la-florida'
-      },
-      {
-        id: '2',
-        nombre: 'Adriano',
-        nacionalidad: 'CHILENO',
-        genero: 'HOMBRE',
-        cargo: 'CAJERO',
-        sueldo: 600000,
-        sede: 'la-florida'
-      },
-      {
-        id: '3',
-        nombre: 'Vanesa',
-        nacionalidad: 'CHILENA',
-        genero: 'MUJER',
-        cargo: 'VENDEDORA',
-        sueldo: 600000,
-        sede: 'la-florida'
-      }
-    ]
+    'la-florida': []
   }
 
   useEffect(() => {
     const cargarTrabajadores = async () => {
       try {
         const items = await fetchTrabajadoresERP()
+
+        // Calcular conteos reales por sede estrictamente desde Appwrite
+        const counts: Record<string, number> = {
+          'todas': items.length,
+        }
+        for (const item of items) {
+          const s = String(item.sede || '').trim().toLowerCase()
+          if (s) {
+            counts[s] = (counts[s] || 0) + 1
+          }
+        }
+        setCountsBySede(counts)
+
+        // Filtrar trabajadores para la sede seleccionada (o todos si selectedSede === 'todas')
         const datos: Trabajador[] = items
-          .filter(t => t.sede === selectedSede)
+          .filter(t => {
+            if (selectedSede === 'todas' || !selectedSede) return true
+            const tSede = String(t.sede || '').trim().toLowerCase()
+            const sSede = String(selectedSede).trim().toLowerCase()
+            return tSede === sSede
+          })
           .map(t => ({
             id: t.$id,
             nombre: t.nombre,
             nacionalidad: t.nacionalidad || '',
-            genero: (t.genero as 'HOMBRE' | 'MUJER') || 'HOMBRE',
+            genero: (t.genero?.toUpperCase() === 'MUJER' || t.genero?.toUpperCase() === 'FEMENINO' ? 'MUJER' : 'HOMBRE') as 'HOMBRE' | 'MUJER',
             cargo: t.cargo,
             sueldo: Number(t.sueldo) || 0,
             sede: t.sede as any,
@@ -1114,16 +1026,9 @@ export default function PlanillaUnificadaPage() {
           }))
         datos.sort((a, b) => a.nombre.localeCompare(b.nombre))
         setTrabajadores(datos)
-
-        const counts: Record<string, number> = {}
-        for (const item of items) {
-          counts[item.sede] = (counts[item.sede] || 0) + 1
-        }
-        setCountsBySede((prev) => ({ ...prev, ...counts }))
       } catch (error) {
-        console.error('Error al cargar trabajadores:', error)
+        console.error('Error al cargar trabajadores desde Appwrite:', error)
         setTrabajadores([])
-        setCountsBySede((prev) => ({ ...prev, [selectedSede]: 0 }))
       } finally {
         setLoading(false)
       }
@@ -1165,11 +1070,23 @@ export default function PlanillaUnificadaPage() {
     setEditingId(id)
   }
 
+  const recalcCounts = (list: Trabajador[]) => {
+    const counts: Record<string, number> = { 'todas': list.length }
+    for (const t of list) {
+      const s = String(t.sede || '').trim().toLowerCase()
+      if (s) {
+        counts[s] = (counts[s] || 0) + 1
+      }
+    }
+    setCountsBySede(counts)
+  }
+
   const handleSave = async (id: string, field: keyof Trabajador, value: any) => {
     const updatedTrabajadores = trabajadores.map(trabajador =>
       trabajador.id === id ? { ...trabajador, [field]: value } : trabajador
     )
     setTrabajadores(updatedTrabajadores)
+    recalcCounts(updatedTrabajadores)
     
     try {
       const trabajador = updatedTrabajadores.find(t => t.id === id)
@@ -1198,6 +1115,7 @@ export default function PlanillaUnificadaPage() {
 
     const updatedTrabajadores = trabajadores.filter(trabajador => trabajador.id !== id)
     setTrabajadores(updatedTrabajadores)
+    recalcCounts(updatedTrabajadores)
     
     try {
       await deleteTrabajadorERP(id)
@@ -1210,14 +1128,16 @@ export default function PlanillaUnificadaPage() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
+    const targetSede = selectedSede === 'todas' ? (dynamicSedes.find(s => s.id !== 'todas')?.id || 'chacabuco-08') : selectedSede
+
     const nuevoTrabajador: Trabajador = {
       id: `temp_${Date.now()}`,
       nombre: '',
-      nacionalidad: selectedSede === 'alameda' ? 'VENEZOLANA' : 'CHILENA',
+      nacionalidad: 'CHILENA',
       genero: 'HOMBRE',
-      cargo: selectedSede === 'alameda' ? 'BODEGUERO' : 'CAJERO',
+      cargo: 'CAJERO',
       sueldo: 600000,
-      sede: selectedSede,
+      sede: targetSede,
       fechaNacimiento: '',
       fotoUrl: '',
       fechaIngreso: toYmdLocal(today),
@@ -1240,7 +1160,11 @@ export default function PlanillaUnificadaPage() {
 
     if (created) {
       nuevoTrabajador.id = created.$id
-      setTrabajadores((prev) => [...prev, nuevoTrabajador])
+      setTrabajadores((prev) => {
+        const nextList = [...prev, nuevoTrabajador]
+        recalcCounts(nextList)
+        return nextList
+      })
       setEditingId(nuevoTrabajador.id)
       setPendingPhotoPickId(nuevoTrabajador.id)
     } else {
@@ -1269,9 +1193,12 @@ export default function PlanillaUnificadaPage() {
       if (filtroGenero !== 'TODOS' && t.genero !== filtroGenero) return false
       if (filtroNacionalidad !== 'TODOS' && t.nacionalidad !== filtroNacionalidad) return false
       if (q && !(t.nombre || '').toLowerCase().includes(q)) return false
-      return t.sede === selectedSede
+      if (selectedSede === 'todas' || !selectedSede) return true
+      const tSede = String(t.sede || '').trim().toLowerCase()
+      const sSede = String(selectedSede).trim().toLowerCase()
+      return tSede === sSede
     })
-  }, [trabajadores, filtroGenero, filtroNacionalidad, searchQuery])
+  }, [trabajadores, filtroGenero, filtroNacionalidad, searchQuery, selectedSede])
 
   const trabajadoresOrdenados = useMemo(() => {
     const rows = trabajadoresFiltrados.map((t) => ({ t, a: calcAcumuladoQuincenaHastaHoy(t) }))
@@ -1444,7 +1371,7 @@ INSTRUCCIONES:
     }
   }
 
-  const sedes = PLANILLA_SEDES
+  const sedes = dynamicSedes
 
   const sedeUi: Record<string, { selected: string; base: string }> = {
     'copiapo': { selected: 'border-amber-500 bg-amber-50', base: 'border-amber-200 hover:border-amber-300' },
@@ -1649,14 +1576,16 @@ INSTRUCCIONES:
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
             {sedes.map((sede) => {
               const active = selectedSede === sede.id
-              const count = countsBySede[sede.id as 'alameda' | 'copiapo' | 'la-florida' | 'web'] ?? 0
+              const count = countsBySede[sede.id] ?? 0
               const sedeGradients: Record<string, string> = {
+                'todas': 'from-blue-600 via-indigo-600 to-purple-600',
+                'chacabuco-08': 'from-emerald-600 to-teal-600',
                 'copiapo': 'from-amber-500 to-orange-500',
                 'alameda': 'from-emerald-500 to-teal-600',
                 'la-florida': 'from-pink-500 to-rose-600',
                 'web': 'from-indigo-500 to-violet-600',
               }
-              const accent = sedeGradients[sede.id] || 'from-slate-500 to-slate-600'
+              const accent = sedeGradients[sede.id] || 'from-blue-600 to-indigo-600'
               return (
                 <button
                   key={sede.id}
@@ -1686,13 +1615,19 @@ INSTRUCCIONES:
         <div className="mb-4 space-y-3">
           {/* Hero: Composición de equipo — Donut + Avatares reales + Glass White */}
           {(() => {
-            const hombresArr = trabajadoresFiltrados.filter(t => t.genero === 'HOMBRE')
-            const mujeresArr = trabajadoresFiltrados.filter(t => t.genero === 'MUJER')
-            const hombres = hombresArr.length
+            const mujeresArr = trabajadoresFiltrados.filter(t => {
+              const g = (t.genero || '').toUpperCase()
+              return g === 'MUJER' || g === 'FEMENINO'
+            })
+            const hombresArr = trabajadoresFiltrados.filter(t => {
+              const g = (t.genero || '').toUpperCase()
+              return g !== 'MUJER' && g !== 'FEMENINO'
+            })
             const mujeres = mujeresArr.length
-            const total = hombres + mujeres
-            const hPct = total > 0 ? Math.round((hombres / total) * 100) : 50
-            const mPct = total > 0 ? Math.round((mujeres / total) * 100) : 50
+            const hombres = hombresArr.length
+            const total = trabajadoresFiltrados.length
+            const hPct = total > 0 ? Math.round((hombres / total) * 100) : 0
+            const mPct = total > 0 ? Math.round((mujeres / total) * 100) : 0
             // Donut math
             const R = 36
             const C = 2 * Math.PI * R
@@ -2073,6 +2008,16 @@ INSTRUCCIONES:
                   {isEditing && (
                     <div className="px-4 py-3 bg-slate-50/80 border-y border-slate-100" onClick={(e) => e.stopPropagation()}>
                       <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="col-span-2">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase">Sucursal / Sede</label>
+                          <select value={trabajador.sede} onChange={(e) => handleSave(trabajador.id, 'sede', e.target.value)} className="w-full mt-1 px-2 py-1.5 border border-indigo-200 rounded-lg text-xs bg-white font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                            {dynamicSedes.filter(s => s.id !== 'todas').map(s => (
+                              <option key={s.id} value={s.id}>
+                                {s.icon} {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <div>
                           <label className="text-[9px] font-bold text-slate-500 uppercase">Nacionalidad</label>
                           <select value={trabajador.nacionalidad} onChange={(e) => handleSave(trabajador.id, 'nacionalidad', e.target.value)} className="w-full mt-1 px-2 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">

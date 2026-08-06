@@ -83,7 +83,6 @@ export const SUBCATEGORIES_COLLECTION_ID = 'subcategories';
 export const BANNERS_COLLECTION_ID = 'banners';
 export const ORDERS_COLLECTION_ID = 'orders';
 export const USERS_COLLECTION_ID = 'users';
-export const NOTIFICATIONS_COLLECTION_ID = 'notifications';
 export const TIMED_OFFERS_COLLECTION_ID = 'timed_offers';
 export const LIVE_STREAMS_COLLECTION_ID = 'live_streams';
 export const SUPPORT_TICKETS_COLLECTION_ID = 'support_tickets';

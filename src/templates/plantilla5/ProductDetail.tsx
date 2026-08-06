@@ -637,7 +637,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const stock = isLimitedStock ? (displayProduct?.STOCK ?? 0) : 99999;
     const isSoldOut = isLimitedStock && stock <= 0;
     const stockColor = stock > 10 ? '#10b981' : stock > 5 ? '#f59e0b' : stock > 0 ? '#ef4444' : '#9ca3af';
-    const stockLabel = stock > 10 ? 'Stock disponible' : stock > 5 ? 'Stock limitado' : stock > 0 ? `Últimas unidades (${stock} disp.)` : 'Sin stock';
+    const stockLabel = stock > 0 ? `Stock disponible (${stock} uds.)` : 'Sin stock';
 
     const localPickup = root.querySelector('local-pickup, .product__pickup-availabilities');
     if (localPickup) {

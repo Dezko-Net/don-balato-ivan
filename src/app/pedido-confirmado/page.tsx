@@ -442,7 +442,7 @@ function ConfirmadoInner() {
 
           {/* Verify button */}
           <a
-            href={`https://wa.me/56936599658?text=Hola%20Kenia,%20quiero%20verificar%20mi%20número%20para%20el%20pedido%20${order?.$id}%20(${order?.ORDERCODE}).%20Mi%20número%20registrado%20es%20${order?.CUSTOMERPHONE}`}
+            href={`https://wa.me/56936599658?text=Hola%20Balatin,%20quiero%20verificar%20mi%20número%20para%20el%20pedido%20${order?.$id}%20(${order?.ORDERCODE}).%20Mi%20número%20registrado%20es%20${order?.CUSTOMERPHONE}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#25D366', color: '#fff', borderRadius: 14, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(37,211,102,0.2)', transition: 'all 0.2s' }}
@@ -450,7 +450,7 @@ function ConfirmadoInner() {
             <MessageCircle size={18} /> Comprobar número
           </a>
           <p style={{ margin: '10px 0 0', fontSize: 11, color: '#9ca3af', textAlign: 'center', lineHeight: 1.4 }}>
-            Si tu número no coincide, Kenia te ayudará a vincularlo correctamente desde WhatsApp.
+            Si tu número no coincide, Balatin te ayudará a vincularlo correctamente desde WhatsApp.
           </p>
         </div>
         )}
