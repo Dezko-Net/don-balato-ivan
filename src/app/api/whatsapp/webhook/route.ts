@@ -1192,16 +1192,122 @@ export async function POST(req: NextRequest) {
       }
 
       if (wantsParse) {
-        // User says they're done — send accumulated buffer + this message to AI for parsing
-        const accumulatedData = (usage.balatinDataBuffer || '') + '\n' + userText;
-        // Put the accumulated data into userText so the AI section processes it all
-        (usage as any)._balatinDataMode = true;
-        (usage as any)._balatinOrderId = orderId;
-        (usage as any)._balatinOrderCode = orderCode;
-        (usage as any)._balatinAccumulatedData = accumulatedData.trim();
-        // Clear the buffer
-        await recordKeniaUsage(fromPhone, { balatinDataBuffer: '' });
-        // Don't return — fall through to AI section which will use _balatinAccumulatedData
+        // Parse shipping data locally (no AI needed — saves tokens + more reliable)
+        const accumulatedData = ((usage.balatinDataBuffer || '') + '\n' + userText).trim();
+
+        // ── Local regex parser for shipping data ──
+        const lowerData = accumulatedData.toLowerCase();
+
+        // RUT: matches 12.345.678-9, 12345678-9, 123456789
+        const rutMatch = accumulatedData.match(/\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/);
+        const customerRut = rutMatch ? rutMatch[1] : '';
+
+        // Agencia: starken, chilexpress, bluexpress, retiro
+        const agencyMatch = lowerData.match(/\b(starken|chilexpress|bluexpress|blu express|retiro\s+(en\s+)?tienda|retiro)\b/);
+        const shippingAgency = agencyMatch ? (agencyMatch[0].includes('blu') ? 'BluExpress' : agencyMatch[0].charAt(0).toUpperCase() + agencyMatch[0].slice(1)) : '';
+
+        // Email
+        const emailMatch = accumulatedData.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+        const customerEmail = emailMatch ? emailMatch[0] : '';
+
+        // Región: match known Chilean regions
+        const regions = ['metropolitana', 'valparaíso', 'valparaiso', 'biobío', 'bio bio', 'araucanía', 'araucania', 'ohiggins', "o'higgins", 'maule', 'ñuble', 'nuble', 'los lagos', 'aysén', 'aysen', 'magallanes', 'antofagasta', 'atacama', 'coquimbo', 'tarapacá', 'tarapaca', 'arica', 'río negro', 'los ríos'];
+        const regionMatch = regions.find(r => lowerData.includes(r));
+        const region = regionMatch ? (regionMatch.charAt(0).toUpperCase() + regionMatch.slice(1)) : '';
+
+        // Remove known parts to find address and comuna
+        let remaining = accumulatedData;
+        if (rutMatch) remaining = remaining.replace(rutMatch[0], '');
+        if (agencyMatch) remaining = remaining.replace(new RegExp(agencyMatch[0], 'gi'), '');
+        if (emailMatch) remaining = remaining.replace(emailMatch[0], '');
+        if (regionMatch) remaining = remaining.replace(new RegExp(regionMatch, 'gi'), '');
+        // Remove "termine", "terminé", labels like "rut:", "dirección:", etc.
+        remaining = remaining.replace(/\b(termin[eé]|acab[eé]|finalizar|listo|ya)\b/gi, '');
+        remaining = remaining.replace(/\b(rut|direcci[oó]n|comuna|regi[oó]n|agencia|email|correo|env[ií]o|starken|chilexpress|bluexpress)\s*[:\-]?\s*/gi, '');
+        // Clean up
+        remaining = remaining.replace(/\s+/g, ' ').trim();
+        // Remove leading/trailing punctuation
+        remaining = remaining.replace(/^[\s,;:|-]+|[\s,;:|-]+$/g, '');
+
+        // Split remaining into parts — address is usually first, comuna second
+        const parts = remaining.split(/\s*,\s*|\s{2,}/).filter(p => p.length > 1);
+        let address = '';
+        let comuna = '';
+
+        if (parts.length >= 2) {
+          address = parts[0];
+          comuna = parts[1];
+        } else if (parts.length === 1) {
+          // Try to split by known comuna names
+          const comunas = ['santiago centro', 'santiago', 'providencia', 'maipú', 'maipu', 'las condes', 'vitacura', 'lo barnechea', 'ñuñoa', 'nunoa', 'la florida', 'puente alto', 'san miguel', 'estación central', 'estacion central', 'quinta normal', 'renca', 'cerro navia', 'huechuraba', 'independencia', 'recoleta', 'la reina', 'peñalolén', 'penalolen', 'la granja', 'san ramón', 'san ramon', 'la cisterna', 'el bosque', 'pedro aguirre cerda', 'lo espejo', 'pudahuel', 'quilicura', 'conchalí', 'conchali', 'macul', 'cerrillos'];
+          const foundComuna = comunas.find(c => lowerData.includes(c));
+          if (foundComuna) {
+            comuna = foundComuna.charAt(0).toUpperCase() + foundComuna.slice(1);
+            address = parts[0].replace(new RegExp(foundComuna, 'gi'), '').trim();
+          } else {
+            address = parts[0];
+          }
+        }
+
+        // Save to order
+        try {
+          const { serverGetDocument, serverUpdateDocument } = await import('@/lib/appwrite-server');
+          const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+          const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId!);
+
+          const updates: Record<string, any> = {};
+          if (customerRut) updates.CUSTOMERRUT = customerRut;
+          if (address) updates.ADDRESS = address;
+          if (comuna) updates.COMUNA = comuna;
+          if (region) updates.REGION = region;
+          if (shippingAgency) updates.SHIPPINGAGENCY = shippingAgency;
+          if (customerEmail) updates.CUSTOMEREMAIL = customerEmail;
+
+          if (Object.keys(updates).length > 0) {
+            await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId!, updates);
+            console.log('[Balatin Data Parse] Saved shipping data locally:', updates);
+          }
+
+          // Check what's still missing
+          const missingFields: string[] = [];
+          if (!customerRut && !orderDoc?.CUSTOMERRUT) missingFields.push('RUT');
+          if (!address && !orderDoc?.ADDRESS) missingFields.push('dirección');
+          if (!comuna && !orderDoc?.COMUNA) missingFields.push('comuna');
+          if (!region && !orderDoc?.REGION) missingFields.push('región');
+          if (!shippingAgency && !orderDoc?.SHIPPINGAGENCY) missingFields.push('agencia de envío');
+
+          await addToHistory(fromPhone, 'user', userText, msgId);
+
+          if (missingFields.length > 0) {
+            const missingMsg = `¡Casi! 🐾 No pude identificar algunos datos:\n\n${missingFields.map(f => `• ${f}`).join('\n')}\n\nMándamelos por favor. 📝`;
+            await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'assistant', missingMsg, `balatin-missing-${Date.now()}`);
+          } else {
+            // Show summary and ask for confirmation
+            const fmtRut = customerRut || orderDoc?.CUSTOMERRUT || '';
+            const fmtAddr = address || orderDoc?.ADDRESS || '';
+            const fmtComuna = comuna || orderDoc?.COMUNA || '';
+            const fmtRegion = region || orderDoc?.REGION || '';
+            const fmtAgency = shippingAgency || orderDoc?.SHIPPINGAGENCY || '';
+
+            const summaryMsg = `¡Excelente, ${customerName}! 🐾 He recibido tus datos de envío.\n\nAquí tienes un resumen de la información que me entregaste para tu pedido ${orderCode}:\n\n• *RUT:* ${fmtRut}\n• *Nombre completo:* ${customerName}\n• *Dirección:* ${fmtAddr}\n• *Comuna:* ${fmtComuna}\n• *Región:* ${fmtRegion}\n• *Agencia de envío:* ${fmtAgency}\n\n¿Estos datos están correctos, ${customerName}? Responde *CORRECTO* para confirmar.`;
+            await sendWhatsAppMessage(fromPhone, summaryMsg, WA_TOKEN);
+            await addToHistory(fromPhone, 'assistant', summaryMsg, `balatin-summary-${Date.now()}`);
+          }
+
+          await recordKeniaUsage(fromPhone, { balatinDataBuffer: '' });
+          await markAsRead(msgId, WA_TOKEN);
+          return NextResponse.json({ status: 'balatin_data_parsed_locally' });
+
+        } catch (e) {
+          console.error('[Balatin Data Parse] Error saving shipping data locally:', e);
+          // Fall through to AI as fallback
+          (usage as any)._balatinDataMode = true;
+          (usage as any)._balatinOrderId = orderId;
+          (usage as any)._balatinOrderCode = orderCode;
+          (usage as any)._balatinAccumulatedData = accumulatedData;
+          await recordKeniaUsage(fromPhone, { balatinDataBuffer: '' });
+        }
       } else {
         // Not "terminé" — accumulate the data without calling AI (save API tokens)
         const currentBuffer = usage.balatinDataBuffer || '';
@@ -2928,6 +3034,8 @@ El cliente te mandó todos sus datos de envío juntos. Debes EXTRAER los datos y
     if (!isAdmin) {
       const updateShippingRegex = /\[ACTION:UPDATE_SHIPPING\]([\s\S]*?)\[\/ACTION\]/;
       const updateShippingMatch = rawText.match(updateShippingRegex);
+      let shippingWasSaved = false;
+
       if (updateShippingMatch) {
         try {
           const shipData = JSON.parse(updateShippingMatch[1]);
@@ -2975,10 +3083,45 @@ El cliente te mandó todos sus datos de envío juntos. Debes EXTRAER los datos y
             if (observations) updates.OBSERVATIONS = observations;
             if (Object.keys(updates).length > 0) {
               await serverUpdateDocument(ORDERS_COLLECTION_ID, targetOrder.$id, updates);
+              shippingWasSaved = true;
             }
           }
         } catch (err) {
           console.error('[WhatsApp Webhook] UPDATE_SHIPPING parsing/execution error:', err);
+        }
+      }
+
+      // ── FALLBACK: If AI showed a summary but didn't include the UPDATE_SHIPPING tag,
+      //    parse the summary from aiReply and save the data anyway ──
+      if (!shippingWasSaved && (usage as any)._balatinDataMode === true) {
+        try {
+          const balatinOId = (usage as any)._balatinOrderId || usage.balatinOrderId;
+          if (balatinOId) {
+            // Parse RUT from the AI reply
+            const rutMatch = aiReply.match(/RUT[:\s]*\*?([\d.]+-[\dkK])\*?/i);
+            // Parse address
+            const addrMatch = aiReply.match(/Direcci[oó]n[:\s]*\*?([^*\n•]+)\*?/i);
+            // Parse comuna
+            const comunaMatch = aiReply.match(/Comuna[:\s]*\*?([^*\n•]+)\*?/i);
+            // Parse region
+            const regionMatch = aiReply.match(/Regi[oó]n[:\s]*\*?([^*\n•]+)\*?/i);
+            // Parse agency
+            const agencyMatch = aiReply.match(/Agencia(?:\s+de\s+env[ií]o)?[:\s]*\*?([^*\n•]+)\*?/i);
+
+            const updates: Record<string, any> = {};
+            if (rutMatch) updates.CUSTOMERRUT = rutMatch[1].trim();
+            if (addrMatch) updates.ADDRESS = addrMatch[1].trim();
+            if (comunaMatch) updates.COMUNA = comunaMatch[1].trim();
+            if (regionMatch) updates.REGION = regionMatch[1].trim();
+            if (agencyMatch) updates.SHIPPINGAGENCY = agencyMatch[1].trim();
+
+            if (Object.keys(updates).length > 0) {
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, balatinOId, updates);
+              console.log('[UPDATE_SHIPPING Fallback] Saved from AI summary:', updates);
+            }
+          }
+        } catch (e) {
+          console.warn('[UPDATE_SHIPPING Fallback] Could not parse AI summary:', e);
         }
       }
     }
