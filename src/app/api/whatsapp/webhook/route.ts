@@ -899,9 +899,8 @@ export async function POST(req: NextRequest) {
               await sendWhatsAppMessage(fromPhone, dayMsg, WA_TOKEN);
               await addToHistory(fromPhone, 'assistant', dayMsg, `balatin-returning-day-${Date.now()}`);
 
-              // Notify admin (cajera) about new order
+              // Notify admin (cajera) about new order - single template with URL button
               const verifyLink = `${SITE_URL}/verificar-stock?code=${orderCode}`;
-              const orderLink = `${SITE_URL}/admin/orders/${orderId}`;
               try {
                 const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
                 await recordKeniaUsage(STOCK_VERIFIER_PHONE, { pendingOrderId: orderId });
@@ -912,10 +911,17 @@ export async function POST(req: NextRequest) {
                       { type: 'text', text: String(orderCode) },
                       { type: 'text', text: existingCustomerName },
                     ]
+                  },
+                  {
+                    type: 'button',
+                    sub_type: 'url',
+                    index: 0,
+                    parameters: [
+                      { type: 'text', text: String(orderCode) }
+                    ]
                   }
                 ];
-                await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es_CL', components, WA_TOKEN);
-                await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: ${existingCustomerName}\nTeléfono: +${cleanedFrom}\n\n🔗 *Confirma el stock aquí:*\n${verifyLink}`, WA_TOKEN);
+                await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'confirmar_stock_balatin', 'es_CL', components, WA_TOKEN);
               } catch (tplErr) {
                 console.error('[Balatin Catalog Flow] Error sending template to admin:', tplErr);
                 const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: ${existingCustomerName}\nTeléfono: +${cleanedFrom}\n\n🔗 *Confirma el stock aquí:*\n${verifyLink}`;
@@ -952,9 +958,8 @@ export async function POST(req: NextRequest) {
             await sendWhatsAppMessage(fromPhone, dayMsg, WA_TOKEN);
             await addToHistory(fromPhone, 'assistant', dayMsg, `balatin-day-${Date.now()}`);
 
-            // Notify admin (cajera) about new order using approved template
+            // Notify admin (cajera) about new order - single template with URL button
             const verifyLink = `${SITE_URL}/verificar-stock?code=${orderCode}`;
-            const orderLink = `${SITE_URL}/admin/orders/${orderId}`;
             try {
               const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
               const { recordKeniaUsage } = await import('@/lib/kenia-runtime');
@@ -969,13 +974,18 @@ export async function POST(req: NextRequest) {
                     { type: 'text', text: String(orderCode) },
                     { type: 'text', text: '(pendiente de nombre)' },
                   ]
+                },
+                {
+                  type: 'button',
+                  sub_type: 'url',
+                  index: 0,
+                  parameters: [
+                    { type: 'text', text: String(orderCode) }
+                  ]
                 }
               ];
 
-              await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es_CL', components, WA_TOKEN);
-
-              // Send the verify-stock link in a follow-up message
-              await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: (pendiente de nombre)\nTeléfono: +${cleanedFrom}\n\n🔗 *Confirma el stock aquí:*\n${verifyLink}`, WA_TOKEN);
+              await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'confirmar_stock_balatin', 'es_CL', components, WA_TOKEN);
             } catch (tplErr) {
               console.error('[Balatin Catalog Flow] Error sending template to admin:', tplErr);
               // Fallback: plain text

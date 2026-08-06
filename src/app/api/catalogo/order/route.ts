@@ -107,9 +107,7 @@ export async function POST(request: NextRequest) {
         const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.donbalatomayorista.cl';
         const STOCK_VERIFIER_PHONE = '56962293893'; // Lissy
 
-        const verifyLink = `${SITE_URL}/verificar-stock?code=${reqCode}`;
-
-        // Enviar plantilla alerta_pago_admin
+        // Enviar plantilla confirmar_stock_balatin con botón URL (un solo mensaje)
         const components = [
           {
             type: 'body',
@@ -117,15 +115,19 @@ export async function POST(request: NextRequest) {
               { type: 'text', text: String(reqCode) },
               { type: 'text', text: customerName || '(pendiente de nombre)' },
             ]
+          },
+          {
+            type: 'button',
+            sub_type: 'url',
+            index: 0,
+            parameters: [
+              { type: 'text', text: String(reqCode) }
+            ]
           }
         ];
-        await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es_CL', components, WA_TOKEN);
+        await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'confirmar_stock_balatin', 'es_CL', components, WA_TOKEN);
 
-        // Enviar link de verificar stock como segundo mensaje
-        const linkMsg = `📦 *PEDIDO NUEVO* #${reqCode}\n\nCliente: ${customerName || '(pendiente)'}\nCajera asignada: ${assignedCashier}\n\n🔗 Confirma el stock aquí:\n${verifyLink}`;
-        await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, linkMsg, WA_TOKEN);
-
-        console.log('[catalogo/order] Plantilla + link enviados a cajera:', STOCK_VERIFIER_PHONE);
+        console.log('[catalogo/order] Plantilla confirmar_stock_balatin enviada a cajera:', STOCK_VERIFIER_PHONE);
       } catch (tplErr) {
         console.error('[catalogo/order] Error enviando plantilla a cajera:', tplErr);
       }
