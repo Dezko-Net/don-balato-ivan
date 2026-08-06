@@ -900,6 +900,7 @@ export async function POST(req: NextRequest) {
               await addToHistory(fromPhone, 'assistant', dayMsg, `balatin-returning-day-${Date.now()}`);
 
               // Notify admin (cajera) about new order
+              const verifyLink = `${SITE_URL}/verificar-stock?code=${orderCode}`;
               const orderLink = `${SITE_URL}/admin/orders/${orderId}`;
               try {
                 const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
@@ -913,11 +914,11 @@ export async function POST(req: NextRequest) {
                     ]
                   }
                 ];
-                await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es', components, WA_TOKEN);
-                await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `🔗 Revisa el pedido aquí:\n${orderLink}`, WA_TOKEN);
+                await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es_CL', components, WA_TOKEN);
+                await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: ${existingCustomerName}\nTeléfono: +${cleanedFrom}\n\n🔗 *Confirma el stock aquí:*\n${verifyLink}`, WA_TOKEN);
               } catch (tplErr) {
                 console.error('[Balatin Catalog Flow] Error sending template to admin:', tplErr);
-                const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: ${existingCustomerName}\nTeléfono: +${cleanedFrom}\n\nRevisa y confirma el stock aquí:\n${orderLink}`;
+                const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: ${existingCustomerName}\nTeléfono: +${cleanedFrom}\n\n🔗 *Confirma el stock aquí:*\n${verifyLink}`;
                 await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, adminMsg, WA_TOKEN);
               }
 
@@ -952,6 +953,7 @@ export async function POST(req: NextRequest) {
             await addToHistory(fromPhone, 'assistant', dayMsg, `balatin-day-${Date.now()}`);
 
             // Notify admin (cajera) about new order using approved template
+            const verifyLink = `${SITE_URL}/verificar-stock?code=${orderCode}`;
             const orderLink = `${SITE_URL}/admin/orders/${orderId}`;
             try {
               const { sendWhatsAppTemplate } = await import('@/lib/whatsapp');
@@ -970,14 +972,14 @@ export async function POST(req: NextRequest) {
                 }
               ];
 
-              await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es', components, WA_TOKEN);
+              await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es_CL', components, WA_TOKEN);
 
-              // Send the order link in a follow-up message (template doesn't have a link variable)
-              await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `🔗 Revisa el pedido aquí:\n${orderLink}`, WA_TOKEN);
+              // Send the verify-stock link in a follow-up message
+              await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: (pendiente de nombre)\nTeléfono: +${cleanedFrom}\n\n🔗 *Confirma el stock aquí:*\n${verifyLink}`, WA_TOKEN);
             } catch (tplErr) {
               console.error('[Balatin Catalog Flow] Error sending template to admin:', tplErr);
               // Fallback: plain text
-              const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: (pendiente de nombre)\nTeléfono: +${cleanedFrom}\n\nRevisa y confirma el stock aquí:\n${orderLink}`;
+              const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: (pendiente de nombre)\nTeléfono: +${cleanedFrom}\n\n🔗 *Confirma el stock aquí:*\n${verifyLink}`;
               await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, adminMsg, WA_TOKEN);
             }
 

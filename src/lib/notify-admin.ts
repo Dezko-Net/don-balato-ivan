@@ -97,7 +97,7 @@ export async function notifyPaymentUploaded(orderCode: string, customerName: str
           ]
         }
       ];
-      await sendWhatsAppTemplate(formattedPhone, 'alerta_pago_admin', 'es', components, WA_TOKEN);
+      await sendWhatsAppTemplate(formattedPhone, 'alerta_pago_admin', 'es_CL', components, WA_TOKEN);
       return;
     } catch (e) {
       console.warn('[notifyPaymentUploaded] Failed to send template notification, falling back to text:', e);

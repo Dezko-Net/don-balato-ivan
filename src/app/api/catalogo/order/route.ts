@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
             ]
           }
         ];
-        await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es', components, WA_TOKEN);
+        await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es_CL', components, WA_TOKEN);
 
         // Enviar link de verificar stock como segundo mensaje
         const linkMsg = `📦 *PEDIDO NUEVO* #${reqCode}\n\nCliente: ${customerName || '(pendiente)'}\nCajera asignada: ${assignedCashier}\n\n🔗 Confirma el stock aquí:\n${verifyLink}`;
