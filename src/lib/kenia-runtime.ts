@@ -184,6 +184,56 @@ const DOCUMENT_ID = 'kenia_config';
 
 const usageFile = path.join(os.tmpdir(), 'kenia-usage.json');
 
+// ── Appwrite-based usage storage (persistent on Vercel) ──
+const USAGE_COLLECTION_ID = 'theme_config';
+const USAGE_DOC_PREFIX = 'kenia_usage_';
+
+// In-memory cache per serverless invocation (TTL 30s)
+const _usageCache = new Map<string, { data: KeniaUsageEntry | null; ts: number }>();
+const USAGE_CACHE_TTL = 30000;
+
+async function readUsageFromAppwrite(phone: string): Promise<KeniaUsageEntry | null> {
+  const cleaned = normalizePhone(phone);
+  const now = Date.now();
+  const cached = _usageCache.get(cleaned);
+  if (cached && (now - cached.ts < USAGE_CACHE_TTL)) {
+    return cached.data;
+  }
+  try {
+    const docId = USAGE_DOC_PREFIX + cleaned;
+    const doc = await serverGetDocument(USAGE_COLLECTION_ID, docId);
+    if (doc && doc.config) {
+      const parsed = JSON.parse(doc.config as string);
+      _usageCache.set(cleaned, { data: parsed, ts: now });
+      return parsed;
+    }
+  } catch (e: any) {
+    // Document doesn't exist yet - that's OK
+    if (!String(e?.message || e).includes('not found') && e?.code !== 404) {
+      console.warn('[KeniaUsage] Appwrite read error for', cleaned, ':', e?.message || e);
+    }
+  }
+  _usageCache.set(cleaned, { data: null, ts: now });
+  return null;
+}
+
+async function writeUsageToAppwrite(phone: string, entry: KeniaUsageEntry): Promise<void> {
+  const cleaned = normalizePhone(phone);
+  try {
+    const docId = USAGE_DOC_PREFIX + cleaned;
+    const payload = { NAME: 'kenia_usage', config: JSON.stringify(entry) };
+    try {
+      await serverGetDocument(USAGE_COLLECTION_ID, docId);
+      await serverUpdateDocument(USAGE_COLLECTION_ID, docId, payload);
+    } catch {
+      await serverCreateDocument(USAGE_COLLECTION_ID, docId, payload);
+    }
+    _usageCache.set(cleaned, { data: entry, ts: Date.now() });
+  } catch (e) {
+    console.warn('[KeniaUsage] Appwrite write error for', cleaned, ':', e);
+  }
+}
+
 function getDefaultConfig(): KeniaConfig {
   return {
     adminPrompt: DEFAULT_ADMIN_PROMPT,
@@ -340,7 +390,8 @@ export async function saveKeniaConfig(partial: Partial<KeniaConfig>): Promise<Ke
 
 export async function getKeniaUsage(phone: string, blockedPhonesOverride?: string[]): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
-  const usageMap = await readUsageFromFile();
+  // Read from Appwrite (persistent) with in-memory cache
+  const entry = await readUsageFromAppwrite(cleaned);
   let isBlocked: boolean;
   if (blockedPhonesOverride) {
     isBlocked = blockedPhonesOverride.includes(cleaned);
@@ -348,7 +399,6 @@ export async function getKeniaUsage(phone: string, blockedPhonesOverride?: strin
     const dbConfig = await fetchConfigFromAppwrite();
     isBlocked = dbConfig.blockedPhones.includes(cleaned);
   }
-  const entry = usageMap[cleaned];
   return {
     phone: cleaned,
     totalTokens: entry?.totalTokens || 0,
@@ -395,8 +445,8 @@ export async function setKeniaBlocked(
   dbConfig.blockedPhones = blockedPhones;
   await saveConfigToAppwrite(dbConfig);
   
-  const usageMap = await readUsageFromFile();
-  const prev = usageMap[cleaned] || {
+  const prevEntry = await readUsageFromAppwrite(cleaned);
+  const prev: KeniaUsageEntry = prevEntry || {
     phone: cleaned,
     totalTokens: 0,
     promptTokens: 0,
@@ -405,16 +455,17 @@ export async function setKeniaBlocked(
     blocked: false,
     updatedAt: '',
   };
-  usageMap[cleaned] = {
+  const newEntry: KeniaUsageEntry = {
     ...prev,
+    phone: cleaned,
     blocked,
     adminTakeover: blocked && reason === 'admin_takeover' ? true : (!blocked ? false : prev.adminTakeover),
     spamBlocked: blocked && reason === 'spam' ? true : (!blocked ? false : prev.spamBlocked),
     escalated: !blocked ? false : prev.escalated,
     updatedAt: new Date().toISOString(),
   };
-  await writeUsageToFile(usageMap);
-  return usageMap[cleaned];
+  await writeUsageToAppwrite(cleaned, newEntry);
+  return newEntry;
 }
 
 export async function recordKeniaUsage(
@@ -450,8 +501,9 @@ export async function recordKeniaUsage(
   }
 ): Promise<KeniaUsageEntry> {
   const cleaned = normalizePhone(phone);
-  const usageMap = await readUsageFromFile();
-  const prev = usageMap[cleaned] || {
+  // Read previous entry from Appwrite (persistent)
+  const prevEntry = await readUsageFromAppwrite(cleaned);
+  const prev: KeniaUsageEntry = prevEntry || {
     phone: cleaned,
     totalTokens: 0,
     promptTokens: 0,
@@ -467,8 +519,9 @@ export async function recordKeniaUsage(
     Number(usage.totalTokens || 0),
     0
   );
-  usageMap[cleaned] = {
+  const newEntry: KeniaUsageEntry = {
     ...prev,
+    phone: cleaned,
     blocked: prev.blocked ?? false,
     promptTokens: prev.promptTokens + promptTokens,
     responseTokens: prev.responseTokens + responseTokens,
@@ -512,31 +565,38 @@ export async function recordKeniaUsage(
 
   if (usage.imageSent) {
     currentImagesCount += 1;
-    usageMap[cleaned].lastImageSentAt = now;
+    newEntry.lastImageSentAt = now;
   }
-  usageMap[cleaned].imagesSentToday = currentImagesCount;
+  newEntry.imagesSentToday = currentImagesCount;
 
-  await writeUsageToFile(usageMap);
-  return usageMap[cleaned];
+  // Write to Appwrite (persistent) - fire and forget for speed
+  writeUsageToAppwrite(cleaned, newEntry).catch(e => 
+    console.warn('[KeniaUsage] Background write failed:', e)
+  );
+  return newEntry;
 }
 
 export async function resetKeniaUsage(phone: string): Promise<void> {
   const cleaned = normalizePhone(phone);
-  const usageMap = await readUsageFromFile();
-  delete usageMap[cleaned];
-  await writeUsageToFile(usageMap);
+  // Clear from Appwrite by writing a fresh empty entry
+  const emptyEntry: KeniaUsageEntry = {
+    phone: cleaned,
+    totalTokens: 0,
+    promptTokens: 0,
+    responseTokens: 0,
+    messageCount: 0,
+    blocked: false,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeUsageToAppwrite(cleaned, emptyEntry);
+  _usageCache.delete(cleaned);
 }
 
 export async function getKeniaRuntimeSnapshot(): Promise<{ config: KeniaConfig; usage: Record<string, KeniaUsageEntry> }> {
   const dbConfig = await fetchConfigFromAppwrite();
-  const usageMap = await readUsageFromFile();
+  // Note: We can't list all usage docs from Appwrite easily without a query.
+  // Return empty for now - the admin panel reads individual phones on demand.
   const hydratedUsage: Record<string, KeniaUsageEntry> = {};
-  Object.keys(usageMap).forEach(key => {
-    hydratedUsage[key] = {
-      ...usageMap[key],
-      blocked: dbConfig.blockedPhones.includes(key),
-    };
-  });
   return {
     config: {
       adminPrompt: dbConfig.adminPrompt,
@@ -558,7 +618,6 @@ export async function deleteKeniaPhone(phone: string): Promise<void> {
   const dbConfig = await fetchConfigFromAppwrite();
   dbConfig.blockedPhones = dbConfig.blockedPhones.filter(p => p !== cleaned);
   await saveConfigToAppwrite(dbConfig);
-  const usageMap = await readUsageFromFile();
-  delete usageMap[cleaned];
-  await writeUsageToFile(usageMap);
+  // Reset usage in Appwrite
+  await resetKeniaUsage(cleaned);
 }

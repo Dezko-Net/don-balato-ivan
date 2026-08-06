@@ -374,13 +374,13 @@
     /* === Bottom nav === */
     .nav-bottom {
       position: fixed; left: 50%; transform: translateX(-50%);
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); z-index: 9999; width: calc(100% - 28px); max-width: 30rem;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 9999; width: calc(100% - 28px); max-width: 26rem;
       display: flex; justify-content: space-around; align-items: center;
-      padding: 9px 8px; border-radius: 24px;
-      background: rgba(255,255,255,.82);
+      padding: 6px 8px; border-radius: 22px;
+      background: rgba(255,255,255,.94);
       -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
-      box-shadow: 0 12px 34px -10px rgba(30,58,95,.4), inset 0 1px 0 rgba(255,255,255,.7);
-      border: 1px solid rgba(255,255,255,.6);
+      box-shadow: 0 10px 30px -8px rgba(30,58,95,.25), inset 0 1px 0 rgba(255,255,255,.9);
+      border: 1px solid rgba(204,228,251,.8);
     }
     .nav-item { position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 14px; border-radius:16px; color:#7ea3c8; font-size:10px; font-weight:700; transition:color .2s ease; }
     .nav-item svg { width:23px; height:23px; }
@@ -521,82 +521,86 @@
 </head>
 <body class="text-rose-700">
 
-  <!-- Top Announcement Bar (Yellow Brand Theme, Smart Personalization & Clickable) -->
-  <div id="announcementBar" onclick="scrollToPromoSubcategory()" class="relative w-full z-50 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 text-blue-950 border-b border-amber-400/80 shadow-md cursor-pointer hover:brightness-105">
-    <div class="max-w-3xl mx-auto px-3 py-2 flex items-center justify-between gap-2 text-[10px] sm:text-xs">
+  <!-- Top Announcement Bar (Yellow Brand Theme, Compact Mobile) -->
+  <div id="announcementBar" onclick="scrollToPromoSubcategory()" class="relative w-full z-50 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 text-blue-950 border-b border-amber-400/80 shadow-xs cursor-pointer hover:brightness-105">
+    <div class="max-w-3xl mx-auto px-3 py-1 sm:py-1.5 flex items-center justify-between gap-2 text-[10px] sm:text-xs">
       <div class="flex items-center gap-1.5 truncate">
-        <span class="px-2 py-0.5 rounded-full bg-rose-600 text-white font-extrabold text-[9px] sm:text-[10px] tracking-wider uppercase animate-pulse flex-shrink-0 shadow-xs">30% OFF</span>
-        <span class="truncate font-semibold text-blue-950">🚨 HOY: <strong id="promoSubcatTitle" class="text-blue-900 font-extrabold underline decoration-blue-900/40">Aseo y Limpieza</strong> con Liquidación de Lote</span>
+        <span class="px-1.5 py-0.5 rounded-full bg-rose-600 text-white font-extrabold text-[8px] sm:text-[9px] tracking-wider uppercase animate-pulse flex-shrink-0">30% OFF</span>
+        <span class="truncate font-semibold text-blue-950">🔥 <strong id="promoSubcatTitle" class="text-blue-950 font-extrabold underline decoration-blue-900/40">Aseo y Limpieza</strong></span>
       </div>
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <div class="font-mono font-extrabold text-blue-950 bg-white/80 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-amber-400/70 shadow-xs">
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <div class="font-mono font-extrabold text-blue-950 bg-white/80 backdrop-blur-md px-2 py-0.5 rounded-full border border-amber-400/70 text-[9px] sm:text-xs shadow-xs">
           ⏱️ <span id="announcementTimer" class="text-blue-950 font-mono font-extrabold">04:18:22</span>
         </div>
-        <button onclick="event.stopPropagation(); scrollToPromoSubcategory()" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-950 text-white font-bold transition shadow-xs hover:bg-blue-900">
+        <button onclick="event.stopPropagation(); scrollToPromoSubcategory()" class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-950 text-white font-bold text-[10px] transition shadow-xs hover:bg-blue-900">
           Ver Lote →
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Header sticky luxury glass (Cristal Blanco Luxe) -->
+  <!-- Header sticky luxury glass (Ultra-Compact Mobile Design) -->
   <header class="glass sticky top-0 z-40">
-    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-      <button id="backBtn" class="hidden p-2.5 -ml-1 rounded-2xl bg-blue-50/80 hover:bg-blue-100/80 active:scale-90 border border-blue-200/80 text-blue-900 transition-all duration-200 shadow-sm backdrop-blur-md">
-        <svg class="w-5 h-5 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-      </button>
-      <a href="#/" class="brand-wrap group">
-        <span class="brand-mark"><img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png" alt="Balatin"></span>
-        <span class="flex flex-col">
-          <span class="brand-title text-base sm:text-lg">DON BALATO <span class="accent">IVAN</span></span>
-          <span class="brand-sub">Catálogo Mayorista</span>
-        </span>
-      </a>
-
-      <!-- Live Online Users Indicator Pill (Compact with green dot beside number) -->
-      <div class="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-emerald-50/90 border border-emerald-200/80 text-emerald-950 shadow-sm backdrop-blur-md">
-        <span class="text-[10px] sm:text-[11px] font-extrabold flex items-center gap-1.5">
-          <span class="relative flex h-2 w-2 flex-shrink-0">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span id="liveUsersCount" class="text-emerald-700 font-extrabold">19</span>
-          <span class="text-emerald-800/90 font-bold text-[9px] sm:text-[11px] whitespace-nowrap">conectados</span>
-        </span>
-      </div>
-
-      <div class="ml-auto flex flex-col items-end gap-2">
-        <span id="modeTag" class="hidden text-[10px] px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-400 text-blue-950 font-extrabold tracking-wider shadow-sm border border-amber-200/50">ADMIN</span>
-        
-        <!-- Toggle Notifications Pill above cart -->
-        <button id="toggleFomoBtn" onclick="toggleFomoNotifications()" title="Desactivar notificaciones" class="relative inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/80 text-blue-800 font-extrabold text-[9px] sm:text-[10px] transition-all duration-200 shadow-xs backdrop-blur-md">
-          <svg id="fomoBellActive" class="w-3 h-3 text-blue-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <svg id="fomoBellMuted" class="w-3 h-3 text-gray-400 flex-shrink-0 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4l1.405-1.405A2.032 2.032 0 016 12.435V11c0-1.848.835-3.5 2.158-4.604M10 5.341V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v1.435M17 17h3l-1.405-1.405A2.032 2.032 0 0118 14.158V11c0-.422-.045-.833-.129-1.229M13.73 21a3 3 0 01-5.46 0M3 3l18 18"/></svg>
-          <span id="fomoBellText" class="whitespace-nowrap">Desactivar notificaciones</span>
-        </button>
-
-        <!-- Handsome Soft Blue Glass Cart Button -->
-        <button id="cartBtn" class="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-blue-50/90 hover:bg-blue-100/90 active:scale-95 border border-blue-200/90 text-blue-900 transition-all duration-200 shadow-sm backdrop-blur-md">
-          <span class="font-display font-extrabold text-xs tracking-wide">Carrito</span>
-          <svg class="w-4 h-4 text-blue-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-          <span id="cartCount" class="hidden absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 text-blue-950 text-[10px] rounded-full min-w-[20px] h-[20px] px-1 flex items-center justify-center font-extrabold ring-2 ring-white shadow-sm border border-amber-300/80">0</span>
-        </button>
-      </div>
-    </div>
-    <!-- Search bar -->
-    <div class="max-w-3xl mx-auto px-4 pb-3.5 pt-0.5">
-      <div class="relative group">
-        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input id="searchInput" type="search" placeholder="Buscar producto..." class="w-full pl-12 pr-4 py-2.5 bg-white/95 backdrop-blur-md rounded-2xl border border-blue-200/80 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-400/20 focus:outline-none text-blue-900 placeholder-blue-400/70 text-sm font-semibold shadow-sm transition-all duration-300">
-      </div>
-      <div class="mt-2.5 flex items-center justify-between gap-2 text-[10px] sm:text-[11px] font-extrabold text-amber-950 bg-gradient-to-r from-amber-200 via-amber-300 to-yellow-400 rounded-full py-1.5 px-3.5 shadow-md shadow-amber-400/20 border border-amber-300/80">
-        <div class="flex items-center gap-1.5 truncate">
-          <svg class="w-3.5 h-3.5 text-amber-900 animate-pulse flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L9.91 8.26 3.27 8.27l5.36 4.59L6.55 19 12 14.77 17.45 19l-2.08-6.14 5.36-4.59-6.64-.01z"/></svg>
-          <span id="minPurchaseDisplay" class="tracking-wide truncate">Compra mínima · $50.000</span>
+    <div class="max-w-3xl mx-auto px-3 py-2 space-y-1.5">
+      <!-- Row 1: Brand Logo + Connected Users + Quick Actions -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <button id="backBtn" class="hidden p-1.5 rounded-xl bg-blue-50/80 hover:bg-blue-100/80 active:scale-90 border border-blue-200/80 text-blue-900 transition-all shadow-xs backdrop-blur-md">
+            <svg class="w-4 h-4 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <a href="#/" class="brand-wrap group flex items-center gap-1.5">
+            <span class="brand-mark w-7 h-7 sm:w-8 sm:h-8"><img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png" alt="Balatin" class="w-full h-full object-contain"></span>
+            <span class="flex flex-col">
+              <span class="brand-title text-xs sm:text-sm leading-none font-extrabold">DON BALATO <span class="accent">IVAN</span></span>
+              <span class="brand-sub text-[8px] sm:text-[9px] text-blue-400 font-semibold leading-none">Mayorista</span>
+            </span>
+          </a>
         </div>
-        <div class="flex items-center gap-1.5 bg-blue-600/85 backdrop-blur-md px-3 py-1 rounded-full text-white border border-blue-400/40 whitespace-nowrap flex-shrink-0 shadow-xs">
-          <span class="text-white font-extrabold">⚡ Prioridad de Bodega:</span>
-          <span id="persistentTimer" class="font-mono font-extrabold text-xs text-amber-200 tracking-wider">24:35</span>
+
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span id="modeTag" class="hidden text-[9px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-300 to-yellow-400 text-blue-950 font-extrabold shadow-xs">ADMIN</span>
+
+          <!-- Live Online Users Pill -->
+          <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50/90 border border-emerald-200/80 text-emerald-950 shadow-xs backdrop-blur-md">
+            <span class="relative flex h-1.5 w-1.5 flex-shrink-0">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            <span id="liveUsersCount" class="text-emerald-700 font-extrabold text-[10px] sm:text-xs">19</span>
+            <span class="text-emerald-800/90 font-bold text-[8px] sm:text-[10px] hidden xs:inline">conectados</span>
+          </div>
+
+          <!-- Notification Toggle (Icon Only on Mobile) -->
+          <button id="toggleFomoBtn" onclick="toggleFomoNotifications()" title="Alternar notificaciones" class="p-1.5 rounded-xl bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/80 text-blue-800 transition-all shadow-xs backdrop-blur-md active:scale-90" aria-label="Notificaciones">
+            <svg id="fomoBellActive" class="w-3.5 h-3.5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <svg id="fomoBellMuted" class="w-3.5 h-3.5 text-gray-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4l1.405-1.405A2.032 2.032 0 016 12.435V11c0-1.848.835-3.5 2.158-4.604M10 5.341V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v1.435M17 17h3l-1.405-1.405A2.032 2.032 0 0118 14.158V11c0-.422-.045-.833-.129-1.229M13.73 21a3 3 0 01-5.46 0M3 3l18 18"/></svg>
+            <span id="fomoBellText" class="hidden">Notificaciones</span>
+          </button>
+
+          <!-- Compact Cart Button -->
+          <button id="cartBtn" class="relative inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white transition-all shadow-xs">
+            <span class="font-display font-extrabold text-[11px] sm:text-xs">Carrito</span>
+            <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <span id="cartCount" class="hidden absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 text-blue-950 text-[9px] rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center font-extrabold ring-2 ring-white shadow-xs">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 2: Compact Search Bar -->
+      <div class="relative group">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="searchInput" type="search" placeholder="Buscar producto..." class="w-full pl-9 pr-3 py-1.5 bg-white/95 backdrop-blur-md rounded-xl border border-blue-200/80 focus:border-blue-500 focus:bg-white focus:outline-none text-blue-900 placeholder-blue-400 text-xs font-semibold shadow-xs transition-all">
+      </div>
+
+      <!-- Row 3: Compact Golden Minimum Purchase Bar -->
+      <div class="flex items-center justify-between gap-1.5 text-[9px] sm:text-[10px] font-extrabold text-amber-950 bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-300 rounded-xl py-1 px-2.5 shadow-xs border border-amber-300/80">
+        <div class="flex items-center gap-1 truncate">
+          <span class="text-amber-800">★</span>
+          <span id="minPurchaseDisplay" class="tracking-wide truncate">Compra mín. $50.000</span>
+        </div>
+        <div class="flex items-center gap-1 bg-blue-600/85 backdrop-blur-md px-2.5 py-0.5 rounded-lg text-white border border-blue-400/40 text-[9px] font-extrabold whitespace-nowrap flex-shrink-0 shadow-xs">
+          <span>⚡ Prioridad:</span>
+          <span id="persistentTimer" class="font-mono font-extrabold text-amber-200">24:35</span>
         </div>
       </div>
     </div>
@@ -608,7 +612,7 @@
   </div>
 
   <!-- Main content -->
-  <main id="app" class="max-w-3xl mx-auto px-4 py-5 pb-44"></main>
+  <main id="app" class="max-w-3xl mx-auto px-3 py-3 pb-28"></main>
 
   <!-- Bottom navigation -->
   <nav id="bottomNav" class="nav-bottom">
