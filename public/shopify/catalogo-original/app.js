@@ -455,6 +455,7 @@ function addToCart(sku, qty = 1) {
   saveCart();
   showToast(add > 1 ? `${add} agregados al carrito` : 'Agregado al carrito');
   flyToCart(sku);
+  trackUserAddToCart(sku, add);
   if (add < qty) showToast(`Solo quedaban ${add} unidades`);
 }
 
@@ -533,48 +534,85 @@ function closeCart() {
 function renderCart() {
   const wrap = $('#cartItems');
   if (cart.length === 0) {
-    wrap.innerHTML = '<div class="text-center text-blue-400 py-10">Tu carrito está vacío</div>';
+    wrap.innerHTML = `
+      <div class="text-center py-16 px-4">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-3xl mb-3 shadow-xs">
+          🛒
+        </div>
+        <h3 class="font-display font-extrabold text-blue-950 text-base mb-1">Tu carrito está vacío</h3>
+        <p class="text-xs text-blue-400 font-medium max-w-[200px] mx-auto">Explora nuestro catálogo mayorista y añade tus productos favoritos.</p>
+      </div>`;
     $('#cartTotal').textContent = '$0';
+    let warnEmpty = $('#minWarn');
+    if (warnEmpty) warnEmpty.remove();
     return;
   }
-  wrap.innerHTML = cart.map(i => {
+  let timerHeader = `
+    <div class="rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-400/15 to-yellow-500/10 border border-amber-300/80 p-3 mb-3 flex items-center justify-between shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+        </span>
+        <span class="text-xs font-extrabold text-amber-950">⚠️ Reserva de stock activa</span>
+      </div>
+      <div class="font-mono font-extrabold text-xs text-blue-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 px-3 py-1 rounded-full border border-amber-400/80 shadow-xs flex items-center gap-1">
+        ⏱️ <span id="cartTimerDisplay" class="text-blue-950 font-mono font-extrabold">09:59</span> min
+      </div>
+    </div>`;
+
+  wrap.innerHTML = timerHeader + cart.map(i => {
     const p = getProducts().find(x => x.sku === i.sku);
+    const displaySubOrSku = (p?.code && p.code.length <= 12) ? `SKU: ${p.code}` : (p?.subcategory || p?.category || `COD: #${String(i.sku).slice(-6).toUpperCase()}`);
     return `
-    <div class="flex gap-3 bg-gradient-to-r from-blue-50 to-white rounded-2xl p-3 border border-blue-100 shadow-sm">
-      <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-blue-100">${imgEl(p?.image, i.name, 'w-full h-full')}</div>
-      <div class="flex-1 min-w-0">
-        <div class="font-semibold text-blue-800 text-sm leading-tight line-clamp-2">${escapeHtml(i.name)}</div>
-        <div class="text-[10px] text-blue-400 mt-0.5">SKU: ${escapeHtml(i.sku)}</div>
-        <div class="flex items-center justify-between mt-2">
-          <div class="text-blue-700 font-bold">${formatPrice(i.price)}</div>
-          <div class="flex items-center gap-1 bg-white rounded-full border border-blue-200 px-1">
-            <button onclick="changeQty('${i.sku}','${i.mode}',-1)" class="w-7 h-7 rounded-full text-blue-500 active:scale-90 flex items-center justify-center">−</button>
-            <input type="number" value="${i.qty}" min="1" onchange="setQty('${i.sku}','${i.mode}',this.value)" class="w-10 text-center font-semibold text-blue-700 text-sm bg-transparent focus:outline-none">
-            <button onclick="changeQty('${i.sku}','${i.mode}',1)" class="w-7 h-7 rounded-full text-blue-500 active:scale-90 flex items-center justify-center">+</button>
+    <div class="flex gap-3 bg-gradient-to-br from-white to-blue-50/40 rounded-2xl p-3.5 border border-blue-100/90 shadow-sm hover:border-blue-300/80 transition-all duration-200">
+      <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-blue-50 border border-blue-100/80 relative shadow-xs">
+        ${imgEl(p?.image, i.name, 'w-full h-full object-cover')}
+      </div>
+      <div class="flex-1 min-w-0 flex flex-col justify-between">
+        <div>
+          <div class="font-extrabold text-blue-950 text-xs sm:text-sm leading-tight line-clamp-2">${escapeHtml(i.name)}</div>
+          <div class="text-[10px] text-blue-500/90 mt-0.5 uppercase tracking-wider font-semibold">${escapeHtml(displaySubOrSku)}</div>
+        </div>
+        <div class="flex items-center justify-between gap-2 mt-2">
+          <div class="text-blue-950 font-extrabold text-base">${formatPrice(i.price * i.qty)}</div>
+          <div class="flex items-center gap-1 bg-blue-50/90 rounded-xl border border-blue-200/80 p-0.5 shadow-xs">
+            <button onclick="changeQty('${i.sku}','${i.mode}',-1)" class="w-7 h-7 rounded-lg bg-white hover:bg-blue-100 text-blue-900 font-extrabold active:scale-90 flex items-center justify-center transition shadow-xs" aria-label="Restar">−</button>
+            <input type="number" value="${i.qty}" min="1" onchange="setQty('${i.sku}','${i.mode}',this.value)" class="w-9 text-center font-extrabold text-blue-950 text-xs sm:text-sm bg-transparent focus:outline-none">
+            <button onclick="changeQty('${i.sku}','${i.mode}',1)" class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-extrabold active:scale-90 flex items-center justify-center transition shadow-xs" aria-label="Sumar">+</button>
           </div>
         </div>
-        <button onclick="removeFromCart('${i.sku}','${i.mode}')" class="text-[10px] text-blue-400 mt-1.5 hover:text-blue-600 active:scale-95">Eliminar del carrito</button>
+        <div class="flex justify-end mt-1.5">
+          <button onclick="removeFromCart('${i.sku}','${i.mode}')" class="text-[10px] text-rose-500 hover:text-rose-700 font-extrabold active:scale-95 transition flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Eliminar
+          </button>
+        </div>
       </div>
     </div>
   `;
   }).join('');
+
   $('#cartTotal').textContent = formatPrice(cartTotal());
+  initCartReservationTimer();
+
   // Show min purchase warning
   const total = cartTotal();
   let warn = $('#minWarn');
   if (!warn) {
     warn = document.createElement('div');
     warn.id = 'minWarn';
-    warn.className = 'text-xs text-center mb-2 px-3 py-1.5 rounded-full font-semibold';
-    $('#cartTotal').closest('.border-t').insertBefore(warn, $('#cartTotal').closest('.border-t').firstChild);
+    warn.className = 'text-xs text-center mb-3 px-3.5 py-2 rounded-xl font-extrabold flex items-center justify-center gap-1.5 shadow-xs transition-all';
+    const totalEl = $('#cartTotal').closest('.flex');
+    if (totalEl) totalEl.parentNode.insertBefore(warn, totalEl);
   }
   if (total < getMinPurchase()) {
     const missing = getMinPurchase() - total;
-    warn.textContent = `Faltan ${formatPrice(missing)} para la compra mínima`;
-    warn.className = 'text-xs text-center mb-2 px-3 py-1.5 rounded-full font-semibold bg-amber-50 text-amber-700 border border-amber-200';
+    warn.innerHTML = `<span>⚠️ Faltan <strong class="underline">${formatPrice(missing)}</strong> para la compra mínima ($50K)</span>`;
+    warn.className = 'text-xs text-center mb-3 px-3.5 py-2 rounded-xl font-extrabold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-xs flex items-center justify-center gap-1.5';
   } else {
-    warn.textContent = '✓ Compra mínima alcanzada';
-    warn.className = 'text-xs text-center mb-2 px-3 py-1.5 rounded-full font-semibold bg-green-50 text-green-700 border border-green-200';
+    warn.innerHTML = `<span>✓ Compra mínima alcanzada</span>`;
+    warn.className = 'text-xs text-center mb-3 px-3.5 py-2 rounded-xl font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200/90 shadow-xs flex items-center justify-center gap-1.5';
   }
 }
 let selectedAttendant = null;
@@ -589,15 +627,41 @@ function sendWhatsApp() {
   var container = document.getElementById('attendantOptions');
   if (container) {
     var attendantMeta = [
-      { emoji: null, img: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785997439696-pegada-1785997429956.png', label: 'Lissy', sub: 'Personalizado', border: 'border-red-400', hover: 'hover:border-red-500', text: 'text-red-500' },
-      { emoji: null, img: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785998075009-pegada-1785998072451.png', label: 'Fernanda', sub: 'Personalizado', border: 'border-gray-500', hover: 'hover:border-gray-600', text: 'text-gray-600' },
+      {
+        emoji: null,
+        img: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785997439696-pegada-1785997429956.png',
+        label: 'Lissy',
+        sub: 'Personalizado',
+        border: 'border-red-400',
+        hover: 'hover:border-red-500',
+        text: 'text-red-500',
+        floatingEmojis: ['❤️', '💖', '💕']
+      },
+      {
+        emoji: null,
+        img: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785998075009-pegada-1785998072451.png',
+        label: 'Fernanda',
+        sub: 'Personalizado',
+        border: 'border-gray-500',
+        hover: 'hover:border-gray-600',
+        text: 'text-gray-600',
+        floatingEmojis: ['🖤', '🖤', '🖤']
+      },
     ];
     var humanButtons = attendantMeta.map(function(meta, idx) {
+      var emojisMarkup = (meta.floatingEmojis || []).map(function(em, eIdx) {
+        var posClass = eIdx === 0 ? 'bottom-1.5 left-2' : (eIdx === 1 ? 'top-2 right-2' : 'bottom-2 right-2');
+        var animName = eIdx % 2 === 0 ? 'gentleEmojiFloat' : 'gentleEmojiPulse';
+        var delay = (eIdx * 0.6).toFixed(1) + 's';
+        var dur = (3.4 + eIdx * 0.4).toFixed(1) + 's';
+        return '<span class="attendant-emoji absolute text-[12px] ' + posClass + ' pointer-events-none select-none z-20" style="animation: ' + animName + ' ' + dur + ' ease-in-out ' + delay + ' infinite alternate;">' + em + '</span>';
+      }).join('');
+
       var avatarContent = meta.img
-        ? '<img src="' + meta.img + '" alt="' + meta.label + '" class="w-full h-full object-cover rounded-full">'
+        ? '<div class="relative w-full h-full rounded-full overflow-hidden"><img src="' + meta.img + '" alt="' + meta.label + '" class="w-full h-full object-cover rounded-full">' + emojisMarkup + '</div>'
         : meta.emoji;
       return '<button type="button" data-idx="' + idx + '" onclick="selectAttendant(' + idx + ')" class="attendant-btn group flex flex-col items-center gap-3 transition-all duration-200 active:scale-90">' +
-        '<div class="w-24 h-24 rounded-full border-4 ' + meta.border + ' ' + meta.hover + ' bg-transparent flex items-center justify-center text-5xl transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden">' +
+        '<div class="w-24 h-24 rounded-full border-4 ' + meta.border + ' ' + meta.hover + ' bg-transparent flex items-center justify-center text-5xl transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden relative">' +
           avatarContent +
         '</div>' +
         '<div class="text-center">' +
@@ -606,9 +670,14 @@ function sendWhatsApp() {
         '</div>' +
       '</button>';
     }).join('');
+
+    var balatinEmojis = '<span class="attendant-emoji absolute text-[12px] bottom-1.5 left-2 pointer-events-none select-none z-20" style="animation: gentleEmojiFloat 3.4s ease-in-out 0s infinite alternate;">⚡</span>' +
+      '<span class="attendant-emoji absolute text-[11px] top-2 right-2 pointer-events-none select-none z-20" style="animation: gentleEmojiPulse 3.8s ease-in-out 0.6s infinite alternate;">✨</span>' +
+      '<span class="attendant-emoji absolute text-[10px] bottom-2 right-2 pointer-events-none select-none z-20" style="animation: gentleEmojiFloat 3.6s ease-in-out 1.2s infinite alternate;">⭐</span>';
+
     var balatinButton = '<button type="button" onclick="sendToBalatin()" class="attendant-btn group flex flex-col items-center gap-3 transition-all duration-200 active:scale-90">' +
-      '<div class="w-24 h-24 rounded-full border-4 border-blue-400 hover:border-blue-500 bg-transparent flex items-center justify-center text-5xl transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden">' +
-        '<img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png" alt="Balatin" class="w-full h-full object-cover rounded-full">' +
+      '<div class="w-24 h-24 rounded-full border-4 border-blue-400 hover:border-blue-500 bg-transparent flex items-center justify-center text-5xl transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden relative">' +
+        '<div class="relative w-full h-full rounded-full overflow-hidden"><img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1786020188976-pegada-1786020186663.png" alt="Balatin" class="w-full h-full object-contain rounded-full">' + balatinEmojis + '</div>' +
       '</div>' +
       '<div class="text-center">' +
         '<div class="font-bold text-gray-800 text-sm flex items-center gap-1 justify-center">Balatin <span class="text-[8px] font-bold bg-blue-400 text-white px-1.5 py-0.5 rounded-full">IA</span></div>' +
@@ -950,38 +1019,42 @@ function renderMyOrders() {
   var localOrders = getLocalOrders();
   var savedPhone = getCustomerPhone();
 
-  app.innerHTML = '<div class="min-h-screen pb-24">' +
-    '<div class="text-white px-4 pt-6 pb-8 rounded-b-3xl" style="background: linear-gradient(180deg, rgba(90, 150, 216, 0.97), rgba(58, 120, 194, 0.96));">' +
-      '<div class="flex items-center gap-3 mb-1">' +
-        '<div class="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-xl">📦</div>' +
+  app.innerHTML = '<div class="min-h-screen pb-24 space-y-4">' +
+    '<!-- Header Banner (Cristal Blanco Luxe Theme) -->' +
+    '<div class="relative overflow-hidden rounded-[26px] p-5 sm:p-6 bg-gradient-to-r from-blue-50/90 via-white to-blue-50/90 border border-blue-200/80 shadow-sm mb-4">' +
+      '<div class="flex items-center gap-3 relative z-10">' +
+        '<div class="w-12 h-12 rounded-2xl bg-blue-100/80 border border-blue-200/80 flex items-center justify-center text-2xl flex-shrink-0 shadow-xs">' +
+          '📦' +
+        '</div>' +
         '<div>' +
-          '<h1 class="font-display font-extrabold text-2xl">Mis Pedidos</h1>' +
-          '<p class="text-white/70 text-xs">Sigue el estado de tus compras</p>' +
+          '<h1 class="font-display font-extrabold text-xl sm:text-2xl text-blue-950 leading-tight">Mis Pedidos</h1>' +
+          '<p class="text-xs text-blue-500/90 font-semibold">Sigue en tiempo real el estado de tus compras</p>' +
         '</div>' +
       '</div>' +
     '</div>' +
-    '<div class="max-w-2xl mx-auto px-4 mt-4">' +
+
+    '<div class="max-w-2xl mx-auto space-y-4">' +
       '<div id="myOrdersList" class="space-y-3"></div>' +
-      '<div class="mt-6 rounded-2xl p-4 border" style="background:rgba(90,150,216,0.06);border-color:rgba(58,120,194,0.15);">' +
-        '<div class="flex items-center gap-2 mb-2">' +
-          '<svg class="w-4 h-4" style="color:#3a78c2;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
-          '<p class="text-xs font-bold" style="color:#3a78c2;">Sincronizar pedidos</p>' +
+
+      '<div class="rounded-[24px] p-5 bg-white/95 backdrop-blur-xl border border-blue-100/90 shadow-sm">' +
+        '<div class="flex items-center gap-2 mb-1.5">' +
+          '<div class="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
+          '</div>' +
+          '<p class="text-sm font-extrabold text-blue-950">Sincronizar pedidos</p>' +
         '</div>' +
-        '<p class="text-[11px] text-gray-500 mb-3">Ingresa tu teléfono para buscar todos tus pedidos</p>' +
+        '<p class="text-xs text-blue-400 font-medium mb-3">Ingresa tu número de teléfono para vincular y buscar todas tus compras automáticamente.</p>' +
         '<div class="flex gap-2">' +
-          '<input id="syncPhoneInput" type="tel" placeholder="Ej: 9 1234 5678" value="' + escapeHtml(savedPhone) + '" class="flex-1 px-3 py-2.5 text-sm border-2 rounded-xl focus:outline-none" style="border-color:rgba(58,120,194,0.15);">' +
-          '<button onclick="syncMyOrders()" class="px-5 py-2.5 text-white font-bold text-sm rounded-xl active:scale-95 transition flex items-center gap-1.5" style="background:#3a78c2;">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
+          '<input id="syncPhoneInput" type="tel" placeholder="Ej: 9 1234 5678" value="' + escapeHtml(savedPhone) + '" class="flex-1 px-4 py-2.5 text-sm font-semibold text-blue-950 bg-blue-50/50 border border-blue-200/80 rounded-2xl focus:outline-none focus:border-blue-500 focus:bg-white transition-all">' +
+          '<button onclick="syncMyOrders()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-2xl active:scale-95 transition shadow-sm flex items-center gap-1.5 whitespace-nowrap">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
             'Sincronizar</button>' +
         '</div>' +
       '</div>' +
     '</div>' +
   '</div>';
 
-  // Render local orders first (instant)
   renderMyOrdersList(localOrders);
-
-  // If we have a saved phone, auto-sync
   if (savedPhone) {
     syncMyOrders(true);
   }
@@ -991,11 +1064,11 @@ function renderMyOrdersList(orders) {
   var list = document.getElementById('myOrdersList');
   if (!list) return;
   if (!orders || orders.length === 0) {
-    list.innerHTML = '<div class="text-center py-16">' +
-      '<div class="text-6xl mb-4">📦</div>' +
-      '<p class="text-gray-400 font-bold text-sm mb-1">No tienes pedidos aún</p>' +
-      '<p class="text-gray-300 text-xs mb-5">Cuando hagas un pedido aparecerá aquí</p>' +
-      '<a href="#/" class="inline-block px-6 py-3 text-white font-bold text-sm rounded-2xl active:scale-95 shadow-lg" style="background:#3a78c2;">Ir al catálogo</a>' +
+    list.innerHTML = '<div class="text-center py-14 px-4 bg-white/90 backdrop-blur-xl rounded-[28px] border border-blue-100/90 shadow-sm">' +
+      '<div class="w-20 h-20 mx-auto rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center text-4xl mb-4 shadow-xs">📦</div>' +
+      '<h3 class="font-display font-extrabold text-blue-950 text-lg mb-1">No tienes pedidos aún</h3>' +
+      '<p class="text-xs text-blue-400 font-medium max-w-[240px] mx-auto mb-6">Cuando hagas un pedido en nuestro catálogo mayorista aparecerá aquí.</p>' +
+      '<a href="#/" class="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 text-blue-950 font-extrabold text-sm shadow-md shadow-amber-300/30 active:scale-95 transition-all"><span>🛍️ Explorar Catálogo</span></a>' +
     '</div>';
     return;
   }
@@ -1009,54 +1082,55 @@ function renderMyOrdersList(orders) {
     var items = o.items || [];
     var firstItems = items.slice(0, 2);
     var remainingCount = items.length - firstItems.length;
-    return '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">' +
-      '<div class="px-4 pt-3 pb-2 flex items-center justify-between" style="background:' + color + '08;border-bottom:1px solid ' + color + '15;">' +
-        '<div class="flex items-center gap-2">' +
-          '<span class="text-lg">' + icon + '</span>' +
+
+    return '<div class="bg-white rounded-[24px] border border-blue-100 shadow-sm overflow-hidden transition-all hover:shadow-md hover:border-blue-200">' +
+      '<div class="px-5 py-3.5 flex items-center justify-between border-b border-blue-100/60 bg-blue-50/40">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<span class="text-xl">' + icon + '</span>' +
           '<div>' +
-            '<p class="font-mono font-bold text-sm text-gray-800">' + escapeHtml(o.orderCode || 'Sin código') + '</p>' +
-            '<p class="text-[10px] text-gray-400">' + date + '</p>' +
+            '<p class="font-mono font-extrabold text-sm text-blue-950">' + escapeHtml(o.orderCode || 'Sin código') + '</p>' +
+            '<p class="text-[10px] text-blue-400 font-semibold">' + date + '</p>' +
           '</div>' +
         '</div>' +
-        '<span class="text-xs font-bold px-3 py-1.5 rounded-full" style="background:' + color + '15;color:' + color + ';">' + escapeHtml(label) + '</span>' +
+        '<span class="text-xs font-extrabold px-3 py-1 rounded-full border border-current shadow-xs" style="background:' + color + '15;color:' + color + ';border-color:' + color + '30;">' + escapeHtml(label) + '</span>' +
       '</div>' +
-      '<div class="p-4">' +
-        '<div class="space-y-2 mb-3">' +
+      '<div class="p-5">' +
+        '<div class="space-y-2.5 mb-4">' +
           firstItems.map(function(it) {
-            return '<div class="flex items-center gap-2.5">' +
-              '<div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100">' +
-                (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-gray-300 text-sm">📦</span>') +
+            return '<div class="flex items-center gap-3">' +
+              '<div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-blue-100/80">' +
+                (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-blue-300 text-sm">📦</span>') +
               '</div>' +
               '<div class="flex-1 min-w-0">' +
-                '<p class="text-xs font-semibold text-gray-700 truncate">' + escapeHtml(it.name || '') + '</p>' +
-                '<p class="text-[10px] text-gray-400">' + (it.qty || 1) + ' x ' + formatPrice(it.price || 0) + '</p>' +
+                '<p class="text-xs font-extrabold text-blue-950 truncate">' + escapeHtml(it.name || '') + '</p>' +
+                '<p class="text-[10px] text-blue-400 font-semibold mt-0.5">' + (it.qty || 1) + ' x ' + formatPrice(it.price || 0) + '</p>' +
               '</div>' +
             '</div>';
           }).join('') +
-          (remainingCount > 0 ? '<p class="text-[11px] text-gray-400 font-medium pl-1">+' + remainingCount + ' producto' + (remainingCount > 1 ? 's' : '') + ' más</p>' : '') +
+          (remainingCount > 0 ? '<p class="text-[11px] text-blue-500 font-extrabold pl-1">+' + remainingCount + ' producto' + (remainingCount > 1 ? 's' : '') + ' más</p>' : '') +
         '</div>' +
-        '<div class="flex items-center justify-between pt-3 border-t border-gray-50">' +
-          '<div class="flex items-center gap-2 text-xs text-gray-500">' +
-            '<span class="font-semibold">' + itemCount + ' producto' + (itemCount !== 1 ? 's' : '') + '</span>' +
-            (o.cashier ? '<span class="text-gray-300">·</span><span class="text-gray-400">' + escapeHtml(o.cashier) + '</span>' : '') +
+        '<div class="flex items-center justify-between pt-3 border-t border-blue-100/60">' +
+          '<div class="flex items-center gap-2 text-xs text-blue-500 font-semibold">' +
+            '<span>' + itemCount + ' producto' + (itemCount !== 1 ? 's' : '') + '</span>' +
+            (o.cashier ? '<span>·</span><span class="text-blue-600 font-bold">' + escapeHtml(o.cashier) + '</span>' : '') +
           '</div>' +
-          '<span class="font-bold text-sm" style="color:#3a78c2;">' + formatPrice(o.total || 0) + '</span>' +
+          '<span class="font-display font-extrabold text-base text-blue-950">' + formatPrice(o.total || 0) + '</span>' +
         '</div>' +
-        (o.trackingNumber ? '<div class="mt-3 p-2.5 rounded-xl flex items-center gap-2" style="background:rgba(6,182,212,0.08);">' +
-          '<svg class="w-4 h-4 text-cyan-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>' +
-          '<div><p class="text-[10px] text-cyan-600 font-bold uppercase tracking-wide">Seguimiento</p><p class="text-xs text-cyan-700 font-mono font-bold">' + escapeHtml(o.trackingNumber) + '</p></div>' +
+        (o.trackingNumber ? '<div class="mt-3 p-3 rounded-2xl flex items-center gap-2.5 bg-cyan-50/80 border border-cyan-200/80 shadow-xs">' +
+          '<svg class="w-5 h-5 text-cyan-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>' +
+          '<div><p class="text-[10px] text-cyan-600 font-extrabold uppercase tracking-wider">Seguimiento de envío</p><p class="text-xs text-cyan-900 font-mono font-extrabold">' + escapeHtml(o.trackingNumber) + '</p></div>' +
         '</div>' : '') +
         '<details class="mt-3">' +
-          '<summary class="text-xs font-semibold cursor-pointer hover:opacity-70 transition" style="color:#3a78c2;">Ver todos los productos ▾</summary>' +
-          '<div class="mt-2 space-y-1.5">' +
+          '<summary class="text-xs font-extrabold text-blue-600 hover:text-blue-800 cursor-pointer transition select-none">Ver resumen de productos ▾</summary>' +
+          '<div class="mt-2 space-y-2 pt-2 border-t border-blue-50">' +
             items.map(function(it) {
-              return '<div class="flex items-center gap-2 text-xs py-1">' +
-                '<div class="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100">' +
-                  (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-gray-300 text-[9px]">📦</span>') +
+              return '<div class="flex items-center gap-2.5 text-xs py-1">' +
+                '<div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-blue-100">' +
+                  (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-blue-300 text-[10px]">📦</span>') +
                 '</div>' +
-                '<span class="flex-1 text-gray-600 truncate">' + escapeHtml(it.name || '') + '</span>' +
-                '<span class="text-gray-400">x' + (it.qty || 1) + '</span>' +
-                '<span class="font-semibold text-gray-700">' + formatPrice((it.price || 0) * (it.qty || 1)) + '</span>' +
+                '<span class="flex-1 text-blue-900 font-semibold truncate">' + escapeHtml(it.name || '') + '</span>' +
+                '<span class="text-blue-400 font-bold">x' + (it.qty || 1) + '</span>' +
+                '<span class="font-extrabold text-blue-950">' + formatPrice((it.price || 0) * (it.qty || 1)) + '</span>' +
               '</div>';
             }).join('') +
           '</div>' +
@@ -1121,6 +1195,9 @@ window.addEventListener('hashchange', render);
 
 // === Render ===
 function render() {
+  initPersistentHeroTimer();
+  initAnnouncementBarEngine();
+  initLiveUsersEngine();
   const parts = parseHash();
   const route = parts[0] || '';
 
@@ -1143,10 +1220,6 @@ function render() {
   const bottomNav = document.getElementById('bottomNav');
   if (bottomNav) bottomNav.classList.toggle('hidden', !isHome && !isMyOrders);
 
-  updateBottomNav();
-  syncHeaderHeight();
-  window.scrollTo({ top: 0 });
-
   // Routes
   if (route === 'admin') return renderAdmin(parts.slice(1));
   if (route === 'category') return renderCategory(parts.slice(1));
@@ -1155,41 +1228,591 @@ function render() {
   if (route === 'search' || searchQuery) return renderSearch();
   renderHome();
   initHeroParticles();
+  initLiveUsersCounter();
+  initFomoSalesEngine();
   return;
 }
 
-// === Hero particles ===
-function initHeroParticles() {
-  var container = document.getElementById('heroParticles');
+function scrollToCategoriesSection() {
+  if (location.hash !== '#/' && location.hash !== '') {
+    location.hash = '#/';
+    setTimeout(function() {
+      var el = document.getElementById('categoriesSection');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 200);
+  } else {
+    var el = document.getElementById('categoriesSection');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+window.scrollToCategoriesSection = scrollToCategoriesSection;
+
+function initHeroParticles(catName, containerId) {
+  var container = document.getElementById(containerId || 'heroParticles');
   if (!container) return;
   container.innerHTML = '';
-  var count = 18;
+  
+  var count = 30;
+
   for (var i = 0; i < count; i++) {
     var p = document.createElement('div');
-    p.className = 'hero-particle';
-    var size = Math.random() * 6 + 3;
-    var left = Math.random() * 100;
-    var top = 60 + Math.random() * 40;
-    var duration = Math.random() * 4 + 4;
-    var delay = Math.random() * 5;
-    var drift = (Math.random() - 0.5) * 60;
-    var opacity = Math.random() * 0.4 + 0.3;
-    var isShimmer = Math.random() > 0.6;
+    var r = Math.random();
+
+    if (r > 0.72) {
+      p.className = 'hero-particle p-star';
+    } else if (r > 0.45) {
+      p.className = 'hero-particle p-diamond';
+    } else if (r > 0.22) {
+      p.className = 'hero-particle p-orb';
+    } else {
+      p.className = 'hero-particle p-gold';
+    }
+
+    var size = Math.random() * 12 + 8;
+    var left = 3 + Math.random() * 94;
+    var top = 5 + Math.random() * 90;
+    var duration = Math.random() * 3 + 3.5;
+    var delay = Math.random() * 2;
+
     p.style.width = size + 'px';
     p.style.height = size + 'px';
     p.style.left = left + '%';
     p.style.top = top + '%';
-    p.style.setProperty('--p-opacity', opacity);
-    p.style.setProperty('--p-drift', drift + 'px');
-    if (isShimmer) {
-      p.style.animation = 'particleShimmer ' + (duration * 0.6) + 's ease-in-out ' + delay + 's infinite';
-      p.style.background = 'rgba(255,232,128,0.5)';
-    } else {
-      p.style.animation = 'particleFloat ' + duration + 's ease-in-out ' + delay + 's infinite';
-    }
+    p.style.setProperty('--p-dur', duration + 's');
+    p.style.animationDelay = delay + 's';
+
     container.appendChild(p);
   }
 }
+
+function getCategoryBgEmojis(catName) {
+  var n = (catName || '').toLowerCase();
+  if (n.includes('aseo') || n.includes('limpieza') || n.includes('baño')) return '🫧 🧼 🧽';
+  if (n.includes('electrónica') || n.includes('tecnología') || n.includes('audio') || n.includes('celular')) return '⚡ 🎧 📱';
+  if (n.includes('hogar') || n.includes('cocina') || n.includes('decoración')) return '🏡 🍳 ☕';
+  if (n.includes('juguet') || n.includes('niño') || n.includes('bebé')) return '🎈 🧸 🚀';
+  if (n.includes('mascota')) return '🐾 🐶 🐱';
+  if (n.includes('moda') || n.includes('calzado') || n.includes('ropa')) return '👟 🕶️ 🎒';
+  return '📦 🏡 ⚡';
+}
+
+function getCategorySparkleColor(catName) {
+  var n = (catName || '').toLowerCase();
+  if (n.includes('aseo') || n.includes('limpieza')) return 'bg-cyan-400';
+  if (n.includes('electrónica') || n.includes('tecnología')) return 'bg-purple-400';
+  if (n.includes('hogar') || n.includes('cocina')) return 'bg-amber-400';
+  if (n.includes('juguet') || n.includes('niño')) return 'bg-emerald-400';
+  if (n.includes('belleza')) return 'bg-rose-400';
+  return 'bg-blue-400';
+}
+  // === Live Connected Users Simulator Engine (Organic Step Walk 29..120) ===
+var _liveUsersCount = 64;
+var _liveUsersTarget = 78;
+var _liveUsersTimeout = null;
+
+function initLiveUsersEngine() {
+  var el = document.getElementById('liveUsersCount');
+  if (!el) return;
+
+  if (_liveUsersTimeout) clearTimeout(_liveUsersTimeout);
+
+  function tick() {
+    // Pick new target if close to current target
+    if (Math.abs(_liveUsersCount - _liveUsersTarget) <= 2 || Math.random() < 0.22) {
+      var r = Math.random();
+      if (r < 0.65) {
+        // Normal range: 59 to 118
+        _liveUsersTarget = Math.floor(Math.random() * (118 - 59 + 1)) + 59;
+      } else if (r < 0.85) {
+        // Dip range: 32 to 58
+        _liveUsersTarget = Math.floor(Math.random() * (58 - 32 + 1)) + 32;
+      } else {
+        // Low dip floor: 29 to 31
+        _liveUsersTarget = Math.floor(Math.random() * (31 - 29 + 1)) + 29;
+      }
+    }
+
+    // Step towards target smoothly (+1, +2, +3 or -1, -2, -3)
+    var dir = _liveUsersTarget > _liveUsersCount ? 1 : -1;
+    var stepSize = Math.floor(Math.random() * 3) + 1;
+    _liveUsersCount += dir * stepSize;
+
+    // Strict Boundaries: NEVER below 29, NEVER above 120
+    _liveUsersCount = Math.max(29, Math.min(120, _liveUsersCount));
+
+    var currentEl = document.getElementById('liveUsersCount');
+    if (currentEl) {
+      currentEl.textContent = _liveUsersCount;
+    }
+
+    var nextDelay = Math.floor(Math.random() * 1000) + 2000;
+    _liveUsersTimeout = setTimeout(tick, nextDelay);
+  }
+
+  el.textContent = _liveUsersCount;
+  _liveUsersTimeout = setTimeout(tick, 2200);
+}
+
+// === Persistent Urgency Countdown Timers (per customer in localStorage) ===
+var _heroTimerInterval = null;
+var _cartTimerInterval = null;
+
+function initPersistentHeroTimer() {
+  var display = document.getElementById('persistentTimer');
+  if (!display) return;
+
+  var endTs = localStorage.getItem('db_fomo_hero_timer_end');
+  var now = Date.now();
+
+  if (!endTs || Number(endTs) <= now) {
+    endTs = now + (24 * 60 + 35) * 1000;
+    localStorage.setItem('db_fomo_hero_timer_end', endTs);
+  } else {
+    endTs = Number(endTs);
+  }
+
+  if (_heroTimerInterval) clearInterval(_heroTimerInterval);
+  _heroTimerInterval = setInterval(function() {
+    var rem = Math.max(0, Math.floor((endTs - Date.now()) / 1000));
+    if (rem <= 0) {
+      endTs = Date.now() + (24 * 60 + 35) * 1000;
+      localStorage.setItem('db_fomo_hero_timer_end', endTs);
+      rem = 24 * 60 + 35;
+    }
+    var m = Math.floor(rem / 60);
+    var s = rem % 60;
+    var el = document.getElementById('persistentTimer');
+    if (el) el.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }, 1000);
+}
+
+// === Smart Personalized Subcategory Promo Engine ===
+var _announcementTimerInterval = null;
+var _lastScrollY = window.scrollY;
+
+function getActivePromoSubcategoryPath() {
+  var products = typeof getProducts === 'function' ? getProducts() : [];
+  if (products.length === 0) return ['Aseo y Limpieza'];
+
+  // 1. Personalization Trick: Check if customer has cart history or orders!
+  try {
+    var userCart = typeof cart !== 'undefined' && cart.length > 0 ? cart : JSON.parse(localStorage.getItem('db_cart') || '[]');
+    if (userCart && userCart.length > 0) {
+      var lastCartItem = userCart[userCart.length - 1];
+      var matchP = products.find(p => p.sku === lastCartItem.sku);
+      if (matchP) {
+        var path = getProductPath(matchP);
+        if (path && path.length > 0) return path;
+      }
+    }
+  } catch (e) {}
+
+  // 2. Personalization Trick: Check previous orders history
+  try {
+    var orders = JSON.parse(localStorage.getItem('db_my_orders') || '[]');
+    if (orders && orders.length > 0 && orders[0].items && orders[0].items.length > 0) {
+      var lastOrderItem = orders[0].items[0];
+      var matchOrderP = products.find(p => p.sku === lastOrderItem.sku);
+      if (matchOrderP) {
+        var oPath = getProductPath(matchOrderP);
+        if (oPath && oPath.length > 0) return oPath;
+      }
+    }
+  } catch (e) {}
+
+  // 3. Persistent stored real subcategory path for this customer
+  try {
+    var storedPath = localStorage.getItem('db_fomo_user_promo_path');
+    if (storedPath) {
+      var parsed = JSON.parse(storedPath);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+
+  // 4. Fallback: Pick a random real product path from actual products database!
+  var validProductsWithCat = products.filter(p => (p.category || p.subcategory) && p.stock > 0);
+  if (validProductsWithCat.length > 0) {
+    var randomP = validProductsWithCat[Math.floor(Math.random() * validProductsWithCat.length)];
+    var rPath = getProductPath(randomP);
+    try { localStorage.setItem('db_fomo_user_promo_path', JSON.stringify(rPath)); } catch(e){}
+    return rPath;
+  }
+
+  return ['Aseo y Limpieza'];
+}
+
+function getActivePromoSubcategoryName() {
+  var path = getActivePromoSubcategoryPath();
+  return path[path.length - 1] || path[0] || 'Aseo y Limpieza';
+}
+
+function getActivePromoSubcategory() {
+  return getActivePromoSubcategoryName();
+}
+
+function initAnnouncementBarEngine() {
+  var promoTitleEl = document.getElementById('promoSubcatTitle');
+  var promoSubcat = getActivePromoSubcategoryName();
+  if (promoTitleEl) promoTitleEl.textContent = promoSubcat;
+
+  var timerEl = document.getElementById('announcementTimer');
+  if (!timerEl) return;
+
+  var endTs = localStorage.getItem('db_fomo_promo_timer_end');
+  var now = Date.now();
+
+  if (!endTs || Number(endTs) <= now) {
+    endTs = now + (4 * 3600 + 18 * 60 + 22) * 1000;
+    localStorage.setItem('db_fomo_promo_timer_end', endTs);
+  } else {
+    endTs = Number(endTs);
+  }
+
+  if (_announcementTimerInterval) clearInterval(_announcementTimerInterval);
+  _announcementTimerInterval = setInterval(function() {
+    var rem = Math.max(0, Math.floor((endTs - Date.now()) / 1000));
+    if (rem <= 0) {
+      endTs = Date.now() + (4 * 3600 + 18 * 60 + 22) * 1000;
+      localStorage.setItem('db_fomo_promo_timer_end', endTs);
+      rem = 4 * 3600 + 18 * 60 + 22;
+    }
+    var h = Math.floor(rem / 3600);
+    var m = Math.floor((rem % 3600) / 60);
+    var s = rem % 60;
+    var el = document.getElementById('announcementTimer');
+    if (el) el.textContent = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }, 1000);
+}
+
+// Native CSS sticky flow for announcement bar and header
+
+function scrollToPromoSubcategory() {
+  var path = getActivePromoSubcategoryPath();
+  location.hash = categoryUrl(path);
+}
+window.scrollToPromoSubcategory = scrollToPromoSubcategory;
+
+function initCartReservationTimer() {
+  var display = document.getElementById('cartTimerDisplay');
+  if (!display) return;
+
+  var endTs = localStorage.getItem('db_fomo_cart_timer_end');
+  var now = Date.now();
+
+  if (!endTs || Number(endTs) <= now) {
+    endTs = now + 10 * 60 * 1000; // 10 minutes
+    localStorage.setItem('db_fomo_cart_timer_end', endTs);
+  } else {
+    endTs = Number(endTs);
+  }
+
+  if (_cartTimerInterval) clearInterval(_cartTimerInterval);
+  _cartTimerInterval = setInterval(function() {
+    var rem = Math.max(0, Math.floor((endTs - Date.now()) / 1000));
+    if (rem <= 0) {
+      endTs = Date.now() + 10 * 60 * 1000;
+      localStorage.setItem('db_fomo_cart_timer_end', endTs);
+      rem = 10 * 60;
+    }
+    var m = Math.floor(rem / 60);
+    var s = rem % 60;
+    var el = document.getElementById('cartTimerDisplay');
+    if (el) el.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }, 1000);
+}
+
+// === Hero FOMO Urgency Spotlight Engine ===
+var _heroFomoTimer = null;
+var _heroFomoCurrentSku = null;
+
+function initHeroFomoBannerEngine() {
+  if (_heroFomoTimer) clearInterval(_heroFomoTimer);
+  updateHeroFomoBannerData();
+  
+  _heroFomoTimer = setInterval(function() {
+    updateHeroFomoBannerData();
+  }, 10000);
+}
+
+function updateHeroFomoBannerData() {
+  var banner = document.getElementById('heroFomoBanner');
+  if (!banner) return;
+  
+  var products = typeof getProducts === 'function' ? getProducts() : [];
+  var withImg = products.filter(function(p) { return p.image && p.image.trim(); });
+  if (withImg.length === 0) return;
+
+  var p = withImg[Math.floor(Math.random() * withImg.length)];
+  if (!p) return;
+
+  _heroFomoCurrentSku = p.sku;
+
+  var tags = [
+    '🔥 ÚLTIMAS UNIDADES EN BODEGA',
+    '⚡ ALTA DEMANDA MAYORISTA',
+    '📦 ÚLTIMO LOTE DISPONIBLE',
+    '🚨 MÁS VENDIDO DE LA SEMANA',
+    '💥 SE ACABA HOY MISMO'
+  ];
+
+  var claims = [
+    'Ayer se vendieron +140 unidades por mayor. ¡Quedan pocas unidades en bodega, asegura las tuyas!',
+    '¡38 comerciantes tienen este producto en su carrito ahora mismo! No garantizamos stock para mañana.',
+    'Último lote disponible a precio directo de fábrica. ¡Agrega tus unidades antes que el camión cierre!',
+    '¡Alta demanda a nivel nacional! Los clientes están llevando este producto por bultos cerrados.',
+    '¡Producto estrella en tendencia! Se han despachado 95 cajas este fin de semana. Consigue tu stock.'
+  ];
+
+  var randomTag = tags[Math.floor(Math.random() * tags.length)];
+  var randomClaim = claims[Math.floor(Math.random() * claims.length)];
+
+  // Preload image before changing DOM to eliminate flicker
+  var img = new Image();
+  img.onload = function() {
+    var imgEl = document.getElementById('heroFomoImg');
+    var tagEl = document.getElementById('heroFomoTag');
+    var titleEl = document.getElementById('heroFomoTitle');
+    var claimEl = document.getElementById('heroFomoClaim');
+    var priceEl = document.getElementById('heroFomoPrice');
+
+    if (imgEl) imgEl.src = p.image;
+    if (tagEl) tagEl.textContent = randomTag;
+    if (titleEl) titleEl.textContent = p.name;
+    if (claimEl) claimEl.textContent = randomClaim;
+    if (priceEl) priceEl.textContent = formatPrice(getPrice(p));
+  };
+  img.src = p.image;
+}
+
+function showFomoBannerProductModal() {
+  if (_heroFomoCurrentSku) {
+    showProductModal(_heroFomoCurrentSku);
+  }
+}
+window.showFomoBannerProductModal = showFomoBannerProductModal;
+
+// === Live Fake Online Users Counter ===
+var _liveUsersInterval = null;
+function initLiveUsersCounter() {
+  var el = document.getElementById('liveUsersCount');
+  if (!el || _liveUsersInterval) return;
+
+  // Initial count between 15 and 25
+  var currentUsers = Math.floor(Math.random() * 11) + 15;
+  el.textContent = currentUsers;
+
+  _liveUsersInterval = setInterval(function() {
+    // Fluctuate between -3 and +3
+    var delta = Math.floor(Math.random() * 7) - 3;
+    currentUsers += delta;
+
+    // Strict limits: min 10, max 48
+    if (currentUsers < 10) currentUsers = 10 + Math.floor(Math.random() * 4);
+    if (currentUsers > 48) currentUsers = 48 - Math.floor(Math.random() * 5);
+
+    el.textContent = currentUsers;
+    el.style.transform = 'scale(1.25)';
+    setTimeout(function() {
+      if (el) el.style.transform = 'scale(1)';
+    }, 250);
+  }, 5000 + Math.floor(Math.random() * 4000));
+}
+
+// === FOMO Sales & Real User Cart Toast Engine ===
+var _fomoTimer = null;
+var _fomoHideTimer = null;
+var _fomoCurrentSku = null;
+
+// Real user cart accumulator buffer
+var _userCartDebounceTimer = null;
+var _userCartBuffer = {};
+var _userCartLastSku = null;
+
+function trackUserAddToCart(sku, qtyAdded) {
+  if (!_userCartBuffer[sku]) _userCartBuffer[sku] = 0;
+  _userCartBuffer[sku] += qtyAdded;
+  _userCartLastSku = sku;
+
+  // Reset/extend 5s debounce timer
+  if (_userCartDebounceTimer) clearTimeout(_userCartDebounceTimer);
+  
+  _userCartDebounceTimer = setTimeout(function() {
+    triggerUserAddToCartToast();
+  }, 5000);
+}
+
+function triggerUserAddToCartToast() {
+  if (!_userCartLastSku || !_userCartBuffer[_userCartLastSku]) return;
+  var sku = _userCartLastSku;
+  var totalQty = _userCartBuffer[sku];
+  
+  // Reset buffer
+  _userCartBuffer = {};
+  _userCartLastSku = null;
+
+  var productList = typeof getProducts === 'function' ? getProducts() : (typeof _customProducts !== 'undefined' ? _customProducts : []);
+  var p = productList.find(x => x.sku === sku);
+  if (!p) return;
+
+  var userText = '🟢 ¡Tú!';
+  var actionText = 'Has reservado x' + totalQty + ' ' + (totalQty > 1 ? 'unidades' : 'unidad') + ' de ' + p.name;
+  var timeText = 'Hace unos segundos · Toca para ver';
+
+  showFomoToastData({
+    sku: p.sku,
+    image: p.image,
+    badge: '🛒 TU COMPRA',
+    user: userText,
+    action: actionText,
+    time: timeText
+  });
+}
+
+// === Mute / Unmute Notifications ===
+var _fomoMuted = localStorage.getItem('db_fomo_muted') === 'true';
+
+function updateFomoBellUI() {
+  var activeSvg = document.getElementById('fomoBellActive');
+  var mutedSvg = document.getElementById('fomoBellMuted');
+  var textSpan = document.getElementById('fomoBellText');
+  var btn = document.getElementById('toggleFomoBtn');
+  if (activeSvg && mutedSvg) {
+    if (_fomoMuted) {
+      activeSvg.classList.add('hidden');
+      mutedSvg.classList.remove('hidden');
+      if (textSpan) textSpan.textContent = 'Activar notificaciones';
+      if (btn) btn.classList.add('opacity-60', 'bg-gray-100');
+    } else {
+      activeSvg.classList.remove('hidden');
+      mutedSvg.classList.add('hidden');
+      if (textSpan) textSpan.textContent = 'Desactivar notificaciones';
+      if (btn) btn.classList.remove('opacity-60', 'bg-gray-100');
+    }
+  }
+}
+
+function toggleFomoNotifications() {
+  _fomoMuted = !_fomoMuted;
+  localStorage.setItem('db_fomo_muted', _fomoMuted ? 'true' : 'false');
+  updateFomoBellUI();
+
+  if (_fomoMuted) {
+    closeFomoToast();
+    showToast('Notificaciones silenciadas 🔕');
+  } else {
+    showToast('Notificaciones activadas 🔔');
+  }
+}
+
+window.toggleFomoNotifications = toggleFomoNotifications;
+
+function initFomoSalesEngine() {
+  updateFomoBellUI();
+  if (_fomoTimer) return;
+  scheduleNextFomoToast(1200);
+}
+
+function scheduleNextFomoToast(delayMs) {
+  if (_fomoTimer) clearTimeout(_fomoTimer);
+  _fomoTimer = setTimeout(function() {
+    triggerFomoToast();
+    var nextDelay = 14000 + Math.floor(Math.random() * 20000);
+    scheduleNextFomoToast(nextDelay);
+  }, delayMs);
+}
+
+function triggerFomoToast() {
+  if (_fomoMuted) return;
+  var productList = typeof getProducts === 'function' ? getProducts() : (typeof _customProducts !== 'undefined' ? _customProducts : []);
+  if (!productList || productList.length === 0) return;
+
+  var randomProduct = productList[Math.floor(Math.random() * productList.length)];
+  if (!randomProduct) return;
+
+  var prefixes = ['99551', '98681', '97412', '93120', '95589', '94201', '98112', '96341', '92088', '99120', '98432', '97745', '96109'];
+  var randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  var phoneText = '+56 9 ' + randomPrefix.substring(0, 4) + ' ****';
+
+  var qty = Math.floor(Math.random() * 5) + 1;
+  var actions = [
+    'ha comprado ' + qty + 'x ' + randomProduct.name,
+    'ha agregado ' + qty + 'x ' + randomProduct.name + ' al carrito',
+    'compró ' + randomProduct.name + ' por mayor',
+    'ha reservado ' + qty + ' unidades de ' + randomProduct.name
+  ];
+  var randomAction = actions[Math.floor(Math.random() * actions.length)];
+  var times = ['Hace 1 min', 'Hace 2 min', 'Hace unos segundos', 'Hace 3 min'];
+  var randomTime = times[Math.floor(Math.random() * times.length)] + ' · Toca para ver';
+
+  showFomoToastData({
+    sku: randomProduct.sku,
+    image: randomProduct.image,
+    badge: '🔥 SALE',
+    user: phoneText,
+    action: randomAction,
+    time: randomTime
+  });
+}
+
+function showFomoToastData(data) {
+  if (_fomoMuted) return;
+  var toast = document.getElementById('fomoToast');
+  if (!toast) return;
+
+  var imgEl = document.getElementById('fomoImg');
+  var userEl = document.getElementById('fomoUser');
+  var actionEl = document.getElementById('fomoAction');
+  var timeEl = document.getElementById('fomoTime');
+  var badgeEl = document.getElementById('fomoBadge');
+
+  _fomoCurrentSku = data.sku;
+
+  // Preload image before sliding down toast to prevent flicker bug!
+  var tempImg = new Image();
+  var renderAndShow = function() {
+    if (imgEl) imgEl.src = tempImg.src;
+    if (userEl) userEl.textContent = data.user;
+    if (actionEl) actionEl.textContent = data.action;
+    if (timeEl) timeEl.textContent = data.time;
+    if (badgeEl) badgeEl.textContent = data.badge || '🔥 SALE';
+
+    toast.onclick = function() {
+      if (_fomoCurrentSku && typeof window.showProductModal === 'function') {
+        window.showProductModal(_fomoCurrentSku);
+      }
+      closeFomoToast();
+    };
+
+    toast.classList.remove('-translate-y-6', 'opacity-0', 'pointer-events-none');
+    toast.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+    if (_fomoHideTimer) clearTimeout(_fomoHideTimer);
+    _fomoHideTimer = setTimeout(function() {
+      closeFomoToast();
+    }, 10000);
+  };
+
+  if (data.image && data.image.trim()) {
+    tempImg.onload = renderAndShow;
+    tempImg.onerror = function() {
+      tempImg.src = 'https://via.placeholder.com/100';
+      renderAndShow();
+    };
+    tempImg.src = data.image;
+  } else {
+    tempImg.src = 'https://via.placeholder.com/100';
+    renderAndShow();
+  }
+}
+
+function closeFomoToast() {
+  var toast = document.getElementById('fomoToast');
+  if (!toast) return;
+  toast.classList.add('-translate-y-6', 'opacity-0', 'pointer-events-none');
+  toast.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+}
+
+window.closeFomoToast = closeFomoToast;
 
 // === Hierarchy helpers ===
 // Get product path as array (uses path field, falls back to category/subcategory)
@@ -1287,38 +1910,88 @@ function renderHome() {
   const recent = [...new Map(orderedCustom.map(p => [String(p.sku), p])).values()].slice(0, 8);
   const minK = getMinPurchase() >= 1000 ? `$${Math.floor(getMinPurchase()/1000)}K` : formatPrice(getMinPurchase());
 
+  // Cheap products carousel (sorted ascending by price)
+  const cheapProducts = [...withImg].sort((a,b) => getPrice(a) - getPrice(b)).slice(0, 8);
+
   const html = `
     <div class="fade-in space-y-6">
-      <!-- Hero banner -->
-      <div class="relative overflow-hidden rounded-[28px] p-6 sm:p-8 card-shadow"
-           style="background: linear-gradient(135deg, #5a96d8 0%, #7eb1e6 35%, #9fc7f0 70%, #cce4fb 100%);">
+      <!-- Hero banner ultra-functional & luxury -->
+      <div class="relative overflow-hidden rounded-[28px] p-6 sm:p-8 card-shadow border border-white/40"
+           style="background: linear-gradient(135deg, #4b8bd6 0%, #3a78c2 45%, #2a5d9e 100%);">
         <!-- Particles -->
         <div class="hero-particles" id="heroParticles"></div>
-        <div class="absolute -top-20 -right-12 w-64 h-64 rounded-full" style="background: radial-gradient(circle, rgba(255,232,128,.45), transparent 60%); animation: floaty 6s ease-in-out infinite;"></div>
-        <div class="absolute -bottom-24 -left-16 w-56 h-56 rounded-full" style="background: radial-gradient(circle, rgba(255,255,255,.4), transparent 65%);"></div>
-        <div class="absolute top-1/2 right-4 sm:right-6 -translate-y-1/2">
-          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-lg" style="border:2px solid rgba(255,255,255,0.5);"><img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png" alt="Don Balato Ivan" class="w-full h-full object-cover"></div>
+        <div class="absolute -top-20 -right-12 w-64 h-64 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(255,232,128,.35), transparent 60%); animation: floaty 6s ease-in-out infinite;"></div>
+        <div class="absolute -bottom-24 -left-16 w-56 h-56 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(255,255,255,.3), transparent 65%);"></div>
+        
+        <!-- Header row inside hero: Badge -->
+        <div class="relative z-10 flex items-center justify-between gap-2.5 mb-3">
+          <div class="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] sm:text-xs font-extrabold tracking-wider uppercase text-white shadow-sm border border-white/35">
+            <span class="w-2 h-2 rounded-full bg-amber-300 animate-pulse shadow-sm"></span>PROVEEDOR DIRECTO MAYORISTA · CHILE
+          </div>
         </div>
-        <div class="relative max-w-[70%] sm:max-w-[75%]">
-          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/30 backdrop-blur text-[10px] font-bold tracking-[0.2em] uppercase text-white shadow-sm border border-white/40">
-            <span class="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse"></span>Precios Mayoristas
+
+        <!-- Main text content -->
+        <div class="relative z-20 max-w-full">
+          <h1 class="font-display font-extrabold text-2xl sm:text-4xl leading-[1.15] text-white" style="text-shadow: 0 2px 12px rgba(15,32,67,.35);">
+            Impulsa tu negocio con los mejores precios<span class="text-amber-300">.</span>
+          </h1>
+          <p class="text-white/95 text-xs sm:text-sm mt-2.5 font-medium leading-relaxed max-w-xl">
+            Accede a <strong class="text-amber-200 font-extrabold">${products.length} productos</strong> con stock real garantizado, atención directa por WhatsApp y envíos a todo Chile.
+          </p>
+        </div>
+
+        <!-- Functional Action Grid & Stats -->
+        <div class="relative z-20 grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-5">
+          <a href="#/all" class="sm:col-span-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl btn-accent font-extrabold text-sm shadow-lg active:scale-95 transition-transform">
+            Ver catálogo
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+          </a>
+          <div class="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-white/20 backdrop-blur-md border border-white/35 text-white">
+            <span class="text-xs font-semibold opacity-90">Compra Mínima</span>
+            <span class="font-display font-extrabold text-sm sm:text-base text-amber-300">${minK}</span>
           </div>
-          <h1 class="font-display font-extrabold text-[26px] sm:text-4xl leading-[1.1] mt-4 text-white" style="text-shadow: 0 2px 8px rgba(42,93,158,.25);">Todo para<br>tu negocio<span class="text-yellow-300">.</span></h1>
-          <p class="text-white/90 text-sm mt-2.5 max-w-xs font-medium">${products.length} productos al por mayor con los mejores precios de Chile.</p>
-          <div class="flex items-center gap-2 mt-5">
-            <a href="#/all" class="inline-flex items-center gap-2 px-5 py-3 rounded-2xl btn-accent font-bold text-sm active:scale-95">
-              Ver catálogo
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
-            </a>
-            <div class="px-4 py-3 rounded-2xl bg-white/25 backdrop-blur border border-white/40 text-white">
-              <div class="text-[9px] uppercase tracking-wider opacity-90 leading-none">Compra mín.</div>
-              <div class="font-display font-extrabold text-base leading-tight mt-0.5">${minK}</div>
+          <div class="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-white/20 backdrop-blur-md border border-white/35 text-white">
+            <span class="text-xs font-semibold opacity-90">Productos</span>
+            <span class="font-display font-extrabold text-sm sm:text-base">${products.length}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero FOMO Urgency Spotlight Carousel Banner (Theme Matched White Luxe) -->
+      <div id="heroFomoBanner" class="relative overflow-hidden rounded-[26px] bg-white/95 backdrop-blur-xl p-4 sm:p-5 text-blue-950 shadow-lg border-2 border-blue-200/90 cursor-pointer hover:border-blue-400/80 transition-all duration-300 group" onclick="showFomoBannerProductModal()">
+        <div class="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          
+          <!-- Left: BIG product image (clean without badges) + urgency text -->
+          <div class="flex items-center gap-4 w-full sm:w-auto">
+            <!-- Large Product Thumbnail Container -->
+            <div class="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-blue-50/80 overflow-hidden flex-shrink-0 border border-blue-200/80 shadow-inner group-hover:scale-105 transition-transform duration-300">
+              <img id="heroFomoImg" src="" alt="Producto" class="w-full h-full object-cover">
             </div>
-            <div class="px-4 py-3 rounded-2xl bg-white/25 backdrop-blur border border-white/40 text-white">
-              <div class="text-[9px] uppercase tracking-wider opacity-90 leading-none">Productos</div>
-              <div class="font-display font-extrabold text-base leading-tight mt-0.5">${products.length}</div>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1.5">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider shadow-sm">
+                  <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                  <span id="heroFomoTag">🔥 ÚLTIMAS UNIDADES EN BODEGA</span>
+                </span>
+              </div>
+              <h3 id="heroFomoTitle" class="font-display font-extrabold text-sm sm:text-base text-blue-950 line-clamp-1 leading-snug">Cargando producto estrella...</h3>
+              <p id="heroFomoClaim" class="text-xs sm:text-sm text-blue-800/90 font-semibold line-clamp-2 leading-relaxed mt-1">Ayer se vendieron +140 unidades por mayor. ¡Asegura las tuyas antes del cierre de bodega!</p>
             </div>
           </div>
+
+          <!-- Right: Price + Quick Reserve Action Button -->
+          <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-blue-100">
+            <div class="flex flex-col text-left sm:text-right">
+              <span class="text-[10px] text-blue-500 uppercase font-extrabold tracking-wider">Precio Mayorista</span>
+              <span id="heroFomoPrice" class="font-display font-extrabold text-xl sm:text-2xl text-emerald-600">$0</span>
+            </div>
+            <button onclick="event.stopPropagation(); showFomoBannerProductModal()" class="px-5 py-3 rounded-2xl btn-accent font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center gap-1.5 whitespace-nowrap">
+              <span>⚡ Asegurar Mi Stock</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -1343,11 +2016,70 @@ function renderHome() {
         ${topCats.map(cat => `<a href="${categoryUrl([cat])}" class="chip">${escapeHtml(cat)}<span class="text-blue-300 font-semibold">${counts[cat]}</span></a>`).join('')}
       </div>` : ''}
 
+      ${deals.length > 0 ? `
+      <!-- Deals carousel -->
+      <div>
+        <div class="flex flex-col mb-3">
+          <div class="flex items-center justify-between">
+            <h2 class="section-title">🔥 Lo último añadido · ¡Apúrate que se acaban!</h2>
+            <a href="#/all" class="text-xs text-blue-500 font-bold hover:text-blue-700">Ver más →</a>
+          </div>
+          <p class="text-xs text-blue-900/90 font-medium mt-0.5">Nuestros productos no duran más de 1 día en stock. ¡Apresúrate y consigue el tuyo!</p>
+        </div>
+        <div class="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 snap-x">
+          ${deals.map(p => `
+            <div onclick="showProductModal('${escapeHtml(p.sku)}')" class="product-card card-shadow flex-none w-40 snap-start cursor-pointer">
+              <div class="relative aspect-square bg-blue-50/60 overflow-hidden">
+                <span class="absolute top-2 left-2 z-10 text-[10px] font-extrabold px-2 py-0.5 rounded-full deal-badge">🔥 ¡VOLANDO!</span>
+                <div class="pc-img w-full h-full">${imgEl(p.image, p.name)}</div>
+              </div>
+              <div class="p-3">
+                <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-2 mb-1.5 min-h-[2rem]">${escapeHtml(p.name)}</div>
+                <div class="flex items-center justify-between">
+                  <span class="price-chip text-base">${formatPrice(getPrice(p))}</span>
+                  <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      ${cheapProducts.length > 0 ? `
+      <!-- Productos desde $175 carousel -->
+      <div>
+        <div class="flex flex-col mb-3">
+          <div class="flex items-center justify-between">
+            <h2 class="section-title">🏷️ Productos desde $175</h2>
+            <a href="#/all" class="text-xs text-blue-500 font-bold hover:text-blue-700">Ver todos →</a>
+          </div>
+          <p class="text-xs text-blue-900/90 font-medium mt-0.5">¡Lo mismo que te costaría un chicle! Margen imbatible para tu negocio.</p>
+        </div>
+        <div class="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 snap-x">
+          ${cheapProducts.map(p => `
+            <div onclick="showProductModal('${escapeHtml(p.sku)}')" class="product-card card-shadow flex-none w-40 snap-start cursor-pointer border border-amber-200/60">
+              <div class="relative aspect-square bg-blue-50/60 overflow-hidden">
+                <div class="pc-img w-full h-full">${imgEl(p.image, p.name)}</div>
+              </div>
+              <div class="p-3">
+                <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-2 mb-1.5 min-h-[2rem]">${escapeHtml(p.name)}</div>
+                <div class="flex items-center justify-between">
+                  <span class="price-chip text-base text-emerald-600 font-extrabold">${formatPrice(getPrice(p))}</span>
+                  <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+
       ${recent.length > 0 ? `
-      <!-- Recién añadidos carousel -->
+      <!-- Lo último añadido carousel -->
       <div>
         <div class="flex items-center justify-between mb-3">
-          <h2 class="section-title">✨ Recién añadidos</h2>
+          <h2 class="section-title">✨ Lo último añadido</h2>
         </div>
         <div class="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 snap-x">
           ${recent.map(p => `
@@ -1369,35 +2101,8 @@ function renderHome() {
         </div>
       </div>` : ''}
 
-      ${deals.length > 0 ? `
-      <!-- Deals carousel -->
-      <div>
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="section-title">🔥 Ofertas del día</h2>
-          <a href="#/all" class="text-xs text-blue-500 font-bold hover:text-blue-700">Ver más →</a>
-        </div>
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 snap-x">
-          ${deals.map(p => `
-            <div onclick="showProductModal('${escapeHtml(p.sku)}')" class="product-card card-shadow flex-none w-40 snap-start cursor-pointer">
-              <div class="relative aspect-square bg-blue-50/60 overflow-hidden">
-                <span class="absolute top-2 left-2 z-10 text-[10px] font-extrabold px-2 py-0.5 rounded-full deal-badge">OFERTA</span>
-                <div class="pc-img w-full h-full">${imgEl(p.image, p.name)}</div>
-              </div>
-              <div class="p-3">
-                <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-2 mb-1.5 min-h-[2rem]">${escapeHtml(p.name)}</div>
-                <div class="flex items-center justify-between">
-                  <span class="price-chip text-base">${formatPrice(getPrice(p))}</span>
-                  <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                  </button>
-                </div>
-              </div>
-            </div>`).join('')}
-        </div>
-      </div>` : ''}
-
       <!-- Categories grid -->
-      ${topCats.length > 0 ? `<div>
+      ${topCats.length > 0 ? `<div id="categoriesSection">
         <div class="flex items-center justify-between mb-3">
           <h2 class="section-title">Explora por categoría</h2>
         </div>
@@ -1405,12 +2110,18 @@ function renderHome() {
           ${topCats.map((cat, idx) => {
             const icon = getCategoryIcon(cat, [cat]);
             return `
-            <a href="${categoryUrl([cat])}" class="cat-card cat-g${idx % 4} card-shadow card-shadow-hover">
-              <div class="cat-icon-wrap">
+            <a href="${categoryUrl([cat])}" class="cat-card cat-g${idx % 4} group relative overflow-hidden">
+              <div class="absolute -right-2 -bottom-1 text-2xl sm:text-3xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 pointer-events-none select-none z-0">
+                ${getCategoryBgEmojis(cat)}
+              </div>
+              <div class="cat-icon-wrap relative z-10">
                 ${icon ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(stripEmoji(cat))}">` : (() => { const em = extractEmoji(cat); return em ? `<span class="text-2xl">${em}</span>` : `<span class="text-blue-500">${FALLBACK_CAT_SVG}</span>`; })()}
               </div>
-              <div class="font-display font-extrabold text-blue-800 text-sm leading-tight relative">${escapeHtml(stripEmoji(cat))}</div>
-              <div class="text-[11px] text-blue-500/80 mt-0.5 font-semibold relative">${counts[cat]} productos</div>
+              <div class="font-display font-extrabold text-blue-950 text-sm sm:text-base leading-tight relative z-10">${escapeHtml(stripEmoji(cat))}</div>
+              <div class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-blue-600/90 mt-1.5 font-extrabold px-2.5 py-0.5 rounded-full bg-white/70 backdrop-blur-md border border-white/60 relative z-10">
+                <span>${counts[cat]} productos</span>
+                <svg class="w-3 h-3 text-blue-500 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+              </div>
             </a>`;
           }).join('')}
         </div>
@@ -1428,6 +2139,10 @@ function renderHome() {
     </div>
   `;
   $('#app').innerHTML = html;
+  initHeroParticles();
+  initHeroFomoBannerEngine();
+  initPersistentHeroTimer();
+  initAnnouncementBarEngine();
 }
 
 // === Category page (hierarchical, supports any depth) ===
@@ -1451,9 +2166,26 @@ function renderCategory(prefixEncoded) {
   }
   breadcrumb += '</div>';
 
-  let html = `<div class="fade-in">
+  const catTitle = prefix[prefix.length - 1];
+  const catIcon = typeof getCategoryBgEmojis === 'function' ? (getCategoryBgEmojis(catTitle).split(' ')[0] || '📦') : '📦';
+
+  let html = `<div class="fade-in space-y-4">
     ${breadcrumb}
-    <h1 class="font-display font-extrabold text-2xl text-blue-800 mb-3">${escapeHtml(prefix[prefix.length - 1])}</h1>`;
+    <!-- Category Header Banner (Cristal Blanco Luxe Theme) -->
+    <div class="relative overflow-hidden rounded-[26px] p-5 sm:p-6 bg-gradient-to-r from-blue-50/90 via-white to-blue-50/90 border border-blue-200/80 shadow-sm mb-4">
+      <div class="flex items-center justify-between gap-3 relative z-10">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-blue-100/80 border border-blue-200/80 flex items-center justify-center text-2xl flex-shrink-0 shadow-xs">
+            ${catIcon}
+          </div>
+          <div>
+            <h1 class="font-display font-extrabold text-xl sm:text-2xl text-blue-950 leading-tight">${escapeHtml(catTitle)}</h1>
+            <span class="text-xs text-blue-500/90 font-semibold">Categoría Mayorista</span>
+          </div>
+        </div>
+        <span class="text-xs text-blue-900 font-extrabold px-3 py-1 rounded-full bg-blue-100/90 border border-blue-200/80 flex-shrink-0">${products.length} prod.</span>
+      </div>
+    </div>`;
 
   // Subcategory chips (if there are children)
   if (children.length > 0) {
@@ -1482,6 +2214,7 @@ function renderCategory(prefixEncoded) {
   }
   html += '</div>';
   $('#app').innerHTML = html;
+  initHeroParticles(catTitle, 'catParticles');
 }
 
 // === Catalog filters & sorting (shared across catalog / category / search) ===
@@ -1689,12 +2422,15 @@ function renderProductGrid(products, preSorted = false) {
       const price = getPrice(p);
       const outOfStock = p.stock <= 0;
       const lowStock = !outOfStock && p.stock > 0 && p.stock <= 5;
+      const activeSubcat = typeof getActivePromoSubcategory === 'function' ? getActivePromoSubcategory() : '';
+      const isPromo = activeSubcat && ((p.subcategory && p.subcategory.toLowerCase().includes(activeSubcat.toLowerCase())) || (p.category && p.category.toLowerCase().includes(activeSubcat.toLowerCase())));
+      const oldPrice = isPromo ? Math.round(price / 0.7) : 0;
       return `<div class="product-card card-shadow flex flex-col" onclick="showProductModal('${escapeHtml(p.sku)}')">
         <div class="aspect-square bg-blue-50/60 relative overflow-hidden">
           <div class="pc-img w-full h-full">${imgEl(p.image, p.name)}</div>
-          ${outOfStock ? `<div class="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+          ${isPromo ? `<span class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-extrabold shadow-sm animate-pulse">🔥 30% OFF</span>` : outOfStock ? `<div class="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
             <span class="px-3 py-1 rounded-full bg-blue-900/85 text-white text-[11px] font-bold tracking-wide">Sin stock</span>
-          </div>` : lowStock ? `<span class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-yellow-300 text-blue-900 text-[10px] font-extrabold shadow-sm">¡Últimas ${p.stock}!</span>` : ''}
+          </div>` : lowStock ? `<span class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-amber-300 text-blue-950 text-[10px] font-extrabold shadow-sm">¡Pocas unidades!</span>` : ''}
           ${p.image ? `<button onclick="event.stopPropagation(); openLightbox('${escapeHtml(p.image)}')" class="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/85 backdrop-blur shadow flex items-center justify-center text-blue-500 active:scale-90">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
           </button>` : ''}
@@ -1704,8 +2440,8 @@ function renderProductGrid(products, preSorted = false) {
           ${p.subcategory ? `<div class="text-[10px] text-blue-400 mt-1 uppercase tracking-wide font-semibold">${escapeHtml(p.subcategory)}</div>` : '<div class="mt-1"></div>'}
           <div class="mt-2 flex items-end justify-between gap-1">
             <div>
-              <div class="text-[9px] text-blue-300 font-bold uppercase tracking-wider leading-none mb-0.5">desde</div>
-              <div class="price-chip text-lg leading-none">${formatPrice(price)}</div>
+              <div class="text-[9px] text-blue-300 font-bold uppercase tracking-wider leading-none mb-0.5">${isPromo ? '<span class="line-through text-blue-400/80 mr-1">' + formatPrice(oldPrice) + '</span><span class="text-rose-600 font-extrabold">-30%</span>' : 'desde'}</div>
+              <div class="price-chip text-lg leading-none ${isPromo ? '!text-rose-600 font-extrabold' : ''}">${formatPrice(price)}</div>
             </div>
             <button ${outOfStock?'disabled':''} onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="${outOfStock?'bg-blue-100 text-blue-300 cursor-not-allowed':'fab-add active:scale-90'} w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" aria-label="Agregar al carrito">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
@@ -2997,7 +3733,7 @@ function showProductModal(sku) {
         <div class="mt-1.5">
           ${outOfStock
             ? '<span class="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-500">Sin stock</span>'
-            : `<span class="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">${p.stock} disponibles</span>`}
+            : '<span class="inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">✓ Stock disponible</span>'}
         </div>
       </div>
     </div>
@@ -3005,6 +3741,13 @@ function showProductModal(sku) {
     ${p.subcategory ? `<div class="text-xs text-blue-300 uppercase tracking-wide mb-3">${escapeHtml(p.subcategory)}</div>` : ''}
     <div class="text-sm text-blue-600 leading-relaxed mb-4">
       ${p.description ? escapeHtml(p.description) : 'Sin descripción disponible.'}
+    </div>
+    <!-- Live FOMO Urgency Strip -->
+    <div class="rounded-2xl bg-amber-50/90 border border-amber-200/80 p-3 mb-4 flex items-center gap-2.5">
+      <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping flex-shrink-0"></span>
+      <div class="text-xs text-amber-950 font-bold leading-snug">
+        🔥 <strong>${Math.floor(Math.random() * 18) + 12} personas</strong> están viendo este producto ahora. <span class="text-amber-800 font-semibold block sm:inline">¡Reserva de stock activa!</span>
+      </div>
     </div>
     ${outOfStock ? '' : `
     <div class="flex items-center justify-between bg-blue-50/70 rounded-2xl p-2.5 mb-3">
@@ -3311,6 +4054,8 @@ function makeDismissable(panel, closeFn) {
 }
 
 init();
+initLiveUsersCounter();
+initFomoSalesEngine();
 
 // Expose for inline handlers
 window.addToCart = addToCart;

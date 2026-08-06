@@ -1677,14 +1677,24 @@ Por favor contáctalo para ayudarle.
                  const { serverListDocuments } = await import('@/lib/appwrite-server');
                  const { ORDERS_COLLECTION_ID } = await import('@/lib/appwrite-admin');
                  const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-                 const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+                 const qLimit5 = JSON.stringify({ method: 'limit', values: [5] });
                  const cleanedPhone = fromPhone.replace(/\D/g, '');
-                 const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [cleanedPhone] });
-                 const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit1, qPhone]);
-                 const myOrders = resOrders.documents || [];
+                 // Try multiple phone variants to match orders
+                 const phoneVariants = [cleanedPhone, '+' + cleanedPhone, cleanedPhone.replace(/^56/, ''), '56' + cleanedPhone.replace(/^56/, '')];
+                 let myOrders: any[] = [];
+                 for (const pv of phoneVariants) {
+                   if (myOrders.length > 0) break;
+                   try {
+                     const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [pv] });
+                     const resOrders = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit5, qPhone]);
+                     myOrders = resOrders.documents || [];
+                   } catch {}
+                 }
                  if (myOrders.length > 0) {
                    isGuestWithOrders = true;
-                   const guestName = String(myOrders[0]?.CUSTOMERNAME || '');
+                   // Find the most recent order that has a customer name
+                   const orderWithName = myOrders.find((o: any) => o.CUSTOMERNAME && String(o.CUSTOMERNAME).trim());
+                   const guestName = String(orderWithName?.CUSTOMERNAME || myOrders[0]?.CUSTOMERNAME || '');
                    await recordKeniaUsage(fromPhone, { isGuestWithOrders: true, customerName: guestName || undefined });
                    if (guestName) customerName = guestName;
                  } else {
