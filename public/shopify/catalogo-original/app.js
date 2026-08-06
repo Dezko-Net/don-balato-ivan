@@ -1202,17 +1202,25 @@ function render() {
   const route = parts[0] || '';
 
   // Detect mode based on route
-  if (route === 'admin') {
-    currentMode = 'admin';
-    $('#modeTag').classList.remove('hidden');
-    $('#modeTag').textContent = 'Admin';
+  const modeTag = $('#modeTag');
+  if (modeTag) {
+    if (route === 'admin') {
+      currentMode = 'admin';
+      modeTag.classList.remove('hidden');
+      modeTag.textContent = 'Admin';
+    } else {
+      currentMode = 'public';
+      modeTag.classList.add('hidden');
+    }
   } else {
-    currentMode = 'public';
-    $('#modeTag').classList.add('hidden');
+    currentMode = route === 'admin' ? 'admin' : 'public';
   }
 
   // Show back button if not home
-  $('#backBtn').classList.toggle('hidden', parts.length === 0);
+  const backBtn = $('#backBtn');
+  if (backBtn) {
+    backBtn.classList.toggle('hidden', parts.length === 0);
+  }
 
   // Show bottom nav on home and my-orders pages, hide on other screens
   const isHome = parts.length === 0;
@@ -1227,7 +1235,13 @@ function render() {
   if (route === 'my-orders') return renderMyOrders();
   if (route === 'search' || searchQuery) return renderSearch();
   renderHome();
-  initHeroParticles();
+  // Defer particle init hasta después del primer paint del DOM
+  // (en producción/Vercel el canvas lee offsetWidth=0 si se llama síncronamente)
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      initHeroParticles();
+    });
+  });
   initLiveUsersCounter();
   initFomoSalesEngine();
   return;
@@ -1247,42 +1261,254 @@ function scrollToCategoriesSection() {
 }
 window.scrollToCategoriesSection = scrollToCategoriesSection;
 
+var _heroParticleRAF = null;
+
 function initHeroParticles(catName, containerId) {
   var container = document.getElementById(containerId || 'heroParticles');
   if (!container) return;
   container.innerHTML = '';
-  
-  var count = 30;
+  if (_heroParticleRAF) { cancelAnimationFrame(_heroParticleRAF); _heroParticleRAF = null; }
 
-  for (var i = 0; i < count; i++) {
-    var p = document.createElement('div');
-    var r = Math.random();
+  var canvas = document.createElement('canvas');
+  container.appendChild(canvas);
+  var ctx = canvas.getContext('2d');
 
-    if (r > 0.72) {
-      p.className = 'hero-particle p-star';
-    } else if (r > 0.45) {
-      p.className = 'hero-particle p-diamond';
-    } else if (r > 0.22) {
-      p.className = 'hero-particle p-orb';
-    } else {
-      p.className = 'hero-particle p-gold';
+  var W, H;
+  function resize() {
+    W = canvas.width = container.offsetWidth || 480;
+    H = canvas.height = container.offsetHeight || 220;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var T = 0; // global tick
+
+  // ─── PALETA DE COLORES ───────────────────────────────────────────────────────
+  var COLORS = {
+    gold:   [255, 210, 60],
+    amber:  [255, 170, 30],
+    white:  [240, 248, 255],
+    sky:    [96,  195, 255],
+    rose:   [255, 180, 150],
+  };
+  var PALETTE = ['gold','gold','gold','amber','white','white','sky'];
+
+  function rgba(c, a) { return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a.toFixed(3)+')'; }
+  function pickColor() { return COLORS[PALETTE[Math.floor(Math.random() * PALETTE.length)]]; }
+
+  // ─── CAPA 1: BOKEH ATMOSFÉRICO (grandes esferas borrosas en fondo) ────────────
+  var bokeh = [];
+  for (var i = 0; i < 5; i++) {
+    bokeh.push({
+      x: Math.random() * W, y: Math.random() * H,
+      r: 14 + Math.random() * 28,          // 14-42 px (antes 28-83)
+      col: pickColor(),
+      ox: Math.random() * Math.PI * 2,
+      oy: Math.random() * Math.PI * 2,
+      fx: 0.00015 + Math.random() * 0.0002,
+      fy: 0.00012 + Math.random() * 0.00018,
+      amp: 12 + Math.random() * 18,
+      baseAlpha: 0.022 + Math.random() * 0.03, // antes 0.04-0.11
+      pulsePhase: Math.random() * Math.PI * 2,
+      pulseFreq: 0.0004 + Math.random() * 0.0006,
+    });
+  }
+
+  // ─── CAPA 2: POLVO DORADO ASCENDENTE (partículas que nacen abajo y mueren arriba) ─
+  var DUST_COUNT = 18;
+  function mkDust() {
+    return {
+      x: Math.random() * W,
+      y: H + Math.random() * 20,
+      r: 0.5 + Math.random() * 1.5,         // antes 0.8-3.6
+      col: pickColor(),
+      vy: -(0.08 + Math.random() * 0.22),   // más lento
+      vx: (Math.random() - 0.5) * 0.1,
+      wobbleAmp: 0.3 + Math.random() * 1.2,
+      wobbleFreq: 0.005 + Math.random() * 0.012,
+      wobblePhase: Math.random() * Math.PI * 2,
+      life: 0,
+      maxLife: 260 + Math.floor(Math.random() * 320),
+      baseAlpha: 0.18 + Math.random() * 0.25, // antes 0.4-0.9
+    };
+  }
+  var dust = [];
+  for (var i = 0; i < DUST_COUNT; i++) {
+    var d = mkDust();
+    d.y = Math.random() * H;   // al inicio distribuir por toda la altura
+    d.life = Math.floor(Math.random() * d.maxLife);
+    dust.push(d);
+  }
+
+  // ─── CAPA 3: DESTELLOS DIAMANTE con halo pulsante ────────────────────────────
+  var SPARK_COUNT = 12;
+  function mkSpark() {
+    return {
+      x: 0.05 * W + Math.random() * 0.9 * W,
+      y: 0.05 * H + Math.random() * 0.9 * H,
+      r: 1.2 + Math.random() * 2.2,         // antes 2.5-7.5
+      col: pickColor(),
+      rot: Math.random() * Math.PI,
+      rotSpeed: (Math.random() - 0.5) * 0.018,
+      ox: Math.random() * Math.PI * 2,
+      oy: Math.random() * Math.PI * 2,
+      fx: 0.0003 + Math.random() * 0.0005,
+      fy: 0.00025 + Math.random() * 0.0004,
+      driftAmp: 4 + Math.random() * 8,
+      life: 0,
+      maxLife: 180 + Math.floor(Math.random() * 220),
+      baseAlpha: 0.22 + Math.random() * 0.28, // antes 0.5-1.0
+      haloScale: 0.8 + Math.random() * 1.2,   // antes 1-3.5
+      haloPhase: Math.random() * Math.PI * 2,
+    };
+  }
+  var sparks = [];
+  for (var i = 0; i < SPARK_COUNT; i++) {
+    var s = mkSpark();
+    s.life = Math.floor(Math.random() * s.maxLife);
+    sparks.push(s);
+  }
+
+  // ─── DRAW HELPERS ─────────────────────────────────────────────────────────────
+
+
+  function drawBokeh(b, elapsed) {
+    var dx = Math.sin(elapsed * b.fx + b.ox) * b.amp;
+    var dy = Math.cos(elapsed * b.fy + b.oy) * b.amp * 0.6;
+    var pulse = 0.5 + 0.5 * Math.sin(elapsed * b.pulseFreq + b.pulsePhase);
+    var a = b.baseAlpha * (0.7 + 0.3 * pulse);
+    ctx.save();
+    ctx.filter = 'blur(' + Math.round(b.r * 0.55) + 'px)';
+    var g = ctx.createRadialGradient(b.x + dx, b.y + dy, 0, b.x + dx, b.y + dy, b.r);
+    g.addColorStop(0,   rgba(b.col, Math.min(1, a * 2.2)));
+    g.addColorStop(0.5, rgba(b.col, a * 0.5));
+    g.addColorStop(1,   rgba(b.col, 0));
+    ctx.beginPath();
+    ctx.arc(b.x + dx, b.y + dy, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawDust(d) {
+    var progress = d.life / d.maxLife;
+    // Fade in rápido, fade out lento
+    var a = d.baseAlpha * (progress < 0.12 ? progress / 0.12 : progress > 0.8 ? (1 - progress) / 0.2 : 1);
+    var wx = d.x + Math.sin(d.life * d.wobbleFreq + d.wobblePhase) * d.wobbleAmp;
+
+    // Glow halo
+    var g = ctx.createRadialGradient(wx, d.y, 0, wx, d.y, d.r * 3.5);
+    g.addColorStop(0,   rgba(d.col, Math.min(1, a * 1.6)));
+    g.addColorStop(0.5, rgba(d.col, a * 0.4));
+    g.addColorStop(1,   rgba(d.col, 0));
+    ctx.beginPath();
+    ctx.arc(wx, d.y, d.r * 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // Core bright dot
+    ctx.beginPath();
+    ctx.arc(wx, d.y, d.r, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(d.col, Math.min(1, a * 2));
+    ctx.fill();
+  }
+
+  function drawStar4(cx, cy, r, rot, col, a) {
+    // 4-punta estrella alargada (clásico destello de diamante)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    // Rayo horizontal
+    var gx = ctx.createLinearGradient(-r * 3.5, 0, r * 3.5, 0);
+    gx.addColorStop(0,   rgba(col, 0));
+    gx.addColorStop(0.5, rgba(col, a));
+    gx.addColorStop(1,   rgba(col, 0));
+    ctx.beginPath();
+    ctx.moveTo(-r * 3.5, 0); ctx.lineTo(0, r * 0.35); ctx.lineTo(r * 3.5, 0); ctx.lineTo(0, -r * 0.35);
+    ctx.closePath();
+    ctx.fillStyle = gx;
+    ctx.fill();
+    // Rayo vertical
+    var gy = ctx.createLinearGradient(0, -r * 3.5, 0, r * 3.5);
+    gy.addColorStop(0,   rgba(col, 0));
+    gy.addColorStop(0.5, rgba(col, a));
+    gy.addColorStop(1,   rgba(col, 0));
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 3.5); ctx.lineTo(r * 0.35, 0); ctx.lineTo(0, r * 3.5); ctx.lineTo(-r * 0.35, 0);
+    ctx.closePath();
+    ctx.fillStyle = gy;
+    ctx.fill();
+    // Core glow
+    var gc = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 1.2);
+    gc.addColorStop(0,   rgba([255,255,255], Math.min(1, a * 1.4)));
+    gc.addColorStop(0.5, rgba(col, a * 0.7));
+    gc.addColorStop(1,   rgba(col, 0));
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = gc;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSparkParticle(s, elapsed) {
+    var progress = s.life / s.maxLife;
+    var a = s.baseAlpha * (progress < 0.15 ? progress / 0.15 : progress > 0.75 ? (1 - progress) / 0.25 : 1);
+
+    var dx = Math.sin(elapsed * s.fx + s.ox) * s.driftAmp;
+    var dy = Math.cos(elapsed * s.fy + s.oy) * s.driftAmp * 0.5;
+
+    // Halo externo pulsante
+    var hPulse = 0.5 + 0.5 * Math.sin(elapsed * 0.002 + s.haloPhase);
+    var hR = s.r * (s.haloScale + 0.5 * hPulse);
+    var hg = ctx.createRadialGradient(s.x + dx, s.y + dy, 0, s.x + dx, s.y + dy, hR);
+    hg.addColorStop(0,   rgba(s.col, a * 0.35));
+    hg.addColorStop(0.6, rgba(s.col, a * 0.08));
+    hg.addColorStop(1,   rgba(s.col, 0));
+    ctx.beginPath();
+    ctx.arc(s.x + dx, s.y + dy, hR, 0, Math.PI * 2);
+    ctx.fillStyle = hg;
+    ctx.fill();
+
+    drawStar4(s.x + dx, s.y + dy, s.r, s.rot, s.col, a);
+    s.rot += s.rotSpeed;
+  }
+
+
+  // ─── ANIMATION LOOP ──────────────────────────────────────────────────────────
+  var startTime = performance.now();
+
+  function frame(now) {
+    W = canvas.width = container.offsetWidth || W;
+    H = canvas.height = container.offsetHeight || H;
+    ctx.clearRect(0, 0, W, H);
+
+    var elapsed = now - startTime;
+    T++;
+
+    // 1. Bokeh fondo
+    for (var i = 0; i < bokeh.length; i++) drawBokeh(bokeh[i], elapsed);
+
+    // 2. Polvo ascendente
+    for (var i = 0; i < dust.length; i++) {
+      var d = dust[i];
+      d.life++;
+      d.y += d.vy;
+      d.x += d.vx;
+      drawDust(d);
+      if (d.life >= d.maxLife || d.y < -10) { dust[i] = mkDust(); }
     }
 
-    var size = Math.random() * 12 + 8;
-    var left = 3 + Math.random() * 94;
-    var top = 5 + Math.random() * 90;
-    var duration = Math.random() * 3 + 3.5;
-    var delay = Math.random() * 2;
-
-    p.style.width = size + 'px';
-    p.style.height = size + 'px';
-    p.style.left = left + '%';
-    p.style.top = top + '%';
-    p.style.setProperty('--p-dur', duration + 's');
-    p.style.animationDelay = delay + 's';
-
-    container.appendChild(p);
+    // 3. Destellos diamante
+    for (var i = 0; i < sparks.length; i++) {
+      var s = sparks[i];
+      s.life++;
+      drawSparkParticle(s, elapsed);
+      if (s.life >= s.maxLife) { sparks[i] = mkSpark(); }
+    }
+    _heroParticleRAF = requestAnimationFrame(frame);
   }
+
+  _heroParticleRAF = requestAnimationFrame(frame);
 }
 
 function getCategoryBgEmojis(catName) {
@@ -2021,10 +2247,10 @@ function renderHome() {
       <div>
         <div class="flex flex-col mb-3">
           <div class="flex items-center justify-between">
-            <h2 class="section-title">🔥 Lo último añadido · ¡Apúrate que se acaban!</h2>
-            <a href="#/all" class="text-xs text-blue-500 font-bold hover:text-blue-700">Ver más →</a>
+            <h2 class="section-title">🔥 <span class="hidden sm:inline">Lo último añadido · </span>¡Apúrate que se acaban!</h2>
+            <a href="#/all" class="text-xs text-blue-500 font-bold hover:text-blue-700 flex-none ml-2">Ver más →</a>
           </div>
-          <p class="text-xs text-blue-900/90 font-medium mt-0.5">Nuestros productos no duran más de 1 día en stock. ¡Apresúrate y consigue el tuyo!</p>
+          <p class="text-xs text-blue-900/90 font-medium mt-0.5"><span class="hidden sm:inline">Nuestros productos no duran más de 1 día en stock. ¡Apresúrate y consigue el tuyo!</span><span class="inline sm:hidden">¡Poco stock! No se los pierdas 🔥</span></p>
         </div>
         <div class="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 snap-x">
           ${deals.map(p => `
@@ -2034,7 +2260,7 @@ function renderHome() {
                 <div class="pc-img w-full h-full">${imgEl(p.image, p.name)}</div>
               </div>
               <div class="p-3">
-                <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-2 mb-1.5 min-h-[2rem]">${escapeHtml(p.name)}</div>
+                <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-1 mb-1.5">${escapeHtml(p.name)}</div>
                 <div class="flex items-center justify-between">
                   <span class="price-chip text-base">${formatPrice(getPrice(p))}</span>
                   <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
@@ -2051,10 +2277,10 @@ function renderHome() {
       <div>
         <div class="flex flex-col mb-3">
           <div class="flex items-center justify-between">
-            <h2 class="section-title">🏷️ Productos desde $175</h2>
-            <a href="#/all" class="text-xs text-blue-500 font-bold hover:text-blue-700">Ver todos →</a>
+            <h2 class="section-title">🏷️ <span class="hidden sm:inline">Productos </span>Desde $175</h2>
+            <a href="#/all" class="text-xs text-blue-500 font-bold hover:text-blue-700 flex-none ml-2">Ver todos →</a>
           </div>
-          <p class="text-xs text-blue-900/90 font-medium mt-0.5">¡Lo mismo que te costaría un chicle! Margen imbatible para tu negocio.</p>
+          <p class="text-xs text-blue-900/90 font-medium mt-0.5"><span class="hidden sm:inline">¡Lo mismo que te costaría un chicle! Margen imbatible para tu negocio.</span><span class="inline sm:hidden">Margen imbatible 💰</span></p>
         </div>
         <div class="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 snap-x">
           ${cheapProducts.map(p => `
@@ -2063,7 +2289,7 @@ function renderHome() {
                 <div class="pc-img w-full h-full">${imgEl(p.image, p.name)}</div>
               </div>
               <div class="p-3">
-                <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-2 mb-1.5 min-h-[2rem]">${escapeHtml(p.name)}</div>
+                <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-1 mb-1.5">${escapeHtml(p.name)}</div>
                 <div class="flex items-center justify-between">
                   <span class="price-chip text-base text-emerald-600 font-extrabold">${formatPrice(getPrice(p))}</span>
                   <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
@@ -2139,7 +2365,12 @@ function renderHome() {
     </div>
   `;
   $('#app').innerHTML = html;
-  initHeroParticles();
+  // Defer para que el DOM se pinte antes de leer offsetWidth (fix producción)
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      initHeroParticles();
+    });
+  });
   initHeroFomoBannerEngine();
   initPersistentHeroTimer();
   initAnnouncementBarEngine();
@@ -3932,17 +4163,20 @@ async function init() {
 
   updateCartCount();
 
-  // Search input
-  $('#searchInput').addEventListener('input', (e) => {
-    searchQuery = e.target.value;
-    if (searchQuery && !location.hash.startsWith('#/search')) {
-      renderSearch();
-    } else if (!searchQuery) {
-      render();
-    } else {
-      renderSearch();
-    }
-  });
+  const searchEl = $('#searchInput');
+  if (searchEl) {
+    searchEl.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      if (searchQuery && !location.hash.startsWith('#/search')) {
+        renderSearch();
+      } else if (!searchQuery) {
+        render();
+      } else {
+        renderSearch();
+      }
+    });
+    initSearchTypingAnimation(searchEl);
+  }
   // Cart open
   $('#cartBtn').addEventListener('click', openCart);
   // WhatsApp send
@@ -3978,6 +4212,74 @@ async function refreshData() {
   await loadFirestoreData();
   updateCartCount();
   render();
+}
+
+// === Search Input Typing Animation (Cycling Placeholder) ===
+var _searchTypingTimeout = null;
+var _searchTypingRunning = false;
+
+function initSearchTypingAnimation(input) {
+  if (!input) return;
+  // Reset siempre para que funcione tras re-render o navegación
+  _searchTypingRunning = false;
+  if (_searchTypingTimeout) { clearTimeout(_searchTypingTimeout); _searchTypingTimeout = null; }
+  _searchTypingRunning = true;
+
+  var phrases = [
+    'Buscar producto...',
+    'Funda para mesa...',
+    'Lámpara LED...',
+    'Aseo y limpieza...',
+    'Juguetes para niños...',
+    'Cocina y hogar...',
+    'Parlantes Bluetooth...',
+    'Toallas y baño...',
+    'Artículos de mascota...',
+    'Electrónica y celulares...',
+  ];
+
+  var phraseIdx = 0;
+  var charIdx = 0;
+  var deleting = false;
+  var pauseFrames = 0;
+
+  function tick() {
+    if (document.activeElement === input) {
+      // Pause animation while user is typing
+      _searchTypingTimeout = setTimeout(tick, 300);
+      return;
+    }
+
+    var phrase = phrases[phraseIdx];
+
+    if (pauseFrames > 0) {
+      pauseFrames--;
+      _searchTypingTimeout = setTimeout(tick, 80);
+      return;
+    }
+
+    if (!deleting) {
+      charIdx++;
+      input.placeholder = phrase.slice(0, charIdx);
+      if (charIdx === phrase.length) {
+        deleting = true;
+        pauseFrames = 20; // pause at full phrase
+      }
+      _searchTypingTimeout = setTimeout(tick, 65);
+    } else {
+      charIdx--;
+      input.placeholder = phrase.slice(0, charIdx);
+      if (charIdx === 0) {
+        deleting = false;
+        phraseIdx = (phraseIdx + 1) % phrases.length;
+        pauseFrames = 5;
+      }
+      _searchTypingTimeout = setTimeout(tick, 35);
+    }
+  }
+
+  // Start after 1s delay
+  _searchTypingTimeout = setTimeout(tick, 1000);
 }
 
 function anySheetOpen() {
