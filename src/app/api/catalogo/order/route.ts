@@ -4,6 +4,7 @@ import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments, serverCreateDocument } from '@/lib/appwrite-server';
 import { isNightNow } from '@/lib/night-mode';
 import { deductStockForOrder } from '@/lib/order-stock-service';
+import { sendWhatsAppMessage, sendWhatsAppTemplate } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,6 +99,37 @@ export async function POST(request: NextRequest) {
     await deductStockForOrder(docId, itemsData).catch((err) => {
       console.error('[catalogo/order] Error al descontar stock en pedido:', err);
     });
+
+    // ── Enviar plantilla + link de verificar stock a la cajera asignada ──
+    if (assignedCashier && assignedCashier !== 'Balatin') {
+      try {
+        const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+        const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.donbalatomayorista.cl';
+        const STOCK_VERIFIER_PHONE = '56962293893'; // Lissy
+
+        const verifyLink = `${SITE_URL}/verificar-stock?code=${reqCode}`;
+
+        // Enviar plantilla alerta_pago_admin
+        const components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: String(reqCode) },
+              { type: 'text', text: customerName || '(pendiente de nombre)' },
+            ]
+          }
+        ];
+        await sendWhatsAppTemplate(STOCK_VERIFIER_PHONE, 'alerta_pago_admin', 'es', components, WA_TOKEN);
+
+        // Enviar link de verificar stock como segundo mensaje
+        const linkMsg = `📦 *PEDIDO NUEVO* #${reqCode}\n\nCliente: ${customerName || '(pendiente)'}\nCajera asignada: ${assignedCashier}\n\n🔗 Confirma el stock aquí:\n${verifyLink}`;
+        await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, linkMsg, WA_TOKEN);
+
+        console.log('[catalogo/order] Plantilla + link enviados a cajera:', STOCK_VERIFIER_PHONE);
+      } catch (tplErr) {
+        console.error('[catalogo/order] Error enviando plantilla a cajera:', tplErr);
+      }
+    }
 
     try { revalidateTag('products'); } catch {}
     try { revalidateTag('orders'); } catch {}
