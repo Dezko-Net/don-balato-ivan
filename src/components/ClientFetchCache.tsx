@@ -14,7 +14,7 @@ const CACHE_RULES: Record<string, number> = {
   '/api/public-data/combos': 600000,         // 10 minutes
   // Endpoints por usuario: la key del caché es la URL completa (incluye userId),
   // así que no hay riesgo de servirle a un usuario los datos de otro.
-  '/api/public-data/my-orders-status': 300000, // 5 minutes
+  '/api/public-data/my-orders-status': 1800000, // 30 minutos — pedidos no cambian de estado frecuentemente
   '/api/public-data/canje-info': 600000,     // 10 minutes
   '/api/store-settings': 600000,             // 10 minutes
   '/api/ofertas': 300000,                    // 5 minutes
@@ -117,7 +117,11 @@ export default function ClientFetchCache() {
             }
           });
         } catch (err) {
-          console.warn('[Fetch Cache] Failed, falling back to network fetch', err);
+          console.warn('[Fetch Cache] Failed, falling back to network', err);
+          fetchOrders();
+          // Polling cada 30 min — los pedidos no cambian de estado cada 5 min.
+          // El evento 'orders-updated' invalida el caché manualmente cuando sí cambia.
+          const interval = setInterval(fetchOrders, 1_800_000);
           return originalFetch(input, init);
         }
       }

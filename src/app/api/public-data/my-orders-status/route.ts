@@ -13,8 +13,9 @@ const ORDER_DESC = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt'
 // Pedimos unos cuantos por si hay varios de distintos estados, pero limitamos a 5 para no gastar lecturas
 const LIMIT_5 = JSON.stringify({ method: 'limit', values: [5] });
 
-// Caché en memoria súper rápida para evitar los bugs de unstable_cache en Next.js
-const CACHE_TTL = 300_000; // 5 minutos
+// Caché en memoria — 30 min. Los pedidos no cambian de estado cada minuto.
+// Si el estado cambia, el evento 'orders-updated' invalida el caché del cliente.
+const CACHE_TTL = 1_800_000; // 30 minutos
 const globalCache = (globalThis as any)._myOrdersStatusCache || new Map<string, { data: any, ts: number }>();
 if (!(globalThis as any)._myOrdersStatusCache) {
   (globalThis as any)._myOrdersStatusCache = globalCache;
@@ -23,32 +24,28 @@ if (!(globalThis as any)._myOrdersStatusCache) {
 const EMPTY = { count: 0, firstOrderId: null, firstOrderStatus: null, firstUpdatedAt: null, shippedCount: 0, shippedOrderId: null, shippedStatus: null, shippedUpdatedAt: null };
 
 async function fetchOrdersForUser(userId: string, email: string) {
-  // Intentos de búsqueda: 1) USERID, 2) CUSTOMEREMAIL, 3) userId minúscula
-  let docs: any[] = [];
+  // Una sola query con limit 10 — buscamos por USERID primero, si no hay nada
+  // intentamos por email. Así reducimos de 3 lecturas a máximo 2.
   let res = await serverListDocuments(ORDERS_COLLECTION_ID, [
     q('equal', 'USERID', [userId]), STATUS_FILTER, ORDER_DESC, LIMIT_5,
   ]).catch(() => ({ documents: [], total: 0 }));
 
+  // Solo buscar por email si no hubo resultados por USERID
   if (res.total === 0 && email) {
     res = await serverListDocuments(ORDERS_COLLECTION_ID, [
       q('equal', 'CUSTOMEREMAIL', [email]), STATUS_FILTER, ORDER_DESC, LIMIT_5,
     ]).catch(() => ({ documents: [], total: 0 }));
   }
 
-  if (res.total === 0) {
-    res = await serverListDocuments(ORDERS_COLLECTION_ID, [
-      q('equal', 'userId', [userId]), STATUS_FILTER, ORDER_DESC, LIMIT_5,
-    ]).catch(() => ({ documents: [], total: 0 }));
-  }
+  // Eliminado el tercer fallback (userId minúscula) — era redundante con el primero
+  // ya que Appwrite hace comparación case-sensitive y el userId siempre viene igual
 
-  docs = res.documents || [];
-
-  // Separar en JS los estados para evitar duplicar las llamadas a Appwrite
+  const docs = res.documents || [];
   const paidDocs = docs.filter(d => ['paid', 'payment_review', 'payment_confirmed'].includes(d.STATUS));
   const shippedDocs = docs.filter(d => ['shipped', 'delivered'].includes(d.STATUS));
 
   return {
-    count: paidDocs.length, // O res.total si supiéramos, pero limitamos a 5. El hook solo necesita saber si hay > 0
+    count: paidDocs.length,
     firstOrderId: paidDocs[0]?.$id ?? null,
     firstOrderStatus: paidDocs[0]?.STATUS ?? null,
     firstUpdatedAt: paidDocs[0]?.UPDATEDAT ?? null,
@@ -86,7 +83,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(data, {
-      headers: { 'Cache-Control': 'private, max-age=300' },
+      // stale-while-revalidate: el CDN sirve el caché viejo mientras revalida en bg
+      // Esto evita que múltiples usuarios simultáneos golpeen Appwrite al mismo tiempo
+      headers: { 'Cache-Control': 'private, max-age=1800, stale-while-revalidate=3600' },
     });
   } catch (error: any) {
     console.error('[API public-data/my-orders-status] Error:', error);

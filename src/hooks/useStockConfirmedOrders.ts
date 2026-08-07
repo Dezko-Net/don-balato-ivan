@@ -83,7 +83,7 @@ export function useStockConfirmedOrders() {
     };
 
     fetchOrders();
-    const interval = setInterval(fetchOrders, 300000);
+    const interval = setInterval(fetchOrders, 1_800_000); // 30 min — el evento 'orders-updated' refresca antes si hay cambio
 
     const onOrdersUpdated = () => fetchOrders();
     window.addEventListener('orders-updated', onOrdersUpdated);
