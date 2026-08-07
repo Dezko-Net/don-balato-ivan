@@ -40,9 +40,9 @@ async function fetchOrdersForUser(userId: string, email: string) {
   // Eliminado el tercer fallback (userId minúscula) — era redundante con el primero
   // ya que Appwrite hace comparación case-sensitive y el userId siempre viene igual
 
-  const docs = res.documents || [];
-  const paidDocs = docs.filter(d => ['paid', 'payment_review', 'payment_confirmed'].includes(d.STATUS));
-  const shippedDocs = docs.filter(d => ['shipped', 'delivered'].includes(d.STATUS));
+  const docs = (res.documents || []) as any[];
+  const paidDocs = docs.filter((d: any) => ['paid', 'payment_review', 'payment_confirmed'].includes(d.STATUS));
+  const shippedDocs = docs.filter((d: any) => ['shipped', 'delivered'].includes(d.STATUS));
 
   return {
     count: paidDocs.length,
