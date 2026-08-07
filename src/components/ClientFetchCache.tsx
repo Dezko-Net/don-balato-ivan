@@ -117,11 +117,7 @@ export default function ClientFetchCache() {
             }
           });
         } catch (err) {
-          console.warn('[Fetch Cache] Failed, falling back to network', err);
-          fetchOrders();
-          // Polling cada 30 min — los pedidos no cambian de estado cada 5 min.
-          // El evento 'orders-updated' invalida el caché manualmente cuando sí cambia.
-          const interval = setInterval(fetchOrders, 1_800_000);
+          console.warn('[Fetch Cache] Failed, falling back to network fetch', err);
           return originalFetch(input, init);
         }
       }
