@@ -1377,13 +1377,56 @@ function OrdersContent() {
         if (!sOrder) return null;
         const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.donbalatomayorista.cl';
         const customerPhone = (sOrder.CUSTOMERPHONE || '').replace(/[^0-9]/g, '');
-        const orderLink = `${siteUrl}/pedido/${sOrder.$id}`;
+        const confirmarLink = `${siteUrl}/confirmar-pedido?code=${sOrder.ORDERCODE || sOrder.$id}`;
+        const customerName = sOrder.CUSTOMERNAME?.split(' ')[0] || '';
+        const orderCode = sOrder.ORDERCODE || '';
+
+        // Parse items para construir el listado
+        let parsedItems: any[] = [];
+        try { parsedItems = JSON.parse(sOrder.ITEMS || '[]'); } catch {}
+        const itemsList = parsedItems
+          .filter((it: any) => !it.missing)
+          .map((it: any) => `* ${it.name || it.NAME || ''}\n  ${it.qty || it.quantity || 1} x $${(it.price || it.PRICE || 0).toLocaleString('es-CL')} = $${((it.qty || it.quantity || 1) * (it.price || it.PRICE || 0)).toLocaleString('es-CL')}`)
+          .join('\n\n');
+        const total = sOrder.TOTAL || parsedItems.reduce((s: number, it: any) => s + (it.qty || it.quantity || 1) * (it.price || it.PRICE || 0), 0);
+
+        // Calcular horas/días desde que se confirmó stock
+        const createdAt = sOrder.$createdAt ? new Date(sOrder.$createdAt).getTime() : Date.now();
+        const hoursSince = Math.floor((Date.now() - createdAt) / 3600000);
+        const daysSince = Math.floor(hoursSince / 24);
+
+        const bankDetails = `Datos para transferir:
+Titular: DON BALATO IVAN
+RUT: 782674269
+Banco: Mercado Pago
+Tipo: Cuenta Vista
+N°: 1037879898
+Email: donbalatosoporte@gmail.com`;
+
         const shortcuts = [
           {
             label: 'Notificar stock confirmado',
-            desc: 'Avisar al cliente que suba su comprobante de pago',
+            desc: 'Avisar al cliente con cotización, datos bancarios y link',
             icon: '📦✅',
-            msg: `¡Hola ${sOrder.CUSTOMERNAME?.split(' ')[0] || ''}! Ya tenemos el stock confirmado de tu pedido ${sOrder.ORDERCODE || ''}.\n\nPuedes subir tu comprobante de pago en este enlace:\n${orderLink}\n\nDentro encontrarás los datos de la transferencia bancaria. O si prefieres, envíame el comprobante por aquí y yo lo subo por ti.`,
+            msg: `¡Hola ${customerName}! Ya verificamos el stock de tu pedido ${orderCode}.\n\nHemos ajustado tu cotizacion con los productos disponibles:\n\n${itemsList}\n\nTotal: $${total.toLocaleString('es-CL')}\n\n${bankDetails}\n\nRealiza la transferencia y ingresa a este enlace para subir tu comprobante y completar tus datos de envio:\n${confirmarLink}\n\n¡Gracias por tu compra!`,
+          },
+          {
+            label: 'Recordar pago — Pasivo',
+            desc: `Recordatorio suave${hoursSince > 0 ? ` (${daysSince}d ${hoursSince % 24}h sin pagar)` : ''}`,
+            icon: '🔔',
+            msg: `¡Hola ${customerName}! Te recordamos amablemente que tu pedido ${orderCode} esta listo y esperando tu pago.\n\nCuando puedas, sube tu comprobante aqui:\n${confirmarLink}\n\n¡Quedamos atentos!`,
+          },
+          {
+            label: 'Recordar pago — Normal',
+            desc: `Recordatorio directo${hoursSince > 0 ? ` (${daysSince}d ${hoursSince % 24}h sin pagar)` : ''}`,
+            icon: '⏰',
+            msg: `¡Hola ${customerName}! Tu pedido ${orderCode} sigue esperando tu pago. Tenemos el stock reservado pero se liberara pronto si no se confirma.\n\nSube tu comprobante aqui:\n${confirmarLink}\n\n${bankDetails}\n\n¡Avisanos si tienes algun problema!`,
+          },
+          {
+            label: 'Recordar pago — Agresivo',
+            desc: `Último aviso${hoursSince > 0 ? ` (${daysSince}d ${hoursSince % 24}h sin pagar)` : ''} · stock se devolverá`,
+            icon: '⚠️',
+            msg: `¡Hola ${customerName}! Tu pedido ${orderCode} lleva ${daysSince > 0 ? daysSince + ' dias' : hoursSince + ' horas'} sin pago.\n\nEl stock reservado sera devuelto al catalogo hoy si no recibimos tu comprobante. Si aun quieres tu pedido, sube el pago ahora:\n${confirmarLink}\n\n${bankDetails}\n\nSi ya pagaste, envianos el comprobante por aqui. ¡No queremos perder tu pedido!`,
           },
         ];
         const buildWaUrl = (msg: string) => {
@@ -2136,12 +2179,12 @@ function OrdersContent() {
                         </span>
                       );
                     })()}
-                    {/* Notificar pago for web orders in Stock Confirmado */}
-                    {order.STATUS === 'paid' && order.PAYMENTMETHOD !== 'WhatsApp' && (
+                    {/* Notificar / Recordar pago — visible desde Stock Confirmado (paid) en adelante */}
+                    {order.STATUS === 'paid' && (
                       <button
                         onClick={(e) => { e.stopPropagation(); setWaShortcutOrderId(order.$id); }}
                         className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition flex items-center gap-1 animate-pulse"
-                        title="Notificar pago">
+                        title="Notificar stock confirmado / Recordar pago">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                         Notificar
                       </button>
@@ -2348,11 +2391,11 @@ function OrdersContent() {
 
                         {/* Acciones */}
                         <div className="flex items-center justify-center gap-1.5 px-4 py-3" onClick={e => e.stopPropagation()}>
-                          {order.STATUS === 'paid' && !isWa && (
+                          {order.STATUS === 'paid' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setWaShortcutOrderId(order.$id); }}
                               className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition flex items-center gap-1 text-[11px] font-bold animate-pulse"
-                              title="Notificar pago">
+                              title="Notificar stock confirmado / Recordar pago">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                               Notificar
                             </button>

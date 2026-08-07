@@ -226,7 +226,10 @@ export async function notifyOrderStatusChange(
   }
 
   // ── 2. Send Automatic WhatsApp Notification (works for guests too) ──
+  // NO se manda WhatsApp cuando el stock se confirma (paid): la cajera se encarga
+  // de notificar manualmente via el boton "Notificar" en /admin/orders.
   if (!order.CUSTOMERPHONE) return;
+  if (newStatus === 'paid') return;
   const msgId = `wa_order_${order.$id}_${newStatus}`;
   try {
     const { getWhatsAppDocId, sendWhatsAppTemplate, formatWhatsAppPhone, addToHistory } = await import('@/lib/whatsapp');

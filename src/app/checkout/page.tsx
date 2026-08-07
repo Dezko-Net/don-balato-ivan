@@ -26,15 +26,21 @@ import DynamicCheckout from '@/components/DynamicCheckout';
 interface AgencyOption { name: string; color: string; bg: string; desc: string; logo: string; active?: boolean; }
 interface SavedAddress { id: string; alias: string; name: string; phone: string; fullAddress: string; commune: string; region: string; lat: number; lng: number; }
 
-// Fallback agencies if API fails
+// Fallback agencies if API fails — debe coincidir con las agencias de Appwrite
 const FALLBACK_AGENCIES: AgencyOption[] = [
-  { name: 'STARKEN', color: '#1a7f37', bg: '#e6f4ea', desc: 'Tarifa económica - Cobertura Nacional', logo: 'https://www.starken.cl/static/media/logo-q100.bac31f50de7b41338e6c.webp', active: true },
-  { name: 'PULLMAN CARGO', color: '#002855', bg: '#e6f0fa', desc: 'Tarifa económica - Ideal para cajas grandes', logo: '', active: true },
-  { name: 'VARMONTT', color: '#c62828', bg: '#fce8e6', desc: 'Tarifa económica - Especialistas al Sur de Chile', logo: 'https://varmontt.cl/wp-content/uploads/2020/03/logo_varmontt-trans.png', active: true },
-  { name: 'CORREOS DE CHILE', color: '#da291c', bg: '#fce8e6', desc: 'Tarifa media - Excelente cobertura rural', logo: '', active: true },
-  { name: 'BLUEXPRESS', color: '#1558b0', bg: '#e8f0fe', desc: 'Tarifa media/alta - Entrega express', logo: '', active: true },
-  { name: 'CHILEXPRESS', color: '#ffc600', bg: '#fffde6', desc: 'Tarifa alta - La más rápida del mercado', logo: '', active: true },
-  { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal (sin costo de envío)', logo: '', active: true },
+  { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal sin costo', logo: '', active: true },
+  { name: 'STARKEN', color: '#ffffff', bg: '#f5f5f5', desc: 'Tarifa Cara - Cobertura Nacional', logo: 'https://cdn.shopify.com/app-store/listing_images/250a2eb754c4528e183002b0064a0dea/icon/CPSaw-Pd8e8CEAE=.jpeg', active: true },
+  { name: 'PULLMAN CARGO', color: '#002855', bg: '#e6f0fa', desc: 'Tarifa económica - Ideal para cajas grandes', logo: 'https://media.licdn.com/dms/image/v2/C4E0BAQFbzoEKacuZyg/company-logo_200_200/company-logo_200_200/0/1678472951084/pullman_go_logo?e=2147483647&v=beta&t=xjy_N8LPAe1f7lvBLKVLO7mdNzEZ3_Zv_IIZNj7zXnI', active: true },
+  { name: 'VARMONTT', color: '#c62828', bg: '#fce8e6', desc: 'Tarifa económica - Especialistas al Sur de Chile', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRXEnhvSY8qCumnADJcC_SNl1fqFnKuYKsQhuygDA5o-RCraqCNStogGqQ&s=10', active: true },
+  { name: 'BLUEXPRESS', color: '#1558b0', bg: '#e8f0fe', desc: 'Tarifa media/alta - Entrega express', logo: 'https://www.beetrack.com/hubfs/Logos%20Clientes/Logo%20BlueExpress.png', active: true },
+  { name: 'CYC', color: '#3483fa', bg: '#e8f0fe', desc: 'Empresa Express', logo: 'https://www.cyccargo.cl/wp-content/uploads/2023/05/brand.png', active: true },
+  { name: 'TVP', color: '#3483fa', bg: '#e8f0fe', desc: '', logo: 'https://tvp.cl/brand/logo-tvp-isotipo.png', active: true },
+  { name: 'CRUZ DEL SUR', color: '#3483fa', bg: '#e8f0fe', desc: '', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5UHOw-IEx4fNPTTsjGK7SjjN5MxWSIp_EMJ4TsRwmwg0c8fCzw5IshNZm&s=10', active: true },
+  { name: 'TRAMAR', color: '#3483fa', bg: '#e8f0fe', desc: '', logo: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1786115697946-pegada-1786115696610.png', active: true },
+  { name: '5SUR', color: '#3483fa', bg: '#e8f0fe', desc: '', logo: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1786115720719-pegada-1786115720289.png', active: true },
+  { name: 'MENA', color: '#3483fa', bg: '#e8f0fe', desc: '', logo: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1786115757622-pegada-1786115757113.png', active: true },
+  { name: 'CACEM', color: '#3483fa', bg: '#e8f0fe', desc: '', logo: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1786115857978-pegada-1786115857282.png', active: true },
+  { name: 'JT TRANSPORTES', color: '#3483fa', bg: '#e8f0fe', desc: '', logo: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1786115881993-pegada-1786115881087.png', active: true },
 ];
 
 const PINK = '#2563eb'; const PINK_LIGHT = '#60a5fa'; const PINK_BG = '#eff6ff'; const FF = '"DM Sans", system-ui, sans-serif';
@@ -800,8 +806,9 @@ function CheckoutInner() {
       submittedRef.current = true;
       const orderId = (docId as unknown as { $id: string }).$id;
 
-      // Notify admin about new order
-      notifyNewOrder(orderCode, form.name, total, items.length).catch(() => {});
+      // Notificación de nuevo pedido desactivada para evitar spam
+      // Solo se notifica al admin cuando el cliente sube el comprobante de pago
+      // notifyNewOrder(orderCode, form.name, total, items.length).catch(() => {});
 
       // ── Descontar stock reservado (server-side, API key + rollback) ──
       try {
@@ -1203,7 +1210,7 @@ function CheckoutInner() {
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                           </span>}
                           <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 12, overflow: 'hidden' }}>
-                            {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: ag.name === 'CHILEXPRESS' ? 30 : 38, height: ag.name === 'CHILEXPRESS' ? 30 : 38, objectFit: 'contain' }} /> : <Truck size={22} color={ag.color} />}
+                            {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 38, height: 38, objectFit: 'contain' }} /> : <Truck size={22} color={ag.color} />}
                           </div>
                           <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: sel ? ag.color : '#333', textAlign: 'center' }}>{ag.name}</p>
                         </button>
@@ -1212,7 +1219,7 @@ function CheckoutInner() {
                   </div>
                 </div>
                 <p style={{ margin: '12px 0 0', fontSize: 12, color: '#00a650', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <RefreshCw size={12} /> El costo de envío se coordina con el vendedor tras confirmar el pedido.
+                  <RefreshCw size={12} /> El costo de envío se paga al recibir el pedido (contraentrega). No se cobra al momento de la compra.
                 </p>
               </div>
 

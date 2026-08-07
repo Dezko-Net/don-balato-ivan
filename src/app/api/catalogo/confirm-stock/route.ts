@@ -52,18 +52,8 @@ export async function POST(request: NextRequest) {
         UPDATEDAT: Date.now(),
       });
 
-      // Notify customer
-      const customerPhone = String(order.CUSTOMERPHONE || '').replace(/\D/g, '');
-      const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
-      if (customerPhone && WA_TOKEN) {
-        const cancelMsg = `¡Hola! 🐾 Lamento informarte que no tenemos stock de los productos de tu pedido *#${orderCode}* en este momento. 🥺\n\nSi quieres, puedes hacer un nuevo pedido con otros productos y con gusto te ayudo. ¡Este gato siempre trae buena suerte! 🐾✨`;
-        try {
-          await sendWhatsAppMessage(customerPhone, cancelMsg, WA_TOKEN);
-          await addToHistory(`+${customerPhone}`, 'assistant', cancelMsg, `stockcancel-${Date.now()}`);
-        } catch (e) {
-          console.error('[confirm-stock] Error sending cancel msg:', e);
-        }
-      }
+      // No hay stock de ningun producto — la cajera se encarga de avisar al cliente
+      // (no se manda mensaje automatico de Balatin)
 
       return NextResponse.json({ success: true, availableItems: [], subtotal: 0, cancelled: true });
     }
@@ -82,49 +72,29 @@ export async function POST(request: NextRequest) {
     });
 
     // ── Avisar al cliente del resultado de la confirmación de stock ──
+    // NO se envia mensaje automatico de Balatin al cliente. La cajera se encarga
+    // de notificar manualmente via el boton "Notificar" en /admin/orders o via
+    // el link wa.me que genera la pagina verificar-stock.
     const customerPhone = String(order.CUSTOMERPHONE || '').replace(/\D/g, '');
-    const customerName = String(order.CUSTOMERNAME || '').split(' ')[0] || 'amigo';
     const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
 
     if (customerPhone && WA_TOKEN) {
       try {
-        let customerMsg = '';
-
-        if (unavailableItems.length === 0) {
-          // Todo tiene stock
-          customerMsg = `¡Hola ${customerName}! 🐾 ¡Buenas noticias! Confirmamos el stock de tu pedido *#${orderCode}*. Todo está disponible. ✅\n\n`;
-        } else {
-          // Faltan algunos productos - mostrar nueva cotización
-          const removedList = unavailableItems.map(i => `❌ ${i.qty}x ${i.name}`).join('\n');
-          customerMsg = `¡Hola ${customerName}! 🐾 Confirmamos el stock de tu pedido *#${orderCode}* con algunos cambios:\n\n`;
-          customerMsg += `*Productos no disponibles:*\n${removedList}\n\n`;
-          customerMsg += `*Tu nuevo pedido:*\n`;
-          availableItems.forEach(i => {
-            customerMsg += `✅ ${i.qty}x ${i.name} - $${(i.price * i.qty).toLocaleString('es-CL')}\n`;
-          });
-          customerMsg += `\n*Nuevo total: $${subtotal.toLocaleString('es-CL')}*\n\n`;
-        }
-
-        customerMsg += `Para continuar, haz la transferencia:\n\n💳 *Datos para la transferencia:*\nTitular: DON BALATO IVAN\nRUT: 78.267.426-9\nBanco: Mercado Pago (Cuenta Vista)\nCuenta: 1037879898\nEmail: donbalatosoporte@gmail.com\n\nMonto total: $${subtotal.toLocaleString('es-CL')}\n\nCuando transfieras, mándame la *foto del comprobante* por aquí. 📸`;
-
-        await sendWhatsAppMessage(customerPhone, customerMsg, WA_TOKEN);
-        await addToHistory(`+${customerPhone}`, 'assistant', customerMsg, `stockok-${Date.now()}`);
-
-        // Update Balatin flow step to awaiting_payment
+        // Solo actualizar el estado del flow de Balatin (sin mandar mensaje)
         await recordKeniaUsage(`+${customerPhone}`, {
           balatinStep: 'awaiting_payment',
           balatinComprobanteReceived: false,
         });
 
-        // Avisar a Lissy que ya se le avisó al cliente
+        // Avisar a Lissy que se confirmo el stock (interno, no al cliente)
         const STOCK_VERIFIER_PHONE = '56962293893';
         const lissyMsg = unavailableItems.length === 0
-          ? `✅ Stock confirmado para el pedido #${orderCode}. Ya le avisé al cliente con los datos de pago.`
-          : `✅ Stock confirmado para el pedido #${orderCode} (sin ${unavailableItems.length} producto(s)). Ya le envié la nueva cotización al cliente.`;
+          ? `Stock confirmado para el pedido #${orderCode}. La cajera debe notificar al cliente con los datos de pago.`
+          : `Stock confirmado para el pedido #${orderCode} (sin ${unavailableItems.length} producto(s)). La cajera debe enviar la nueva cotizacion al cliente.`;
         await sendWhatsAppMessage(STOCK_VERIFIER_PHONE, lissyMsg, WA_TOKEN);
 
       } catch (e) {
-        console.error('[confirm-stock] Error sending customer notification:', e);
+        console.error('[confirm-stock] Error updating kenia/lissy:', e);
       }
     }
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { CHILE_REGIONES } from '@/types';
-import { CATALOGO_AGENCIES, AgencyLogo } from '@/components/catalogo/AgencyLogos';
+import { AgencyLogo } from '@/components/catalogo/AgencyLogos';
 
 const BANK_DETAILS = {
   holder: 'DON BALATO IVAN',
@@ -44,8 +44,17 @@ function ConfirmarPedidoContent() {
   const [address, setAddress] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [agency, setAgency] = useState('');
+  const [agencies, setAgencies] = useState<any[]>([]);
 
   const comunas = region ? CHILE_REGIONES[region] || [] : [];
+
+  useEffect(() => {
+    // Cargar agencias desde Appwrite (las mismas que usa el checkout)
+    fetch('/api/agencies')
+      .then(r => r.json())
+      .then(d => setAgencies(d.agencies || []))
+      .catch(() => setAgencies([]));
+  }, []);
 
   useEffect(() => {
     if (!code) return;
@@ -313,7 +322,7 @@ function ConfirmarPedidoContent() {
             {/* Agencia */}
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 block">Elige tu transporte</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5">
-              {CATALOGO_AGENCIES.map(ag => {
+              {agencies.map(ag => {
                 const sel = agency === ag.name;
                 return (
                   <button
@@ -333,8 +342,12 @@ function ConfirmarPedidoContent() {
                     {sel && (
                       <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white text-[9px]" style={{ background: ag.color }}>✓</span>
                     )}
-                    <span className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: sel ? '#fff' : ag.bg }}>
-                      <AgencyLogo name={ag.name} color={ag.color} />
+                    <span className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden" style={{ background: sel ? '#fff' : ag.bg }}>
+                      {ag.logo ? (
+                        <img src={ag.logo} alt={ag.name} className="w-full h-full object-contain" />
+                      ) : (
+                        <AgencyLogo name={ag.name} color={ag.color} />
+                      )}
                     </span>
                     <span className="text-[11px] font-extrabold leading-tight" style={{ color: sel ? ag.color : '#374151' }}>{ag.name}</span>
                     <span className="text-[9px] text-gray-400 leading-tight">{ag.desc}</span>
