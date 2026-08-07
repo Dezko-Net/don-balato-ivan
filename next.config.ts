@@ -8,19 +8,12 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**' },
       { protocol: 'http',  hostname: '**' },
     ],
+    // Reducir tamaño de imágenes optimizadas para ahorrar bandwidth
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 86400,
   },
   async headers() {
     return [
-      {
-        // Dynamic HTML pages - permitir revalidación en CDN sin forzar re-descarga de no-store
-        source: '/((?!_next/static|_next/image|favicon.ico).*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
-          },
-        ],
-      },
       {
         // Static assets & Next.js chunks - Cache público e inmutable en Vercel CDN
         source: '/_next/static/:path*',
@@ -28,6 +21,36 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Next.js image optimization cache
+        source: '/_next/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        // API routes - no caché de navegador pero sí CDN (s-maxage)
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      {
+        // Páginas HTML - caché de navegador corto + CDN largo
+        source: '/((?!_next|api|favicon.ico).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
           },
         ],
       },
