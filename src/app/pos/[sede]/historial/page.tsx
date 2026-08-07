@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { db, authReady } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { getServices } from '@/lib/appwrite';
 import { openReceiptPrintWindow } from '@/lib/posReceipt';
 import { Query } from 'appwrite';
+import { updateVentaPos } from '@/lib/appwriteVentasPos';
 import { SEDES, SedeSlug } from '@/types';
 import {
   RefreshCw, Download, Eye, Loader2, Search, Filter, ArrowLeft,
@@ -37,7 +36,9 @@ interface VentaPOS {
   estado: 'completada' | 'anulada' | 'pre_venta';
   fechaStr: string;
   fecha?: any;
+  fechaTs?: number;
   createdAt?: any;
+  createdAtTs?: number;
   items: VentaItem[];
   pagos: PagoEntry[];
   descuentoGlobalPct: number;
@@ -45,6 +46,7 @@ interface VentaPOS {
   vuelto?: number;
   boletaNumero?: number;
   debitoOrdenNumero?: number | null;
+  tipoComprobante?: string;
   motivoAnulacion?: string;
   $createdAt?: string;
 }
@@ -108,107 +110,90 @@ export default function HistorialVentasPOS() {
   const [editCantidades, setEditCantidades] = useState<number[]>([]);
   const [editSaving, setEditSaving] = useState(false);
 
-  // ─── Carga de datos Firestore (con fallback Appwrite) ────────────────────
+  // ─── Carga de datos desde Appwrite ──────────────────────────────────────
   useEffect(() => {
     if (!mounted) return;
     setLoading(true);
 
-    let unsub = () => {};
     let cancelled = false;
+    let timer: any = null;
 
     const load = async () => {
       try {
-        await authReady;
+        if (cancelled) return;
+        // Cargar todas las ventas de la sede desde Appwrite (paginado)
+        const { databases } = getServices();
+        const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28';
+        const all: any[] = [];
+        let cursor: string | null = null;
+        let hasMore = true;
+        while (hasMore) {
+          const queries: any[] = [
+            Query.equal('sede', currentSede),
+            Query.orderDesc('$createdAt'),
+            Query.limit(100),
+          ];
+          if (cursor) queries.push(Query.cursorAfter(cursor));
+          const res = await databases.listDocuments(dbId, 'ventas_pos', queries);
+          if (res.documents.length > 0) {
+            all.push(...res.documents);
+            cursor = res.documents[res.documents.length - 1].$id;
+            if (res.documents.length < 100) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+
         if (cancelled) return;
 
-        if (db) {
-          const q = query(collection(db, 'ventas_pos'), where('sede', '==', currentSede));
-          unsub = onSnapshot(q, (snap) => {
-            if (cancelled) return;
-            const list: VentaPOS[] = snap.docs.map(d => {
-              const data = d.data();
-              return {
-                id: d.id,
-                $id: d.id,
-                sede: data.sede,
-                cajeroNombre: data.cajeroNombre || 'Cajero',
-                total: Number(data.total || 0),
-                subtotal: Number(data.subtotal || 0),
-                estado: data.estado || 'completada',
-                fechaStr: data.fechaStr || '',
-                fecha: data.fecha,
-                createdAt: data.createdAt,
-                items: Array.isArray(data.items) ? data.items : [],
-                pagos: Array.isArray(data.pagos) ? data.pagos : [],
-                descuentoGlobalPct: Number(data.descuentoGlobalPct || 0),
-                descuentoGlobal: Number(data.descuentoGlobal || 0),
-                vuelto: Number(data.vuelto || 0),
-                boletaNumero: data.boletaNumero,
-                debitoOrdenNumero: data.debitoOrdenNumero,
-                motivoAnulacion: data.motivoAnulacion,
-              };
-            });
+        const list: VentaPOS[] = all.map(d => {
+          let items: any[] = [];
+          let pagos: any[] = [];
+          try { items = JSON.parse(d.itemsJson || '[]') } catch {}
+          try { pagos = JSON.parse(d.pagosJson || '[]') } catch {}
+          return {
+            id: d.$id,
+            $id: d.$id,
+            sede: d.sede,
+            cajeroNombre: d.cajeroNombre || 'Cajero',
+            total: Number(d.total || 0),
+            subtotal: Number(d.subtotal || 0),
+            estado: d.estado || 'completada',
+            fechaStr: d.fechaStr || '',
+            fechaTs: Number(d.fechaTs || 0),
+            createdAtTs: Number(d.createdAtTs || 0),
+            items,
+            pagos,
+            descuentoGlobalPct: Number(d.descuentoGlobalPct || 0),
+            descuentoGlobal: Number(d.descuentoGlobal || 0),
+            vuelto: Number(d.vuelto || 0),
+            boletaNumero: d.boletaNumero,
+            debitoOrdenNumero: d.debitoOrdenNumero,
+            tipoComprobante: d.tipoComprobante,
+            motivoAnulacion: d.motivoAnulacion,
+          };
+        });
 
-            list.sort((a, b) => {
-              const aMs = a.fecha?.toDate ? a.fecha.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-              const bMs = b.fecha?.toDate ? b.fecha.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-              return bMs - aMs;
-            });
-
-            setVentasRaw(list);
-            setLoading(false);
-          }, async (_err) => {
-            if (!cancelled) await loadAppwriteFallback();
-          });
-        } else {
-          await loadAppwriteFallback();
-        }
-      } catch {
-        if (!cancelled) await loadAppwriteFallback();
+        list.sort((a, b) => (b.createdAtTs || 0) - (a.createdAtTs || 0));
+        setVentasRaw(list);
+      } catch (e) {
+        console.warn('Error cargando ventas desde Appwrite:', e);
+        if (!cancelled) setVentasRaw([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
     load();
 
+    // Polling cada 10s para mantener actualizado
+    timer = setInterval(load, 10000);
+
     return () => {
       cancelled = true;
-      unsub();
+      if (timer) clearInterval(timer);
     };
   }, [currentSede, mounted]);
-
-  const loadAppwriteFallback = async () => {
-    try {
-      const { databases } = getServices();
-      const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28';
-      const res = await databases.listDocuments(dbId, 'ventas_pos', [
-        Query.equal('sede', currentSede),
-        Query.orderDesc('$createdAt'),
-        Query.limit(200),
-      ]);
-      const list = res.documents.map((d: any) => ({
-        id: d.$id,
-        $id: d.$id,
-        sede: d.sede,
-        cajeroNombre: d.cajeroNombre || 'Cajero',
-        total: Number(d.total || 0),
-        subtotal: Number(d.subtotal || 0),
-        estado: d.estado || 'completada',
-        fechaStr: d.fechaStr || '',
-        items: typeof d.items === 'string' ? JSON.parse(d.items) : (d.items || []),
-        pagos: typeof d.pagos === 'string' ? JSON.parse(d.pagos) : (d.pagos || []),
-        descuentoGlobalPct: Number(d.descuentoGlobalPct || 0),
-        descuentoGlobal: Number(d.descuentoGlobal || 0),
-        vuelto: Number(d.vuelto || 0),
-        boletaNumero: d.boletaNumero,
-      }));
-      setVentasRaw(list);
-    } catch (e) {
-      console.warn('Appwrite fallback empty:', e);
-      setVentasRaw([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Ventas filtradas
   const ventas = useMemo(() => {
@@ -294,9 +279,10 @@ export default function HistorialVentasPOS() {
   // Acciones
   const openVentaReceipt = (venta: VentaPOS) => {
     openReceiptPrintWindow({
+      ventaId: venta.id || `v${Date.now()}`,
       boletaNumero: Number(venta.boletaNumero || 0),
       debitoOrdenNumero: venta.debitoOrdenNumero ?? null,
-      cajero: venta.cajeroNombre,
+      cajero: venta.cajeroNombre || '',
       sedeNombre,
       fecha: venta.fecha?.toDate ? venta.fecha.toDate() : new Date(),
       subtotal: Number(venta.subtotal || 0),
@@ -306,12 +292,12 @@ export default function HistorialVentasPOS() {
       vuelto: Number(venta.vuelto || 0),
       pagos: (venta.pagos || []).map(p => ({ metodo: p.metodo, monto: Number(p.monto || 0) })),
       items: (venta.items || []).map(it => ({
-        sku: it.sku,
         nombre: it.nombre,
         cantidad: Number(it.cantidad || 0),
         precioUnitario: Number(it.precioUnitario || (it.cantidad > 0 ? it.subtotal / it.cantidad : 0)),
         subtotal: Number(it.subtotal || 0),
       })),
+      tipoComprobante: (venta as any).tipoComprobante || 'comprobante',
     });
   };
 
@@ -319,13 +305,11 @@ export default function HistorialVentasPOS() {
     if (!rehacerTarget || !rehacerMotivo.trim()) return;
     setRehacerSaving(true);
     try {
-      if (db) {
-        await updateDoc(doc(db, 'ventas_pos', rehacerTarget.id), {
-          estado: 'anulada',
-          motivoAnulacion: rehacerMotivo.trim(),
-          anuladaAt: Date.now(),
-        });
-      }
+      await updateVentaPos(rehacerTarget.id, {
+        estado: 'anulada',
+        motivoAnulacion: rehacerMotivo.trim(),
+        anuladaEn: Date.now(),
+      });
 
       const POS_DRAFTS_KEY = 'asistora_pos_drafts_v1';
       const draftsKey = `${POS_DRAFTS_KEY}_${currentSede}`;
@@ -369,7 +353,7 @@ export default function HistorialVentasPOS() {
   };
 
   const handleEditSave = async () => {
-    if (!editTarget || !db) return;
+    if (!editTarget) return;
     setEditSaving(true);
     try {
       const newItems = (editTarget.items || []).map((it, i) => {
@@ -384,7 +368,7 @@ export default function HistorialVentasPOS() {
         ? [{ metodo: editMetodo, monto: newTotal }]
         : (editTarget.pagos || []).map((p, i) => i === 0 ? { ...p, metodo: editMetodo } : p);
 
-      await updateDoc(doc(db, 'ventas_pos', editTarget.id), {
+      await updateVentaPos(editTarget.id, {
         items: newItems,
         subtotal: newSubtotal,
         total: newTotal,
@@ -400,7 +384,7 @@ export default function HistorialVentasPOS() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget || !db) return;
+    if (!deleteTarget) return;
     if (deletePin !== EDIT_PIN) {
       setDeletePinError(true);
       setDeletePin('');
@@ -408,10 +392,10 @@ export default function HistorialVentasPOS() {
     }
     setDeleting(true);
     try {
-      await updateDoc(doc(db, 'ventas_pos', deleteTarget.id), {
+      await updateVentaPos(deleteTarget.id, {
         estado: 'anulada',
         motivoAnulacion: deleteMotivo.trim() || 'Anulada por usuario',
-        anuladaAt: Date.now(),
+        anuladaEn: Date.now(),
       });
       setDeleteTarget(null);
       setDeletePin('');
@@ -631,6 +615,7 @@ export default function HistorialVentasPOS() {
                   <th className="px-4 py-3 text-center">Items</th>
                   <th className="px-4 py-3 text-right">Total</th>
                   <th className="px-4 py-3 text-center">Estado</th>
+                  <th className="px-4 py-3 text-center">Tipo</th>
                   <th className="px-4 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
@@ -668,6 +653,11 @@ export default function HistorialVentasPOS() {
                           {v.estado}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${(v as any).tipoComprobante === 'boleta' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {(v as any).tipoComprobante === 'boleta' ? 'Boleta' : 'Comprobante'}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -679,8 +669,8 @@ export default function HistorialVentasPOS() {
                           </button>
                           <button
                             onClick={() => openVentaReceipt(v)}
-                            title="Reimprimir Boleta"
-                            className="p-1.5 hover:bg-blue-100 text-blue-600 rounded-lg transition"
+                            title={`Reimprimir ${(v as any).tipoComprobante === 'boleta' ? 'Boleta' : 'Comprobante'}`}
+                            className={`p-1.5 rounded-lg transition ${(v as any).tipoComprobante === 'boleta' ? 'hover:bg-blue-100 text-blue-600' : 'hover:bg-amber-100 text-amber-600'}`}
                           >
                             <Receipt size={15} />
                           </button>

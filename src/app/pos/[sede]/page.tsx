@@ -7,13 +7,19 @@ import { fetchTrabajadoresERP } from '@/lib/trabajadoresErpService'
 import { getServices, Query } from '@/lib/appwrite'
 import { loadErpConfig } from '@/lib/posConfig'
 import { openReceiptPrintWindow, ReceiptData } from '@/lib/posReceipt'
+import {
+  createVentaPos, updateVentaPos, getVentasPosBySedeAndDate, getPreVentasBySede,
+  createCajaSesion, updateCajaSesion, getActiveCajaSesion, setActiveCajaSesion,
+  createCorteCaja, pollVentasPos, pollPreVentas,
+  VentaPOSAppwrite, SesionCajaAppwrite,
+} from '@/lib/appwriteVentasPos'
 import { SEDES, SedeSlug } from '@/types'
 import {
   Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, ArrowRightLeft,
   X, Check, Package, BarChart3, Clock, DollarSign, Maximize2, Minimize2,
   ChevronLeft, Hash, Percent, AlertCircle, CheckCircle, RotateCcw, Receipt,
   Store, ScanBarcode, Loader2, Lock, Unlock, Zap, Eye, EyeOff, LogOut, Send, Camera, ScanText, Edit3, BookMarked, FolderOpen,
-  Monitor, RefreshCw,
+  Monitor, RefreshCw, FileText,
 } from 'lucide-react'
 
 
@@ -116,8 +122,9 @@ interface VentaPOS {
   sede: string
   cajeroNombre: string
   sesionCajaId: string
-  fecha: Timestamp
+  fecha?: any
   fechaStr?: string
+  fechaTs?: number
   items: Array<{
     sku: string
     nombre: string
@@ -133,10 +140,12 @@ interface VentaPOS {
   total: number
   pagos: PagoEntry[]
   vuelto: number
-  estado: 'completada' | 'anulada'
-  createdAt?: Timestamp
+  estado: 'completada' | 'anulada' | 'pre_venta'
+  createdAt?: any
+  createdAtTs?: number
   boletaNumero?: number
   debitoOrdenNumero?: number | null
+  tipoComprobante?: 'boleta' | 'comprobante'
 }
 
 // ─── Cart Drafts ─────────────────────────────────────────────────────────────
@@ -175,8 +184,11 @@ interface SesionCaja {
   totalEfectivo: number
   totalDebito: number
   totalTransferencia: number
-  aperturaAt: Timestamp
-  cierreAt?: Timestamp
+  aperturaAt: any
+  aperturaAtTs?: number
+  cierreAt?: any
+  cierreAtTs?: number
+  fechaStr?: string
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -280,6 +292,7 @@ export default function PuntoDeVentaPage() {
   const [montoRecibido, setMontoRecibido] = useState('')
   const [pagos, setPagos] = useState<PagoEntry[]>([])
   const [splitMode, setSplitMode] = useState(false)
+  const [tipoComprobante, setTipoComprobante] = useState<'boleta' | 'comprobante'>('comprobante')
 
   // Caja
   const [sesionCaja, setSesionCaja] = useState<SesionCaja | null>(null)
@@ -461,18 +474,12 @@ export default function PuntoDeVentaPage() {
   const [cobrandoPreventaId, setCobrandoPreventaId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!db || !posUser || !isJefe || !sede) return
-    const q = query(
-      collection(db!, 'ventas_pos'),
-      where('sede', '==', sede),
-      where('estado', '==', 'pre_venta'),
-    )
-    const unsub = onSnapshot(q, (snap: any) => {
-      const list: any[] = []
-      snap.forEach((d: any) => list.push({ id: d.id, ...d.data() }))
-      list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+    if (!posUser || !isJefe || !sede) return
+    const unsub = pollPreVentas(sede, (ventas) => {
+      const list = ventas.map(v => ({ ...v, id: v.$id, createdAt: { seconds: Math.floor(v.createdAtTs / 1000) } }))
+      list.sort((a, b) => (b.createdAtTs || 0) - (a.createdAtTs || 0))
       setPreVentas(list)
-    })
+    }, 5000)
     return () => unsub()
   }, [posUser, isJefe, sede])
 
@@ -497,9 +504,9 @@ export default function PuntoDeVentaPage() {
   }
 
   const handleRejectPreventa = async (pv: any) => {
-    if (!db || !pv?.id) return
+    if (!pv?.id) return
     try {
-      await updateDoc(doc(db!, 'ventas_pos', pv.id), { estado: 'anulada', anuladaEn: serverTimestamp(), anuladaPor: posUser?.nombre || 'jefe' })
+      await updateVentaPos(pv.id, { estado: 'anulada', anuladaEn: Date.now(), anuladaPor: posUser?.nombre || 'jefe' })
       showToast('Pre-venta anulada', 'ok')
     } catch (e: any) {
       showToast(`Error: ${e.message}`, 'err')
@@ -938,46 +945,46 @@ export default function PuntoDeVentaPage() {
     return () => clearInterval(intervalId);
   }, [sede, triggerFullCatalogRefresh]);
 
-  // ─── Load today's sales ────────────────────────────────────────────────────
+  // ─── Load today's sales (Appwrite) ─────────────────────────────────────────
   useEffect(() => {
-    if (!db || !sede) return
+    if (!sede) return
     let unsub = () => {}
-    const load = async () => {
-      try {
-        await authReady
-        const today = todayStr()
-        const q = query(
-          collection(db!, 'ventas_pos'),
-          where('sede', '==', sede),
-          where('fechaStr', '==', today),
-        )
-        let firstLoad = true
-        unsub = onSnapshot(q, (snap: any) => {
-          const list: VentaPOS[] = []
-          snap.forEach((d: any) => {
-            list.push({ id: d.id, ...d.data() } as any)
-          })
-          list.sort((a: any, b: any) => {
-            const aMs = a?.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0
-            const bMs = b?.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0
-            return bMs - aMs
-          })
-          setVentasHoy(list.slice(0, 100))
-          if (firstLoad) {
-            firstLoad = false
-            const lastCompleted = list.find(v => v.estado === 'completada')
-            if (lastCompleted) setLastPrintedSale(prev => prev ?? lastCompleted)
-          }
-        })
-      } catch (e) {
-        console.error('Error loading ventas_pos:', e)
+    const today = todayStr()
+    let firstLoad = true
+    unsub = pollVentasPos(sede, today, (ventas) => {
+      const list: VentaPOS[] = ventas.map(v => ({
+        id: v.$id,
+        sede: v.sede,
+        cajeroNombre: v.cajeroNombre,
+        sesionCajaId: v.sesionCajaId,
+        fechaStr: v.fechaStr,
+        fechaTs: v.fechaTs,
+        items: v.items as any,
+        pagos: v.pagos as any,
+        subtotal: v.subtotal,
+        descuentoGlobalPct: v.descuentoGlobalPct,
+        descuentoGlobal: v.descuentoGlobal,
+        total: v.total,
+        vuelto: v.vuelto,
+        estado: v.estado as any,
+        modoVenta: v.modoVenta,
+        tipoComprobante: v.tipoComprobante as any,
+        boletaNumero: v.boletaNumero,
+        debitoOrdenNumero: v.debitoOrdenNumero,
+        createdAtTs: v.createdAtTs,
+      }))
+      list.sort((a, b) => (b.createdAtTs || 0) - (a.createdAtTs || 0))
+      setVentasHoy(list.slice(0, 100))
+      if (firstLoad) {
+        firstLoad = false
+        const lastCompleted = list.find(v => v.estado === 'completada')
+        if (lastCompleted) setLastPrintedSale(prev => prev ?? lastCompleted)
       }
-    }
-    load()
+    }, 5000)
     return () => unsub()
   }, [sede])
 
-  // ─── Load active caja session ──────────────────────────────────────────────
+  // ─── Load active caja session (Appwrite) ───────────────────────────────────
   useEffect(() => {
     if (!sede) return;
     let isCancelled = false;
@@ -990,23 +997,30 @@ export default function PuntoDeVentaPage() {
             setSesionCaja(parsed);
           }
         }
-        await authReady;
-        const activeRef = doc(db, 'caja_sesiones', `active_${sede}`);
-        const snap = await getDoc(activeRef);
-        if (snap.exists() && !isCancelled) {
-          const data = snap.data();
-          if (data && data.estado === 'abierta') {
-            setSesionCaja(data as any);
-            localStorage.setItem(`yaxsel_pos_caja_session_${sede}`, JSON.stringify(data));
-          } else {
-            setSesionCaja(null);
-            localStorage.removeItem(`yaxsel_pos_caja_session_${sede}`);
-          }
+        const active = await getActiveCajaSesion(sede);
+        if (active && !isCancelled) {
+          const sessionData: SesionCaja = {
+            id: active.$id,
+            sede: active.sede,
+            cajeroNombre: active.cajeroNombre,
+            estado: active.estado as any,
+            montoApertura: active.montoApertura,
+            ventasCount: active.ventasCount,
+            totalVentas: active.totalVentas,
+            totalEfectivo: active.totalEfectivo,
+            totalDebito: active.totalDebito,
+            totalTransferencia: active.totalTransferencia,
+            aperturaAt: active.aperturaAtTs,
+            aperturaAtTs: active.aperturaAtTs,
+            fechaStr: active.fechaStr,
+          };
+          setSesionCaja(sessionData);
+          localStorage.setItem(`yaxsel_pos_caja_session_${sede}`, JSON.stringify(sessionData));
         } else if (!raw && !isCancelled) {
           setSesionCaja(null);
         }
       } catch (err) {
-        console.error('Error cargando sesión de caja desde Firestore:', err);
+        console.error('Error cargando sesión de caja desde Appwrite:', err);
       } finally {
         if (!isCancelled) setCajaLoaded(true);
       }
@@ -1357,9 +1371,8 @@ export default function PuntoDeVentaPage() {
     const nombre = posUser ? posUser.nombre : (cajeroNombre.trim() || 'Cajera');
     const monto = Number(montoApertura) || 0;
     try {
-      await authReady;
       const id = genId();
-      const sessionData: any = {
+      const sessionData: SesionCaja = {
         id,
         sede,
         cajeroNombre: nombre,
@@ -1371,12 +1384,12 @@ export default function PuntoDeVentaPage() {
         totalDebito: 0,
         totalTransferencia: 0,
         aperturaAt: Date.now(),
+        aperturaAtTs: Date.now(),
         fechaStr: todayStr(),
       };
-      
-      // Guardar en la nube para que cualquier otro dispositivo sepa que la caja está abierta
-      const activeRef = doc(db, 'caja_sesiones', `active_${sede}`);
-      await setDoc(activeRef, sessionData);
+
+      // Guardar en Appwrite (active_${sede}) para que cualquier dispositivo sepa que la caja está abierta
+      await setActiveCajaSesion(sede, { ...sessionData, id: `active_${sede}` });
 
       localStorage.setItem(`yaxsel_pos_caja_session_${sede}`, JSON.stringify(sessionData));
       setSesionCaja(sessionData);
@@ -1400,14 +1413,13 @@ export default function PuntoDeVentaPage() {
     const totalDevoluciones = devolucionesItems.reduce((s, it) => s + it.monto, 0)
 
     try {
-      await authReady
-      // Anular pre-ventas pendientes (no cobradas) de esta sesión de caja
+      // Anular pre-ventas pendientes (no cobradas) de esta sesión de caja (Appwrite)
       const preVentasPendientes = ventasHoy.filter((v: any) => v.estado === 'pre_venta' && v.sesionCajaId === sesionCaja.id)
       if (preVentasPendientes.length > 0) {
         await Promise.all(preVentasPendientes.map((pv: any) =>
-          updateDoc(doc(db!, 'ventas_pos', pv.id), {
+          updateVentaPos(pv.id, {
             estado: 'anulada',
-            anuladaEn: serverTimestamp(),
+            anuladaEn: Date.now(),
             anuladaPor: 'cierre_caja_auto',
             motivoAnulacion: 'Pre-venta no cobrada al cierre de caja',
           }).catch(() => {})
@@ -1463,7 +1475,7 @@ export default function PuntoDeVentaPage() {
         createdAt: serverTimestamp(),
       }
 
-      await setDoc(doc(db!, 'cortes_caja', corteId), corteData)
+      await createCorteCaja(corteData, corteId)
 
       // Calcular ganancias por producto desde los items de las ventas (costoUnitario ya está guardado)
       const skuMap = new Map<string, { sku: string; nombre: string; cantidadVendida: number; ventasBrutas: number; costoNeto: number }>()
@@ -1529,23 +1541,26 @@ export default function PuntoDeVentaPage() {
       await setDoc(reportRef, reportData, { merge: true })
       await setDoc(reportRefNew, reportData, { merge: true })
 
-      const activeRef = doc(db, 'caja_sesiones', `active_${sede}`);
-      await setDoc(activeRef, {
+      // Cerrar sesión activa en Appwrite (active_${sede})
+      await setActiveCajaSesion(sede, {
         ...sesionCaja,
+        id: `active_${sede}`,
         estado: 'cerrada',
-        cierreAt: serverTimestamp(),
+        cierreAt: Date.now(),
+        cierreAtTs: Date.now(),
         montoCierre: efectivoRealNum,
         ventasCount: ventasCompletadas.length,
         totalVentas,
         totalEfectivo,
         totalDebito,
         totalTransferencia,
-      }, { merge: true });
+      });
 
       try {
-        await updateDoc(doc(db, 'caja_sesiones', sesionCaja.id), {
+        await updateCajaSesion(sesionCaja.id, {
           estado: 'cerrada',
-          cierreAt: serverTimestamp(),
+          cierreAt: Date.now(),
+          cierreAtTs: Date.now(),
           montoCierre: efectivoRealNum,
           ventasCount: ventasCompletadas.length,
           totalVentas,
@@ -1569,23 +1584,26 @@ export default function PuntoDeVentaPage() {
   // ─── Print receipt ─────────────────────────────────────────────────────────
   const printReceipt = (venta: VentaPOS, existingWindow?: Window | null, esPreVenta = false) => {
     const formattedData: ReceiptData = {
-      tipoComprobante: 'boleta',
-      folio: Number(venta.boletaNumero) || Math.floor(Math.random() * 90000) + 10000,
-      fechaHora: new Date().toLocaleString('es-CL'),
-      cajeraNombre: venta.cajeroNombre || 'Cajera',
+      ventaId: venta.id || `v${Date.now()}`,
+      boletaNumero: Number(venta.boletaNumero) || Math.floor(Math.random() * 90000) + 10000,
+      debitoOrdenNumero: venta.debitoOrdenNumero ?? null,
+      cajero: venta.cajeroNombre || 'Cajera',
       sedeNombre,
+      fecha: venta.fecha?.toDate ? venta.fecha.toDate() : new Date(),
+      subtotal: Number(venta.subtotal || 0),
+      descuentoGlobalPct: Number(venta.descuentoGlobalPct || 0),
+      descuentoGlobal: Number(venta.descuentoGlobal || 0),
+      total: Number(venta.total || 0),
+      vuelto: Number(venta.vuelto || 0),
+      pagos: (venta.pagos || []).map(p => ({ metodo: p.metodo, monto: Number(p.monto || 0) })),
       items: (venta.items || []).map(it => ({
         nombre: it.nombre,
         cantidad: Number(it.cantidad || 0),
         precioUnitario: Number(it.precioUnitario || 0),
         subtotal: Number(it.subtotal || 0),
       })),
-      subtotal: Number(venta.subtotal || 0),
-      descuentoGlobalMonto: Number(venta.descuentoGlobal || 0),
-      total: Number(venta.total || 0),
-      metodoPago: (venta.pagos || []).map(p => p.metodo).join(' / ') || 'Efectivo',
-      efectivoPagado: Number(venta.total || 0) + Number(venta.vuelto || 0),
-      vuelto: Number(venta.vuelto || 0),
+      esPreVenta,
+      tipoComprobante: venta.tipoComprobante || 'boleta',
     };
     return openReceiptPrintWindow(formattedData, existingWindow);
   };
@@ -1792,13 +1810,13 @@ export default function PuntoDeVentaPage() {
     }
 
     try {
-      await authReady
       const ventaId = esCobroPreventa ? cobrandoPreventaId! : genId()
+      const now = Date.now()
       const ventaData: any = {
         sede,
         cajeroNombre: sesionCaja.cajeroNombre,
         sesionCajaId: sesionCaja.id,
-        fecha: serverTimestamp(),
+        fechaTs: now,
         fechaStr: todayStr(),
         items: finalCartItems.map((c: CartItem) => ({
           sku: c.sku,
@@ -1817,12 +1835,13 @@ export default function PuntoDeVentaPage() {
         vuelto: esPreVenta ? 0 : (splitMode ? Math.max(0, totalPagado - totalCart) : Math.max(0, (Number(montoRecibido) || totalCart) - totalCart)),
         estado: esPreVenta ? 'pre_venta' : 'completada',
         modoVenta: modoVentaPOS,
-        createdAt: serverTimestamp(),
+        tipoComprobante: esPreVenta ? 'comprobante' : tipoComprobante,
+        createdAtTs: now,
       }
       if (esCobroPreventa) {
         ventaData.cobradoPorJefe = true
         ventaData.jefeNombre = posUser?.nombre || ''
-        ventaData.cobradaEn = serverTimestamp()
+        ventaData.cobradaEnTs = now
       }
 
       let receiptCounters: ReceiptCounters = { boletaNumero: 0, debitoOrdenNumero: null }
@@ -1831,7 +1850,7 @@ export default function PuntoDeVentaPage() {
         // PRE-VENTA: no descontar stock, no asignar boleta real, no actualizar totales de caja
         ventaData.boletaNumero = 0
         ventaData.debitoOrdenNumero = null
-        await setDoc(doc(db!, 'ventas_pos', ventaId), ventaData)
+        await createVentaPos(ventaData, ventaId)
       } else {
         // VENTA NORMAL o cobro de pre-venta: descontar stock + actualizar caja
         // Deduct sold quantities from local stockMap state
@@ -1852,9 +1871,9 @@ export default function PuntoDeVentaPage() {
 
         if (esCobroPreventa) {
           // Actualizar venta existente (mantener id original de la pre-venta)
-          await setDoc(doc(db!, 'ventas_pos', ventaId), ventaData, { merge: true })
+          await updateVentaPos(ventaId, ventaData)
         } else {
-          await setDoc(doc(db!, 'ventas_pos', ventaId), ventaData)
+          await createVentaPos(ventaData, ventaId)
         }
         if (sesionCaja) {
           const updatedSession: SesionCaja = {
@@ -1867,6 +1886,14 @@ export default function PuntoDeVentaPage() {
           };
           setSesionCaja(updatedSession);
           try { localStorage.setItem(`yaxsel_pos_caja_session_${sede}`, JSON.stringify(updatedSession)); } catch {}
+          // Actualizar sesión en Appwrite (active_${sede})
+          updateCajaSesion(`active_${sede}`, {
+            ventasCount: updatedSession.ventasCount,
+            totalVentas: updatedSession.totalVentas,
+            totalEfectivo: updatedSession.totalEfectivo,
+            totalDebito: updatedSession.totalDebito,
+            totalTransferencia: updatedSession.totalTransferencia,
+          }).catch(() => {})
         }
       }
 
@@ -1877,7 +1904,8 @@ export default function PuntoDeVentaPage() {
         sede,
         cajeroNombre: sesionCaja.cajeroNombre,
         sesionCajaId: sesionCaja.id,
-        fecha: Timestamp.fromDate(new Date()),
+        fecha: now,
+        fechaTs: now,
         fechaStr: todayStr(),
         items: cart.map(c => ({
           sku: c.sku,
@@ -1897,7 +1925,9 @@ export default function PuntoDeVentaPage() {
         estado: esPreVenta ? ('pre_venta' as any) : 'completada',
         boletaNumero: receiptCounters.boletaNumero,
         debitoOrdenNumero: receiptCounters.debitoOrdenNumero,
-        createdAt: Timestamp.fromDate(new Date()),
+        tipoComprobante: esPreVenta ? 'comprobante' : tipoComprobante,
+        createdAt: now,
+        createdAtTs: now,
       }
       if (!esPreVenta) setLastPrintedSale(completedVenta)
       printReceipt(completedVenta, receiptWindow, esPreVenta)
@@ -1953,7 +1983,6 @@ export default function PuntoDeVentaPage() {
     if (!editPagoTarget || !db) return
     setEditPagoSaving(true)
     try {
-      await authReady
       // Reconstruir pagos con nuevo método, manteniendo montos
       const newPagos = (editPagoTarget.pagos || []).map((p: any, i: number) =>
         i === 0 ? { ...p, metodo: editPagoMetodo } : p
@@ -1963,7 +1992,7 @@ export default function PuntoDeVentaPage() {
         ? [{ metodo: editPagoMetodo, monto: editPagoTarget.total }]
         : newPagos
 
-      await updateDoc(doc(db!, 'ventas_pos', editPagoTarget.id), { pagos: finalPagos })
+      await updateVentaPos(editPagoTarget.id, { pagos: finalPagos })
 
       // Actualizar sesión de caja si corresponde
       if (sesionCaja && editPagoTarget.sesionCajaId === sesionCaja.id) {
@@ -1973,10 +2002,17 @@ export default function PuntoDeVentaPage() {
         const newEf = finalPagos.filter(p => p.metodo === 'efectivo').reduce((s, p) => s + (p.monto || 0), 0)
         const newDb = finalPagos.filter(p => p.metodo === 'debito').reduce((s, p) => s + (p.monto || 0), 0)
         const newTr = finalPagos.filter(p => p.metodo === 'transferencia').reduce((s, p) => s + (p.monto || 0), 0)
-        await updateDoc(doc(db!, 'caja_sesiones', sesionCaja.id), {
-          totalEfectivo: increment(newEf - oldEf),
-          totalDebito: increment(newDb - oldDb),
-          totalTransferencia: increment(newTr - oldTr),
+        const updatedSession = {
+          ...sesionCaja,
+          totalEfectivo: (sesionCaja.totalEfectivo || 0) + (newEf - oldEf),
+          totalDebito: (sesionCaja.totalDebito || 0) + (newDb - oldDb),
+          totalTransferencia: (sesionCaja.totalTransferencia || 0) + (newTr - oldTr),
+        }
+        setSesionCaja(updatedSession)
+        await updateCajaSesion(`active_${sede}`, {
+          totalEfectivo: updatedSession.totalEfectivo,
+          totalDebito: updatedSession.totalDebito,
+          totalTransferencia: updatedSession.totalTransferencia,
         })
       }
 
@@ -1990,28 +2026,36 @@ export default function PuntoDeVentaPage() {
 
   // ─── Anular venta ──────────────────────────────────────────────────────────
   const handleAnular = async (venta: VentaPOS) => {
-    if (!db || !confirm(`¿Anular venta por ${fmtCLP(venta.total)}?`)) return
+    if (!confirm(`¿Anular venta por ${fmtCLP(venta.total)}?`)) return
     try {
-      await authReady
-      await updateDoc(doc(db!, 'ventas_pos', venta.id), { estado: 'anulada' })
-      // Restore stock
+      await updateVentaPos(venta.id, { estado: 'anulada', anuladaEn: Date.now() })
+      // Restore stock (Firestore - queda en Firestore por ahora)
       for (const item of (venta.items || [])) {
         const stockId = `${sede}__${item.sku}`
         try {
           await updateDoc(doc(db!, 'stock', stockId), { stock: increment(item.cantidad) })
         } catch {}
       }
-      // Update caja session
+      // Update caja session (Appwrite)
       if (sesionCaja && venta.sesionCajaId === sesionCaja.id) {
         const ef = (venta.pagos || []).filter((p: any) => p.metodo === 'efectivo').reduce((s: number, p: any) => s + (p.monto || 0), 0)
         const db2 = (venta.pagos || []).filter((p: any) => p.metodo === 'debito').reduce((s: number, p: any) => s + (p.monto || 0), 0)
         const tr = (venta.pagos || []).filter((p: any) => p.metodo === 'transferencia').reduce((s: number, p: any) => s + (p.monto || 0), 0)
-        await updateDoc(doc(db!, 'caja_sesiones', sesionCaja.id), {
-          ventasCount: increment(-1),
-          totalVentas: increment(-venta.total),
-          totalEfectivo: increment(-ef),
-          totalDebito: increment(-db2),
-          totalTransferencia: increment(-tr),
+        const updatedSession = {
+          ...sesionCaja,
+          ventasCount: Math.max(0, (sesionCaja.ventasCount || 0) - 1),
+          totalVentas: Math.max(0, (sesionCaja.totalVentas || 0) - venta.total),
+          totalEfectivo: Math.max(0, (sesionCaja.totalEfectivo || 0) - ef),
+          totalDebito: Math.max(0, (sesionCaja.totalDebito || 0) - db2),
+          totalTransferencia: Math.max(0, (sesionCaja.totalTransferencia || 0) - tr),
+        }
+        setSesionCaja(updatedSession)
+        await updateCajaSesion(`active_${sede}`, {
+          ventasCount: updatedSession.ventasCount,
+          totalVentas: updatedSession.totalVentas,
+          totalEfectivo: updatedSession.totalEfectivo,
+          totalDebito: updatedSession.totalDebito,
+          totalTransferencia: updatedSession.totalTransferencia,
         })
       }
       showToast('Venta anulada y stock restaurado', 'info')
@@ -2097,19 +2141,19 @@ export default function PuntoDeVentaPage() {
   // ─── RENDER ────────────────────────────────────────────────────────────────
   if (!sede || !SEDES[sede]) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
               <Store size={22} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Punto de Venta</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Punto de Venta</h1>
           </div>
-          <p className="text-slate-400 text-sm mb-6 ml-1">Selecciona la sucursal para abrir el POS:</p>
+          <p className="text-slate-500 text-sm mb-6 ml-1">Selecciona la sucursal para abrir el POS:</p>
           <div className="space-y-3">
             {Object.entries(SEDES).map(([slug, name]) => (
               <button key={slug} onClick={() => router.push(`/pos/${slug}`)}
-                className="w-full flex items-center gap-3 bg-white/5 hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-400/50 rounded-2xl px-4 py-4 text-left transition-all group">
+                className="w-full flex items-center gap-3 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-2xl px-4 py-4 text-left transition-all group">
                 <div className="w-10 h-10 rounded-xl bg-indigo-500/20 group-hover:bg-indigo-500/30 flex items-center justify-center shrink-0 transition">
                   <Store size={18} className="text-indigo-300" />
                 </div>
@@ -2128,12 +2172,12 @@ export default function PuntoDeVentaPage() {
   // ─── POS Loading Screen ────────────────────────────────────────────────────
   if (loginLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex flex-col items-center justify-center">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-5">
           <Store size={28} className="text-white" />
         </div>
-        <p className="text-sm text-slate-300 font-medium animate-pulse">Cargando punto de venta...</p>
-        <div className="mt-4 w-48 sm:w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <p className="text-sm text-slate-600 font-medium animate-pulse">Cargando punto de venta...</p>
+        <div className="mt-4 w-48 sm:w-64 h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div className="h-full bg-gradient-to-r from-indigo-400 to-violet-500 animate-[loadingBar_1.5s_ease-in-out_infinite] rounded-full" style={{ width: '40%' }} />
         </div>
         <style>{`
@@ -2152,8 +2196,8 @@ export default function PuntoDeVentaPage() {
   if (!posUser && anyHasPassword && !loginLoading) {
     const selectedUser = loginUsers.find(u => u.id === loginSelected)
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center px-4 py-8">
-        <button onClick={() => router.push(`/pos-admin/${sede || 'chacabuco-08'}`)} className="absolute top-4 left-4 text-slate-400 hover:text-white transition">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex flex-col items-center justify-center px-4 py-8">
+        <button onClick={() => router.push(`/pos-admin/${sede || 'chacabuco-08'}`)} className="absolute top-4 left-4 text-slate-400 hover:text-slate-700 transition">
           <ChevronLeft size={24} />
         </button>
 
@@ -2162,9 +2206,9 @@ export default function PuntoDeVentaPage() {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4">
             <Store size={28} className="text-white" />
           </div>
-          <h2 className="text-xl font-bold text-white">Punto de Venta</h2>
-          <p className="text-sm text-slate-400 mt-1">{sedeNombre}</p>
-          <p className="text-xs text-slate-500 mt-0.5">Selecciona tu cuenta para ingresar</p>
+          <h2 className="text-xl font-bold text-slate-800">Punto de Venta</h2>
+          <p className="text-sm text-slate-500 mt-1">{sedeNombre}</p>
+          <p className="text-xs text-slate-400 mt-0.5">Selecciona tu cuenta para ingresar</p>
         </div>
 
         {!loginSelected ? (
@@ -2344,21 +2388,24 @@ export default function PuntoDeVentaPage() {
               })()}
             </div>
           )}
-          {sesionCaja && (
+          {sesionCaja && (() => {
+            const ventasCajaCount = ventasHoy.filter(v => v.sesionCajaId === sesionCaja.id && v.estado === 'completada').length;
+            return (
             <>
               <div className="flex lg:hidden items-center gap-1 bg-green-50 rounded-full px-2 py-0.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[9px] font-bold text-green-700">{fmtN(sesionCaja.ventasCount)} ventas</span>
+                <span className="text-[9px] font-bold text-green-700">{fmtN(ventasCajaCount)} ventas</span>
               </div>
               <div className="hidden lg:flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 <div className="text-sm">
                   <div className="font-semibold text-green-900">Caja abierta</div>
-                  <div className="text-xs text-green-600">{fmtN(sesionCaja.ventasCount)} ventas</div>
+                  <div className="text-xs text-green-600">{fmtN(ventasCajaCount)} ventas</div>
                 </div>
               </div>
             </>
-          )}
+            );
+          })()}
           {!sesionCaja && !isVendedora && (
             <>
               <div className="flex lg:hidden items-center gap-1 bg-red-50 rounded-full px-2 py-0.5">
@@ -2573,39 +2620,39 @@ export default function PuntoDeVentaPage() {
                     <span className="text-[10px] lg:text-xs text-gray-500 mt-1">Escanea código o escribe nombre</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 lg:gap-2.5">
+                  <div className="grid grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-1 lg:gap-1.5">
                     {quickTopProducts.map((p) => {
                       return (
                       <button
                         key={p.sku}
                         onClick={() => addToCart(p, selectedPriceBySku[p.sku] || getDefaultPriceOption(p)?.field)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100 active:scale-[0.96] p-2.5 text-left transition-all duration-150 relative overflow-hidden group"
+                        className="w-full rounded-xl border border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md active:scale-[0.96] p-1.5 text-left transition-all duration-150 relative overflow-hidden group"
                       >
                         {p.imageUrl ? (
                           <img
                             src={p.imageUrl} alt={p.nombre}
-                            className="w-full h-24 lg:h-28 object-cover rounded-xl mb-2 cursor-zoom-in active:scale-95 transition-transform bg-slate-50"
+                            className="w-full h-12 lg:h-14 object-cover rounded-lg mb-1 cursor-zoom-in active:scale-95 transition-transform bg-slate-50"
                             loading="lazy"
                             onClick={e => { e.stopPropagation(); setLightboxUrl(p.imageUrl!) }}
                           />
                         ) : (
-                          <div className="w-full h-24 lg:h-28 rounded-xl mb-2 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-                            <Package size={28} className="text-slate-300" />
+                          <div className="w-full h-12 lg:h-14 rounded-lg mb-1 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+                            <Package size={20} className="text-slate-300" />
                           </div>
                         )}
-                        <div className="font-semibold text-gray-900 text-[12px] lg:text-[13px] leading-tight line-clamp-2 mb-1.5 min-h-[2.2em]">{p.nombre}</div>
+                        <div className="font-semibold text-gray-900 text-[10px] lg:text-[11px] leading-tight line-clamp-2 mb-0.5 min-h-[1.8em]">{p.nombre}</div>
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-sm lg:text-base text-indigo-600">{fmtCLP(getPrice(p))}</span>
-                          <span className="text-[9px] text-gray-400 font-semibold">{fmtN(p.cantidadVendidaHoy)}x hoy</span>
+                          <span className="font-extrabold text-[11px] lg:text-xs text-indigo-600">{fmtCLP(getPrice(p))}</span>
+                          <span className="text-[8px] text-gray-400 font-semibold">{fmtN(p.cantidadVendidaHoy)}x</span>
                         </div>
-                        <div className="flex items-center justify-between mt-1.5">
-                          <span className="font-mono text-[9px] text-gray-400">{p.sku}</span>
-                          <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                        <div className="flex items-center justify-between mt-0.5">
+                          <span className="font-mono text-[8px] text-gray-400">{p.sku}</span>
+                          <div className={`px-1 py-0.5 rounded-full text-[8px] font-bold ${
                             p.stock > 10 ? 'bg-emerald-100 text-emerald-700' :
                             p.stock > 0 ? 'bg-amber-100 text-amber-700' :
                             'bg-red-100 text-red-700'
                           }`}>
-                            {p.stock > 0 ? `${fmtN(p.stock)} uds` : 'Agotado'}
+                            {p.stock > 0 ? `${fmtN(p.stock)}u` : 'Sin'}
                           </div>
                         </div>
                         {getPriceOptions(p).length > 1 && (
@@ -2614,7 +2661,7 @@ export default function PuntoDeVentaPage() {
                             value={selectedPriceBySku[p.sku] || getDefaultPriceOption(p)?.field || ''}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => { e.stopPropagation(); setSelectedPriceBySku(prev => ({ ...prev, [p.sku]: e.target.value })) }}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-[10px] text-gray-600 mt-1.5"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1 py-0.5 text-[9px] text-gray-600 mt-1"
                           >
                             {getPriceOptions(p).map((opt) => (
                               <option key={opt.field} value={opt.field}>{opt.label} · {fmtCLP(opt.value)}</option>
@@ -3001,6 +3048,30 @@ export default function PuntoDeVentaPage() {
                 </button>
               ))}
             </div>
+
+            {/* Tipo de comprobante */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <button
+                onClick={() => setTipoComprobante('comprobante')}
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-xs font-bold transition-all active:scale-95 ${
+                  tipoComprobante === 'comprobante'
+                    ? 'bg-amber-50 border-amber-500 text-amber-700'
+                    : 'bg-white border-slate-200 text-gray-500 hover:border-slate-300'
+                }`}
+              >
+                <FileText size={16} /> Comprobante
+              </button>
+              <button
+                onClick={() => setTipoComprobante('boleta')}
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-xs font-bold transition-all active:scale-95 ${
+                  tipoComprobante === 'boleta'
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                    : 'bg-white border-slate-200 text-gray-500 hover:border-slate-300'
+                }`}
+              >
+                <Receipt size={16} /> Boleta
+              </button>
+            </div>
           </div>
 
           {/* Amount input */}
@@ -3008,12 +3079,19 @@ export default function PuntoDeVentaPage() {
             {pagoActivo === 'efectivo' && !splitMode && (
               <>
                 <label className="text-xs text-gray-500 mb-2 block font-medium">Monto recibido (efectivo)</label>
-                <input type="number" value={montoRecibido}
-                  onChange={e => setMontoRecibido(e.target.value)}
-                  placeholder={fmtN(totalCart)}
-                  className="w-full bg-gray-50 border-2 border-gray-300 rounded-xl px-3 py-3 text-2xl text-gray-900 text-center font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  onKeyDown={e => { if (e.key === 'Enter') handleCompleteSale() }}
-                />
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-400">$</span>
+                  <input type="text" inputMode="numeric"
+                    value={montoRecibido ? Number(montoRecibido).toLocaleString('es-CL') : ''}
+                    onChange={e => {
+                      const digits = e.target.value.replace(/[^0-9]/g, '');
+                      setMontoRecibido(digits);
+                    }}
+                    placeholder={totalCart.toLocaleString('es-CL')}
+                    className="w-full bg-gray-50 border-2 border-gray-300 rounded-xl pl-10 pr-3 py-3 text-2xl text-gray-900 text-center font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    onKeyDown={e => { if (e.key === 'Enter') handleCompleteSale() }}
+                  />
+                </div>
                 <div className="flex flex-wrap gap-2 mt-3">
                   {quickAmounts.map(a => (
                     <button key={a} onClick={() => setMontoRecibido(String(a))}
@@ -3032,12 +3110,19 @@ export default function PuntoDeVentaPage() {
               <>
                 <label className="text-xs text-gray-500 mb-2 block font-medium">Monto ({pagoActivo})</label>
                 <div className="flex gap-2">
-                  <input type="number" value={montoRecibido}
-                    onChange={e => setMontoRecibido(e.target.value)}
-                    placeholder="Monto"
-                    className="flex-1 bg-white border-2 border-gray-300 rounded-xl px-3 py-2.5 text-gray-900 text-center font-bold focus:outline-none focus:border-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400">$</span>
+                    <input type="text" inputMode="numeric"
+                      value={montoRecibido ? Number(montoRecibido).toLocaleString('es-CL') : ''}
+                      onChange={e => {
+                        const digits = e.target.value.replace(/[^0-9]/g, '');
+                        setMontoRecibido(digits);
+                      }}
+                      placeholder="Monto"
+                      className="w-full bg-white border-2 border-gray-300 rounded-xl pl-9 pr-3 py-2.5 text-gray-900 text-center font-bold focus:outline-none focus:border-purple-500"
                     onKeyDown={e => { if (e.key === 'Enter') addSplitPago() }}
                   />
+                  </div>
                   <button onClick={addSplitPago}
                     className="bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-2.5 font-bold transition">
                     <Plus size={18} />
@@ -3300,10 +3385,18 @@ export default function PuntoDeVentaPage() {
               )}
               <div>
                 <label className="text-sm text-gray-700 mb-1.5 block font-medium">*Ingrese Monto de Apertura de Caja (CLP)</label>
-                <input type="number" value={montoApertura} onChange={e => setMontoApertura(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">$</span>
+                  <input type="text" inputMode="numeric"
+                    value={montoApertura ? Number(montoApertura).toLocaleString('es-CL') : ''}
+                    onChange={e => {
+                      const digits = e.target.value.replace(/[^0-9]/g, '');
+                      setMontoApertura(digits);
+                    }}
+                    placeholder="0"
+                    className="w-full bg-white border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex gap-3 mt-8">
@@ -3445,14 +3538,21 @@ export default function PuntoDeVentaPage() {
 
                   <div>
                     <label className={`text-xs mb-1 block font-medium ${labelColor}`}>Efectivo Real en Caja (CLP) *</label>
-                    <input
-                      type="number"
-                      value={efectivoReal}
-                      onChange={e => setEfectivoReal(e.target.value)}
-                      placeholder="0"
-                      onWheel={e => e.currentTarget.blur()}
-                      className={`w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 ${inputFocus}`}
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">$</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={efectivoReal ? Number(efectivoReal).toLocaleString('es-CL') : ''}
+                        onChange={e => {
+                          const digits = e.target.value.replace(/[^0-9]/g, '');
+                          setEfectivoReal(digits);
+                        }}
+                        placeholder="0"
+                        onWheel={e => e.currentTarget.blur()}
+                        className={`w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-gray-900 focus:outline-none focus:ring-2 ${inputFocus}`}
+                      />
+                    </div>
                   </div>
 
                   <div className="pt-1">

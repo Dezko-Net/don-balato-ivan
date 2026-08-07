@@ -26,9 +26,9 @@ export default function PosAdminDefaultRedirectPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3 font-sans">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 font-sans">
       <div className="w-9 h-9 border-[3px] border-indigo-500 border-t-transparent rounded-full animate-spin" />
-      <p className="text-slate-400 text-sm">Redirigiendo a POS Admin…</p>
+      <p className="text-slate-500 text-sm">Redirigiendo a POS Admin…</p>
     </div>
   );
 }
