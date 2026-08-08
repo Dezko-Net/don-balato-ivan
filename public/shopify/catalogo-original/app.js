@@ -3973,13 +3973,15 @@ function showProductModal(sku) {
     <div class="text-sm text-blue-600 leading-relaxed mb-4">
       ${p.description ? escapeHtml(p.description) : 'Sin descripción disponible.'}
     </div>
-    <!-- Live FOMO Urgency Strip -->
+    <!-- Live FOMO Urgency Strip — solo cada N productos -->
+    ${(window._fomoCounter = (window._fomoCounter || 0) + 1) && (window._fomoCounter % 7 === 0) ? `
     <div class="rounded-2xl bg-amber-50/90 border border-amber-200/80 p-3 mb-4 flex items-center gap-2.5">
       <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping flex-shrink-0"></span>
       <div class="text-xs text-amber-950 font-bold leading-snug">
-        🔥 <strong>${Math.floor(Math.random() * 18) + 12} personas</strong> están viendo este producto ahora. <span class="text-amber-800 font-semibold block sm:inline">¡Reserva de stock activa!</span>
+        <strong>${Math.floor(Math.random() * 3) + 2} personas</strong> están viendo este producto ahora.
       </div>
     </div>
+    ` : ''}
     ${outOfStock ? '' : `
     <div class="flex items-center justify-between bg-blue-50/70 rounded-2xl p-2.5 mb-3">
       <span class="text-sm font-bold text-blue-700 ml-2">Cantidad</span>
