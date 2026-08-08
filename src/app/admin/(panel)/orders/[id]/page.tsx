@@ -1218,9 +1218,8 @@ export default function OrderDetailPage() {
       const { databaseId } = getAppwriteConfig();
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
         SHIPPINGAGENCY: selectedAgency,
-        AGENCYCHANGED: true,
       });
-      setOrder(prev => prev ? { ...prev, SHIPPINGAGENCY: selectedAgency, AGENCYCHANGED: true } : prev);
+      setOrder(prev => prev ? { ...prev, SHIPPINGAGENCY: selectedAgency, AGENCYCHANGED: true } as Order : prev);
       setEditingAgency(false);
     } catch (e: any) {
       console.error('Error updating agency:', e?.message);
@@ -2847,13 +2846,21 @@ export default function OrderDetailPage() {
             <div className="p-3 sm:p-5 space-y-2.5 sm:space-y-3">
               {editingCustomer ? (
                 <div className="flex flex-col gap-2 no-print">
-                  <input value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={customerForm.rut} onChange={e => setCustomerForm(f => ({ ...f, rut: e.target.value }))} placeholder="RUT" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="Teléfono" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={customerForm.email} onChange={e => setCustomerForm(f => ({ ...f, email: e.target.value }))} placeholder="Email" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={customerForm.address} onChange={e => setCustomerForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={customerForm.comuna} onChange={e => setCustomerForm(f => ({ ...f, comuna: e.target.value }))} placeholder="Comuna" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={customerForm.region} onChange={e => setCustomerForm(f => ({ ...f, region: e.target.value }))} placeholder="Región" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <style>{`.cust-input::placeholder { color: #94a3b8; font-weight: 500; }`}</style>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Nombre</label>
+                  <input className="cust-input px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Marcela Araya Vargas" />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">RUT</label>
+                  <input className="cust-input px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" value={customerForm.rut} onChange={e => setCustomerForm(f => ({ ...f, rut: e.target.value }))} placeholder="Ej: 13.266.051-4" />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Teléfono</label>
+                  <input className="cust-input px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="Ej: +56962293893" />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Email</label>
+                  <input className="cust-input px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" value={customerForm.email} onChange={e => setCustomerForm(f => ({ ...f, email: e.target.value }))} placeholder="Ej: marcela@gmail.com" />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Dirección</label>
+                  <input className="cust-input px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" value={customerForm.address} onChange={e => setCustomerForm(f => ({ ...f, address: e.target.value }))} placeholder="Ej: Calle Colonial 2628" />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Comuna</label>
+                  <input className="cust-input px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" value={customerForm.comuna} onChange={e => setCustomerForm(f => ({ ...f, comuna: e.target.value }))} placeholder="Ej: La Serena" />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Región</label>
+                  <input className="cust-input px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" value={customerForm.region} onChange={e => setCustomerForm(f => ({ ...f, region: e.target.value }))} placeholder="Ej: Coquimbo" />
                   <button onClick={saveCustomerData} disabled={savingCustomer} className="px-3 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition flex items-center gap-1.5 justify-center">
                     <Save className="w-3.5 h-3.5" />
                     {savingCustomer ? 'Guardando...' : 'Guardar datos'}
