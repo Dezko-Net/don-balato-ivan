@@ -1985,6 +1985,132 @@ export async function POST(req: NextRequest) {
           : userText;
         await recordKeniaUsage(fromPhone, { balatinDataBuffer: newBuffer });
 
+        // Auto-parse: si el buffer acumulado ya tiene suficientes datos (RUT +
+        // direccion o comuna + region), intentar parsear sin esperar TERMINÉ.
+        // Esto resuelve el caso donde el cliente manda todo junto pero no
+        // escribe "terminé".
+        const lowerBuf = newBuffer.toLowerCase();
+        const hasRut = /\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/.test(newBuffer);
+        const hasAddress = /\b(calle|direccion|direcci[oó]n|avenida|av\.?|pasaje|depto|departamento|n°|numero|n[uú]mero)\b/i.test(newBuffer) || /\b\w+\s+\d+\b/.test(newBuffer);
+        const hasComuna = /\b(comuna|ciudad)\b/i.test(newBuffer) || /\b(santiago|la serena|coquimbo|valpara[íi]so|vi[ñn]a|concepci[oó]n|puente alto|maip[uú]|providencia|las condes|florida|melipilla|talca|rancagua)\b/i.test(lowerBuf);
+        const hasRegion = /\b(regi[oó]n|metropolitana|valpara[íi]so|biob[íi]o|araucan[íi]a|o ?higgins|maule|[ñn]uble|los lagos|ays[eé]n|magallanes|antofagasta|atacama|coquimbo|tarapac[aá]|arica|los r[íi]os)\b/i.test(lowerBuf);
+        const hasAgency = /\b(starken|pullman|varmontt|bluexpress|blu express|cyc|tvp|cruz del sur|tramar|5 ?sur|mena|cacem|jt transportes|retiro)\b/i.test(lowerBuf);
+        const hasEmail = /[\w.+-]+@[\w-]+\.[\w.-]+/.test(newBuffer);
+
+        // Si tiene al menos 3 datos clave, intentar parsear automaticamente
+        const dataScore = [hasRut, hasAddress, hasComuna, hasRegion, hasAgency, hasEmail].filter(Boolean).length;
+        if (dataScore >= 3) {
+          // Simular que el cliente escribio TERMINÉ para disparar el parser
+          const fakeTerminéText = newBuffer + "\nTERMINÉ";
+          // Re-ejecutar la logica de parseo reutilizando el codigo de wantsParse
+          // Para no duplicar codigo, seteamos el buffer y llamamos recursivamente
+          // con el texto "TERMINÉ"
+          await recordKeniaUsage(fromPhone, { balatinDataBuffer: "" });
+
+          // Parsear directamente (mismo codigo de wantsParse arriba)
+          const accumulatedData = fakeTerminéText;
+          const lowerData = accumulatedData.toLowerCase();
+
+          const rutMatch = accumulatedData.match(/\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/);
+          const customerRut = rutMatch ? rutMatch[1] : "";
+
+          const agencyMatch = lowerData.match(/\b(starken|pullman\s*cargo|pullman|varmontt|bluexpress|blu\s*express|cyc|tvp|cruz\s*del\s*sur|tramar|5\s*sur|5sur|mena|cacem|jt\s*transportes|chilexpress|retiro\s+(en\s+)?tienda|retiro)\b/);
+          let shippingAgency = "";
+          if (agencyMatch) {
+            const m = agencyMatch[0];
+            if (m.includes("blu")) shippingAgency = "BLUEXPRESS";
+            else if (m.includes("pullman")) shippingAgency = "PULLMAN CARGO";
+            else if (m.includes("cruz")) shippingAgency = "CRUZ DEL SUR";
+            else if (m.includes("5") && m.includes("sur")) shippingAgency = "5SUR";
+            else if (m.includes("jt")) shippingAgency = "JT TRANSPORTES";
+            else if (m.includes("retiro")) shippingAgency = "RETIRO EN TIENDA";
+            else shippingAgency = m.toUpperCase().trim();
+          }
+
+          const emailMatch = accumulatedData.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+          const customerEmail = emailMatch ? emailMatch[0] : "";
+
+          const regions = ["metropolitana", "valparaíso", "valparaiso", "biobío", "bio bio", "araucanía", "araucania", "ohiggins", "o'higgins", "maule", "ñuble", "nuble", "los lagos", "aysén", "aysen", "magallanes", "antofagasta", "atacama", "coquimbo", "tarapacá", "tarapaca", "arica", "río negro", "los ríos"];
+          const regionMatch = regions.find((r) => lowerData.includes(r));
+          const region = regionMatch ? regionMatch.charAt(0).toUpperCase() + regionMatch.slice(1) : "";
+
+          let remaining = accumulatedData;
+          if (rutMatch) remaining = remaining.replace(rutMatch[0], "");
+          if (agencyMatch) remaining = remaining.replace(new RegExp(agencyMatch[0], "gi"), "");
+          if (emailMatch) remaining = remaining.replace(emailMatch[0], "");
+          if (regionMatch) remaining = remaining.replace(new RegExp(regionMatch, "gi"), "");
+          remaining = remaining.replace(/(?:^|[^a-z])(termin[eé]|acab[eé]|finalizar|listo|ya)(?:[^a-z]|$)/gi, "");
+          remaining = remaining.replace(/\b(rut|direcci[oó]n|direccion|comuna|regi[oó]n|region|agencia|email|correo|env[ií]o|envio|transporte|starken|chilexpress|bluexpress|cyc|tvp|pullman|varmontt|tramar|mena|cacem)\s*[:\-]?\s*/gi, "");
+          remaining = remaining.replace(/\s+/g, " ").trim();
+          remaining = remaining.replace(/^[\s,;:|-]+|[\s,;:|-]+$/g, "");
+
+          const parts = remaining.split(/\s*,\s*|\s{2,}/).filter((p) => p.length > 1);
+          let address = "";
+          let comuna = "";
+          if (parts.length >= 2) {
+            address = parts[0];
+            comuna = parts[1];
+          } else if (parts.length === 1) {
+            const comunas = ["santiago centro", "santiago", "providencia", "maipú", "maipu", "las condes", "vitacura", "lo barnechea", "ñuñoa", "nunoa", "la florida", "puente alto", "san miguel", "estación central", "estacion central", "quinta normal", "renca", "cerro navia", "huechuraba", "independencia", "recoleta", "la reina", "peñalolén", "penalolen", "la granja", "san ramón", "san ramon", "la cisterna", "el bosque", "pedro aguirre cerda", "lo espejo", "pudahuel", "quilicura", "conchalí", "conchali", "macul", "cerrillos", "la serena", "coquimbo"];
+            const foundComuna = comunas.find((c) => lowerData.includes(c));
+            if (foundComuna) {
+              comuna = foundComuna.charAt(0).toUpperCase() + foundComuna.slice(1);
+              address = parts[0].replace(new RegExp(foundComuna, "gi"), "").trim();
+            } else {
+              address = parts[0];
+            }
+          }
+
+          try {
+            const { serverGetDocument, serverUpdateDocument } = await import("@/lib/appwrite-server");
+            const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
+            const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId!);
+
+            const updates: Record<string, any> = {};
+            if (customerRut) updates.CUSTOMERRUT = customerRut;
+            if (address) updates.ADDRESS = address;
+            if (comuna) updates.COMUNA = comuna;
+            if (region) updates.REGION = region;
+            if (shippingAgency) updates.SHIPPINGAGENCY = shippingAgency;
+            if (customerEmail) updates.CUSTOMEREMAIL = customerEmail;
+
+            if (Object.keys(updates).length > 0) {
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId!, updates);
+            }
+
+            const missingFields: string[] = [];
+            if (!customerRut && !orderDoc?.CUSTOMERRUT) missingFields.push("RUT");
+            if (!address && !orderDoc?.ADDRESS) missingFields.push("direccion");
+            if (!comuna && !orderDoc?.COMUNA) missingFields.push("comuna");
+            if (!region && !orderDoc?.REGION) missingFields.push("region");
+            if (!shippingAgency && !orderDoc?.SHIPPINGAGENCY) missingFields.push("agencia de envio");
+
+            await addToHistory(fromPhone, "user", userText, msgId);
+
+            if (missingFields.length > 0) {
+              const missingMsg = `¡Casi! No pude identificar algunos datos:\n\n${missingFields.map((f) => `• ${f}`).join("\n")}\n\nMandamelos por favor.`;
+              await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
+              await addToHistory(fromPhone, "assistant", missingMsg, `balatin-missing-${Date.now()}`);
+            } else {
+              const fmtRut = customerRut || orderDoc?.CUSTOMERRUT || "";
+              const fmtAddr = address || orderDoc?.ADDRESS || "";
+              const fmtComuna = comuna || orderDoc?.COMUNA || "";
+              const fmtRegion = region || orderDoc?.REGION || "";
+              const fmtAgency = shippingAgency || orderDoc?.SHIPPINGAGENCY || "";
+
+              const summaryMsg = `¡Excelente, ${customerName}! He recibido tus datos de envio.\n\nAqui tienes un resumen para tu pedido ${orderCode}:\n\n• *RUT:* ${fmtRut}\n• *Nombre completo:* ${customerName}\n• *Direccion:* ${fmtAddr}\n• *Comuna:* ${fmtComuna}\n• *Region:* ${fmtRegion}\n• *Agencia de envio:* ${fmtAgency}\n\n¿Estos datos estan correctos, ${customerName}? Responde *CORRECTO* para confirmar.`;
+              await sendWhatsAppMessage(fromPhone, summaryMsg, WA_TOKEN);
+              await addToHistory(fromPhone, "assistant", summaryMsg, `balatin-summary-${Date.now()}`);
+            }
+
+            await markAsRead(msgId, WA_TOKEN);
+            return NextResponse.json({ status: "balatin_data_auto_parsed" });
+          } catch (e) {
+            console.error("[Balatin Auto-Parse] Error:", e);
+            // Fall through to normal ack
+          }
+        }
+
         // Brief programmed acknowledgment (no AI)
         const ackMsg = `¡Anotado! Sigue mandándome tus datos. Cuando termines, escribe *TERMINÉ*.`;
         await sendWhatsAppMessage(fromPhone, ackMsg, WA_TOKEN);

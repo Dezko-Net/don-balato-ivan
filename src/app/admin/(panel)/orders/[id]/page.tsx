@@ -39,6 +39,10 @@ const STATUS_HEX: Record<string, string> = {
   negotiation: '#ec4899', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
 };
 
+const editInputStyle: React.CSSProperties = {
+  padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 12, color: '#0f172a', outline: 'none',
+};
+
 const isBluexpress = (agency?: string) => !!agency && agency.toUpperCase().replace(/\s/g, '').includes('BLUEXPRESS');
 const isPickupAgency = (agency?: string) => !!agency && agency.toUpperCase() === 'RETIRO EN TIENDA';
 
@@ -116,6 +120,9 @@ export default function OrderDetailPage() {
   const [editingTracking, setEditingTracking] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [savingTracking, setSavingTracking] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(false);
+  const [customerForm, setCustomerForm] = useState({ name: '', rut: '', phone: '', email: '', address: '', comuna: '', region: '' });
+  const [savingCustomer, setSavingCustomer] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
   // Out of stock & Replacement states
@@ -1222,6 +1229,30 @@ export default function OrderDetailPage() {
     }
   };
 
+  const saveCustomerData = async () => {
+    if (!order) return;
+    setSavingCustomer(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const updates: Record<string, any> = {};
+      if (customerForm.name) updates.CUSTOMERNAME = customerForm.name;
+      if (customerForm.rut !== undefined) updates.CUSTOMERRUT = customerForm.rut;
+      if (customerForm.phone) updates.CUSTOMERPHONE = customerForm.phone;
+      if (customerForm.email !== undefined) updates.CUSTOMEREMAIL = customerForm.email;
+      if (customerForm.address !== undefined) updates.ADDRESS = customerForm.address;
+      if (customerForm.comuna !== undefined) updates.COMUNA = customerForm.comuna;
+      if (customerForm.region !== undefined) updates.REGION = customerForm.region;
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, updates);
+      setOrder(prev => prev ? { ...prev, ...updates } as Order : prev);
+      setEditingCustomer(false);
+    } catch (e: any) {
+      console.error('Error updating customer data:', e?.message);
+    } finally {
+      setSavingCustomer(false);
+    }
+  };
+
   const updateStatus = async (newStatus: string) => {
     if (!order) return;
     const prevStatus = order.STATUS;
@@ -2098,12 +2129,46 @@ export default function OrderDetailPage() {
       {/* Cliente / Envío */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
         <div style={{ flex: 1, border: '1px solid #bae6fd', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ background: '#eff6ff', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#1e40af', borderBottom: '1px solid #dbeafe' }}>Cliente</div>
+          <div style={{ background: '#eff6ff', padding: '5px 12px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#1e40af', borderBottom: '1px solid #dbeafe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Cliente
+            <button onClick={() => {
+              if (editingCustomer) { setEditingCustomer(false); return; }
+              setCustomerForm({
+                name: order.CUSTOMERNAME || '',
+                rut: order.CUSTOMERRUT || '',
+                phone: order.CUSTOMERPHONE || '',
+                email: order.CUSTOMEREMAIL || '',
+                address: order.ADDRESS || '',
+                comuna: order.COMUNA || '',
+                region: order.REGION || '',
+              });
+              setEditingCustomer(true);
+            }} style={{ fontSize: 10, fontWeight: 700, color: '#1e40af', background: '#dbeafe', border: 'none', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>
+              {editingCustomer ? 'Cancelar' : 'Editar'}
+            </button>
+          </div>
           <div style={{ padding: '8px 12px' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{order.CUSTOMERNAME}</div>
-            {order.CUSTOMERRUT && <div style={{ color: '#475569' }}>RUT: {order.CUSTOMERRUT}</div>}
-            {order.CUSTOMERPHONE && <div style={{ color: '#475569' }}>Tel: {order.CUSTOMERPHONE}</div>}
-            {order.CUSTOMEREMAIL && <div style={{ color: '#475569' }}>{order.CUSTOMEREMAIL}</div>}
+            {editingCustomer ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <input value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre" style={editInputStyle} />
+                <input value={customerForm.rut} onChange={e => setCustomerForm(f => ({ ...f, rut: e.target.value }))} placeholder="RUT" style={editInputStyle} />
+                <input value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="Telefono" style={editInputStyle} />
+                <input value={customerForm.email} onChange={e => setCustomerForm(f => ({ ...f, email: e.target.value }))} placeholder="Email" style={editInputStyle} />
+                <input value={customerForm.address} onChange={e => setCustomerForm(f => ({ ...f, address: e.target.value }))} placeholder="Direccion" style={editInputStyle} />
+                <input value={customerForm.comuna} onChange={e => setCustomerForm(f => ({ ...f, comuna: e.target.value }))} placeholder="Comuna" style={editInputStyle} />
+                <input value={customerForm.region} onChange={e => setCustomerForm(f => ({ ...f, region: e.target.value }))} placeholder="Region" style={editInputStyle} />
+                <button onClick={saveCustomerData} disabled={savingCustomer} style={{ marginTop: 4, padding: '6px 12px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: savingCustomer ? 'wait' : 'pointer' }}>
+                  {savingCustomer ? 'Guardando...' : 'Guardar datos'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{order.CUSTOMERNAME}</div>
+                {order.CUSTOMERRUT && <div style={{ color: '#475569' }}>RUT: {order.CUSTOMERRUT}</div>}
+                {order.CUSTOMERPHONE && <div style={{ color: '#475569' }}>Tel: {order.CUSTOMERPHONE}</div>}
+                {order.CUSTOMEREMAIL && <div style={{ color: '#475569' }}>{order.CUSTOMEREMAIL}</div>}
+              </>
+            )}
           </div>
         </div>
         <div style={{ flex: 1, border: '1px solid #bae6fd', borderRadius: 10, overflow: 'hidden' }}>
