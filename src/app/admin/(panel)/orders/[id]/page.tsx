@@ -2828,12 +2828,45 @@ export default function OrderDetailPage() {
             <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
               <User className="w-4 h-4 text-indigo-500" />
               <p className="font-semibold text-gray-900 text-xs sm:text-sm">Cliente</p>
+              <button onClick={() => {
+                if (editingCustomer) { setEditingCustomer(false); return; }
+                setCustomerForm({
+                  name: order.CUSTOMERNAME || '',
+                  rut: order.CUSTOMERRUT || '',
+                  phone: order.CUSTOMERPHONE || '',
+                  email: order.CUSTOMEREMAIL || '',
+                  address: order.ADDRESS || '',
+                  comuna: order.COMUNA || '',
+                  region: order.REGION || '',
+                });
+                setEditingCustomer(true);
+              }} className="ml-auto text-[10px] font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition no-print">
+                {editingCustomer ? 'Cancelar' : 'Editar'}
+              </button>
             </div>
             <div className="p-3 sm:p-5 space-y-2.5 sm:space-y-3">
-              <InfoRow icon={<User className="w-3.5 h-3.5" />} label="Nombre" value={order.CUSTOMERNAME} onCopy={() => copyText(order.CUSTOMERNAME, 'name')} copied={copied === 'name'} />
-              {order.CUSTOMERRUT && <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label="RUT" value={order.CUSTOMERRUT} onCopy={() => copyText(order.CUSTOMERRUT!, 'rut')} copied={copied === 'rut'} />}
-              {order.CUSTOMERPHONE && <InfoRow icon={<Phone className="w-3.5 h-3.5" />} label="Teléfono" value={order.CUSTOMERPHONE} onCopy={() => copyText(order.CUSTOMERPHONE!, 'phone')} copied={copied === 'phone'} />}
-              {order.CUSTOMEREMAIL && <InfoRow icon={<Mail className="w-3.5 h-3.5" />} label="Email" value={order.CUSTOMEREMAIL} onCopy={() => copyText(order.CUSTOMEREMAIL!, 'email')} copied={copied === 'email'} />}
+              {editingCustomer ? (
+                <div className="flex flex-col gap-2 no-print">
+                  <input value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={customerForm.rut} onChange={e => setCustomerForm(f => ({ ...f, rut: e.target.value }))} placeholder="RUT" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="Teléfono" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={customerForm.email} onChange={e => setCustomerForm(f => ({ ...f, email: e.target.value }))} placeholder="Email" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={customerForm.address} onChange={e => setCustomerForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={customerForm.comuna} onChange={e => setCustomerForm(f => ({ ...f, comuna: e.target.value }))} placeholder="Comuna" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={customerForm.region} onChange={e => setCustomerForm(f => ({ ...f, region: e.target.value }))} placeholder="Región" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <button onClick={saveCustomerData} disabled={savingCustomer} className="px-3 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition flex items-center gap-1.5 justify-center">
+                    <Save className="w-3.5 h-3.5" />
+                    {savingCustomer ? 'Guardando...' : 'Guardar datos'}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <InfoRow icon={<User className="w-3.5 h-3.5" />} label="Nombre" value={order.CUSTOMERNAME} onCopy={() => copyText(order.CUSTOMERNAME, 'name')} copied={copied === 'name'} />
+                  {order.CUSTOMERRUT && <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label="RUT" value={order.CUSTOMERRUT} onCopy={() => copyText(order.CUSTOMERRUT!, 'rut')} copied={copied === 'rut'} />}
+                  {order.CUSTOMERPHONE && <InfoRow icon={<Phone className="w-3.5 h-3.5" />} label="Teléfono" value={order.CUSTOMERPHONE} onCopy={() => copyText(order.CUSTOMERPHONE!, 'phone')} copied={copied === 'phone'} />}
+                  {order.CUSTOMEREMAIL && <InfoRow icon={<Mail className="w-3.5 h-3.5" />} label="Email" value={order.CUSTOMEREMAIL} onCopy={() => copyText(order.CUSTOMEREMAIL!, 'email')} copied={copied === 'email'} />}
+                </>
+              )}
             </div>
           </div>
 
