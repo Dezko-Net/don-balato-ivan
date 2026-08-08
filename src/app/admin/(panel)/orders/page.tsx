@@ -12,7 +12,7 @@ import { generateOrderPdf } from '@/lib/generateOrderPdf';
 import Link from 'next/link';
 import EpicPagination from '@/components/admin/EpicPagination';
 
-const STATUS_FLOW = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+const STATUS_FLOW = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'checklist', 'delivered'];
 
 // BluExpress no requiere paso extra (etiqueta se imprime antes); retiro en tienda termina antes.
 const isBluexpress = (agency?: string) => !!agency && agency.toUpperCase().replace(/\s/g, '').includes('BLUEXPRESS');
@@ -45,6 +45,7 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   payment_confirmed:  { color: '#34d399', bg: '#f0fdf4' },
   negotiation:        { color: '#f472b6', bg: '#fefcfd' },
   shipped:            { color: '#a78bfa', bg: '#f3effe' },
+  checklist:          { color: '#22d3ee', bg: '#ecfeff' },
   delivered:          { color: '#4ade80', bg: '#f7fef9' },
   cancelled:          { color: '#f87171', bg: '#feebeb' },
 };
@@ -63,6 +64,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   payment_confirmed:  { label: 'Pago Confirmado',         bg: 'bg-green-100',   text: 'text-green-700' },
   negotiation:        { label: 'Negociando',                bg: 'bg-pink-100',    text: 'text-pink-700' },
   shipped:            { label: 'Embalado',                   bg: 'bg-violet-100',  text: 'text-violet-700' },
+  checklist:          { label: 'Checklist',                   bg: 'bg-cyan-100',    text: 'text-cyan-700' },
   delivered:          { label: 'Entregado a Agencia',      bg: 'bg-green-100',   text: 'text-green-700' },
 };
 
@@ -76,6 +78,7 @@ const SHORT_LABEL: Record<string, string> = {
   payment_confirmed:  'Pago Conf.',
   negotiation:        'Negociando',
   shipped:            'Embalado',
+  checklist:          'Checklist',
   delivered:          'Entregado',
   cancelled:          'Cancelado',
 };
@@ -301,7 +304,7 @@ function OrdersContent() {
       const queries = [Query.orderDesc('CREATEDAT'), Query.limit(PAGE_SIZE), Query.offset((page - 1) * PAGE_SIZE)];
       if (activeFilter === 'paid_group') {
         queries.push(Query.equal('STATUS', [
-          'processing', 'paid', 'payment_review', 'negotiation', 'shipped', 'delivered'
+          'processing', 'paid', 'payment_review', 'negotiation', 'shipped', 'checklist', 'delivered'
         ]));
       } else if (activeFilter === 'processing') {
         queries.push(Query.equal('STATUS', ['pending', 'pending_stock', 'processing']));
@@ -1354,7 +1357,7 @@ function OrdersContent() {
               <button onClick={() => setShowStatusModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl leading-none">×</button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-              {(['processing', 'paid', 'payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'delivered'] as const).map(key => {
+              {(['processing', 'paid', 'payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'checklist', 'delivered'] as const).map(key => {
                 const color = STATUS_COLORS[key]?.color || '#6b7280';
                 const bg = STATUS_COLORS[key]?.bg || '#f3f4f6';
                 return (

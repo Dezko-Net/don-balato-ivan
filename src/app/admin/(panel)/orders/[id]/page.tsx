@@ -27,16 +27,17 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   payment_confirmed:  { label: 'Pago Confirmado',         bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
   negotiation:        { label: 'Negociando',                bg: 'bg-pink-50',    text: 'text-pink-700',     border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
   shipped:            { label: 'Embalado',                 bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '📦' },
+  checklist:          { label: 'Checklist',                bg: 'bg-cyan-50',    text: 'text-cyan-700',     border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '✓' },
   delivered:          { label: 'Entregado a Agencia',      bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '🚚' },
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
+const STATUS_FLOW = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'checklist', 'delivered'];
 
 // Colores hex por estado (para gradientes/glows del rediseño)
 const STATUS_HEX: Record<string, string> = {
   pending: '#f97316', pending_stock: '#f97316', processing: '#3b82f6', paid: '#10b981', payment_review: '#2563eb', payment_confirmed: '#059669',
-  negotiation: '#ec4899', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444',
+  negotiation: '#ec4899', shipped: '#8b5cf6', checklist: '#06b6d4', delivered: '#22c55e', cancelled: '#ef4444',
 };
 
 const editInputStyle: React.CSSProperties = {
@@ -51,6 +52,7 @@ const displayStatusLabel = (status: string, agency?: string): string => {
   const pickup = isPickupAgency(agency);
   if (status === 'paid') return 'Stock Confirmado';
   if (status === 'shipped') return pickup ? 'Listo para Retirar' : 'Embalado';
+  if (status === 'checklist') return 'Checklist';
   if (status === 'delivered') return pickup ? 'Entregado' : 'Entregado a Agencia';
   return STATUS_CONFIG[status]?.label || status;
 };
@@ -110,6 +112,10 @@ export default function OrderDetailPage() {
   const [deliveredModalFile, setDeliveredModalFile] = useState<File | null>(null);
   const [deliveredModalTracking, setDeliveredModalTracking] = useState('');
   const [deliveredModalUploading, setDeliveredModalUploading] = useState(false);
+  const [checklistModalOpen, setChecklistModalOpen] = useState(false);
+  const [checklistBultoCount, setChecklistBultoCount] = useState(1);
+  const [checklistPhotos, setChecklistPhotos] = useState<File[]>([]);
+  const [checklistUploading, setChecklistUploading] = useState(false);
   const [uploadingBoxPhoto, setUploadingBoxPhoto] = useState(false);
   const [detectedAddr, setDetectedAddr] = useState<{ region: string; comuna: string; full: string } | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -1446,6 +1452,17 @@ export default function OrderDetailPage() {
       return;
     }
 
+    // Validate: cannot set to "checklist" without bulto photos
+    if (newStatus === 'checklist') {
+      let boxPhotos: string[] = [];
+      try { boxPhotos = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
+      const bultoCount = (order as any).BULTOCOUNT || 0;
+      if (boxPhotos.length === 0 || bultoCount === 0) {
+        setChecklistModalOpen(true);
+        return;
+      }
+    }
+
     // Validate: cannot set to "delivered" without shipping proof photo or tracking number
     if (newStatus === 'delivered') {
       const hasShippingProof = !!(order as any)?.SHIPPINGPROOFURL;
@@ -1488,6 +1505,46 @@ export default function OrderDetailPage() {
     setDeliveredModalFile(null);
     setDeliveredModalTracking('');
     setDeliveredModalUploading(false);
+  };
+
+  const submitChecklistModal = async () => {
+    if (!order) return;
+    if (checklistBultoCount < 1) { alert('Ingresa la cantidad de bultos'); return; }
+    if (checklistPhotos.length < checklistBultoCount) { alert(`Sube ${checklistBultoCount} foto(s) de los bultos`); return; }
+    setChecklistUploading(true);
+    try {
+      const { storage, databases } = getServices();
+      const { databaseId, endpoint, projectId } = getAppwriteConfig();
+      const newUrls: string[] = [];
+      for (const file of checklistPhotos) {
+        const fileId = ID.unique();
+        await storage.createFile(ORDER_BOX_PHOTOS_BUCKET_ID, fileId, file);
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        newUrls.push(`${endpoint}/storage/buckets/${ORDER_BOX_PHOTOS_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`);
+      }
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        BULTOCOUNT: checklistBultoCount,
+        BOXPHOTOS: JSON.stringify(newUrls),
+        UPDATEDAT: Date.now(),
+      });
+      setOrder(prev => prev ? { ...prev, BULTOCOUNT: checklistBultoCount, BOXPHOTOS: JSON.stringify(newUrls) } as Order : prev);
+      setChecklistModalOpen(false);
+      setChecklistBultoCount(1);
+      setChecklistPhotos([]);
+      // Ahora sí pasar a checklist
+      updateStatus('checklist');
+    } catch (err: any) {
+      alert('Error al subir fotos de bultos: ' + (err?.message || err));
+    } finally {
+      setChecklistUploading(false);
+    }
+  };
+
+  const closeChecklistModal = () => {
+    setChecklistModalOpen(false);
+    setChecklistBultoCount(1);
+    setChecklistPhotos([]);
+    setChecklistUploading(false);
   };
 
   const handleAdminUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3489,6 +3546,50 @@ export default function OrderDetailPage() {
         )}
       </div>
     </div>
+
+    {/* Checklist modal — shown when trying to set "checklist" without bulto photos */}
+    {checklistModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={closeChecklistModal}>
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-6" onClick={e => e.stopPropagation()}>
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Checklist de Bultos</h3>
+          <p className="text-xs text-gray-500 mb-4">Registra cuántos bultos tiene este pedido y sube una foto de cada uno.</p>
+
+          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Cantidad de bultos</label>
+          <input type="number" min={1} max={50} value={checklistBultoCount} onChange={e => {
+            const n = Math.max(1, parseInt(e.target.value) || 1);
+            setChecklistBultoCount(n);
+            setChecklistPhotos(prev => prev.slice(0, n));
+          }} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 mb-4" />
+
+          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Fotos de los bultos ({checklistPhotos.length}/{checklistBultoCount})</label>
+          <input type="file" accept="image/*" multiple onChange={e => {
+            const files = Array.from(e.target.files || []);
+            setChecklistPhotos(prev => [...prev, ...files].slice(0, checklistBultoCount));
+          }} className="w-full text-sm border border-gray-300 rounded-lg p-2 mb-2" />
+          {checklistPhotos.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {checklistPhotos.map((f, i) => (
+                <div key={i} className="relative">
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center text-[10px] text-gray-400">Bulto {i+1}</div>
+                  <button onClick={() => setChecklistPhotos(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center">x</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {checklistPhotos.length < checklistBultoCount && (
+            <p className="text-[10px] text-amber-600 font-semibold mb-3">Faltan {checklistBultoCount - checklistPhotos.length} foto(s)</p>
+          )}
+
+          <div className="flex gap-2">
+            <button onClick={closeChecklistModal} className="flex-1 py-2.5 rounded-xl text-gray-500 font-semibold text-sm hover:bg-gray-50 border border-gray-200">Cancelar</button>
+            <button onClick={submitChecklistModal} disabled={checklistUploading || checklistPhotos.length < checklistBultoCount}
+              className="flex-1 py-2.5 rounded-xl bg-cyan-600 text-white font-bold text-sm hover:bg-cyan-700 disabled:opacity-50 transition">
+              {checklistUploading ? 'Subiendo...' : 'Confirmar checklist'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Delivered modal — shown when trying to set "delivered" without proof/tracking */}
     {deliveredModalOpen && (

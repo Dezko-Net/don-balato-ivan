@@ -6,7 +6,7 @@ import { revalidateTag } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
-const CONFIRMED_STATUSES = ['paid', 'payment_review', 'payment_confirmed', 'processing', 'shipped', 'delivered'];
+const CONFIRMED_STATUSES = ['paid', 'payment_review', 'payment_confirmed', 'processing', 'shipped', 'checklist', 'delivered'];
 const UNCONFIRMED_STATUSES = ['pending', 'pending_stock'];
 
 export async function POST(req: NextRequest) {
@@ -23,6 +23,18 @@ export async function POST(req: NextRequest) {
     }
 
     const prevStatus = order.STATUS;
+
+    // Validate: cannot set to "checklist" without bulto photos and count
+    if (newStatus === 'checklist') {
+      const bultoCount = (order as any).BULTOCOUNT || 0;
+      let boxPhotos: string[] = [];
+      try { boxPhotos = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
+      if (bultoCount === 0 || boxPhotos.length === 0) {
+        return NextResponse.json({
+          error: 'Para marcar como "Checklist" necesitas registrar la cantidad de bultos y subir fotos.',
+        }, { status: 400 });
+      }
+    }
 
     // Validate: cannot set to "delivered" without shipping proof photo or tracking number
     if (newStatus === 'delivered') {

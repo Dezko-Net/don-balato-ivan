@@ -59,6 +59,7 @@ const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'paid',
   'payment_confirmed',
   'shipped',
+  'checklist',
   'delivered',
 ];
 
@@ -97,6 +98,10 @@ const ORDER_STATUS_COPY: Record<
   shipped: {
     title: 'Embalado',
     buildMessage: (c) => `Tu pedido ${c} ha sido embalado y está listo para ser entregado a la agencia de transporte.`,
+  },
+  checklist: {
+    title: 'Checklist',
+    buildMessage: (c) => `Tu pedido ${c} pasó la verificación de bultos y está listo para ser entregado a la agencia.`,
   },
   delivered: {
     title: 'Entregado a Agencia',
@@ -259,6 +264,7 @@ export async function notifyOrderStatusChange(
         paid: 'Stock Confirmado',
         payment_confirmed: 'Pago Confirmado',
         shipped: 'Pedido Embalado',
+        checklist: 'Checklist de Bultos',
         delivered: 'Entregado a Agencia',
       };
 
