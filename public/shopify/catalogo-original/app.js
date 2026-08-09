@@ -822,8 +822,11 @@ function sendToBalatin() {
 
     var waUrl = 'https://wa.me/' + BALATIN_CONTACT.number + '?text=' + encodeURIComponent(waMsg);
 
-    // Guardar pedido en localStorage
-    if (orderCode) saveLocalOrder(orderCode, orderId, cart.slice(), total, 'Balatin');
+    // Guardar pedido en localStorage (con URL de WhatsApp para recuperar despues)
+    if (orderCode) {
+      saveLocalOrder(orderCode, orderId, cart.slice(), total, 'Balatin');
+      savePendingWhatsApp(waUrl, orderCode);
+    }
 
     // Limpiar carrito y cerrar modal
     cart = [];
@@ -908,7 +911,10 @@ async function submitCustomerOrder() {
   var waUrl = 'https://wa.me/' + attendant.number + '?text=' + encodeURIComponent(waMsg);
 
   // Guardar pedido y teléfono en localStorage
-  if (orderCode) saveLocalOrder(orderCode, orderId, cart.slice(), total, attendant.name);
+  if (orderCode) {
+    saveLocalOrder(orderCode, orderId, cart.slice(), total, attendant.name);
+    savePendingWhatsApp(waUrl, orderCode);
+  }
   saveCustomerPhone(normalizedPhone);
 
   // Limpiar carrito
@@ -974,6 +980,85 @@ function saveCustomerPhone(phone) {
 }
 function getCustomerPhone() {
   try { return localStorage.getItem('customerPhone') || ''; } catch { return ''; }
+}
+
+// === Pedido pendiente de WhatsApp ===
+function savePendingWhatsApp(waUrl, orderCode) {
+  try {
+    localStorage.setItem('pendingWhatsApp', JSON.stringify({
+      url: waUrl,
+      orderCode: orderCode,
+      createdAt: Date.now()
+    }));
+  } catch (e) { console.error('Error saving pending WhatsApp:', e); }
+}
+function getPendingWhatsApp() {
+  try {
+    var raw = localStorage.getItem('pendingWhatsApp');
+    if (!raw) return null;
+    var data = JSON.parse(raw);
+    // Expirar despues de 1 hora (3600000 ms)
+    if (Date.now() - data.createdAt > 3600000) {
+      // Cancelar el pedido en el servidor y limpiar
+      cancelPendingOrder(data.orderCode);
+      localStorage.removeItem('pendingWhatsApp');
+      return null;
+    }
+    return data;
+  } catch { return null; }
+}
+function clearPendingWhatsApp() {
+  try { localStorage.removeItem('pendingWhatsApp'); } catch {}
+  hidePendingOrderBanner();
+}
+function cancelPendingOrder(orderCode) {
+  try {
+    var apiBase = window.location.origin.indexOf('localhost') >= 0
+      ? 'http://localhost:3000'
+      : 'https://www.donbalatomayorista.cl';
+    fetch(apiBase + '/api/catalogo/cancel-pending', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderCode: orderCode })
+    }).catch(function(e) {
+      console.error('Error cancelando pedido expirado:', e);
+    });
+  } catch (e) { console.error('Error en cancelPendingOrder:', e); }
+}
+function showPendingOrderBanner() {
+  var pending = getPendingWhatsApp();
+  if (!pending) return;
+
+  // No mostrar si ya esta visible
+  if (document.getElementById('pendingOrderBanner')) return;
+
+  var banner = document.createElement('div');
+  banner.id = 'pendingOrderBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#f59e0b,#f97316);color:white;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-family:-apple-system,sans-serif;font-size:14px;';
+
+  var minsLeft = Math.max(1, Math.round((3600000 - (Date.now() - pending.createdAt)) / 60000));
+
+  banner.innerHTML =
+    '<div style="flex:1;">' +
+      '<div style="font-weight:700;font-size:14px;">Tienes un pedido pendiente (' + pending.orderCode + ')</div>' +
+      '<div style="font-size:12px;opacity:0.9;">Envialo por WhatsApp para que lo verifiquen. Expira en ' + minsLeft + ' min.</div>' +
+    '</div>' +
+    '<a href="' + pending.url + '" target="_blank" onclick="clearPendingWhatsApp()" style="background:white;color:#f97316;font-weight:700;padding:8px 16px;border-radius:8px;text-decoration:none;white-space:nowrap;font-size:13px;">Ir a WhatsApp</a>' +
+    '<button onclick="dismissPendingOrderBanner()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">x</button>';
+
+  document.body.insertBefore(banner, document.body.firstChild);
+
+  // Empujar el contenido hacia abajo para que el banner no tape nada
+  document.body.style.marginTop = '60px';
+}
+function dismissPendingOrderBanner() {
+  hidePendingOrderBanner();
+  // No borrar el localStorage — solo ocultar el banner esta sesion
+}
+function hidePendingOrderBanner() {
+  var banner = document.getElementById('pendingOrderBanner');
+  if (banner) banner.remove();
+  document.body.style.marginTop = '0';
 }
 
 // === My Orders view ===
@@ -4199,6 +4284,9 @@ async function init() {
   makeDismissable(document.querySelector('#orderConfirmModal .absolute.bottom-0'), closeOrderConfirmModal);
 
   render();
+
+  // Mostrar banner si hay pedido pendiente de WhatsApp
+  showPendingOrderBanner();
 }
 
 function syncHeaderHeight() {

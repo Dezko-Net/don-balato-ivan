@@ -38,6 +38,7 @@ import {
   USERS_COLLECTION_ID,
   CATEGORIES_COLLECTION_ID,
 } from "@/lib/appwrite-admin";
+import { parseShippingData } from "@/lib/shipping-parser";
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 const WA_TOKEN =
@@ -1744,151 +1745,14 @@ export async function POST(req: NextRequest) {
           userText
         ).trim();
 
-        // ── Local regex parser for shipping data ──
-        const lowerData = accumulatedData.toLowerCase();
-
-        // RUT: matches 12.345.678-9, 12345678-9, 123456789
-        const rutMatch = accumulatedData.match(
-          /\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/,
-        );
-        const customerRut = rutMatch ? rutMatch[1] : "";
-
-        // Agencia: todas las agencias de Appwrite + retiro
-        const agencyMatch = lowerData.match(
-          /\b(starken|pullman\s*cargo|pullman|varmontt|bluexpress|blu\s*express|cyc|tvp|cruz\s*del\s*sur|tramar|5\s*sur|5sur|mena|cacem|jt\s*transportes|chilexpress|retiro\s+(en\s+)?tienda|retiro)\b/,
-        );
-        let shippingAgency = "";
-        if (agencyMatch) {
-          const m = agencyMatch[0];
-          if (m.includes("blu")) shippingAgency = "BLUEXPRESS";
-          else if (m.includes("pullman")) shippingAgency = "PULLMAN CARGO";
-          else if (m.includes("cruz")) shippingAgency = "CRUZ DEL SUR";
-          else if (m.includes("5") && m.includes("sur"))
-            shippingAgency = "5SUR";
-          else if (m.includes("jt")) shippingAgency = "JT TRANSPORTES";
-          else if (m.includes("retiro")) shippingAgency = "RETIRO EN TIENDA";
-          else shippingAgency = m.toUpperCase().trim();
-        }
-
-        // Email
-        const emailMatch = accumulatedData.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
-        const customerEmail = emailMatch ? emailMatch[0] : "";
-
-        // Región: match known Chilean regions
-        const regions = [
-          "metropolitana",
-          "valparaíso",
-          "valparaiso",
-          "biobío",
-          "bio bio",
-          "araucanía",
-          "araucania",
-          "ohiggins",
-          "o'higgins",
-          "maule",
-          "ñuble",
-          "nuble",
-          "los lagos",
-          "aysén",
-          "aysen",
-          "magallanes",
-          "antofagasta",
-          "atacama",
-          "coquimbo",
-          "tarapacá",
-          "tarapaca",
-          "arica",
-          "río negro",
-          "los ríos",
-        ];
-        const regionMatch = regions.find((r) => lowerData.includes(r));
-        const region = regionMatch
-          ? regionMatch.charAt(0).toUpperCase() + regionMatch.slice(1)
-          : "";
-
-        // Remove known parts to find address and comuna
-        let remaining = accumulatedData;
-        if (rutMatch) remaining = remaining.replace(rutMatch[0], "");
-        if (agencyMatch)
-          remaining = remaining.replace(new RegExp(agencyMatch[0], "gi"), "");
-        if (emailMatch) remaining = remaining.replace(emailMatch[0], "");
-        if (regionMatch)
-          remaining = remaining.replace(new RegExp(regionMatch, "gi"), "");
-        // Remove "termine", "terminé", labels like "rut:", "dirección:", etc.
-        remaining = remaining.replace(
-          /\b(termin[eé]|acab[eé]|finalizar|listo|ya)\b/gi,
-          "",
-        );
-        remaining = remaining.replace(
-          /\b(rut|direcci[oó]n|comuna|regi[oó]n|agencia|email|correo|env[ií]o|starken|chilexpress|bluexpress)\s*[:\-]?\s*/gi,
-          "",
-        );
-        // Clean up
-        remaining = remaining.replace(/\s+/g, " ").trim();
-        // Remove leading/trailing punctuation
-        remaining = remaining.replace(/^[\s,;:|-]+|[\s,;:|-]+$/g, "");
-
-        // Split remaining into parts — address is usually first, comuna second
-        const parts = remaining
-          .split(/\s*,\s*|\s{2,}/)
-          .filter((p) => p.length > 1);
-        let address = "";
-        let comuna = "";
-
-        if (parts.length >= 2) {
-          address = parts[0];
-          comuna = parts[1];
-        } else if (parts.length === 1) {
-          // Try to split by known comuna names
-          const comunas = [
-            "santiago centro",
-            "santiago",
-            "providencia",
-            "maipú",
-            "maipu",
-            "las condes",
-            "vitacura",
-            "lo barnechea",
-            "ñuñoa",
-            "nunoa",
-            "la florida",
-            "puente alto",
-            "san miguel",
-            "estación central",
-            "estacion central",
-            "quinta normal",
-            "renca",
-            "cerro navia",
-            "huechuraba",
-            "independencia",
-            "recoleta",
-            "la reina",
-            "peñalolén",
-            "penalolen",
-            "la granja",
-            "san ramón",
-            "san ramon",
-            "la cisterna",
-            "el bosque",
-            "pedro aguirre cerda",
-            "lo espejo",
-            "pudahuel",
-            "quilicura",
-            "conchalí",
-            "conchali",
-            "macul",
-            "cerrillos",
-          ];
-          const foundComuna = comunas.find((c) => lowerData.includes(c));
-          if (foundComuna) {
-            comuna = foundComuna.charAt(0).toUpperCase() + foundComuna.slice(1);
-            address = parts[0]
-              .replace(new RegExp(foundComuna, "gi"), "")
-              .trim();
-          } else {
-            address = parts[0];
-          }
-        }
+          // ── Parser inteligente de datos de envío ──
+          const parsed = parseShippingData(accumulatedData);
+          const customerRut = parsed.rut;
+          let shippingAgency = parsed.agency;
+          const customerEmail = parsed.email;
+          let comuna = parsed.comuna;
+          let region = parsed.region;
+          let address = parsed.address;
 
         // Save to order
         try {
@@ -2009,57 +1873,13 @@ export async function POST(req: NextRequest) {
 
           // Parsear directamente (mismo codigo de wantsParse arriba)
           const accumulatedData = fakeTerminéText;
-          const lowerData = accumulatedData.toLowerCase();
-
-          const rutMatch = accumulatedData.match(/\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/);
-          const customerRut = rutMatch ? rutMatch[1] : "";
-
-          const agencyMatch = lowerData.match(/\b(starken|pullman\s*cargo|pullman|varmontt|bluexpress|blu\s*express|cyc|tvp|cruz\s*del\s*sur|tramar|5\s*sur|5sur|mena|cacem|jt\s*transportes|chilexpress|retiro\s+(en\s+)?tienda|retiro)\b/);
-          let shippingAgency = "";
-          if (agencyMatch) {
-            const m = agencyMatch[0];
-            if (m.includes("blu")) shippingAgency = "BLUEXPRESS";
-            else if (m.includes("pullman")) shippingAgency = "PULLMAN CARGO";
-            else if (m.includes("cruz")) shippingAgency = "CRUZ DEL SUR";
-            else if (m.includes("5") && m.includes("sur")) shippingAgency = "5SUR";
-            else if (m.includes("jt")) shippingAgency = "JT TRANSPORTES";
-            else if (m.includes("retiro")) shippingAgency = "RETIRO EN TIENDA";
-            else shippingAgency = m.toUpperCase().trim();
-          }
-
-          const emailMatch = accumulatedData.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
-          const customerEmail = emailMatch ? emailMatch[0] : "";
-
-          const regions = ["metropolitana", "valparaíso", "valparaiso", "biobío", "bio bio", "araucanía", "araucania", "ohiggins", "o'higgins", "maule", "ñuble", "nuble", "los lagos", "aysén", "aysen", "magallanes", "antofagasta", "atacama", "coquimbo", "tarapacá", "tarapaca", "arica", "río negro", "los ríos"];
-          const regionMatch = regions.find((r) => lowerData.includes(r));
-          const region = regionMatch ? regionMatch.charAt(0).toUpperCase() + regionMatch.slice(1) : "";
-
-          let remaining = accumulatedData;
-          if (rutMatch) remaining = remaining.replace(rutMatch[0], "");
-          if (agencyMatch) remaining = remaining.replace(new RegExp(agencyMatch[0], "gi"), "");
-          if (emailMatch) remaining = remaining.replace(emailMatch[0], "");
-          if (regionMatch) remaining = remaining.replace(new RegExp(regionMatch, "gi"), "");
-          remaining = remaining.replace(/(?:^|[^a-z])(termin[eé]|acab[eé]|finalizar|listo|ya)(?:[^a-z]|$)/gi, "");
-          remaining = remaining.replace(/\b(rut|direcci[oó]n|direccion|comuna|regi[oó]n|region|agencia|email|correo|env[ií]o|envio|transporte|starken|chilexpress|bluexpress|cyc|tvp|pullman|varmontt|tramar|mena|cacem)\s*[:\-]?\s*/gi, "");
-          remaining = remaining.replace(/\s+/g, " ").trim();
-          remaining = remaining.replace(/^[\s,;:|-]+|[\s,;:|-]+$/g, "");
-
-          const parts = remaining.split(/\s*,\s*|\s{2,}/).filter((p) => p.length > 1);
-          let address = "";
-          let comuna = "";
-          if (parts.length >= 2) {
-            address = parts[0];
-            comuna = parts[1];
-          } else if (parts.length === 1) {
-            const comunas = ["santiago centro", "santiago", "providencia", "maipú", "maipu", "las condes", "vitacura", "lo barnechea", "ñuñoa", "nunoa", "la florida", "puente alto", "san miguel", "estación central", "estacion central", "quinta normal", "renca", "cerro navia", "huechuraba", "independencia", "recoleta", "la reina", "peñalolén", "penalolen", "la granja", "san ramón", "san ramon", "la cisterna", "el bosque", "pedro aguirre cerda", "lo espejo", "pudahuel", "quilicura", "conchalí", "conchali", "macul", "cerrillos", "la serena", "coquimbo"];
-            const foundComuna = comunas.find((c) => lowerData.includes(c));
-            if (foundComuna) {
-              comuna = foundComuna.charAt(0).toUpperCase() + foundComuna.slice(1);
-              address = parts[0].replace(new RegExp(foundComuna, "gi"), "").trim();
-            } else {
-              address = parts[0];
-            }
-          }
+          const parsed = parseShippingData(accumulatedData);
+          const customerRut = parsed.rut;
+          let shippingAgency = parsed.agency;
+          const customerEmail = parsed.email;
+          let comuna = parsed.comuna;
+          let region = parsed.region;
+          let address = parsed.address;
 
           try {
             const { serverGetDocument, serverUpdateDocument } = await import("@/lib/appwrite-server");
@@ -2464,11 +2284,15 @@ export async function POST(req: NextRequest) {
           const customerFirstName =
             String(orderDoc.CUSTOMERNAME || "").split(" ")[0] || "amigo";
 
-          // Mark stock as confirmed
-          await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-            STATUS: "paid",
-            UPDATEDAT: Date.now(),
-          });
+          // Mark stock as confirmed — solo si el pedido no ha avanzado mas alla de 'paid'
+          const currentStatus = orderDoc.STATUS;
+          const ADVANCED_STATUSES = ['payment_confirmed', 'processing', 'shipped', 'checklist', 'delivered'];
+          if (!ADVANCED_STATUSES.includes(currentStatus)) {
+            await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+              STATUS: "paid",
+              UPDATEDAT: Date.now(),
+            });
+          }
 
           // Update customer's Balatin flow step to awaiting_payment (payment first, then data)
           if (customerPhone) {
@@ -2641,10 +2465,14 @@ export async function POST(req: NextRequest) {
           String(order.CUSTOMERNAME || "").split(" ")[0] || "amigo";
 
         if (action === "stockok") {
-          await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
-            STATUS: "paid",
-            UPDATEDAT: Date.now(),
-          });
+          // Solo confirmar stock si el pedido no ha avanzado mas alla de 'paid'
+          const ADVANCED_STATUSES = ['payment_confirmed', 'processing', 'shipped', 'checklist', 'delivered'];
+          if (!ADVANCED_STATUSES.includes(order.STATUS)) {
+            await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
+              STATUS: "paid",
+              UPDATEDAT: Date.now(),
+            });
+          }
 
           // Update the customer's Balatin flow step to awaiting_payment (payment first, then data)
           if (customerPhone) {
@@ -4476,7 +4304,7 @@ El cliente te mandó todos sus datos de envío juntos. Debes EXTRAER los datos y
                   qty,
                   price,
                   total: price * qty,
-                  img: prod.IMAGEURL || "",
+                  img: prod.IMAGEURL || prod.IMAGEURL2 || prod.IMAGEURL3 || prod.IMAGEURL4 || prod.IMAGEURL5 || "",
                 });
               } catch {
                 notFoundItems.push(it.id);

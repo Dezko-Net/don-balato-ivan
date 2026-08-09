@@ -15,7 +15,7 @@ import {
   RefreshCw, Plus
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
-import { resolveStorageImageUrl } from '@/lib/product-images';
+import { resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
 import { parsePaymentProofs, serializePaymentProofs, MAX_PAYMENT_PROOFS } from '@/lib/payment-proofs';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
@@ -1058,14 +1058,14 @@ export default function OrderDetailPage() {
       // de los items que no guardan img (pedidos del flujo de catálogo/WhatsApp).
       if (items.length > 0) {
         try {
-          const pr = await fetch('/api/public-data/products?limit=1000');
+          const pr = await fetch('/api/public-data/products?limit=1000&includeOutOfStock=true');
           if (pr.ok) {
             const prods = ((await pr.json()).products || []) as any[];
             const byId: Record<string, string> = {};
             const bySku: Record<string, string> = {};
             const byName: Record<string, string> = {};
             for (const p of prods) {
-              const img = p.IMAGEURL || p.IMAGEURL2 || '';
+              const img = getProductImageUrl(p);
               if (!img) continue;
               if (p.$id) byId[p.$id] = img;
               const sku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
@@ -1092,13 +1092,25 @@ export default function OrderDetailPage() {
             Query.limit(productIds.length),
           ]);
           for (const product of productsResp.documents) {
-            const doc = product as { $id: string; STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number; PRICE?: number; barcode?: string };
+            const doc = product as { $id: string; STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number; PRICE?: number; barcode?: string; IMAGEURL?: string; IMAGEURL2?: string; NAME?: string };
             const pid = doc.$id;
             stocks[pid] = doc.STOCK || 0;
             locs[pid] = getWarehouseLocationFromFeatures(doc.FEATURES, doc.section);
             skus[pid] = getSkuFromFeatures(doc.FEATURES, doc.TAGS, doc.jumpseller_id, doc.sku);
             prices[pid] = doc.PRICE || 0;
             barcodes[pid] = getBarcodeFromFeatures(doc.FEATURES, doc.barcode);
+            // Tambien resolver imagen desde la coleccion products directa
+            const resolved = getProductImageUrl(doc);
+            if (resolved) {
+              setItemImages(prev => {
+                if (prev.byId[pid]) return prev; // no sobreescribir si ya existe
+                return {
+                  ...prev,
+                  byId: { ...prev.byId, [pid]: resolved },
+                  byName: doc.NAME ? { ...prev.byName, [normNameKey(doc.NAME)]: resolved } : prev.byName,
+                };
+              });
+            }
           }
         } catch {}
         setProductStocks(stocks);
@@ -1118,18 +1130,24 @@ export default function OrderDetailPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Resuelve la imagen de un item: primero la que trae guardada; si no, la empareja
-  // con el catálogo por id, luego por sku y por último por nombre. Devuelve URL lista
-  // para <img>. Con absolute=true la vuelve absoluta (para el PDF que abre otra ventana).
+  // Resuelve la imagen de un item: primero el catálogo (ya resuelto y proxyado
+  // via /api/image), luego la URL guardada en el pedido, luego por sku y nombre.
+  // Con absolute=true la vuelve absoluta (para el PDF que abre otra ventana).
   const itemImage = useCallback((it: any, absolute = false): string => {
     let img = '';
-    const direct = it?.img || it?.imageUrl;
-    if (direct) img = resolveStorageImageUrl(direct);
-    if (!img && it?.id && itemImages.byId[it.id]) img = itemImages.byId[it.id];
+    // 1. Catálogo por ID (ya resuelto via /api/image — más confiable)
+    if (it?.id && itemImages.byId[it.id]) img = itemImages.byId[it.id];
+    // 2. URL directa guardada en el pedido (puede ser URL externa rota)
+    if (!img) {
+      const direct = it?.img || it?.imageUrl;
+      if (direct) img = resolveStorageImageUrl(direct);
+    }
+    // 3. Por SKU
     if (!img) {
       const sku = it?.sku ? String(it.sku).toLowerCase().trim() : '';
       if (sku && itemImages.bySku[sku]) img = itemImages.bySku[sku];
     }
+    // 4. Por nombre
     if (!img) {
       const nm = normNameKey(it?.name);
       if (nm && itemImages.byName[nm]) img = itemImages.byName[nm];
@@ -2427,6 +2445,7 @@ export default function OrderDetailPage() {
                   packing:          'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z',
                   ready_to_ship:    'M2.01 21L23 12 2.01 3 2 10l15 2-15 2z',
                   shipped:          'M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zm-.5 1.5 1.96 2.5H17V9.5h2.5zM6 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2.22-3c-.55-.61-1.35-1-2.22-1s-1.67.39-2.22 1H3V6h12v9H8.22zM18 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z',
+                  checklist:        'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
                   delivered:        'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',
                 };
                 const isReadyRetiroStep = step === 'shipped' && isRetiro;
@@ -2562,7 +2581,7 @@ export default function OrderDetailPage() {
                 <div key={idx} className="py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap sm:flex-nowrap">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-8 h-8 rounded bg-gray-50 border overflow-hidden shrink-0 flex items-center justify-center">
-                      {(() => { const im = itemImage(it); return im ? <img src={im} className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <Package className="w-3 h-3 text-gray-300" />; })()}
+                      {(() => { const im = itemImage(it); return im ? <img src={im} className="w-full h-full object-contain" onError={(e) => { const t = e.target as HTMLImageElement; t.onerror = null; t.src = ''; t.style.display = 'none'; const p = t.parentElement; if (p) p.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>'; }} /> : <Package className="w-3 h-3 text-gray-300" />; })()}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-800 truncate">{it.name}</p>
@@ -3219,7 +3238,7 @@ export default function OrderDetailPage() {
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
                     {(() => { const im = itemImage(it); return im
-                      ? <img src={im} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      ? <img src={im} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" onError={(e) => { const t = e.target as HTMLImageElement; t.onerror = null; t.src = ''; t.style.display = 'none'; const p = t.parentElement; if (p) p.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>'; }} />
                       : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />; })()}
                   </div>
                   <div className="flex-1 min-w-0">

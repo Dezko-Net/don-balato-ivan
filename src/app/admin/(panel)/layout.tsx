@@ -16,6 +16,7 @@ import gsap from 'gsap';
 const Ico = {
   Dashboard:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><path d="M3 17.5A3.5 3.5 0 0 0 6.5 21h0A3.5 3.5 0 0 0 10 17.5v0A3.5 3.5 0 0 0 6.5 14v0A3.5 3.5 0 0 0 3 17.5z"/></svg>,
   Pedidos:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+  Checklist:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
   Analytics:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
   Cupones:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l3.58-3.58c.94-.94.94-2.48 0-3.42L9 5Z"/><path d="M6 9.01V9"/><path d="m15 5 6.3 6.3a2.4 2.4 0 0 1 0 3.4L17 19"/></svg>,
   Ofertas:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
@@ -87,7 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
     ]},
     { href: '', label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders', children: [
       { href: '/admin/orders',            label: 'Todos los Pedidos', icon: Ico.Pedidos, badge: 'orders' },
-      { href: '/admin/checklist',         label: 'Checklist',          icon: Ico.Pedidos },
+      { href: '/admin/checklist',         label: 'Checklist',          icon: Ico.Checklist },
       { href: '/admin/orders/negotiation', label: 'Negociación',       icon: Ico.Pedidos },
     ]},
     { href: '/admin/users',     label: 'Clientes',   icon: Ico.Usuarios },
@@ -501,7 +502,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           animation: anim,
         }}>
         {depth === 0 && <span style={{ width: 20, height: 20, flexShrink: 0 }}>{item.icon}</span>}
-        {depth > 0 && <span style={{ width: 4, height: 4, borderRadius: '50%', background: active ? '#fff' : 'rgba(255,255,255,0.3)', flexShrink: 0 }} />}
+        {depth > 0 && <span style={{ width: 16, height: 16, flexShrink: 0, opacity: active ? 1 : 0.6 }}>{item.icon}</span>}
         <span style={{ flex: 1 }}>{item.label}</span>
         {renderBadges(item)}
       </Link>
