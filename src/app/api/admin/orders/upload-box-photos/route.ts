@@ -6,6 +6,26 @@ import { revalidateTag } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
+interface BoxPhoto {
+  bulto: number;
+  url: string;
+}
+
+function parseBoxPhotos(value: unknown): BoxPhoto[] {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value || '[]') : value;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((photo, index) => typeof photo === 'string'
+        ? { bulto: index + 1, url: photo }
+        : { bulto: Number(photo?.bulto || index + 1), url: String(photo?.url || '') })
+      .filter(photo => photo.url)
+      .sort((a, b) => a.bulto - b.bulto);
+  } catch {
+    return [];
+  }
+}
+
 // POST: Subir foto de bulto para un pedido
 export async function POST(req: NextRequest) {
   try {
@@ -14,32 +34,49 @@ export async function POST(req: NextRequest) {
     const bultoIndex = formData.get('bultoIndex') as string; // "1", "2", etc.
     const file = formData.get('file') as File;
 
-    if (!orderId || !file) {
+    if (!orderId || !(file instanceof File)) {
       return NextResponse.json({ error: 'Falta orderId o file' }, { status: 400 });
     }
 
-    // Subir archivo al bucket
-    const fileName = `bulto_${orderId}_${bultoIndex || 'x'}_${Date.now()}.jpg`;
-    const uploaded = await serverUploadFile(ORDER_BOX_PHOTOS_BUCKET_ID, file, fileName);
-    const fileUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1'}/storage/buckets/${ORDER_BOX_PHOTOS_BUCKET_ID}/files/${uploaded.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan'}`;
+    const bultoNum = parseInt(bultoIndex, 10);
+    if (!Number.isInteger(bultoNum) || bultoNum < 1 || bultoNum > 10) {
+      return NextResponse.json({ error: 'El número de bulto debe estar entre 1 y 10' }, { status: 400 });
+    }
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'Solo se permiten imágenes' }, { status: 400 });
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      return NextResponse.json({ error: 'La foto supera el máximo de 15 MB' }, { status: 400 });
+    }
 
     // Obtener el pedido actual para ver BOXPHOTOS existentes
     const order = await serverGetDocument(ORDERS_COLLECTION_ID, orderId) as any;
     if (!order) {
       return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
     }
+    if (order.STATUS !== 'shipped') {
+      return NextResponse.json({ error: 'Solo se pueden modificar pedidos embalados' }, { status: 409 });
+    }
+    const configuredCount = Number(order.BULTOCOUNT || 0);
+    if (configuredCount < bultoNum) {
+      return NextResponse.json({ error: 'El bulto no está dentro de la cantidad configurada' }, { status: 400 });
+    }
 
-    let boxPhotos: Array<{ bulto: number; url: string }> = [];
-    try { boxPhotos = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
+    // Subir archivo al bucket
+    const extension = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5) || 'jpg';
+    const fileName = `bulto_${orderId}_${bultoNum}_${Date.now()}.${extension}`;
+    const uploaded = await serverUploadFile(ORDER_BOX_PHOTOS_BUCKET_ID, file, fileName);
+    const fileUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1'}/storage/buckets/${ORDER_BOX_PHOTOS_BUCKET_ID}/files/${uploaded.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan'}`;
+
+    let boxPhotos = parseBoxPhotos(order.BOXPHOTOS);
 
     // Agregar o reemplazar la foto del bulto
-    const bultoNum = parseInt(bultoIndex, 10) || 1;
     const existing = boxPhotos.find(p => p.bulto === bultoNum);
     if (existing) {
       existing.url = fileUrl;
     } else {
       boxPhotos.push({ bulto: bultoNum, url: fileUrl });
-      boxPhotos.sort((a, b) => a.bulto - bultoNum);
+      boxPhotos.sort((a, b) => a.bulto - b.bulto);
     }
 
     // Actualizar el pedido
@@ -75,10 +112,11 @@ export async function DELETE(req: NextRequest) {
     if (!order) {
       return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
     }
+    if (order.STATUS !== 'shipped') {
+      return NextResponse.json({ error: 'Solo se pueden modificar pedidos embalados' }, { status: 409 });
+    }
 
-    let boxPhotos: Array<{ bulto: number; url: string }> = [];
-    try { boxPhotos = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
-
+    let boxPhotos = parseBoxPhotos(order.BOXPHOTOS);
     const bultoNum = parseInt(bultoIndex, 10);
     boxPhotos = boxPhotos.filter(p => p.bulto !== bultoNum);
 
@@ -100,23 +138,34 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const { orderId, bultoCount } = await req.json();
+    const normalizedCount = Number(bultoCount);
 
-    if (!orderId || !bultoCount || bultoCount < 1) {
+    if (!orderId || !Number.isInteger(normalizedCount) || normalizedCount < 1) {
       return NextResponse.json({ error: 'orderId y bultoCount (>=1) requeridos' }, { status: 400 });
     }
 
-    if (bultoCount > 20) {
-      return NextResponse.json({ error: 'Máximo 20 bultos' }, { status: 400 });
+    if (normalizedCount > 10) {
+      return NextResponse.json({ error: 'Máximo 10 bultos' }, { status: 400 });
     }
 
+    const order = await serverGetDocument(ORDERS_COLLECTION_ID, orderId) as any;
+    if (!order) {
+      return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
+    }
+    if (order.STATUS !== 'shipped') {
+      return NextResponse.json({ error: 'Solo se pueden modificar pedidos embalados' }, { status: 409 });
+    }
+    const boxPhotos = parseBoxPhotos(order.BOXPHOTOS).filter(photo => photo.bulto <= normalizedCount);
+
     await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-      BULTOCOUNT: bultoCount,
+      BULTOCOUNT: normalizedCount,
+      BOXPHOTOS: JSON.stringify(boxPhotos),
       UPDATEDAT: Date.now(),
     });
 
     try { revalidateTag('orders'); } catch {}
 
-    return NextResponse.json({ success: true, bultoCount });
+    return NextResponse.json({ success: true, bultoCount: normalizedCount, boxPhotos });
   } catch (error: any) {
     console.error('[API upload-box-photos PATCH] Error:', error);
     return NextResponse.json({ error: error?.message || 'Error interno' }, { status: 500 });

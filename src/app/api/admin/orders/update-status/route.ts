@@ -27,11 +27,16 @@ export async function POST(req: NextRequest) {
     // Validate: cannot set to "checklist" without bulto photos and count
     if (newStatus === 'checklist') {
       const bultoCount = (order as any).BULTOCOUNT || 0;
-      let boxPhotos: string[] = [];
+      let boxPhotos: Array<string | { bulto?: number; url?: string }> = [];
       try { boxPhotos = JSON.parse(order.BOXPHOTOS || '[]'); } catch {}
-      if (bultoCount === 0 || boxPhotos.length === 0) {
+      const photographedBultos = new Set(
+        boxPhotos
+          .map((photo, index) => typeof photo === 'string' ? index + 1 : Number(photo?.bulto || index + 1))
+          .filter(bulto => bulto >= 1 && bulto <= bultoCount),
+      );
+      if (bultoCount === 0 || photographedBultos.size !== bultoCount) {
         return NextResponse.json({
-          error: 'Para marcar como "Checklist" necesitas registrar la cantidad de bultos y subir fotos.',
+          error: `Para marcar como "Checklist" necesitas una foto por cada bulto (${photographedBultos.size}/${bultoCount}).`,
         }, { status: 400 });
       }
     }
