@@ -160,6 +160,7 @@ export default function PedidoPage() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isWholesale, setIsWholesale] = useState(false);
+  const [isVendorOrder, setIsVendorOrder] = useState(false);
   const [vendorBranding, setVendorBranding] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -413,6 +414,7 @@ export default function PedidoPage() {
       const { databaseId } = getAppwriteConfig();
       let doc: any;
       let wholesale = false;
+      let vendorOrder = false;
       try {
         doc = await databases.getDocument(databaseId, ORDERS_COLLECTION, id);
       } catch {
@@ -425,10 +427,12 @@ export default function PedidoPage() {
           const vendorData = await vendorRes.json().catch(() => null);
           if (!vendorRes.ok || !vendorData?.order) throw new Error('Order not found');
           doc = vendorData.order;
+          vendorOrder = true;
           setVendorBranding(vendorData.branding || null);
         }
       }
       setIsWholesale(wholesale);
+      setIsVendorOrder(vendorOrder);
       const o = doc as unknown as Order;
       setOrder(o);
       if (o.PAYMENTPROOFURL) setUploaded(true);
@@ -542,39 +546,46 @@ export default function PedidoPage() {
     if (!file || !order) return;
     setUploading(true);
     try {
-      const { storage, databases } = getServices();
-      const { databaseId, endpoint, projectId } = getAppwriteConfig();
-      const fileId = ID.unique();
-      const up = await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
-      const ext = file.name.split('.').pop()?.toLowerCase() || '';
-      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
-      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
-      try {
+      if (isVendorOrder) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`/api/public-data/vendor-order/${encodeURIComponent(id)}/upload-proof`, {
+          method: 'POST',
+          body: formData,
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(result?.error || 'No se pudo subir el comprobante');
+      } else {
+        const { storage, databases } = getServices();
+        const { databaseId, endpoint, projectId } = getAppwriteConfig();
+        const fileId = ID.unique();
+        await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
+        const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
         const updateData: Record<string, any> = { PAYMENTPROOFURL: url };
-        // Al subir comprobante, siempre pasar a payment_review (Revisando Pago)
         if (['pending', 'pending_stock', 'processing', 'paid'].includes(order.STATUS)) {
           updateData.STATUS = 'payment_review';
         }
-        await databases.updateDocument(databaseId, coll, id, updateData);
-      } catch (updateErr: any) {
-        // Si falla con STATUS (schema diferente), intentar solo con PAYMENTPROOFURL
-        console.warn('[handleUpload] updateDocument with STATUS failed, retrying without STATUS:', updateErr);
-        await databases.updateDocument(databaseId, coll, id, { PAYMENTPROOFURL: url });
+        try {
+          await databases.updateDocument(databaseId, coll, id, updateData);
+        } catch (updateErr: any) {
+          console.warn('[handleUpload] updateDocument with STATUS failed, retrying without STATUS:', updateErr);
+          await databases.updateDocument(databaseId, coll, id, { PAYMENTPROOFURL: url });
+        }
       }
+
       setUploaded(true);
       await load();
-
-      // Revalidate cached order status for navbar + trigger immediate refetch
       fetch('/api/revalidate-orders', { method: 'POST' }).catch(() => {});
       window.dispatchEvent(new Event('orders-updated'));
-
-      // Notify admin about payment upload
       notifyPaymentUploaded(order?.ORDERCODE || id, order?.CUSTOMERNAME || 'Cliente').catch(() => {});
-    } catch (err: any) { 
+    } catch (err: any) {
       console.error('[handleUpload]', err);
-      alert('Error al subir el comprobante: ' + (err?.message || 'Intenta de nuevo.')); 
+      alert('Error al subir el comprobante: ' + (err?.message || 'Intenta de nuevo.'));
+    } finally {
+      setUploading(false);
     }
-    finally { setUploading(false); }
   }
 
   function copyField(key: string, val: string) {

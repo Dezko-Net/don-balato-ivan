@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, file, file.name);
     const proofUrl = getServerFileUrl(MEDIA_BUCKET_ID, uploaded.$id);
 
-    const shouldChangeStatus = order.STATUS === 'pending';
+    const shouldChangeStatus = ['pending', 'pending_stock', 'processing', 'paid'].includes(order.STATUS);
     await serverUpdateDocument(VENDOR_ORDERS_COLLECTION_ID, id, {
       PAYMENTPROOFURL: proofUrl,
       ...(shouldChangeStatus ? { STATUS: 'payment_review' } : {}),
