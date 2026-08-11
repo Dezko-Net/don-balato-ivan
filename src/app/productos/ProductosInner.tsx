@@ -79,6 +79,8 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
   }, []);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [stores, setStores] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [selectedStore, setSelectedStore] = useState('');
   const [search, setSearch] = useState(qParam);
   const [debouncedSearch, setDebouncedSearch] = useState(qParam);
   const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
@@ -169,8 +171,9 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
     }
   };
 
-  // Load catalog categories & offers once on mount
+  // Load catalog categories, stores & offers once on mount
   useEffect(() => {
+    fetch('/api/public-data/vendors').then(res => res.json()).then(data => setStores(data.vendors || [])).catch(() => {});
     const initLoad = async () => {
       try {
         const catOffRes = await fetch('/api/public-data/catalog');
@@ -270,6 +273,7 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
     search: debouncedSearch || undefined,
     tag: selectedTag || undefined,
     brand: lockBrand || undefined,
+    vendorId: selectedStore || undefined,
     priceMin: debouncedPriceRange ? debouncedPriceRange[0] : undefined,
     priceMax: debouncedPriceRange ? debouncedPriceRange[1] : undefined,
     ofertasOnly: selectedOfertasOnly,
@@ -320,12 +324,13 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
   }, [hasMore, isMoreLoading, loadMore]);
 
   const hasActiveFilters = !!(
-    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedSubSubcat || selectedTag || search || selectedOfertasOnly
+    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedSubSubcat || selectedTag || selectedStore || search || selectedOfertasOnly
     || (activePriceRange && priceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
   );
 
   const clearAllFilters = () => {
     setSelectedCat(lockCategoryId || '');
+    setSelectedStore('');
     setSelectedSubcat('');
     setSelectedSubSubcat('');
     setSelectedTag('');
@@ -557,6 +562,17 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
             </button>
             </div>
           </div>
+
+          {/* Tiendas — filtro principal antes de categorías */}
+          {!lockBrand && (
+            <div className="pk-h-scroll" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', overflowX: 'auto', padding: '8px 0 2px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+              <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 800, color: '#6b7280', marginRight: 2 }}>Tiendas</span>
+              {[{ id: '', name: 'Todas', color: '#3b82f6' }, { id: '__main__', name: 'Don Balato', color: '#f59e0b' }, ...stores].map(store => {
+                const active = selectedStore === store.id;
+                return <button key={store.id || 'all-stores'} type="button" onClick={() => { setSelectedStore(store.id); setSelectedCat(''); setSelectedSubcat(''); setSelectedSubSubcat(''); updateCategoryUrl(''); }} style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: 999, border: `1px solid ${active ? store.color : '#e5e7eb'}`, background: active ? `${store.color}16` : '#fff', color: active ? store.color : '#6b7280', fontSize: 12, fontWeight: active ? 800 : 600, cursor: 'pointer', transition: 'all .2s' }}>{store.id === '__main__' ? '🐱 ' : store.id ? '🏪 ' : ''}{store.name}</button>;
+              })}
+            </div>
+          )}
 
           {/* Row 2: Categories Horizontal Scroll on Mobile only */}
           {!lockCategoryId && (
@@ -862,6 +878,10 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                             <>
                               <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#2563eb' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
                               <span style={{ fontSize: 10.5, fontWeight: 800, color: '#6b7280', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
+                              {p.VENDOR_NAME && (p.VENDOR_IS_MAIN
+                                ? <span style={{ fontSize: 10.5, fontWeight: 800, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🐱 {p.VENDOR_NAME}</span>
+                                : <span style={{ fontSize: 10.5, fontWeight: 800, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🏪 {p.VENDOR_NAME}</span>
+                              )}
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
                               {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
                               <ProductThumbnails images={images} activeIndex={activeIndex} onIndexChange={setActiveIndex} />
@@ -927,11 +947,15 @@ export function ProductosInner({ lockCategoryId, lockBrand }: { lockCategoryId?:
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 2px' }}>{p.NAME}</p>
                         </Link>
                         <p className="pk-card-list-desc" style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 18, fontWeight: 800, color: hasDisc ? '#2563eb' : '#111' }}>{formatPrice(price)}</span>
                               <span style={{ fontSize: 10.5, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>al detalle</span>
+                              {p.VENDOR_NAME && (p.VENDOR_IS_MAIN
+                                ? <span style={{ fontSize: 10.5, fontWeight: 800, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🐱 {p.VENDOR_NAME}</span>
+                                : <span style={{ fontSize: 10.5, fontWeight: 800, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🏪 {p.VENDOR_NAME}</span>
+                              )}
                               {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
                             </>
                           ) : (

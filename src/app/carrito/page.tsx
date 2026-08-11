@@ -27,6 +27,21 @@ function CarritoPageContent() {
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [addingToOrder, setAddingToOrder] = useState<string | null>(null);
+  const [vendors, setVendors] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/public-data/vendors', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => setVendors(Array.isArray(data?.vendors) ? data.vendors : []))
+      .catch(() => setVendors([]));
+  }, []);
+
+  const getStoreMeta = (product: any) => {
+    const vendorId = product?.VENDOR_ID || '';
+    if (!vendorId) return { id: '__MAIN__', name: 'Don Balato Ivan', isMain: true, color: BLUE, logoUrl: '' };
+    const vendor = vendors.find(v => v.id === vendorId);
+    return { id: vendorId, name: product.VENDOR_NAME || vendor?.name || 'Tienda asociada', isMain: false, color: vendor?.color || '#7c3aed', logoUrl: vendor?.logoUrl || '' };
+  };
 
   useEffect(() => {
     if (!isLoggedIn || !user) {
@@ -234,12 +249,8 @@ function CarritoPageContent() {
           100% { transform: scale(0) rotate(360deg); opacity: 0; }
         }
         @keyframes cartShimmer { 0% { left: -40%; } 100% { left: 110%; } }
-        @keyframes cartPulse {
-          0%, 100% { box-shadow: 0 6px 20px rgba(37,99,235,0.35), inset 0 0 12px rgba(255,255,255,0.1); }
-          50% { box-shadow: 0 6px 20px rgba(37,99,235,0.55), inset 0 0 20px rgba(255,255,255,0.2); }
-        }
-        .cart-checkout-btn { animation: cartPulse 2s ease-in-out infinite; position: relative; overflow: hidden; }
-        .cart-checkout-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(37,99,235,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
+        .cart-checkout-btn { position: relative; overflow: hidden; }
+        .cart-checkout-btn:hover { transform: translateY(-1px); }
         .cart-orb {
           position: absolute; border-radius: 50%;
           background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1));
@@ -300,14 +311,40 @@ function CarritoPageContent() {
                   </h1>
                 </div>
 
-                {items.map((item, idx) => (
-                  <CartLineRow
-                    key={`${item.product.$id}_${idx}`}
-                    item={item}
-                    onUpdateQty={updateQuantity}
-                    onRemove={removeItem}
-                  />
-                ))}
+                {(() => {
+                  // Agrupar items por tienda (vendor)
+                  const groups: { key: string; name: string; isMain: boolean; color: string; logoUrl: string; items: typeof items }[] = [];
+                  const groupMap = new Map<string, number>();
+                  items.forEach(item => {
+                    const meta = getStoreMeta(item.product);
+                    if (!groupMap.has(meta.id)) {
+                      groupMap.set(meta.id, groups.length);
+                      groups.push({ key: meta.id, name: meta.name, isMain: meta.isMain, color: meta.color, logoUrl: meta.logoUrl, items: [] });
+                    }
+                    groups[groupMap.get(meta.id)!].items.push(item);
+                  });
+                  return groups.map(group => (
+                    <div key={group.key} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <div style={{ padding: '12px 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: group.color, background: `${group.color}12`, border: `1px solid ${group.color}45`, borderRadius: 999, padding: '4px 10px 4px 6px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          {group.logoUrl ? <img src={group.logoUrl} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'contain', background: '#fff' }} /> : <span style={{ width: 22, height: 22, borderRadius: '50%', background: group.color, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>{group.isMain ? 'DB' : '🏪'}</span>}
+                          {group.name}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
+                          {group.items.length} producto{group.items.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {group.items.map((item, idx) => (
+                        <CartLineRow
+                          key={`${item.product.$id}_${idx}`}
+                          item={item}
+                          onUpdateQty={updateQuantity}
+                          onRemove={removeItem}
+                        />
+                      ))}
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
 
@@ -317,15 +354,43 @@ function CarritoPageContent() {
               <div className="cart-summary-card" style={{ background: '#fff', borderRadius: 18, padding: '20px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.01em' }}>Resumen de compra</h2>
 
-                {/* 📦 Sin líneas de promo/descuento: el subtotal ya refleja
-                    el precio real por volumen (detalle/mayor/caja). */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
-                  <span style={{ color: '#6b7280' }}>Productos ({items.length}) · {totalItems} uds</span>
-                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal)}</span>
-                </div>
+                {/* Subtotales por tienda */}
+                {(() => {
+                  const groups: { key: string; name: string; isMain: boolean; color: string; logoUrl: string; subtotal: number; count: number }[] = [];
+                  const groupMap = new Map<string, number>();
+                  items.forEach(item => {
+                    const meta = getStoreMeta(item.product);
+                    const vId = meta.id;
+                    const vName = meta.name;
+                    const isMain = meta.isMain;
+                    const itemTotal = (item as any).timedOfferPrice != null
+                      ? (item as any).timedOfferPrice * item.quantity
+                      : (item.product.CURRENTPRICE || item.product.PRICE || 0) * item.quantity;
+                    if (!groupMap.has(vId)) {
+                      groupMap.set(vId, groups.length);
+                      groups.push({ key: vId, name: vName, isMain, color: meta.color, logoUrl: meta.logoUrl, subtotal: 0, count: 0 });
+                    }
+                    const g = groups[groupMap.get(vId)!];
+                    g.subtotal += itemTotal;
+                    g.count += 1;
+                  });
+                  return (
+                    <>
+                      {groups.map(group => (
+                        <div key={group.key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+                          <span style={{ color: group.color, display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700 }}>
+                            {group.logoUrl ? <img src={group.logoUrl} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'contain', background: '#fff' }} /> : <span style={{ width: 20, height: 20, borderRadius: '50%', background: group.color, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9 }}>{group.isMain ? 'DB' : '🏪'}</span>}
+                            {group.name} ({group.count})
+                          </span>
+                          <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(group.subtotal)}</span>
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
 
                 <div style={{ borderTop: '2px solid #f3f4f6', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>Total</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>Total general</span>
                   <span style={{ fontSize: 26, fontWeight: 800, color: BLUE, letterSpacing: '-0.02em' }}>{formatPrice(subtotal)}</span>
                 </div>
 
@@ -390,19 +455,41 @@ function CarritoPageContent() {
                     Mínimo {formatPrice(MINIMUM_ORDER_CLP)}
                   </span>
                 ) : (
-                  <Link href="/checkout"
-                    className="cart-checkout-btn"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: `linear-gradient(135deg,${BLUE},#1d4ed8)`, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(37,99,235,0.35)', transition: 'all 0.2s' }}
-                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
-                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
-                  >
-                    <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-                      <span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" />
-                      <span className="cart-sparkle" /><span className="cart-sparkle" /><span className="cart-sparkle" /><span className="cart-sparkle" /><span className="cart-sparkle" />
-                    </span>
-                    <span className="cart-shimmer-line" />
-                    <span style={{ position: 'relative', zIndex: 2, textShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>Continuar compra</span>
-                  </Link>
+                  (() => {
+                    // Botón de pagar por tienda
+                    const groups: { key: string; name: string; isMain: boolean; color: string; logoUrl: string; subtotal: number }[] = [];
+                    const groupMap = new Map<string, number>();
+                    items.forEach(item => {
+                      const meta = getStoreMeta(item.product);
+                      const vId = meta.id;
+                      const vName = meta.name;
+                      const isMain = meta.isMain;
+                      const itemTotal = (item as any).timedOfferPrice != null
+                        ? (item as any).timedOfferPrice * item.quantity
+                        : (item.product.CURRENTPRICE || item.product.PRICE || 0) * item.quantity;
+                      if (!groupMap.has(vId)) {
+                        groupMap.set(vId, groups.length);
+                        groups.push({ key: vId, name: vName, isMain, color: meta.color, logoUrl: meta.logoUrl, subtotal: 0 });
+                      }
+                      groups[groupMap.get(vId)!].subtotal += itemTotal;
+                    });
+                    return groups.map(group => (
+                      <Link
+                        key={group.key}
+                        href={`/checkout?vendor=${encodeURIComponent(group.key)}`}
+                        className="cart-checkout-btn"
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', padding: '13px 16px', background: `linear-gradient(135deg,${group.color},${group.color}dd)`, color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', transition: 'all 0.2s', marginBottom: 8 }}
+                        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
+                        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                          {group.logoUrl ? <img src={group.logoUrl} alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'contain', background: '#fff' }} /> : <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>{group.isMain ? 'DB' : '🏪'}</span>}
+                          Pagar {group.name}
+                        </span>
+                        <span style={{ fontWeight: 800 }}>{formatPrice(group.subtotal)}</span>
+                      </Link>
+                    ));
+                  })()
                 )}
 
                 <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '10px 12px', borderRadius: 10 }}>

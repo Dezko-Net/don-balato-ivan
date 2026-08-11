@@ -31,6 +31,7 @@ function ConfirmarPedidoContent() {
   const params = useSearchParams();
   const code = params.get('code');
   const [order, setOrder] = useState<any>(null);
+  const [vendorInfo, setVendorInfo] = useState<any>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,6 +40,9 @@ function ConfirmarPedidoContent() {
   const [copied, setCopied] = useState<string | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
+  const [customerName, setCustomerName] = useState('');
+  const [customerRut, setCustomerRut] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [region, setRegion] = useState('');
   const [comuna, setComuna] = useState('');
   const [address, setAddress] = useState('');
@@ -49,22 +53,32 @@ function ConfirmarPedidoContent() {
   const comunas = region ? CHILE_REGIONES[region] || [] : [];
 
   useEffect(() => {
-    // Cargar agencias desde Appwrite (las mismas que usa el checkout)
-    fetch('/api/agencies')
+    if (!order) return;
+    const vendorId = order.VENDOR_ID || '';
+    const query = vendorId ? `?vendorId=${encodeURIComponent(vendorId)}` : '';
+    fetch(`/api/agencies${query}`)
       .then(r => r.json())
       .then(d => setAgencies(d.agencies || []))
       .catch(() => setAgencies([]));
-  }, []);
+  }, [order?.$id, order?.VENDOR_ID]);
 
   useEffect(() => {
     if (!code) return;
     (async () => {
       try {
-        const res = await fetch(`/api/catalogo/order?code=${encodeURIComponent(code)}`);
-        const data = await res.json();
-        if (data.error) { setError(data.error); return; }
+        let res = await fetch(`/api/catalogo/order?code=${encodeURIComponent(code)}`);
+        let data = await res.json();
+        if (!res.ok || data.error) {
+          res = await fetch(`/api/vendor/public-order?code=${encodeURIComponent(code)}`);
+          data = await res.json();
+        }
+        if (!res.ok || data.error) { setError(data.error || 'Pedido no encontrado'); return; }
         setOrder(data.order);
-        if (data.order.STATUS === 'processing' || data.order.STATUS === 'shipped' || data.order.STATUS === 'delivered') {
+        setVendorInfo(data.vendor || null);
+        setCustomerName(data.order.CUSTOMERNAME || '');
+        setCustomerRut(data.order.CUSTOMERRUT || '');
+        setCustomerEmail(data.order.CUSTOMEREMAIL || '');
+        if (data.order.STATUS === 'shipped' || data.order.STATUS === 'delivered') {
           setSuccess(true);
           setLoading(false);
           return;
@@ -118,6 +132,14 @@ function ConfirmarPedidoContent() {
   }, [code]);
 
   const total = items.reduce((s, i) => s + i.total, 0);
+  const transferDetails = vendorInfo ? {
+    holder: vendorInfo.bankAccountHolder || 'Consultar con la tienda',
+    rut: vendorInfo.bankRut || '—',
+    bank: vendorInfo.bankName || '—',
+    type: vendorInfo.bankAccountType || '—',
+    number: vendorInfo.bankAccountNumber || '—',
+    email: vendorInfo.bankEmail || '—',
+  } : BANK_DETAILS;
 
   const copy = (key: string, val: string) => {
     navigator.clipboard?.writeText(val);
@@ -142,7 +164,7 @@ function ConfirmarPedidoContent() {
       const shipRes = await fetch('/api/catalogo/shipping-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderCode: code, region, comuna, address, additionalInfo, shippingAgency: agency }),
+        body: JSON.stringify({ orderCode: code, customerName: customerName.trim(), customerRut: customerRut.trim(), customerEmail: customerEmail.trim(), region, comuna, address, additionalInfo, shippingAgency: agency }),
       });
       const shipData = await shipRes.json();
       if (shipData.error) { setError(shipData.error); return; }
@@ -196,11 +218,11 @@ function ConfirmarPedidoContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f8fc] pb-40">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 text-white px-5 pt-6 pb-7 sticky top-0 z-20 shadow-lg shadow-indigo-600/20">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center flex-shrink-0">
+    <div className="min-h-screen bg-slate-50 pb-32">
+      {/* Header compacto de la tienda */}
+      <div className="bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 text-white px-4 pt-4 pb-5 sm:pt-5 sm:pb-6 sticky top-0 z-20 shadow-xl shadow-indigo-900/15">
+        <div className="max-w-6xl mx-auto flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 backdrop-blur flex items-center justify-center flex-shrink-0 shadow-inner">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
           </div>
           <div>
@@ -210,24 +232,36 @@ function ConfirmarPedidoContent() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-6xl mx-auto px-3 sm:px-5 py-4 sm:py-6 space-y-4 sm:space-y-5">
+        {/* Tienda */}
+        <div className="rounded-3xl border p-4 sm:p-5 flex items-center gap-3 shadow-sm shadow-slate-200/70" style={{ background: `linear-gradient(135deg, #fff, ${vendorInfo?.brandColor || '#4f46e5'}0d)`, borderColor: `${vendorInfo?.brandColor || '#4f46e5'}33` }}>
+          {vendorInfo?.logoUrl ? <img src={vendorInfo.logoUrl} alt={vendorInfo.name || 'Tienda'} className="w-12 h-12 rounded-2xl object-contain bg-white border border-white shadow-sm" /> : <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-xl shadow-sm">🏪</div>}
+          <div className="min-w-0">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Estás comprando en</span>
+            <h2 className="font-black text-gray-900 truncate">{vendorInfo?.name || 'Don Balato Iván'}</h2>
+          </div>
+          <span className="ml-auto shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/80 text-gray-500">Pedido {code}</span>
+        </div>
+
         {/* Cliente */}
         {order?.CUSTOMERNAME && (
-          <div className="flex items-center gap-2 text-xs text-gray-500 bg-white rounded-xl px-3 py-2 border border-gray-100">
+          <div className="flex items-center gap-2 text-xs text-gray-500 bg-white rounded-2xl px-4 py-3 border border-slate-200 shadow-sm">
             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             <span className="font-semibold text-gray-700">{order.CUSTOMERNAME}</span>
             {order.CUSTOMERPHONE && <><span>·</span><span>{order.CUSTOMERPHONE}</span></>}
           </div>
         )}
         {/* Progreso */}
-        <div className="flex items-center gap-2 text-[11px] font-semibold">
-          <span className="flex items-center gap-1.5 text-green-600"><span className="w-4 h-4 rounded-full bg-green-500 text-white flex items-center justify-center text-[9px]">✓</span>Stock confirmado</span>
-          <span className="flex-1 h-px bg-gray-200" />
-          <span className="flex items-center gap-1.5 text-indigo-600"><span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px]">2</span>Pago y envío</span>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3 text-[11px] font-bold">
+          <span className="flex items-center gap-1.5 text-emerald-600 whitespace-nowrap"><span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] shadow-sm">✓</span>Stock confirmado</span>
+          <span className="flex-1 h-1 rounded-full bg-gradient-to-r from-emerald-400 to-indigo-400" />
+          <span className="flex items-center gap-1.5 text-indigo-600 whitespace-nowrap"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-sm">2</span>Pago y envío</span>
         </div>
 
+        <div className="lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,.95fr)] lg:items-start lg:gap-5">
+          <div className="space-y-4">
         {/* Productos confirmados */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-3xl shadow-[0_8px_24px_rgba(15,23,42,0.05)] border border-slate-200/80 p-5 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
             <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
             <h2 className="font-bold text-gray-900">Tu pedido ({items.length})</h2>
@@ -254,19 +288,19 @@ function ConfirmarPedidoContent() {
         </div>
 
         {/* Datos bancarios */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
+        <div className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-3xl p-5 sm:p-6 border border-indigo-100 shadow-[0_8px_24px_rgba(79,70,229,0.07)]">
           <div className="flex items-center gap-2 mb-3">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
             <h2 className="font-bold text-blue-900">Datos para transferir</h2>
           </div>
           <div className="space-y-1.5">
             {[
-              ['Titular', BANK_DETAILS.holder],
-              ['RUT', BANK_DETAILS.rut],
-              ['Banco', BANK_DETAILS.bank],
-              ['Tipo', BANK_DETAILS.type],
-              ['N° Cuenta', BANK_DETAILS.number],
-              ['Email', BANK_DETAILS.email],
+              ['Titular', transferDetails.holder],
+              ['RUT', transferDetails.rut],
+              ['Banco', transferDetails.bank],
+              ['Tipo', transferDetails.type],
+              ['N° Cuenta', transferDetails.number],
+              ['Email', transferDetails.email],
             ].map(([label, val]) => (
               <div key={label} className="flex items-center justify-between gap-2 bg-white/70 rounded-lg px-3 py-2">
                 <div className="min-w-0">
@@ -281,10 +315,12 @@ function ConfirmarPedidoContent() {
             ))}
           </div>
         </div>
+          </div>
 
+          <div className="space-y-4 lg:sticky lg:top-24">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Subir comprobante */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div className="bg-white rounded-3xl shadow-[0_8px_24px_rgba(15,23,42,0.05)] border border-slate-200/80 p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-1">
               <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.9A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v12" /></svg>
               <h2 className="font-bold text-gray-900">Comprobante de pago</h2>
@@ -312,8 +348,31 @@ function ConfirmarPedidoContent() {
             )}
           </div>
 
+          {/* Datos del cliente */}
+          <div className="bg-white rounded-3xl shadow-[0_8px_24px_rgba(15,23,42,0.05)] border border-slate-200/80 p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm7-2h6m-3-3v6" /></svg>
+              <h2 className="font-bold text-gray-900">Tus datos</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Opcional: complétalos para que la tienda pueda identificarte y contactarte correctamente.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-bold text-gray-700 mb-1 block">Nombre completo <span className="text-gray-400 font-normal">(opcional)</span></label>
+                <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nombres y apellidos" autoComplete="name" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-gray-700 mb-1 block">RUT <span className="text-gray-400 font-normal">(opcional)</span></label>
+                <input type="text" value={customerRut} onChange={e => setCustomerRut(e.target.value)} placeholder="Ej: 12.345.678-9" autoComplete="off" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-gray-700 mb-1 block">Correo electrónico <span className="text-gray-400 font-normal">(opcional)</span></label>
+                <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="tu@correo.com" autoComplete="email" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none text-sm" />
+              </div>
+            </div>
+          </div>
+
           {/* Datos de envío */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div className="bg-white rounded-3xl shadow-[0_8px_24px_rgba(15,23,42,0.05)] border border-slate-200/80 p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h11v8H5zM16 10h3l2 2v4h-5M7 18a2 2 0 11-4 0 2 2 0 014 0zm12 0a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
               <h2 className="font-bold text-gray-900">Datos de envío</h2>
@@ -401,19 +460,21 @@ function ConfirmarPedidoContent() {
           )}
 
           {/* Submit */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 p-4 pb-6 z-20">
-            <div className="max-w-2xl mx-auto flex items-center gap-3">
-              <div className="flex flex-col leading-none">
-                <span className="text-[11px] text-gray-400 font-semibold">Total</span>
-                <span className="text-lg font-black text-indigo-600">${total.toLocaleString('es-CL')}</span>
+          <div className="fixed bottom-3 left-3 right-3 sm:bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-[min(720px,calc(100vw-2rem))] bg-white/95 backdrop-blur-xl border border-slate-200 p-2.5 sm:p-3 rounded-3xl shadow-[0_12px_40px_rgba(15,23,42,0.18)] z-20">
+            <div className="max-w-5xl mx-auto flex items-center gap-3">
+              <div className="flex flex-col leading-none pl-2 sm:pl-3 min-w-[82px]">
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-extrabold">Total</span>
+                <span className="text-lg sm:text-xl font-black text-indigo-600">${total.toLocaleString('es-CL')}</span>
               </div>
               <button type="submit" disabled={saving}
-                className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 active:scale-[0.99] transition disabled:opacity-50 shadow-lg shadow-indigo-600/25">
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-extrabold py-3.5 sm:py-4 rounded-2xl hover:from-indigo-700 hover:to-blue-700 active:scale-[0.99] transition disabled:opacity-50 shadow-lg shadow-indigo-600/25">
                 {saving ? 'Enviando…' : 'Enviar comprobante y envío'}
               </button>
             </div>
           </div>
         </form>
+          </div>
+        </div>
       </div>
     </div>
   );

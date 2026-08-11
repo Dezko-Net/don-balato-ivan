@@ -4,11 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Package, ChevronRight, ArrowLeft, Loader2, Search, Receipt, RefreshCw, ShoppingCart, Clock, CheckCircle, MessageSquare, Truck, XCircle, Upload } from 'lucide-react';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { formatPrice } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
 import { useCart } from '@/context/CartContext';
-import { Query } from 'appwrite';
 import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
 
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -46,33 +45,9 @@ export default function MisPedidosPage() {
     (async () => {
       setLoading(true);
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        // Try USERID first (more likely indexed), fallback to CUSTOMEREMAIL
-        let res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-          Query.equal('USERID', user.id),
-          Query.orderDesc('$createdAt'),
-          Query.limit(50),
-        ]);
-        if (res.documents.length === 0) {
-          try {
-            res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-              Query.equal('CUSTOMEREMAIL', user.email),
-              Query.orderDesc('$createdAt'),
-              Query.limit(50),
-            ]);
-          } catch {}
-        }
-        if (res.documents.length === 0) {
-          try {
-            res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-              Query.equal('userId', user.id),
-              Query.orderDesc('$createdAt'),
-              Query.limit(50),
-            ]);
-          } catch {}
-        }
-        setOrders(res.documents);
+        const res = await fetch(`/api/public-data/my-orders?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email || '')}`);
+        const data = await res.json();
+        setOrders(data.orders || []);
       } catch (e) { console.error('Error fetching orders:', e); }
       finally { setLoading(false); }
     })();
@@ -267,6 +242,9 @@ export default function MisPedidosPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{order.ORDERCODE}</span>
+                      <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: order.ORDER_SOURCE === 'vendor' ? '#f5f3ff' : '#fef3c7', color: order.ORDER_SOURCE === 'vendor' ? '#7c3aed' : '#92400e', border: `1px solid ${order.ORDER_SOURCE === 'vendor' ? '#ddd6fe' : '#fde68a'}`, whiteSpace: 'nowrap' }}>
+                        {order.ORDER_SOURCE === 'vendor' ? '🏪' : '🐱'} {order.STORE_LABEL || 'Don Balato Iván'}
+                      </span>
                       <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: st.bg, color: st.color, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         {isWaiting && <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.color, animation: 'pulse 1.5s ease-in-out infinite' }} />}
                         {st.label}

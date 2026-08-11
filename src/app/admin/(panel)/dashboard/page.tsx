@@ -1683,7 +1683,7 @@ export default function DashboardPage() {
           <h1 className="db-greeting" style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {greeting}, {userName}
             <img 
-              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785925265101-pegada-1785925258751.png"
+              src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png"
               alt="Balatin Alert"
               style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', objectFit: 'cover' }} 
               className={`db-icon db-icon-${dashStatus}`} 

@@ -20,6 +20,10 @@ export interface Product {
   SUBCATEGORYID?: string;
   SUBSUBCATEGORYID?: string; // Nivel 3
   SELLERID: string;
+  /** Marketplace: si viene seteado, el producto es de un vendor externo (no propio) */
+  VENDOR_ID?: string;
+  VENDOR_NAME?: string;
+  VENDOR_IS_MAIN?: boolean;
   STOCK: number;
   IMAGEURL: string;
   IMAGEURL2?: string;

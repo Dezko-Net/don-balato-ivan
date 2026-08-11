@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { serverListDocuments, serverUpdateDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
-import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { ORDERS_COLLECTION_ID, VENDOR_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 import { parsePaymentProofs, serializePaymentProofs, MAX_PAYMENT_PROOFS } from '@/lib/payment-proofs';
 
@@ -20,11 +20,13 @@ export async function POST(request: NextRequest) {
     // Find order by ORDERCODE
     const qEqual = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [orderCode] });
     const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
-    const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qEqual, qLimit1]);
-
+    let collectionId = ORDERS_COLLECTION_ID;
+    let res = await serverListDocuments(collectionId, [qEqual, qLimit1]);
     if (!res.documents || res.documents.length === 0) {
-      return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
+      collectionId = VENDOR_ORDERS_COLLECTION_ID;
+      res = await serverListDocuments(collectionId, [qEqual, qLimit1]);
     }
+    if (!res.documents || res.documents.length === 0) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
 
     const order = res.documents[0] as any;
 
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
     const allProofs = serializePaymentProofs([...existing, fileUrl]);
 
-    await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
+    await serverUpdateDocument(collectionId, order.$id, {
       PAYMENTPROOFURL: allProofs,
       STATUS: 'payment_review',
       UPDATEDAT: Date.now(),

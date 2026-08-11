@@ -17,6 +17,7 @@ interface UseProductsParams {
   search?: string;
   tag?: string;
   brand?: string;
+  vendorId?: string;
   priceMin?: number;
   priceMax?: number;
   ofertasOnly?: boolean;
@@ -37,6 +38,7 @@ export function useProductsCache({
   search,
   tag,
   brand,
+  vendorId,
   priceMin,
   priceMax,
   ofertasOnly,
@@ -81,12 +83,13 @@ export function useProductsCache({
     if (search) params.set('search', search);
     if (tag) params.set('tag', tag);
     if (brand) params.set('brand', brand);
+    if (vendorId) params.set('vendorId', vendorId);
     if (priceMin !== undefined) params.set('priceMin', String(priceMin));
     if (priceMax !== undefined) params.set('priceMax', String(priceMax));
     if (ofertasOnly) params.set('ofertasOnly', 'true');
     if (catalogMode && catalogMode !== 'retail') params.set('mode', catalogMode);
     return params;
-  }, [categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, brand, priceMin, priceMax, ofertasOnly, catalogMode]);
+  }, [categoryId, subcategoryId, subSubcategoryId, sortBy, search, tag, brand, vendorId, priceMin, priceMax, ofertasOnly, catalogMode]);
 
   // ===========================================================================
   // LEGACY MODE: download everything once, filter/sort/paginate client-side.

@@ -254,7 +254,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES || '';
   const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
   const isWholesaleQty = hasWholesale && (isExact ? qty === (product.WHOLESALEMINQUANTITY || 0) : qty >= (product.WHOLESALEMINQUANTITY || 0));
-  const effectivePrice = isPackQtyReached ? displayPrice : (isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice);
+  // 📦 Precio por volumen — % descuento
+  const volPct = Number(product.PACK_DISCOUNT_PCT) || 0;
+  const volMinQty = Number(product.PACK_MIN_PACKS) || 0;
+  const hasVolPct = volPct > 0 && volMinQty > 0;
+  const isVolPctActive = hasVolPct && qty >= volMinQty && !isDisableDiscounts(product);
+  const volPctPrice = isVolPctActive ? Math.round(displayPrice * (1 - volPct / 100)) : 0;
+  const effectivePrice = isPackQtyReached ? displayPrice : (isVolPctActive ? volPctPrice : (isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice));
   const lineTotal = effectivePrice * qty;
   const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
   const stock = isLimitedStock ? product.STOCK! : 99999;
@@ -621,24 +627,41 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               </div>
             )}
             <div style={{ marginBottom: 18 }}>
-              {(hasDisc && !isWholesaleQty && priceOriginal != null) && (
+              {(hasDisc && !isWholesaleQty && !isVolPctActive && priceOriginal != null) && (
                 <p style={{ margin: '0 0 2px', fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(priceOriginal)}</p>
               )}
+              {isVolPctActive && (
+                <p style={{ margin: '0 0 2px', fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(displayPrice)}</p>
+              )}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                <span className="pd-price-main" style={{ fontSize: 36, fontWeight: 400, color: isWholesaleQty ? '#059669' : TEXT_DARK, letterSpacing: -1, lineHeight: 1, transition: 'color 0.3s ease' }}>
+                <span className="pd-price-main" style={{ fontSize: 36, fontWeight: 400, color: (isWholesaleQty || isVolPctActive) ? '#059669' : TEXT_DARK, letterSpacing: -1, lineHeight: 1, transition: 'color 0.3s ease' }}>
                   {formatPrice(effectivePrice)}
                 </span>
-                {(hasDisc && !isWholesaleQty) && (
+                {(hasDisc && !isWholesaleQty && !isVolPctActive) && (
                   priceResolved.fromApertura ? (
                     <AperturaDiscountBadge percent={discPct} size="lg" />
                   ) : (
                     <span style={{ fontSize: 16, fontWeight: 600, color: '#10b981' }}>{discPct}% OFF</span>
                   )
                 )}
+                {isVolPctActive && (
+                  <span style={{ fontSize: 16, fontWeight: 600, color: '#10b981' }}>{volPct}% OFF</span>
+                )}
                 {isWholesaleQty && (
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#059669', background: 'rgba(5,150,105,0.1)', padding: '3px 8px', borderRadius: 20 }}>PRECIO MAYORISTA</span>
                 )}
               </div>
+              {/* Badge de oferta por volumen */}
+              {hasVolPct && !isVolPctActive && (
+                <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, background: '#1a1a1a', color: '#fff', padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                  📦 Compra {volMinQty}+ → {volPct}% OFF
+                </div>
+              )}
+              {hasWholesale && !isWholesaleQty && !hasVolPct && (
+                <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,#059669,#047857)', color: '#fff', padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                  📦 Compra {product.WHOLESALEMINQUANTITY}+ → {formatPrice(product.WHOLESALEPRICE!)} c/u
+                </div>
+              )}
             </div>
 
             {/* Características rápidas */}

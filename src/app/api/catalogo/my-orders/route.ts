@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { serverListDocuments } from '@/lib/appwrite-server';
-import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
+import { ORDERS_COLLECTION_ID, VENDOR_ORDERS_COLLECTION_ID, VENDORS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,15 +31,27 @@ export async function GET(req: NextRequest) {
     for (const v of variants) {
       try {
         const qPhone = JSON.stringify({ method: 'contains', attribute: 'CUSTOMERPHONE', values: [v] });
-        const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qPhone, qLimit]);
-        for (const doc of (res.documents || []) as any[]) {
-          if (!seen.has(doc.$id)) {
-            seen.add(doc.$id);
-            allOrders.push(doc);
+        for (const collectionId of [ORDERS_COLLECTION_ID, VENDOR_ORDERS_COLLECTION_ID]) {
+          const res = await serverListDocuments(collectionId, [qOrderDesc, qPhone, qLimit]);
+          for (const doc of (res.documents || []) as any[]) {
+            if (!seen.has(doc.$id)) {
+              seen.add(doc.$id);
+              allOrders.push(doc);
+            }
           }
         }
       } catch {}
     }
+
+    // Cargar nombres de las tiendas para que cada pedido indique su origen.
+    const vendorIds = [...new Set(allOrders.map(o => o.VENDOR_ID).filter(Boolean))] as string[];
+    const vendorNames: Record<string, string> = {};
+    await Promise.all(vendorIds.map(async (vendorId) => {
+      try {
+        const vendor = await serverGetDocument(VENDORS_COLLECTION_ID, vendorId) as any;
+        vendorNames[vendorId] = vendor.NAME || 'Tienda asociada';
+      } catch { vendorNames[vendorId] = 'Tienda asociada'; }
+    }));
 
     // Sort by createdAt desc
     allOrders.sort((a, b) => (b.$createdAt || '').localeCompare(a.$createdAt || ''));
@@ -47,10 +59,14 @@ export async function GET(req: NextRequest) {
     const orders = allOrders.map((o: any) => ({
       id: o.$id,
       orderCode: o.ORDERCODE || '',
+      storeName: o.VENDOR_ID ? (vendorNames[o.VENDOR_ID] || 'Tienda asociada') : 'Don Balato Iván',
+      vendorId: o.VENDOR_ID || '',
       status: o.STATUS || 'pending',
       total: o.TOTAL || 0,
       items: (() => {
-        try { return JSON.parse(o.ITEMS || '[]'); } catch { return []; }
+        try {
+          return JSON.parse(o.ITEMS || '[]').map((item: any) => ({ ...item, image: item.image || item.img || item.IMAGEURL || '' }));
+        } catch { return []; }
       })(),
       createdAt: o.$createdAt || '',
       assignedCashier: o.ASSIGNEDCASHIER || '',

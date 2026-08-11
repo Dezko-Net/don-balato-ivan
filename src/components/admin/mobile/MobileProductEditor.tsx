@@ -9,6 +9,7 @@ import {
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID } from '@/lib/appwrite';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 import { Product, Category, Subcategory } from '@/types/admin';
+import PriceInput from '@/components/PriceInput';
 
 export type ProductModalData = Partial<Product> & {
   _barcode?: string; _sku?: string; _details?: string; _usage?: string; _ingredients?: string;
@@ -661,12 +662,10 @@ export default function MobileProductEditor({
             {/* Precio (editable, se autocalcula con margen pero se puede cambiar) */}
             <div className="pt-2 border-t border-gray-100">
               <label className={labelCls}>Precio venta (CLP) <span className="text-red-500">*</span></label>
-              <input
-                type="number" inputMode="numeric"
+              <PriceInput
                 value={d.PRICE || ''}
-                onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }}
-                onChange={e => update({ PRICE: Number(e.target.value) || 0, WHOLESALEPRICE: Number(e.target.value) || 0 })}
-                placeholder="Ej: 6000"
+                onChange={v => update({ PRICE: v, WHOLESALEPRICE: v })}
+                placeholder="Ej: $6.000"
                 className={`${inputCls} text-lg font-bold ${!d.PRICE ? 'border-red-300 bg-red-50' : ''}`}
               />
               {d.COST && d.PRICE && (

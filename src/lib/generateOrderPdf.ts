@@ -27,11 +27,23 @@ export interface ProductExtraInfo {
   location?: ProductWarehouseLocation | null;
 }
 
+export interface VendorBranding {
+  name?: string;
+  color?: string;
+  secondaryColor?: string;
+  logoUrl?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+}
+
 export function generateOrderPdf(
   order: Order,
   items: OrderItem[],
   productExtraInfo?: Record<string, ProductExtraInfo>,
   existingWindow?: Window | null,
+  branding?: VendorBranding,
 ) {
   const printableItems = items.filter(i => !(i as any).missing);
   const hasSku = (productExtraInfo && printableItems.some(i => i.id && productExtraInfo[i.id]?.sku)) || printableItems.some(i => (i as any).sku);
@@ -42,6 +54,11 @@ export function generateOrderPdf(
   const subtotal = order.SUBTOTAL || items.reduce((s, i) => s + (i.total || i.price * i.qty), 0);
   const total = order.TOTAL || subtotal;
   const discount = order.DISCOUNT || (order as any).DISCOUNTAMOUNT || (subtotal - total > 0 ? subtotal - total : 0);
+  const brandName = branding?.name || 'DON BALATO IVÁN';
+  const brandColor = branding?.color || '#f97316';
+  const brandSecondary = branding?.secondaryColor || '${brandSecondary}';
+  const brandLogo = branding?.logoUrl ? `<img src="${branding.logoUrl}" style="width:38px;height:38px;border-radius:9px;background:#fff;object-fit:contain;padding:3px;" />` : `<div style="width:38px;height:38px;border-radius:9px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;">${brandName.slice(0, 2).toUpperCase()}</div>`;
+  const brandSubtitle = [branding?.address, branding?.phone, branding?.email].filter(Boolean).join(' · ') || 'Información de la tienda';
 
   const itemsHtml = printableItems.map(i => {
     const extra = i.id ? productExtraInfo?.[i.id] : null;
@@ -68,7 +85,7 @@ export function generateOrderPdf(
         ${originalHtml}
         ${note ? `<div style="font-size:11px;color:#d97706;background:#fffbeb;border:1px solid #fef3c7;padding:3px 6px;border-radius:4px;margin-top:4px;display:inline-block;">💬 Nota: ${note}</div>` : ''}
       </td>
-      ${hasSku ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#2563eb;text-align:center;font-weight:600;font-family:monospace;">${sku || '—'}</td>` : ''}
+      ${hasSku ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:${brandSecondary};text-align:center;font-weight:600;font-family:monospace;">${sku || '—'}</td>` : ''}
       ${hasLocations ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#4338ca;text-align:center;font-weight:600;">${loc || '—'}</td>` : ''}
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;text-align:center;">${i.qty}</td>
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;text-align:right;">${formatPrice(i.price)}</td>
@@ -100,14 +117,14 @@ export function generateOrderPdf(
 <body>
   <div class="sheet">
   <!-- Brand header -->
-  <div style="background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 55%,#3b82f6 100%);color:#fff;padding:28px 40px;">
+  <div style="background:linear-gradient(135deg,${brandColor} 0%,${brandSecondary} 55%,${brandColor}dd 100%);color:#fff;padding:28px 40px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="width:38px;height:38px;border-radius:9px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;">DB</div>
+          ${brandLogo}
           <div style="line-height:1.1;">
-            <div style="font-size:17px;font-weight:800;letter-spacing:.5px;">DON BALATO IVÁN</div>
-            <div style="font-size:11px;opacity:.85;">Productos para el hogar · Santiago de Chile</div>
+            <div style="font-size:17px;font-weight:800;letter-spacing:.5px;">${brandName}</div>
+            <div style="font-size:11px;opacity:.85;">${brandSubtitle}</div>
           </div>
         </div>
         <h1 style="font-size:22px;font-weight:800;letter-spacing:.3px;">Comprobante de Pedido</h1>
@@ -121,9 +138,9 @@ export function generateOrderPdf(
   </div>
 
   <!-- Meta bar -->
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 40px;background:#eff6ff;border-bottom:1px solid #dbeafe;font-size:12px;color:#1e3a8a;">
-    <span><strong style="color:#1d4ed8;">Fecha de emisión:</strong> ${date}</span>
-    <span style="font-family:monospace;color:#3b82f6;">${order.ORDERCODE}</span>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 40px;background:${brandSecondary}12;border-bottom:1px solid ${brandSecondary}35;font-size:12px;color:#1e3a8a;">
+    <span><strong style="color:${brandSecondary};">Fecha de emisión:</strong> ${date}</span>
+    <span style="font-family:monospace;color:${brandSecondary};">${order.ORDERCODE}</span>
   </div>
 
   <div style="padding:28px 40px 36px;">
@@ -131,14 +148,14 @@ export function generateOrderPdf(
   <!-- Customer info -->
   <div style="display:flex;gap:16px;margin-bottom:${customerNote ? '16px' : '28px'};">
     <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
-      <p style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Cliente</p>
+      <p style="font-size:11px;font-weight:700;color:${brandSecondary};text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Cliente</p>
       <p style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:3px;">${order.CUSTOMERNAME || '-'}</p>
       <p style="font-size:13px;color:#475569;">${order.CUSTOMERRUT || ''}</p>
       <p style="font-size:13px;color:#475569;">${order.CUSTOMERPHONE || ''}</p>
       <p style="font-size:13px;color:#475569;">${order.CUSTOMEREMAIL || ''}</p>
     </div>
     <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
-      <p style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Envío</p>
+      <p style="font-size:11px;font-weight:700;color:${brandSecondary};text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Envío</p>
       <p style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:3px;">${order.SHIPPINGAGENCY || 'A coordinar'}</p>
       <p style="font-size:13px;color:#475569;">${order.ADDRESS || ''}</p>
       <p style="font-size:13px;color:#475569;">${[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</p>
@@ -155,7 +172,7 @@ export function generateOrderPdf(
   <!-- Items table -->
   <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
     <thead>
-      <tr style="background:#eff6ff;">
+      <tr style="background:${brandSecondary}12;">
         ${hasImages ? '<th style="padding:11px 8px;text-align:center;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">Img</th>' : ''}
         <th style="padding:11px 8px;text-align:left;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">Producto</th>
         ${hasSku ? '<th style="padding:11px 8px;text-align:center;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #bfdbfe;">SKU</th>' : ''}
@@ -185,7 +202,7 @@ export function generateOrderPdf(
         ${order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'Pago contraentrega'}
       </span>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;margin-top:10px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:9px;font-size:18px;font-weight:800;color:#fff;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;margin-top:10px;background:linear-gradient(135deg,${brandSecondary},${brandSecondary});border-radius:9px;font-size:18px;font-weight:800;color:#fff;">
       <span>Total</span>
       <span>${formatPrice(total)}</span>
     </div>
@@ -202,7 +219,7 @@ export function generateOrderPdf(
 
   <!-- Print button (non-print) -->
   <div class="no-print" style="text-align:center;margin-top:24px;">
-    <button onclick="window.print()" style="padding:13px 34px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,0.35);">
+    <button onclick="window.print()" style="padding:13px 34px;background:linear-gradient(135deg,${brandSecondary},${brandSecondary});color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px ${brandSecondary}35;">
       Imprimir / Guardar PDF
     </button>
   </div>
@@ -221,8 +238,10 @@ export function generateOrderPdf(
 
 export function generateReplacementPdf(
   orderCode: string,
-  replacements: { original: { name: string; sku: string; price: number; qty: number; img?: string }; newItems: { name: string; sku: string; price: number; qty: number; img?: string }[] }[]
+  replacements: { original: { name: string; sku: string; price: number; qty: number; img?: string }; newItems: { name: string; sku: string; price: number; qty: number; img?: string }[] }[],
+  branding?: VendorBranding,
 ) {
+  const brandSecondary = branding?.secondaryColor || '#4f46e5';
   const fmtP = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
 
   const replacementRows = replacements.map((r, idx) => {
@@ -253,7 +272,7 @@ export function generateReplacementPdf(
     return `
       <div style="margin-bottom:24px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;page-break-inside:avoid;break-inside:avoid;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#4f46e5;color:#fff;font-size:12px;font-weight:700;">${idx + 1}</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${brandSecondary};color:#fff;font-size:12px;font-weight:700;">${idx + 1}</span>
           <span style="font-size:14px;font-weight:700;color:#374151;">Reemplazo ${idx + 1}</span>
         </div>
         <div style="display:flex;gap:24px;">
@@ -308,21 +327,21 @@ export function generateReplacementPdf(
   </style>
 </head>
 <body>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #4f46e5;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid ${brandSecondary};">
     <div>
-      <h1 style="font-size:22px;font-weight:700;color:#4f46e5;">Resumen de Cambios</h1>
+      <h1 style="font-size:22px;font-weight:700;color:${brandSecondary};">Resumen de Cambios</h1>
       <p style="font-size:13px;color:#999;margin-top:4px;">${new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
     </div>
     <div style="text-align:right;">
       <p style="font-size:18px;font-weight:700;color:#333;">${orderCode}</p>
-      <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:#eef2ff;font-size:12px;font-weight:600;color:#4f46e5;border:1px solid #c7d2fe;">${replacements.length} reemplazo(s)</span>
+      <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:${brandSecondary}12;font-size:12px;font-weight:600;color:${brandSecondary};border:1px solid ${brandSecondary}45;">${replacements.length} reemplazo(s)</span>
     </div>
   </div>
 
   ${replacementRows}
 
   <div class="no-print" style="text-align:center;margin-top:24px;">
-    <button onclick="window.print()" style="padding:12px 32px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+    <button onclick="window.print()" style="padding:12px 32px;background:${brandSecondary};color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
       Imprimir / Guardar PDF
     </button>
   </div>

@@ -89,7 +89,7 @@ function VerificarStockContent() {
           originalQty: i.qty || 1,
           price: i.price || 0,
           total: (i.price || 0) * (i.qty || 1),
-          image: i.image || '',
+          image: i.image || i.img || i.IMAGEURL || '',
           id: i.id || '',
           available: true,
         }));

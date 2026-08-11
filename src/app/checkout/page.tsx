@@ -53,7 +53,17 @@ function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
-  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem, hasPackItems, getEffectiveItemTotal, getEffectivePrice, updateQuantity } = useCart();
+  const vendorFilter = searchParams.get('vendor'); // '__MAIN__' o vendorId
+  const { items: allItems, subtotal: allSubtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem, hasPackItems, getEffectiveItemTotal, getEffectivePrice, updateQuantity } = useCart();
+
+  // Filtrar items según el vendor seleccionado (pago por tienda)
+  const items = vendorFilter
+    ? allItems.filter(i => {
+        const vId = (i.product as any).VENDOR_ID || '__MAIN__';
+        return vId === vendorFilter;
+      })
+    : allItems;
+  const subtotal = items.reduce((s, i) => s + getEffectiveItemTotal(i), 0);
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
@@ -157,7 +167,7 @@ function CheckoutInner() {
     // Fetch agencies from API (managed in admin)
     (async () => {
       try {
-        const res = await fetch('/api/agencies');
+        const res = await fetch(`/api/agencies${vendorFilter ? `?vendorId=${encodeURIComponent(vendorFilter)}` : ''}`);
         const data = await res.json();
         if (data.agencies && data.agencies.length > 0) {
           setAgencies(data.agencies);
@@ -656,7 +666,7 @@ function CheckoutInner() {
       }
 
       submittedRef.current = true;
-      clearCart();
+      items.forEach(it => removeItem(it.product.$id));
       router.push(`/pedido-mayorista-confirmado?id=${docId}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al registrar pedido mayorista';
@@ -705,36 +715,55 @@ function CheckoutInner() {
     }
   };
 
+  // Construye el shape de item usado tanto en el pedido propio como en los sub-pedidos de vendor.
+  function buildItemPayload(i: typeof items[number]) {
+    const total = getEffectiveItemTotal(i);
+    const price = getEffectivePrice(i);
+    const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
+    const note = itemNotes[i.product.$id] || '';
+    const prod = i.product as any;
+    const productSku = prod.SKU || prod.sku || getSkuFromFeatures(prod.FEATURES, prod.TAGS, prod.jumpseller_id, prod.SKU) || '';
+    const productBarcode = prod.BARCODE || prod.barcode || getBarcodeFromFeatures(prod.FEATURES, prod.BARCODE) || '';
+    return {
+      id: i.product.$id,
+      name: i.product.NAME,
+      price,
+      originalPrice,
+      qty: i.quantity,
+      img: resolveStorageImageUrl(i.product.IMAGEURL),
+      total,
+      sku: productSku,
+      barcode: productBarcode,
+      ...(note.trim() ? { note: note.trim() } : {})
+    };
+  }
+
   async function createOrder(coords: {lat: number, lng: number} | null) {
     setSubmitting(true); setError('');
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const orderIndex = await getNextOrderIndex();
+
+      // ── Marketplace: separar productos propios de productos de vendors ──
+      // Cada vendor termina en su propio pedido (colección vendor_orders, con
+      // sus propios datos de transferencia); tus pedidos jamás se mezclan con
+      // los de terceros.
+      const ownItems = items.filter(i => !(i.product as any).VENDOR_ID);
+      const vendorItemsByVendor = new Map<string, typeof items>();
+      for (const i of items) {
+        const vId = (i.product as any).VENDOR_ID;
+        if (!vId) continue;
+        if (!vendorItemsByVendor.has(vId)) vendorItemsByVendor.set(vId, []);
+        vendorItemsByVendor.get(vId)!.push(i);
+      }
+
+      const orderIndex = ownItems.length > 0 ? await getNextOrderIndex() : 0;
       const orderCode = `ORD-${String(orderIndex).padStart(5, '0')}`;
       const now = Date.now();
       const expiresAt = now + 3 * 60 * 60 * 1000;
-      const itemsData = items.map(i => {
-        const total = getEffectiveItemTotal(i);
-        const price = getEffectivePrice(i);
-        const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
-        const note = itemNotes[i.product.$id] || '';
-        const prod = i.product as any;
-        const productSku = prod.SKU || prod.sku || getSkuFromFeatures(prod.FEATURES, prod.TAGS, prod.jumpseller_id, prod.SKU) || '';
-        const productBarcode = prod.BARCODE || prod.barcode || getBarcodeFromFeatures(prod.FEATURES, prod.BARCODE) || '';
-        return { 
-          id: i.product.$id, 
-          name: i.product.NAME, 
-          price, 
-          originalPrice, 
-          qty: i.quantity, 
-          img: resolveStorageImageUrl(i.product.IMAGEURL), 
-          total,
-          sku: productSku,
-          barcode: productBarcode,
-          ...(note.trim() ? { note: note.trim() } : {})
-        };
-      });
+      const itemsData = ownItems.map(buildItemPayload);
+      const ownSubtotal = ownItems.reduce((s, i) => s + getEffectiveItemTotal(i), 0);
+      const ownTotal = Math.max(0, ownSubtotal - totalDiscount);
 
       // ── Payload de stock para el servidor ──
       // La colección `products` NO es legible/escribible desde el navegador en
@@ -790,21 +819,55 @@ function CheckoutInner() {
         if (nm.ok) isNight = !!(await nm.json()).night;
       } catch { /* fallback a flujo diurno */ }
 
-      const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
-        USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
-        CUSTOMERNAME: form.name, CUSTOMERRUT: form.rut, CUSTOMERPHONE: form.phone, CUSTOMEREMAIL: form.email,
-        REGION: form.region, COMUNA: form.comuna, ADDRESS: finalAddress, ADDITIONALINFO: additionalInfoWithGeo,
-        PAYMENTMETHOD: 'Transferencia Bancaria', SHIPPINGAGENCY: agency,
-        SUBTOTAL: subtotal, SHIPPINGCOST: 0, TOTAL: total,
-        ORDERCODE: orderCode, ORDERINDEX: orderIndex,
-        // Noche → 'paid' (Stock Confirmado, sin confirmar stock). Día → 'processing' (Comprobando Stock).
-        STATUS: isNight ? 'paid' : 'processing', CREATEDAT: now,
-        ...(isNight ? { NIGHTORDER: true } : {}),
-        ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
-        ...(isGift ? { ISGIFT: true } : {}),
-      });
+      let orderId = '';
+      if (ownItems.length > 0) {
+        const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
+          USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
+          CUSTOMERNAME: form.name, CUSTOMERRUT: form.rut, CUSTOMERPHONE: form.phone, CUSTOMEREMAIL: form.email,
+          REGION: form.region, COMUNA: form.comuna, ADDRESS: finalAddress, ADDITIONALINFO: additionalInfoWithGeo,
+          PAYMENTMETHOD: 'Transferencia Bancaria', SHIPPINGAGENCY: agency,
+          SUBTOTAL: ownSubtotal, SHIPPINGCOST: 0, TOTAL: ownTotal,
+          ORDERCODE: orderCode, ORDERINDEX: orderIndex,
+          // Noche → 'paid' (Stock Confirmado, sin confirmar stock). Día → 'processing' (Comprobando Stock).
+          STATUS: isNight ? 'paid' : 'processing', CREATEDAT: now,
+          ...(isNight ? { NIGHTORDER: true } : {}),
+          ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
+          ...(isGift ? { ISGIFT: true } : {}),
+        });
+        orderId = (docId as unknown as { $id: string }).$id;
+      }
       submittedRef.current = true;
-      const orderId = (docId as unknown as { $id: string }).$id;
+
+      // ── Crear un sub-pedido por cada vendor del marketplace presente en el carrito ──
+      // Va a vendor_orders (colección separada, sin permisos públicos) con los
+      // datos bancarios propios de cada vendor. El envío completo queda en tu
+      // pedido; estos sub-pedidos no llevan costo de envío (fase 1).
+      const vendorOrderResults: { vendorId: string; orderId: string; orderCode: string }[] = [];
+      for (const [vendorId, vItems] of vendorItemsByVendor) {
+        try {
+          const vendorItemsData = vItems.map(buildItemPayload);
+          const vendorSubtotal = vItems.reduce((s, i) => s + getEffectiveItemTotal(i), 0);
+          const vr = await fetch('/api/checkout/vendor-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vendorId, items: vendorItemsData, subtotal: vendorSubtotal,
+              customerName: form.name, customerRut: form.rut, customerPhone: form.phone, customerEmail: form.email,
+              region: form.region, comuna: form.comuna, address: finalAddress, additionalInfo: additionalInfoWithGeo,
+              shippingAgency: agency, parentOrderId: orderId || undefined, userId: user?.id || 'guest',
+            }),
+          });
+          const vd = await vr.json().catch(() => null);
+          if (vr.ok && vd?.ok) {
+            vendorOrderResults.push({ vendorId, orderId: vd.orderId, orderCode: vd.orderCode });
+            if (!orderId) orderId = vd.orderId; // Carrito 100% de vendors: usamos el primero como referencia
+          } else {
+            console.error('[checkout] Error creando sub-pedido de vendor', vendorId, vd?.error);
+          }
+        } catch (err) {
+          console.error('[checkout] Error creando sub-pedido de vendor', vendorId, err);
+        }
+      }
 
       // Notificación de nuevo pedido desactivada para evitar spam
       // Solo se notifica al admin cuando el cliente sube el comprobante de pago
@@ -822,10 +885,12 @@ function CheckoutInner() {
           throw new Error(dd?.error || 'No se pudo reservar el stock del pedido.');
         }
       } catch (err: any) {
-        // Cancelar el pedido recién creado para no dejar reserva fantasma
-        try {
-          await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
-        } catch {}
+        // Cancelar el/los pedido(s) recién creado(s) para no dejar reserva fantasma
+        if (ownItems.length > 0) {
+          try {
+            await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
+          } catch {}
+        }
         throw err;
       }
 
@@ -907,8 +972,16 @@ function CheckoutInner() {
         }
       }
       
-      clearCart();
-      router.push(`/pedido-confirmado?id=${orderId}`);
+      // Solo limpiar del carrito los items que se pagaron (pago por tienda)
+      items.forEach(it => removeItem(it.product.$id));
+      const extraVendorIds = vendorOrderResults.map(v => v.orderId).filter(id => id !== orderId);
+      const extraParam = extraVendorIds.length ? `&vendorOrders=${extraVendorIds.join(',')}` : '';
+      if (ownItems.length > 0) {
+        router.push(`/pedido-confirmado?id=${orderId}${extraParam}`);
+      } else {
+        // Carrito 100% de productos de vendors: no se creó pedido propio.
+        router.push(`/pedido-vendor-confirmado?id=${orderId}${extraParam}`);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al crear pedido');
     } finally { setSubmitting(false); }
@@ -1185,6 +1258,13 @@ function CheckoutInner() {
           </div>
         </div>
 
+        {/* Banner: mostrar de qué tienda se está comprando */}
+        {vendorFilter && items.length > 0 && (
+          <div style={{ marginBottom: 12, padding: '10px 16px', borderRadius: 12, background: items[0] && (items[0].product as any).VENDOR_ID ? '#f5f3ff' : '#fef3c7', border: `1px solid ${items[0] && (items[0].product as any).VENDOR_ID ? '#ddd6fe' : '#fde68a'}`, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: items[0] && (items[0].product as any).VENDOR_ID ? '#7c3aed' : '#92400e' }}>
+            {items[0] && (items[0].product as any).VENDOR_ID ? '🏪' : '🐱'} Estás comprando productos de {items[0] && ((items[0].product as any).VENDOR_NAME || 'Don Balato Ivan')}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
@@ -1453,88 +1533,112 @@ function CheckoutInner() {
                 {/* Items */}
                 <div style={{ padding: '14px 22px', maxHeight: 360, overflowY: 'auto' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {items.map((item, idx) => {
-                      const pricing = resolveProductDisplayPrice(item.product, apertura);
-                      const price = pricing.displayPrice;
-                      return (
-                        <div key={`${item.product.$id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 12, background: '#f8fafc', border: '1px solid #eff6ff', transition: 'all .15s' }}>
-                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                            <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #eff6ff, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #dbeafe' }}>
-                              {item.product.IMAGEURL
-                                ? <img src={resolveStorageImageUrl(item.product.IMAGEURL)} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
-                                : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}
-                              <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(37,99,235,0.3)' }}>{item.quantity}</span>
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>
-                                {item.product.NAME}
-                              </p>
-                              {pricing.fromApertura && (
-                                <span style={{ fontSize: 9, fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
-                              )}
-                            </div>
-                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                              {pricing.hasDiscount && pricing.originalPrice != null && (
-                                <p style={{ margin: '0 0 2px', fontSize: 10, color: '#9ca3af', textDecoration: 'line-through', fontFamily: FF }}>{formatPrice(pricing.originalPrice * item.quantity)}</p>
-                              )}
-                              <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#2563eb' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (item.quantity > 1) {
-                                      updateQuantity(item.product.$id, item.quantity - 1);
-                                    } else {
-                                      removeItem(item.product.$id);
-                                    }
-                                  }}
-                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #dbeafe', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}
-                                >
-                                  -
-                                </button>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', minWidth: 16, textAlign: 'center' }}>
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    updateQuantity(item.product.$id, item.quantity + 1);
-                                  }}
-                                  style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #dbeafe', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}
-                                >
-                                  +
-                                </button>
+                    {(() => {
+                      // Agrupar items por tienda (vendor)
+                      const groups: { key: string; name: string; isMain: boolean; items: typeof items }[] = [];
+                      const groupMap = new Map<string, number>();
+                      items.forEach(item => {
+                        const vId = (item.product as any).VENDOR_ID || '__MAIN__';
+                        const vName = (item.product as any).VENDOR_NAME || 'Don Balato Ivan';
+                        const isMain = !(item.product as any).VENDOR_ID;
+                        if (!groupMap.has(vId)) {
+                          groupMap.set(vId, groups.length);
+                          groups.push({ key: vId, name: vName, isMain, items: [] });
+                        }
+                        groups[groupMap.get(vId)!].items.push(item);
+                      });
+                      return groups.map(group => (
+                        <div key={group.key} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0' }}>
+                            <span style={{ fontSize: 10.5, fontWeight: 800, color: group.isMain ? '#92400e' : '#7c3aed', background: group.isMain ? '#fef3c7' : '#f5f3ff', border: `1px solid ${group.isMain ? '#fde68a' : '#ddd6fe'}`, borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>
+                              {group.isMain ? '🐱' : '🏪'} {group.name}
+                            </span>
+                          </div>
+                          {group.items.map((item, idx) => {
+                            const pricing = resolveProductDisplayPrice(item.product, apertura);
+                            const price = pricing.displayPrice;
+                            return (
+                              <div key={`${item.product.$id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 12, background: '#f8fafc', border: '1px solid #eff6ff', transition: 'all .15s' }}>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                  <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #eff6ff, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #dbeafe' }}>
+                                    {item.product.IMAGEURL
+                                      ? <img src={resolveStorageImageUrl(item.product.IMAGEURL)} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
+                                      : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}
+                                    <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #1d4ed8)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(37,99,235,0.3)' }}>{item.quantity}</span>
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>
+                                      {item.product.NAME}
+                                    </p>
+                                    {pricing.fromApertura && (
+                                      <span style={{ fontSize: 9, fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
+                                    )}
+                                  </div>
+                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    {pricing.hasDiscount && pricing.originalPrice != null && (
+                                      <p style={{ margin: '0 0 2px', fontSize: 10, color: '#9ca3af', textDecoration: 'line-through', fontFamily: FF }}>{formatPrice(pricing.originalPrice * item.quantity)}</p>
+                                    )}
+                                    <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#2563eb' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          if (item.quantity > 1) {
+                                            updateQuantity(item.product.$id, item.quantity - 1);
+                                          } else {
+                                            removeItem(item.product.$id);
+                                          }
+                                        }}
+                                        style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #dbeafe', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}
+                                      >
+                                        -
+                                      </button>
+                                      <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', minWidth: 16, textAlign: 'center' }}>
+                                        {item.quantity}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          updateQuantity(item.product.$id, item.quantity + 1);
+                                        }}
+                                        style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #dbeafe', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Nota: Ej. color azul, talla, etc."
+                                    value={itemNotes[item.product.$id] || ''}
+                                    onChange={(e) => setItemNotes(prev => ({ ...prev, [item.product.$id]: e.target.value }))}
+                                    style={{
+                                      width: '100%',
+                                      padding: '6px 10px',
+                                      fontSize: 11,
+                                      border: '1.5px solid #dbeafe',
+                                      borderRadius: 8,
+                                      outline: 'none',
+                                      background: '#fff',
+                                      color: '#111'
+                                    }}
+                                    className="ck-input-placeholder"
+                                  />
+                                  <p style={{ margin: '2px 2px 0', fontSize: 9.5, color: '#9ca3af', fontFamily: FF }}>No es 100% seguro, se añadirá solo si hay stock disponible.</p>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <input 
-                              type="text" 
-                              placeholder="Nota: Ej. color azul, talla, etc."
-                              value={itemNotes[item.product.$id] || ''}
-                              onChange={(e) => setItemNotes(prev => ({ ...prev, [item.product.$id]: e.target.value }))}
-                              style={{ 
-                                width: '100%', 
-                                padding: '6px 10px', 
-                                fontSize: 11, 
-                                border: '1.5px solid #dbeafe', 
-                                borderRadius: 8, 
-                                outline: 'none',
-                                background: '#fff',
-                                color: '#111'
-                              }}
-                              className="ck-input-placeholder"
-                            />
-                            <p style={{ margin: '2px 2px 0', fontSize: 9.5, color: '#9ca3af', fontFamily: FF }}>No es 100% seguro, se añadirá solo si hay stock disponible.</p>
-                          </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      ));
+                    })()}
                   </div>
                 </div>
 

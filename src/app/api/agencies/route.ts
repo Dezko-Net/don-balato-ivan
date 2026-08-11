@@ -6,6 +6,7 @@ const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = 'donbalatoivan';
 const DATABASE_ID = '6a62e7440033d2278d28';
 const COLLECTION_ID = 'shipping_agencies';
+const VENDORS_COLLECTION_ID = 'vendors';
 const API_KEY = process.env.APPWRITE_API_KEY || '';
 
 // force-dynamic removed to allow Vercel CDN caching via s-maxage header
@@ -45,15 +46,24 @@ const getCachedAgencies = unstable_cache(
 );
 
 // GET /api/agencies — fetch all active agencies for checkout
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const agencies = await getCachedAgencies();
+    const vendorId = new URL(req.url).searchParams.get('vendorId');
+    if (!vendorId || vendorId === '__MAIN__') return NextResponse.json({ agencies }, {
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60' }
+    });
 
-    return NextResponse.json({ agencies }, {
-      headers: {
-        // Cache for 5 minutes only — so new agencies appear quickly after admin saves
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60'
-      }
+    const vendor = await databases.getDocument(DATABASE_ID, VENDORS_COLLECTION_ID, vendorId) as any;
+    // Vendors antiguos sin configuración conservan todas las agencias.
+    if (vendor.VISIBLE_AGENCIES === undefined || vendor.VISIBLE_AGENCIES === null || vendor.VISIBLE_AGENCIES === '') {
+      return NextResponse.json({ agencies }, { headers: { 'Cache-Control': 'private, no-store' } });
+    }
+    let visibleIds: string[] = [];
+    try { visibleIds = Array.isArray(vendor.VISIBLE_AGENCIES) ? vendor.VISIBLE_AGENCIES : JSON.parse(vendor.VISIBLE_AGENCIES); } catch {}
+    const filtered = agencies.filter((agency: any) => visibleIds.includes(agency.id));
+    return NextResponse.json({ agencies: filtered }, {
+      headers: { 'Cache-Control': 'private, no-store' }
     });
   } catch (e: any) {
     // If collection doesn't exist yet, return empty

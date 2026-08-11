@@ -106,6 +106,8 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
   const packQtyColor = isPaquetes ? '#0ea5e9' : (isEmbalajes ? '#0284c7' : '#1d4ed8');
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [stores, setStores] = useState<{ id: string; name: string; color: string; logoUrl?: string }[]>([]);
+  const [selectedStore, setSelectedStore] = useState('');
   const [search, setSearch] = useState(qParam);
   const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -205,6 +207,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     sortBy,
     search: search || undefined,
     tag: selectedTag || undefined,
+    vendorId: selectedStore || undefined,
     priceMin: activePriceRange ? activePriceRange[0] : undefined,
     priceMax: activePriceRange ? activePriceRange[1] : undefined,
     catalogMode,
@@ -345,8 +348,9 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
     }
   };
 
-  // Load catalog categories & offers once on mount
+  // Load catalog categories, stores & offers once on mount
   useEffect(() => {
+    fetch('/api/public-data/vendors').then(res => res.json()).then(data => setStores(data.vendors || [])).catch(() => {});
     const initLoad = async () => {
       try {
         const catOffRes = await fetch('/api/public-data/catalog');
@@ -404,18 +408,19 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
 
 
   const hasActiveFilters = !!(
-    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search
+    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || selectedStore || search
     || (activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
   );
   // Contador para el badge del botón "Filtros" de la toolbar
   const activeFiltersCount =
     ((selectedCat && selectedCat !== lockCategoryId) ? 1 : 0) +
+    (selectedStore ? 1 : 0) +
     (selectedSubcat ? 1 : 0) +
     (selectedTag ? 1 : 0) +
     (search ? 1 : 0) +
     ((activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1])) ? 1 : 0);
   const clearAllFilters = () => {
-    setSelectedCat(lockCategoryId || ''); setSelectedSubcat(''); setSelectedTag(''); setSearch('');
+    setSelectedCat(lockCategoryId || ''); setSelectedStore(''); setSelectedSubcat(''); setSelectedTag(''); setSearch('');
     setActivePriceRange(priceRange as [number, number]);
   };
 
@@ -576,6 +581,21 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
           </div>
         </div>
 
+        {/* 🏪 Tiendas: filtro principal antes de categorías — logo + nombre */}
+        <div className="pk-storeband pk-h-scroll" style={{ display: 'flex', alignItems: 'center', gap: 10, overflowX: 'auto', padding: '6px 2px 14px', marginBottom: 6, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+            <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 800, color: '#6b7280', marginRight: 2 }}>Tiendas</span>
+            {[{ id: '', name: 'Todas', color: primaryColor, logoUrl: '' }, { id: '__main__', name: 'Don Balato', color: '#f59e0b', logoUrl: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png' }, ...stores].map(store => {
+              const active = selectedStore === store.id;
+              const initials = (store.name || '?').trim().slice(0, 2).toUpperCase();
+              return <button key={store.id || 'all-stores'} type="button" onClick={() => { setSelectedStore(store.id); setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap', padding: '6px 14px 6px 6px', borderRadius: 999, border: `1px solid ${active ? store.color : '#e5e7eb'}`, background: active ? `${store.color}18` : '#fff', color: active ? store.color : '#6b7280', fontSize: 12, fontWeight: active ? 800 : 600, cursor: 'pointer', transition: 'all .2s', fontFamily: 'inherit' }}>
+                <span style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: store.id === '' ? 'transparent' : store.color, color: '#fff', fontSize: 14, fontWeight: 800, flexShrink: 0 }}>
+                  {store.logoUrl ? <img src={store.logoUrl} alt={store.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (store.id === '__main__' ? '🐱' : (store.id ? initials : '🛍️'))}
+                </span>
+                <span>{store.name}</span>
+              </button>;
+            })}
+          </div>
+
         {/* 🏷️ Banda de categorías con contadores — burbujas estilo stories,
             visible en desktop Y móvil (antes: chips solo móvil + select desktop) */}
         {!lockCategoryId && categories.length > 0 && (
@@ -699,6 +719,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
                         <span style={{ fontSize: 19, fontWeight: 900, color: '#c68b59', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(packPrice)}</span>
                         {discPct > 0 && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(origPackPrice)}</span>}
+                        {p.VENDOR_NAME && (p.VENDOR_IS_MAIN
+                          ? <span style={{ fontSize: 10.5, fontWeight: 800, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🐱 {p.VENDOR_NAME}</span>
+                          : <span style={{ fontSize: 10.5, fontWeight: 800, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🏪 {p.VENDOR_NAME}</span>
+                        )}
                       </div>
                       <div style={{ fontSize: 10, color: '#b0b0b0', fontWeight: 600 }}>{formatPrice(packUnitPrice)} por unidad</div>
                       <button
@@ -767,6 +791,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
                         <span style={{ fontSize: 19, fontWeight: 900, color: '#3b82f6', letterSpacing: '-0.02em', fontFamily: FF }}>{formatPrice(offerPrice)}</span>
                         {discPct > 0 && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(origPrice)}</span>}
+                        {p.VENDOR_NAME && (p.VENDOR_IS_MAIN
+                          ? <span style={{ fontSize: 10.5, fontWeight: 800, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🐱 {p.VENDOR_NAME}</span>
+                          : <span style={{ fontSize: 10.5, fontWeight: 800, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🏪 {p.VENDOR_NAME}</span>
+                        )}
                       </div>
                       {minQty > 1 && (
                         <div style={{ fontSize: 10.5, fontWeight: 700, color: '#1d4ed8' }}>Desde {minQty} unidades</div>
@@ -974,6 +1002,10 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                             <>
                               <span className="pk-price">{formatPrice(price)}</span>
                               <span className="pk-price-unit">{isPackModeCard ? 'por paquete' : 'c/u'}</span>
+                              {p.VENDOR_NAME && (p.VENDOR_IS_MAIN
+                          ? <span style={{ fontSize: 10.5, fontWeight: 800, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🐱 {p.VENDOR_NAME}</span>
+                          : <span style={{ fontSize: 10.5, fontWeight: 800, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🏪 {p.VENDOR_NAME}</span>
+                        )}
                               <ProductThumbnails images={images} activeIndex={activeIndex} onIndexChange={setActiveIndex} />
                             </>
                           ) : (
@@ -1083,11 +1115,15 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
                         <p className="pk-card-list-desc" style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
                               <span style={{ fontSize: 10.5, fontWeight: 800, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>{(catalogMode === 'paquetes' || catalogMode === 'embalajes') ? 'por paquete' : 'al detalle'}</span>
+                              {p.VENDOR_NAME && (p.VENDOR_IS_MAIN
+                          ? <span style={{ fontSize: 10.5, fontWeight: 800, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🐱 {p.VENDOR_NAME}</span>
+                          : <span style={{ fontSize: 10.5, fontWeight: 800, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>🏪 {p.VENDOR_NAME}</span>
+                        )}
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>

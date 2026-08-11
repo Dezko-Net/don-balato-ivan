@@ -2,6 +2,8 @@ import { unstable_cache } from 'next/cache';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { normalizeProductImages } from '@/lib/product-images';
+import { serverListDocuments } from '@/lib/appwrite-server';
+import { VENDORS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 // Módulo compartido del catálogo completo cacheado.
 // La MISMA key/tag que usaba /api/public-data/products, así que quien lo
@@ -54,12 +56,38 @@ export const getCachedAllProducts = unstable_cache(
       }
     }
 
-    // Normalize images on fetch
-    const normalized = allProducts.map(p => normalizeProductImages(p as any));
+    // Fetch vendor names for products that have VENDOR_ID
+    const vendorIds = [...new Set(allProducts.map(p => p.VENDOR_ID).filter(Boolean))];
+    const vendorNames: Record<string, string> = {};
+    if (vendorIds.length > 0) {
+      try {
+        for (const vid of vendorIds) {
+          try {
+            const vdoc = await serverListDocuments(VENDORS_COLLECTION_ID, [Query.equal('$id', vid), Query.limit(1)]);
+            if (vdoc.documents.length > 0) {
+              vendorNames[vid] = String(vdoc.documents[0].NAME || '');
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+
+    // Normalize images on fetch and attach vendor name
+    const normalized = allProducts.map(p => {
+      const np = normalizeProductImages(p as any) as any;
+      if (p.VENDOR_ID && vendorNames[p.VENDOR_ID]) {
+        np.VENDOR_NAME = vendorNames[p.VENDOR_ID];
+        np.VENDOR_IS_MAIN = false;
+      } else {
+        np.VENDOR_NAME = 'Don Balato Ivan';
+        np.VENDOR_IS_MAIN = true;
+      }
+      return np;
+    });
     memoryCacheAllProducts = normalized;
     memoryCacheAllProductsTime = Date.now();
     return normalized;
   },
-  ['all-public-products-cache-v6'],
+  ['all-public-products-cache-v7'],
   { revalidate: 86400, tags: ['products'] }
 );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
-import { PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, VENDOR_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,11 +93,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: 'orderId requerido' }, { status: 400 });
       }
       // Atar el descuento a un pedido existente evita que el endpoint (público)
-      // se use para vaciar stock arbitrariamente.
+      // se use para vaciar stock arbitrariamente. Acepta pedidos de `orders` o
+      // `vendor_orders` (carrito 100% de vendor usa el vendorOrderId como referencia).
       try {
         await serverGetDocument(ORDERS_COLLECTION_ID, orderId);
       } catch {
-        return NextResponse.json({ ok: false, error: 'Pedido no encontrado' }, { status: 404 });
+        try {
+          await serverGetDocument(VENDOR_ORDERS_COLLECTION_ID, orderId);
+        } catch {
+          return NextResponse.json({ ok: false, error: 'Pedido no encontrado' }, { status: 404 });
+        }
       }
 
       const rollback: { id: string; prev: number }[] = [];

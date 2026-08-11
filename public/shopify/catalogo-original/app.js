@@ -190,6 +190,8 @@ async function unmarkOrderPaid(orderId) {
 
 // State
 let allProducts = [];
+let _vendors = [];           // tiendas activas con logo/color/nombre
+let selectedStore = '';      // '' = todas · '__main__' = Don Balato · vendorId
 let cart = JSON.parse(localStorage.getItem(STORAGE_KEYS.cart) || '[]');
 let currentMode = 'public'; // 'public' | 'admin'
 let searchQuery = '';
@@ -386,6 +388,13 @@ function setDeleted(skus) {
   _deletedSkus = skus;
   db.doc(DOC_DELETED).set({ skus }).catch(e => console.error('Error saving deleted:', e));
 }
+function getCartProduct(sku) {
+  const raw = allProducts.find(function(p) { return p && p.sku === sku; }) || _customProducts.find(function(p) { return p && p.sku === sku; });
+  if (!raw) return null;
+  const overrides = getOverrides();
+  return overrides[sku] ? { ...raw, ...overrides[sku] } : raw;
+}
+
 function getProducts() {
   const overrides = getOverrides();
   const deleted = new Set(getDeleted());
@@ -395,9 +404,45 @@ function getProducts() {
       if (!p || !p.sku || String(p.sku).trim() === '' || deleted.has(p.sku)) return false;
       if (seen.has(p.sku)) return false;
       seen.add(p.sku);
+      // Filtro por tienda seleccionada
+      if (selectedStore) {
+        const pVendor = p.VENDOR_ID || '';
+        if (selectedStore === '__main__' && pVendor) return false;
+        if (selectedStore !== '__main__' && pVendor !== selectedStore) return false;
+      }
       return true;
     })
-    .map(p => overrides[p.sku] ? { ...p, ...overrides[p.sku] } : p);
+    .map(p => {
+      const merged = overrides[p.sku] ? { ...p, ...overrides[p.sku] } : p;
+      if (!merged.image) {
+        const rawImage = merged.IMAGEURL || merged.IMAGEURL2 || merged.IMAGEURL3 || '';
+        if (rawImage) {
+          const imageBase = window.location.origin;
+          merged.image = typeof resolveAppwriteImage === 'function' ? resolveAppwriteImage(rawImage, imageBase) : rawImage;
+        }
+      }
+      return merged;
+    });
+}
+
+function getProductImageCandidates(product) {
+  const matches = [product];
+  const sku = product && product.sku;
+  if (sku) {
+    allProducts.filter(function(p) { return p && (p.sku === sku || p.SKU === sku); }).forEach(function(p) { matches.push(p); });
+    _customProducts.filter(function(p) { return p && (p.sku === sku || p.SKU === sku); }).forEach(function(p) { matches.push(p); });
+  }
+  const urls = [];
+  matches.forEach(function(p) {
+    [p.image, p.IMAGEURL, p.image2, p.IMAGEURL2, p.image3, p.IMAGEURL3].forEach(function(url) {
+      if (url && String(url).trim()) {
+        const raw = String(url).trim();
+        const resolved = typeof resolveAppwriteImage === 'function' ? resolveAppwriteImage(raw, window.location.origin) : raw;
+        if (resolved && urls.indexOf(resolved) < 0) urls.push(resolved);
+      }
+    });
+  });
+  return urls;
 }
 
 // Image fallback HTML
@@ -451,7 +496,7 @@ function addToCart(sku, qty = 1) {
   if (room <= 0) { showToast('Sin más stock disponible'); return; }
   const add = Math.min(qty, room);
   if (existing) existing.qty += add;
-  else cart.push({ sku, id: p.id || '', image: p.image || '', qty: add, mode: currentMode, price: getPrice(p), name: p.name });
+  else cart.push({ sku, id: p.id || '', image: p.image || '', qty: add, mode: currentMode, price: getPrice(p), name: p.name, vendorId: p.VENDOR_ID || '' });
   saveCart();
   showToast(add > 1 ? `${add} agregados al carrito` : 'Agregado al carrito');
   flyToCart(sku);
@@ -531,6 +576,96 @@ function closeCart() {
   $('#bottomNav').style.display = '';
   document.body.style.overflow = '';
 }
+let selectedCartGroupId = null;
+let selectedCartVendor = null;
+
+function getCartGroups() {
+  const groups = {};
+  cart.forEach(function(item) {
+    const product = getCartProduct(item.sku);
+    const vendorId = item.vendorId || (product && product.VENDOR_ID) || '__main__';
+    if (!groups[vendorId]) {
+      const vendor = vendorId === '__main__' ? { id: '__main__', name: 'Don Balato Iván', phone: '', color: '#f59e0b' } : (_vendors.find(function(v) { return v.id === vendorId; }) || { id: vendorId, name: 'Tienda asociada', phone: '', color: '#f97316' });
+      groups[vendorId] = { id: vendorId, name: vendor.name, phone: vendor.phone || '', color: vendor.color || '#25D366', items: [] };
+    }
+    groups[vendorId].items.push({ item: item, product: product });
+  });
+  return Object.keys(groups).map(function(key) { return groups[key]; });
+}
+
+function cartGroupTotal(group) {
+  return group.items.reduce(function(total, row) { return total + row.item.qty * row.item.price; }, 0);
+}
+
+function renderCartGroupHeader(group) {
+  const main = group.id === '__main__';
+  const recipient = main ? 'main' : 'vendor';
+  const logo = main
+    ? 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png'
+    : (_vendors.find(function(v) { return v.id === group.id; }) || {}).logoUrl || '';
+  const avatar = logo ? '<img src="' + escapeHtml(logo) + '" alt="' + escapeHtml(group.name) + '" style="width:100%;height:100%;object-fit:contain">' : (main ? '🐱' : '🏪');
+  const button = `<button type="button" onclick="startCartGroupCheckout('${escapeHtml(group.id)}','${recipient}')" class="w-full py-2.5 px-3 rounded-xl text-white font-extrabold text-sm shadow-md active:scale-95 transition flex items-center justify-center gap-2" style="background:${group.color || '#25D366'}">💬 Enviar por WhatsApp</button>`;
+  return `<div class="rounded-2xl p-3 mb-2" style="border:2px solid ${group.color || '#f59e0b'}66;background:${group.color || '#f59e0b'}10">
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <div class="flex items-center gap-2"><span style="width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:${group.color || '#f59e0b'};color:#fff;font-size:18px;flex-shrink:0">${avatar}</span><span class="text-sm font-extrabold text-blue-950">${escapeHtml(group.name)}</span></div>
+      <span class="text-xs font-bold" style="color:${group.color || '#2563eb'}">${formatPrice(cartGroupTotal(group))}</span>
+    </div>${button}
+  </div>`;
+}
+
+function renderCartActions() {
+  const actions = document.getElementById('cartWhatsAppActions');
+  if (actions) actions.innerHTML = '';
+}
+
+function startCartGroupCheckout(groupId, recipient) {
+  var group = getCartGroups().find(function(g) { return g.id === groupId; });
+  if (!group || cartTotal() < getMinPurchase()) {
+    showToast('Compra mínima: ' + formatPrice(getMinPurchase()));
+    return;
+  }
+  selectedCartGroupId = groupId;
+  if (recipient === 'main') {
+    selectedCartVendor = null;
+    sendWhatsApp();
+    return;
+  }
+  if (recipient === 'vendor') {
+    selectedCartVendor = _vendors.find(function(v) { return v.id === groupId; }) || null;
+    selectedAttendant = null;
+    var vendorStep1 = document.getElementById('modalStep1');
+    var vendorStep2 = document.getElementById('modalStep2');
+    var vendorOptions = document.getElementById('attendantOptions');
+    if (vendorOptions) {
+      var vendorLogo = selectedCartVendor && selectedCartVendor.logoUrl ? '<img src="' + escapeHtml(selectedCartVendor.logoUrl) + '" alt="' + escapeHtml(group.name) + '" class="w-full h-full object-contain rounded-full">' : '<span class="text-4xl">🏪</span>';
+      vendorOptions.innerHTML = '<button type="button" onclick="selectVendorContact()" class="attendant-btn group flex flex-col items-center gap-3 mx-auto transition-all duration-200 active:scale-90"><div class="w-24 h-24 rounded-full border-4 flex items-center justify-center bg-white transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden" style="border-color:' + (group.color || '#f97316') + '">' + vendorLogo + '</div><div class="text-center"><div class="font-bold text-gray-800 text-sm">' + escapeHtml(group.name) + '</div><div class="text-[10px] font-medium mt-0.5" style="color:' + (group.color || '#f97316') + '">Atención de la tienda</div></div></button>';
+    }
+    if (vendorStep1) vendorStep1.classList.remove('hidden');
+    if (vendorStep2) vendorStep2.classList.add('hidden');
+  } else {
+    selectedCartVendor = null;
+    selectedAttendant = Number(recipient);
+    var container = document.getElementById('attendantOptions');
+    if (container) container.innerHTML = '<p class="text-center text-sm font-bold text-blue-700">Cajera seleccionada: ' + escapeHtml(WHATSAPP_CONTACTS[Number(recipient)]?.name || '') + '</p>';
+    var s1 = document.getElementById('modalStep1');
+    var s2 = document.getElementById('modalStep2');
+    if (s1) s1.classList.add('hidden');
+    if (s2) s2.classList.remove('hidden');
+  }
+  var modal = document.getElementById('customerFormModal');
+  if (modal) modal.classList.remove('hidden');
+}
+window.startCartGroupCheckout = startCartGroupCheckout;
+function selectVendorContact() {
+  selectedAttendant = 'vendor';
+  var step1 = document.getElementById('modalStep1');
+  var step2 = document.getElementById('modalStep2');
+  if (step1) step1.classList.add('hidden');
+  if (step2) step2.classList.remove('hidden');
+  fillCustomerFormFromCache();
+}
+window.selectVendorContact = selectVendorContact;
+
 function renderCart() {
   const wrap = $('#cartItems');
   if (cart.length === 0) {
@@ -543,6 +678,7 @@ function renderCart() {
         <p class="text-xs text-blue-400 font-medium max-w-[200px] mx-auto">Explora nuestro catálogo mayorista y añade tus productos favoritos.</p>
       </div>`;
     $('#cartTotal').textContent = '$0';
+    renderCartActions([]);
     let warnEmpty = $('#minWarn');
     if (warnEmpty) warnEmpty.remove();
     return;
@@ -561,11 +697,16 @@ function renderCart() {
       </div>
     </div>`;
 
+  const cartGroups = getCartGroups();
   wrap.innerHTML = timerHeader + cart.map(i => {
-    const p = getProducts().find(x => x.sku === i.sku);
+    const p = getCartProduct(i.sku);
+    const groupId = i.vendorId || (p && p.VENDOR_ID) || '__main__';
+    const group = cartGroups.find(g => g.id === groupId);
+    const firstInGroup = cart.findIndex(row => (row.vendorId || ((getCartProduct(row.sku) || {}).VENDOR_ID) || '__main__') === groupId) === cart.findIndex(row => row.sku === i.sku && row.mode === i.mode);
+    const groupHeader = firstInGroup && group ? renderCartGroupHeader(group) : '';
     const displaySubOrSku = (p?.code && p.code.length <= 12) ? `SKU: ${p.code}` : (p?.subcategory || p?.category || `COD: #${String(i.sku).slice(-6).toUpperCase()}`);
-    return `
-    <div class="flex gap-3 bg-gradient-to-br from-white to-blue-50/40 rounded-2xl p-3.5 border border-blue-100/90 shadow-sm hover:border-blue-300/80 transition-all duration-200">
+    return groupHeader + `
+    <div class="flex gap-3 rounded-2xl p-3.5 shadow-sm transition-all duration-200" style="background:linear-gradient(135deg,#fff,${group ? group.color + '0d' : '#eff6ff'});border:1px solid ${group ? group.color + '55' : '#dbeafe'}">
       <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-blue-50 border border-blue-100/80 relative shadow-xs">
         ${imgEl(p?.image, i.name, 'w-full h-full object-cover')}
       </div>
@@ -592,6 +733,7 @@ function renderCart() {
     </div>
   `;
   }).join('');
+  renderCartActions(cartGroups);
 
   $('#cartTotal').textContent = formatPrice(cartTotal());
   initCartReservationTimer();
@@ -616,6 +758,20 @@ function renderCart() {
   }
 }
 let selectedAttendant = null;
+let submittingCustomerOrder = false;
+function setSubmittingCustomerOrder(value) {
+  submittingCustomerOrder = value;
+  const overlay = document.getElementById('orderSubmittingOverlay');
+  if (overlay) overlay.classList.toggle('hidden', !value);
+  const button = document.querySelector('#modalStep2 button[onclick="submitCustomerOrder()"]');
+  if (button) {
+    button.disabled = value;
+    button.classList.toggle('opacity-70', value);
+    button.innerHTML = value
+      ? '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-dasharray="42 18"/></svg> Enviando pedido...'
+      : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Confirmar y enviar por WhatsApp';
+  }
+}
 function sendWhatsApp() {
   if (cart.length === 0) { showToast('Carrito vacio'); return; }
   if (cartTotal() < getMinPurchase()) {
@@ -686,17 +842,21 @@ function sendWhatsApp() {
     '</button>';
     container.innerHTML = '<div class="flex justify-center items-start gap-8 py-2">' + humanButtons + balatinButton + '</div>';
   }
-  // Show step 1 (attendant selection), hide step 2 (name/phone)
+  // Show the saved cashier automatically when available; otherwise show the selector.
   var step1 = document.getElementById('modalStep1');
   var step2 = document.getElementById('modalStep2');
-  if (step1) step1.classList.remove('hidden');
-  if (step2) step2.classList.add('hidden');
+  var preferred = getPreferredAttendant();
+  var hasPreferred = preferred !== null && preferred >= 0 && preferred < WHATSAPP_CONTACTS.length;
+  if (step1) step1.classList.toggle('hidden', hasPreferred);
+  if (step2) step2.classList.toggle('hidden', !hasPreferred);
+  if (hasPreferred) selectAttendant(preferred);
   // Show modal
   const modal = document.getElementById('customerFormModal');
   if (modal) { modal.classList.remove('hidden'); return; }
 }
 function selectAttendant(idx) {
   selectedAttendant = idx;
+  savePreferredAttendant(idx);
   var buttons = document.querySelectorAll('.attendant-btn');
   buttons.forEach(function(btn) {
     var circle = btn.querySelector('div');
@@ -717,6 +877,8 @@ function selectAttendant(idx) {
   // Show step 2 (name + phone) after selecting a human attendant
   var step2 = document.getElementById('modalStep2');
   if (step2) step2.classList.remove('hidden');
+  // Recuperar los datos del cliente guardados en este navegador.
+  fillCustomerFormFromCache();
   // Focus name input
   setTimeout(function() {
     var nameInput = document.getElementById('custName');
@@ -724,6 +886,7 @@ function selectAttendant(idx) {
   }, 100);
 }
 function closeCustomerFormModal() {
+  if (submittingCustomerOrder) return;
   const modal = document.getElementById('customerFormModal');
   if (modal) modal.classList.add('hidden');
 }
@@ -762,8 +925,11 @@ function normalizeChileanPhone(raw) {
 // Balatin: sin formulario, sin pedido pre-creado. El cliente le escribe directo con su lista
 // y Balatin arma el pedido conversando (nombre, stock, direccion y comprobante por chat).
 function sendToBalatin() {
-  if (cart.length === 0) { showToast('Carrito vacio'); return; }
-  if (cartTotal() < getMinPurchase()) {
+  var balatinGroup = selectedCartGroupId ? getCartGroups().find(function(g) { return g.id === selectedCartGroupId; }) : null;
+  var balatinCart = balatinGroup ? balatinGroup.items.map(function(row) { return row.item; }) : cart.slice();
+  var balatinTotal = balatinCart.reduce(function(sum, i) { return sum + i.qty * i.price; }, 0);
+  if (balatinCart.length === 0) { showToast('Carrito vacio'); return; }
+  if (balatinTotal < getMinPurchase()) {
     showToast(`Compra minima: $${getMinPurchase().toLocaleString('es-CL')}`);
     return;
   }
@@ -772,10 +938,10 @@ function sendToBalatin() {
     ? 'http://localhost:3000'
     : 'https://www.donbalatomayorista.cl';
 
-  var orderItems = cart.map(function(i) {
+  var orderItems = balatinCart.map(function(i) {
     return { id: i.id || '', sku: i.sku, name: i.name, qty: i.qty, price: i.price, image: i.image || '' };
   });
-  var total = cartTotal();
+  var total = balatinTotal;
 
   // Crear pedido en Appwrite (sin nombre ni telefono — Balatin los pedira por chat)
   var orderCode = '';
@@ -812,7 +978,7 @@ function sendToBalatin() {
     var waMsg = '*Hola Balatin!*\n\n';
     waMsg += 'Quiero hacer este pedido:\n\n';
     waMsg += '----------------------------------------\n';
-    cart.forEach(function(i) {
+    balatinCart.forEach(function(i) {
       waMsg += '\n- ' + i.name + '\n';
       waMsg += '  ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
     });
@@ -828,19 +994,25 @@ function sendToBalatin() {
       savePendingWhatsApp(waUrl, orderCode);
     }
 
-    // Limpiar carrito y cerrar modal
-    cart = [];
+    // Limpiar solo la tienda enviada y cerrar modal
+    cart = cart.filter(function(i) { return !balatinCart.some(function(t) { return t.sku === i.sku && t.mode === i.mode; }); });
     saveCart();
     updateCartCount();
+    renderCart();
     closeCustomerFormModal();
 
     // Mostrar confirmacion y abrir WhatsApp
-    showOrderConfirmation(orderCode, '', saveError, waUrl);
+    showOrderConfirmation(orderCode, '', saveError, waUrl, 'Don Balato Iván');
   })();
 }
 
 async function submitCustomerOrder() {
+  if (submittingCustomerOrder) return;
   if (selectedAttendant === null) { showToast('Selecciona quien te atiende'); return; }
+  var selectedGroup = selectedCartGroupId ? getCartGroups().find(function(g) { return g.id === selectedCartGroupId; }) : null;
+  var targetCart = selectedGroup ? selectedGroup.items.map(function(row) { return row.item; }) : cart.slice();
+  var isVendorOrder = selectedCartGroupId && selectedCartGroupId !== '__main__';
+  if (isVendorOrder && (!selectedCartVendor || !selectedCartVendor.phone)) { showToast('Esta tienda no tiene teléfono público configurado'); return; }
   var rawName = (document.getElementById('custName') || {}).value || '';
   var customerName = rawName.trim();
   if (!customerName) { showToast('Por favor ingresa tu nombre'); return; }
@@ -848,43 +1020,54 @@ async function submitCustomerOrder() {
   var normalizedPhone = normalizeChileanPhone(rawPhone);
   if (!normalizedPhone) { showToast('Numero de telefono invalido. Ej: 9 1234 5678 o 56912345678'); return; }
 
-  var attendant = WHATSAPP_CONTACTS[selectedAttendant];
+  setSubmittingCustomerOrder(true);
+  var attendant = isVendorOrder ? selectedCartVendor : WHATSAPP_CONTACTS[selectedAttendant];
 
   var apiBase = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
     : window.location.origin;
 
-  var orderItems = cart.map(function(i) {
-    return { id: i.id || '', sku: i.sku, name: i.name, qty: i.qty, price: i.price, image: i.image || '' };
+  var orderItems = targetCart.map(function(i) {
+    return { id: i.id || '', sku: i.sku, name: i.name, qty: i.qty, price: i.price, image: i.image || '', total: i.price * i.qty };
   });
-  var total = cartTotal();
+  var total = targetCart.reduce(function(sum, i) { return sum + i.qty * i.price; }, 0);
 
   var orderCode = '';
   var orderId = '';
   var saveError = false;
 
-  // Guardar en Appwrite (orders con STATUS pending_stock)
+  // Crear un pedido independiente por tienda: orders para Don Balato y vendor_orders para vendors.
   try {
-    var res = await fetch(apiBase + '/api/catalogo/order', {
+    var orderEndpoint = isVendorOrder ? apiBase + '/api/checkout/vendor-order' : apiBase + '/api/catalogo/order';
+    var orderBody = isVendorOrder ? {
+      vendorId: selectedCartGroupId,
+      items: orderItems,
+      subtotal: total,
+      customerName: customerName,
+      customerPhone: normalizedPhone,
+      customerEmail: '',
+      region: '', comuna: '', address: '', additionalInfo: '', shippingAgency: '', userId: 'catalogo-guest', orderSource: 'whatsapp'
+    } : {
+      customerName: customerName,
+      customerPhone: normalizedPhone,
+      items: orderItems,
+      total: total,
+      assignedCashier: attendant.name
+    };
+    var res = await fetch(orderEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customerName: customerName,
-        customerPhone: normalizedPhone,
-        items: orderItems,
-        total: total,
-        assignedCashier: attendant.name
-      })
+      body: JSON.stringify(orderBody)
     });
     var data = await res.json();
-    if (data.success) {
+    if ((isVendorOrder && data.ok) || (!isVendorOrder && data.success)) {
       orderCode = data.orderCode || '';
       orderId = data.orderId || '';
     } else {
       saveError = true;
     }
   } catch (e) {
-    console.error('Error guardando pedido en Appwrite:', e);
+    console.error('Error guardando pedido separado en Appwrite:', e);
     saveError = true;
   }
 
@@ -894,39 +1077,47 @@ async function submitCustomerOrder() {
     : 'https://www.donbalatomayorista.cl';
   var waMsg = '*Hola, soy ' + customerName + '*\n\n';
   waMsg += 'Mira, tengo un pedido del catalogo.\n\n';
-  waMsg += '_Ignora el enlace del final, es solo para uso interno._\n\n';
+  if (!isVendorOrder) waMsg += '_Ignora el enlace del final, es solo para uso interno._\n\n';
   waMsg += '----------------------------------------\n';
+  waMsg += '*Tienda:* ' + (selectedGroup ? selectedGroup.name : 'Don Balato Iván') + '\n';
   waMsg += '*Cliente:* ' + customerName + '\n';
   waMsg += '*Telefono:* ' + normalizedPhone + '\n';
   waMsg += '*Codigo:* ' + (orderCode ? orderCode : '') + '\n\n';
   waMsg += '*Productos:*\n';
-  cart.forEach(function(i) {
+  targetCart.forEach(function(i) {
     waMsg += '\n- ' + i.name + '\n';
     waMsg += '  ' + i.qty + ' x ' + formatPrice(i.price) + ' = ' + formatPrice(i.price * i.qty) + '\n';
   });
   waMsg += '\n----------------------------------------\n';
-  waMsg += '*Total: ' + formatPrice(total) + '*\n\n';
-  waMsg += siteUrl + '/verificar-stock?code=' + orderCode;
+  waMsg += '*Total: ' + formatPrice(total) + '*';
+  if (!isVendorOrder) waMsg += '\n\n' + siteUrl + '/verificar-stock?code=' + orderCode;
 
-  var waUrl = 'https://wa.me/' + attendant.number + '?text=' + encodeURIComponent(waMsg);
+  var recipientNumber = isVendorOrder ? normalizeChileanPhone(attendant.phone) : attendant.number;
+  var waUrl = 'https://wa.me/' + recipientNumber + '?text=' + encodeURIComponent(waMsg);
 
   // Guardar pedido y teléfono en localStorage
   if (orderCode) {
-    saveLocalOrder(orderCode, orderId, cart.slice(), total, attendant.name);
+    saveLocalOrder(orderCode, orderId, targetCart.slice(), total, attendant.name);
     savePendingWhatsApp(waUrl, orderCode);
   }
   saveCustomerPhone(normalizedPhone);
+  saveCustomerName(customerName);
+  if (typeof selectedAttendant === 'number') savePreferredAttendant(selectedAttendant);
 
-  // Limpiar carrito
-  cart = [];
+  // Quitar solo los productos de esta tienda; las demás ventas permanecen en el carrito.
+  cart = cart.filter(function(i) {
+    return !targetCart.some(function(t) { return t.sku === i.sku && t.mode === i.mode; });
+  });
   saveCart();
   updateCartCount();
+  renderCart();
 
+  setSubmittingCustomerOrder(false);
   // Mostrar modal de confirmación
-  showOrderConfirmation(orderCode, customerName, saveError, waUrl);
+  showOrderConfirmation(orderCode, customerName, saveError, waUrl, selectedGroup ? selectedGroup.name : 'Don Balato Iván');
 }
 
-function showOrderConfirmation(orderCode, customerName, hasError, waUrl) {
+function showOrderConfirmation(orderCode, customerName, hasError, waUrl, storeName) {
   var modal = document.getElementById('orderConfirmModal');
   var titleEl = document.getElementById('ocTitle');
   var msgEl = document.getElementById('ocMessage');
@@ -940,7 +1131,7 @@ function showOrderConfirmation(orderCode, customerName, hasError, waUrl) {
     if (waBtn) waBtn.classList.add('hidden');
   } else {
     if (titleEl) titleEl.textContent = '¡Pedido enviado!';
-    if (msgEl) msgEl.innerHTML = 'Gracias <strong>' + escapeHtml(customerName) + '</strong>.<br>Tu pedido fue registrado. Envíanos el mensaje de WhatsApp para que la cajera verifique el stock.';
+    if (msgEl) msgEl.innerHTML = 'Gracias <strong>' + escapeHtml(customerName) + '</strong>.<br>Compraste en <strong>' + escapeHtml(storeName || 'Don Balato Iván') + '</strong>.<br>Envíanos el mensaje de WhatsApp para confirmar tu pedido.';
     if (codeEl) codeEl.textContent = orderCode ? 'Código: ' + orderCode : '';
     if (waBtn && waUrl) {
       waBtn.href = waUrl;
@@ -980,6 +1171,28 @@ function saveCustomerPhone(phone) {
 }
 function getCustomerPhone() {
   try { return localStorage.getItem('customerPhone') || ''; } catch { return ''; }
+}
+function saveCustomerName(name) {
+  try { if (name && name.trim()) localStorage.setItem('customerName', name.trim()); } catch {}
+}
+function getCustomerName() {
+  try { return localStorage.getItem('customerName') || ''; } catch { return ''; }
+}
+function savePreferredAttendant(index) {
+  try { localStorage.setItem('preferredAttendant', String(index)); } catch {}
+}
+function getPreferredAttendant() {
+  try {
+    const value = localStorage.getItem('preferredAttendant');
+    return value === null ? null : Number(value);
+  } catch { return null; }
+}
+
+function fillCustomerFormFromCache() {
+  const name = document.getElementById('custName');
+  const phone = document.getElementById('custPhone');
+  if (name && !name.value) name.value = getCustomerName();
+  if (phone && !phone.value) phone.value = getCustomerPhone();
 }
 
 // === Pedido pendiente de WhatsApp ===
@@ -1145,6 +1358,30 @@ function renderMyOrders() {
   }
 }
 
+function orderItemImageCandidates(item) {
+  var candidates = [item.image, item.img, item.IMAGEURL].filter(function(url) { return url && String(url).trim(); });
+  var product = item.sku ? getCartProduct(item.sku) : null;
+  if (!product && item.name) product = getProducts().find(function(p) { return p.name === item.name; });
+  if (product) candidates = candidates.concat(getProductImageCandidates(product));
+  return candidates.map(function(url) { return String(url).trim(); }).filter(function(url, index, arr) { return url && arr.indexOf(url) === index; });
+}
+
+function orderImageHtml(item, sizeClass) {
+  var candidates = orderItemImageCandidates(item);
+  var initials = String(item.name || '?').split(' ').filter(Boolean).slice(0, 2).map(function(w) { return w[0] || ''; }).join('').toUpperCase() || 'DB';
+  if (!candidates.length) return '<span class="text-blue-300 text-sm">' + escapeHtml(initials) + '</span>';
+  return '<img src="' + escapeHtml(candidates[0]) + '" data-catalog-fallback="1" data-fallback-images="' + escapeHtml(JSON.stringify(candidates)) + '" data-fallback-index="0" onerror="orderImageFallback(this)" class="' + sizeClass + ' object-cover">';
+}
+window.orderImageFallback = function(img) {
+  try {
+    var urls = JSON.parse(img.dataset.fallbackImages || '[]');
+    var next = Number(img.dataset.fallbackIndex || 0) + 1;
+    if (next < urls.length) { img.dataset.fallbackIndex = String(next); img.src = urls[next]; return; }
+  } catch (e) {}
+  img.onerror = null;
+  img.replaceWith(document.createTextNode('📦'));
+};
+
 function renderMyOrdersList(orders) {
   var list = document.getElementById('myOrdersList');
   if (!list) return;
@@ -1165,16 +1402,19 @@ function renderMyOrdersList(orders) {
     var date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     var itemCount = (o.items || []).reduce(function(s, i) { return s + (i.qty || 1); }, 0);
     var items = o.items || [];
+    var itemImage = function(it) { return it.image || it.img || it.IMAGEURL || ''; };
     var firstItems = items.slice(0, 2);
     var remainingCount = items.length - firstItems.length;
+    var storeName = o.storeName || (o.vendorId ? 'Tienda asociada' : 'Don Balato Iván');
 
     return '<div class="bg-white rounded-[24px] border border-blue-100 shadow-sm overflow-hidden transition-all hover:shadow-md hover:border-blue-200">' +
-      '<div class="px-5 py-3.5 flex items-center justify-between border-b border-blue-100/60 bg-blue-50/40">' +
+      '<div class="px-5 py-3.5 flex items-center justify-between border-b border-blue-100/60 bg-blue-50/40 gap-2">' +
         '<div class="flex items-center gap-2.5">' +
           '<span class="text-xl">' + icon + '</span>' +
           '<div>' +
             '<p class="font-mono font-extrabold text-sm text-blue-950">' + escapeHtml(o.orderCode || 'Sin código') + '</p>' +
             '<p class="text-[10px] text-blue-400 font-semibold">' + date + '</p>' +
+            '<p class="text-[10px] text-indigo-600 font-extrabold mt-0.5">🏪 ' + escapeHtml(storeName) + '</p>' +
           '</div>' +
         '</div>' +
         '<span class="text-xs font-extrabold px-3 py-1 rounded-full border border-current shadow-xs" style="background:' + color + '15;color:' + color + ';border-color:' + color + '30;">' + escapeHtml(label) + '</span>' +
@@ -1184,7 +1424,7 @@ function renderMyOrdersList(orders) {
           firstItems.map(function(it) {
             return '<div class="flex items-center gap-3">' +
               '<div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-blue-100/80">' +
-                (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-blue-300 text-sm">📦</span>') +
+                orderImageHtml(it, 'w-full h-full') +
               '</div>' +
               '<div class="flex-1 min-w-0">' +
                 '<p class="text-xs font-extrabold text-blue-950 truncate">' + escapeHtml(it.name || '') + '</p>' +
@@ -1211,7 +1451,7 @@ function renderMyOrdersList(orders) {
             items.map(function(it) {
               return '<div class="flex items-center gap-2.5 text-xs py-1">' +
                 '<div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-blue-100">' +
-                  (it.image ? '<img src="' + escapeHtml(it.image) + '" class="w-full h-full object-cover">' : '<span class="text-blue-300 text-[10px]">📦</span>') +
+                  orderImageHtml(it, 'w-full h-full') +
                 '</div>' +
                 '<span class="flex-1 text-blue-900 font-semibold truncate">' + escapeHtml(it.name || '') + '</span>' +
                 '<span class="text-blue-400 font-bold">x' + (it.qty || 1) + '</span>' +
@@ -1243,19 +1483,13 @@ async function syncMyOrders(silent) {
     var res = await fetch(apiBase + '/api/catalogo/my-orders?phone=' + encodeURIComponent(normalized));
     var data = await res.json();
     if (data.success && data.orders) {
-      // Merge: combine local + server orders, dedup by orderCode
-      var localOrders = getLocalOrders();
-      var seen = {};
-      var merged = [];
-      // Server orders first (they have real status)
-      data.orders.forEach(function(o) { if (o.orderCode && !seen[o.orderCode]) { seen[o.orderCode] = true; merged.push(o); } });
-      // Local orders that aren't on server yet
-      localOrders.forEach(function(o) { if (o.orderCode && !seen[o.orderCode]) { seen[o.orderCode] = true; merged.push(o); } });
-      // Save merged to localStorage
-      try { localStorage.setItem('myOrders', JSON.stringify(merged.slice(0, 50))); } catch {}
+      // Appwrite es la fuente de verdad: al sincronizar se elimina del cache
+      // cualquier pedido que ya no exista en el servidor.
+      var syncedOrders = data.orders.filter(function(o) { return o.orderCode; });
+      try { localStorage.setItem('myOrders', JSON.stringify(syncedOrders.slice(0, 50))); } catch {}
 
-      renderMyOrdersList(merged);
-      if (!silent) showToast('Pedidos sincronizados (' + merged.length + ')');
+      renderMyOrdersList(syncedOrders);
+      if (!silent) showToast('Pedidos sincronizados (' + syncedOrders.length + ')');
     } else {
       if (!silent) showToast('No se encontraron pedidos');
       renderMyOrdersList(getLocalOrders());
@@ -1850,7 +2084,7 @@ function updateHeroFomoBannerData() {
   if (!banner) return;
   
   var products = typeof getProducts === 'function' ? getProducts() : [];
-  var withImg = products.filter(function(p) { return p.image && p.image.trim(); });
+  var withImg = products.filter(function(p) { return getProductImageCandidates(p).length > 0; });
   if (withImg.length === 0) return;
 
   var p = withImg[Math.floor(Math.random() * withImg.length)];
@@ -1877,22 +2111,30 @@ function updateHeroFomoBannerData() {
   var randomTag = tags[Math.floor(Math.random() * tags.length)];
   var randomClaim = claims[Math.floor(Math.random() * claims.length)];
 
-  // Preload image before changing DOM to eliminate flicker
-  var img = new Image();
-  img.onload = function() {
+  // Preload the first working image from every source before changing the DOM.
+  var imageCandidates = getProductImageCandidates(p);
+  var imageIndex = 0;
+  var applyBanner = function(src) {
     var imgEl = document.getElementById('heroFomoImg');
     var tagEl = document.getElementById('heroFomoTag');
     var titleEl = document.getElementById('heroFomoTitle');
     var claimEl = document.getElementById('heroFomoClaim');
     var priceEl = document.getElementById('heroFomoPrice');
-
-    if (imgEl) imgEl.src = p.image;
+    if (imgEl) { imgEl.src = src; imgEl.style.display = ''; }
     if (tagEl) tagEl.textContent = randomTag;
     if (titleEl) titleEl.textContent = p.name;
     if (claimEl) claimEl.textContent = randomClaim;
     if (priceEl) priceEl.textContent = formatPrice(getPrice(p));
   };
-  img.src = p.image;
+  var tryBannerImage = function() {
+    if (imageIndex >= imageCandidates.length) return;
+    var src = imageCandidates[imageIndex++];
+    var img = new Image();
+    img.onload = function() { applyBanner(src); };
+    img.onerror = tryBannerImage;
+    img.src = src;
+  };
+  tryBannerImage();
 }
 
 function showFomoBannerProductModal() {
@@ -2055,9 +2297,12 @@ function triggerFomoToast() {
   var times = ['Hace 1 min', 'Hace 2 min', 'Hace unos segundos', 'Hace 3 min'];
   var randomTime = times[Math.floor(Math.random() * times.length)] + ' · Toca para ver';
 
+  var fallbackImages = getProductImageCandidates(randomProduct);
+  var primaryImage = fallbackImages[0] || '';
   showFomoToastData({
     sku: randomProduct.sku,
-    image: randomProduct.image,
+    image: primaryImage,
+    images: fallbackImages,
     badge: '🔥 SALE',
     user: phoneText,
     action: randomAction,
@@ -2078,42 +2323,34 @@ function showFomoToastData(data) {
 
   _fomoCurrentSku = data.sku;
 
-  // Preload image before sliding down toast to prevent flicker bug!
-  var tempImg = new Image();
-  var renderAndShow = function() {
-    if (imgEl) imgEl.src = tempImg.src;
+  // Preload image before sliding down toast; try the other product images if the first one fails.
+  var candidates = (data.images && data.images.length ? data.images : [data.image]).filter(function(url) { return url && url.trim(); });
+  var imageIndex = 0;
+  var renderAndShow = function(src) {
+    if (imgEl) imgEl.src = src || 'https://via.placeholder.com/100';
     if (userEl) userEl.textContent = data.user;
     if (actionEl) actionEl.textContent = data.action;
     if (timeEl) timeEl.textContent = data.time;
     if (badgeEl) badgeEl.textContent = data.badge || '🔥 SALE';
 
     toast.onclick = function() {
-      if (_fomoCurrentSku && typeof window.showProductModal === 'function') {
-        window.showProductModal(_fomoCurrentSku);
-      }
+      if (_fomoCurrentSku && typeof window.showProductModal === 'function') window.showProductModal(_fomoCurrentSku);
       closeFomoToast();
     };
-
     toast.classList.remove('-translate-y-6', 'opacity-0', 'pointer-events-none');
     toast.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
-
     if (_fomoHideTimer) clearTimeout(_fomoHideTimer);
-    _fomoHideTimer = setTimeout(function() {
-      closeFomoToast();
-    }, 10000);
+    _fomoHideTimer = setTimeout(function() { closeFomoToast(); }, 10000);
   };
-
-  if (data.image && data.image.trim()) {
-    tempImg.onload = renderAndShow;
-    tempImg.onerror = function() {
-      tempImg.src = 'https://via.placeholder.com/100';
-      renderAndShow();
-    };
-    tempImg.src = data.image;
-  } else {
-    tempImg.src = 'https://via.placeholder.com/100';
-    renderAndShow();
-  }
+  var tryNextImage = function() {
+    if (imageIndex >= candidates.length) { renderAndShow(''); return; }
+    var tempImg = new Image();
+    var src = candidates[imageIndex++];
+    tempImg.onload = function() { renderAndShow(src); };
+    tempImg.onerror = tryNextImage;
+    tempImg.src = src;
+  };
+  tryNextImage();
 }
 
 function closeFomoToast() {
@@ -2126,14 +2363,18 @@ function closeFomoToast() {
 window.closeFomoToast = closeFomoToast;
 
 // === Hierarchy helpers ===
-// Get product path as array (uses path field, falls back to category/subcategory)
+function isHiddenCatalogCategory(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase() === 'imagenes rotas';
+}
+// Get product path as array (uses path field, falls back to category/subcategory).
+// The old "Imágenes Rotas" bucket is hidden from the public catalog; products
+// remain visible under their parent category instead of disappearing.
 function getProductPath(p) {
-  if (Array.isArray(p.path) && p.path.length > 0) return p.path;
-  const arr = [];
-  if (p.category) arr.push(p.category);
-  if (p.subcategory) arr.push(p.subcategory);
-  if (p.subsubcategory) arr.push(p.subsubcategory);
-  return arr.length ? arr : ['Sin Categoria'];
+  const rawPath = Array.isArray(p.path) && p.path.length > 0
+    ? p.path
+    : [p.category, p.subcategory, p.subsubcategory].filter(Boolean);
+  const cleanPath = rawPath.filter(part => !isHiddenCatalogCategory(part));
+  return cleanPath.length ? cleanPath : ['Sin Categoria'];
 }
 // Returns true if product belongs to the given path prefix
 function matchesPath(p, prefix) {
@@ -2173,6 +2414,7 @@ function getChildren(prefix) {
     if (customObj[pathStr] === '__DELETED__') return;
     
     const path = pathStr.split('/');
+    if (path.some(isHiddenCatalogCategory)) return;
     if (path.length > prefix.length) {
       let match = true;
       for (let i = 0; i < prefix.length; i++) {
@@ -2188,6 +2430,74 @@ function categoryUrl(prefix) {
 }
 
 // === Home ===
+// === Store (tienda) filter band — logo + nombre ===
+function renderStoreBand() {
+  if (_vendors.length === 0) return '';
+  var stores = [{ id: '', name: 'Todas', color: '#3a78c2', logoUrl: '' },
+                { id: '__main__', name: 'Don Balato', color: '#f59e0b', logoUrl: 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png' }]
+    .concat(_vendors.map(function(v){ return { id: v.id, name: v.name, color: v.color || '#f97316', logoUrl: v.logoUrl || '', phone: v.phone || '' }; }));
+  var chips = stores.map(function(s) {
+    var active = selectedStore === s.id;
+    var initials = (s.name || '?').trim().slice(0, 2).toUpperCase();
+    var avatar = s.logoUrl
+      ? '<img src="' + escapeHtml(s.logoUrl) + '" alt="' + escapeHtml(s.name) + '" style="width:100%;height:100%;object-fit:cover">'
+      : (s.id === '__main__' ? '🐱' : (s.id ? escapeHtml(initials) : '🛍️'));
+    var bg = s.id === '' ? 'transparent' : s.color;
+    return '<button type="button" onclick="selectStore(\'' + s.id + '\')" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;padding:6px 14px 6px 6px;border-radius:999px;border:1px solid ' + (active ? s.color : '#e5e7eb') + ';background:' + (active ? s.color + '18' : '#fff') + ';color:' + (active ? s.color : '#6b7280') + ';font-size:12px;font-weight:' + (active ? '800' : '600') + ';cursor:pointer;transition:all .2s;font-family:inherit">'
+      + '<span style="width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:' + bg + ';color:#fff;font-size:14px;font-weight:800;flex-shrink:0">' + avatar + '</span>'
+      + '<span>' + escapeHtml(s.name) + '</span>'
+      + '</button>';
+  }).join('');
+  return '<div class="scrollbar-hide" style="display:flex;align-items:center;gap:10px;overflow-x:auto;padding:6px 2px 14px;margin-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none">'
+    + '<span style="flex-shrink:0;font-size:12px;font-weight:800;color:#6b7280;margin-right:2px">Tiendas</span>'
+    + chips
+    + '</div>';
+}
+
+function selectStore(id) {
+  selectedStore = id || '';
+  render();
+}
+window.selectStore = selectStore;
+
+// === Toggle inline subcategorías under a category card ===
+function toggleCategorySubcats(catId) {
+  var panel = document.getElementById(catId + '-subs');
+  var arrow = document.getElementById(catId + '-arrow');
+  if (!panel) return;
+  var isHidden = panel.classList.contains('hidden');
+  if (isHidden) {
+    panel.classList.remove('hidden');
+    if (arrow) arrow.style.transform = 'rotate(180deg)';
+  } else {
+    panel.classList.add('hidden');
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+  }
+}
+window.toggleCategorySubcats = toggleCategorySubcats;
+
+// === Toggle subcategorías bajo un chip de categoría ===
+function toggleChipSubcats(chipId) {
+  var panel = document.getElementById(chipId + '-subs');
+  if (!panel) return;
+  var isHidden = panel.style.display === 'none' || panel.classList.contains('hidden');
+  // Cerrar otros paneles abiertos
+  document.querySelectorAll('[id$="-subs"]').forEach(function(el) {
+    if (el.id !== chipId + '-subs') {
+      el.style.display = 'none';
+      el.classList.add('hidden');
+    }
+  });
+  if (isHidden) {
+    panel.classList.remove('hidden');
+    panel.style.display = 'flex';
+  } else {
+    panel.classList.add('hidden');
+    panel.style.display = 'none';
+  }
+}
+window.toggleChipSubcats = toggleChipSubcats;
+
 function renderHome() {
   const products = getProducts();
   const topCats = getChildren([]);
@@ -2319,13 +2629,38 @@ function renderHome() {
         </a>
       </div>` : ''}
 
-      <!-- Category chips (quick access) -->
+      <!-- Store (tienda) filter band — logo + nombre -->
+      ${renderStoreBand()}
+
+      <!-- Category chips (quick access) — categorías con emoji + conteo, Todo al final -->
       ${topCats.length > 0 ? `<div class="chip-row scrollbar-hide -mx-4 px-4">
+        ${topCats.map((cat, idx) => {
+          const em = extractEmoji(cat) || (getCategoryBgEmojis(cat).split(' ')[0] || '📦');
+          const cleanName = stripEmoji(cat);
+          const subs = getChildren([cat]);
+          const chipId = 'chip-' + idx;
+          if (subs.length > 0) {
+            return `<button type="button" onclick="toggleChipSubcats('${chipId}')" class="chip" style="text-decoration:none">${em} ${escapeHtml(cleanName)}<span class="text-blue-300 font-semibold">${counts[cat]}</span></button>`;
+          }
+          return `<a href="${categoryUrl([cat])}" class="chip">${em} ${escapeHtml(cleanName)}<span class="text-blue-300 font-semibold">${counts[cat]}</span></a>`;
+        }).join('')}
         <a href="#/all" class="chip active">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>Todo
         </a>
-        ${topCats.map(cat => `<a href="${categoryUrl([cat])}" class="chip">${escapeHtml(cat)}<span class="text-blue-300 font-semibold">${counts[cat]}</span></a>`).join('')}
-      </div>` : ''}
+      </div>
+      <!-- Panel de subcategorías para los chips -->
+      ${topCats.map((cat, idx) => {
+        const subs = getChildren([cat]);
+        if (subs.length === 0) return '';
+        const chipId = 'chip-' + idx;
+        return `<div id="${chipId}-subs" class="hidden flex-wrap gap-1.5 py-1.5" style="display:none">
+          ${subs.map(sc => {
+            const scEm = extractEmoji(sc) || (getCategoryBgEmojis(sc).split(' ')[0] || '📦');
+            const scCount = getProducts().filter(p => matchesPath(p, [cat, sc])).length;
+            return `<a href="${categoryUrl([cat, sc])}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold hover:bg-blue-100 transition-colors">${scEm} ${escapeHtml(stripEmoji(sc))} <span class="text-blue-400">${scCount}</span></a>`;
+          }).join('')}
+        </div>`;
+      }).join('')}` : ''}
 
       ${deals.length > 0 ? `
       <!-- Deals carousel -->
@@ -2412,28 +2747,42 @@ function renderHome() {
         </div>
       </div>` : ''}
 
-      <!-- Categories grid -->
+      <!-- Categories grid — click para desplegar subcategorías inline -->
       ${topCats.length > 0 ? `<div id="categoriesSection">
         <div class="flex items-center justify-between mb-3">
           <h2 class="section-title">Explora por categoría</h2>
+          <span class="text-[11px] text-blue-400 font-semibold">Toca para ver subcategorías</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger">
           ${topCats.map((cat, idx) => {
             const icon = getCategoryIcon(cat, [cat]);
+            const em = icon ? '' : (extractEmoji(cat) || (getCategoryBgEmojis(cat).split(' ')[0] || ''));
+            const subs = getChildren([cat]);
+            const catId = 'cat-' + idx;
             return `
-            <a href="${categoryUrl([cat])}" class="cat-card cat-g${idx % 4} group relative overflow-hidden">
-              <div class="absolute -right-2 -bottom-1 text-2xl sm:text-3xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 pointer-events-none select-none z-0">
-                ${getCategoryBgEmojis(cat)}
-              </div>
-              <div class="cat-icon-wrap relative z-10">
-                ${icon ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(stripEmoji(cat))}">` : (() => { const em = extractEmoji(cat); return em ? `<span class="text-2xl">${em}</span>` : `<span class="text-blue-500">${FALLBACK_CAT_SVG}</span>`; })()}
-              </div>
-              <div class="font-display font-extrabold text-blue-950 text-sm sm:text-base leading-tight relative z-10">${escapeHtml(stripEmoji(cat))}</div>
-              <div class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-blue-600/90 mt-1.5 font-extrabold px-2.5 py-0.5 rounded-full bg-white/70 backdrop-blur-md border border-white/60 relative z-10">
-                <span>${counts[cat]} productos</span>
-                <svg class="w-3 h-3 text-blue-500 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-              </div>
-            </a>`;
+            <div class="flex flex-col gap-2">
+              <button type="button" onclick="toggleCategorySubcats('${catId}')" class="cat-card cat-g${idx % 4} group relative overflow-hidden text-left">
+                <div class="absolute -right-2 -bottom-1 text-2xl sm:text-3xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 pointer-events-none select-none z-0">
+                  ${getCategoryBgEmojis(cat)}
+                </div>
+                <div class="cat-icon-wrap relative z-10">
+                  ${icon ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(stripEmoji(cat))}">` : (em ? `<span class="text-2xl">${em}</span>` : `<span class="text-blue-500">${FALLBACK_CAT_SVG}</span>`)}
+                </div>
+                <div class="font-display font-extrabold text-blue-950 text-sm sm:text-base leading-tight relative z-10">${escapeHtml(stripEmoji(cat))}</div>
+                <div class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-blue-600/90 mt-1.5 font-extrabold px-2.5 py-0.5 rounded-full bg-white/70 backdrop-blur-md border border-white/60 relative z-10">
+                  <span>${counts[cat]} productos</span>
+                  ${subs.length > 0 ? `<svg class="w-3 h-3 text-blue-500 transition-transform" id="${catId}-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>` : `<svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>`}
+                </div>
+              </button>
+              ${subs.length > 0 ? `
+              <div id="${catId}-subs" class="hidden flex flex-wrap gap-1.5 px-1 pb-1">
+                ${subs.map(sc => {
+                  const scEm = extractEmoji(sc) || (getCategoryBgEmojis(sc).split(' ')[0] || '📦');
+                  const scCount = getProducts().filter(p => matchesPath(p, [cat, sc])).length;
+                  return `<a href="${categoryUrl([cat, sc])}" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold hover:bg-blue-100 transition-colors">${scEm} ${escapeHtml(stripEmoji(sc))} <span class="text-blue-400">${scCount}</span></a>`;
+                }).join('')}
+              </div>` : ''}
+            </div>`;
           }).join('')}
         </div>
       </div>` : ''}
@@ -2463,7 +2812,7 @@ function renderHome() {
 
 // === Category page (hierarchical, supports any depth) ===
 function renderCategory(prefixEncoded) {
-  const prefix = (prefixEncoded || []).map(decodeURIComponent);
+  const prefix = (prefixEncoded || []).map(decodeURIComponent).filter(part => !isHiddenCatalogCategory(part));
   if (prefix.length === 0) return renderHome();
 
   const products = getProducts().filter(p => matchesPath(p, prefix));
@@ -2487,6 +2836,7 @@ function renderCategory(prefixEncoded) {
 
   let html = `<div class="fade-in space-y-4">
     ${breadcrumb}
+    ${renderStoreBand()}
     <!-- Category Header Banner (Cristal Blanco Luxe Theme) -->
     <div class="relative overflow-hidden rounded-[26px] p-5 sm:p-6 bg-gradient-to-r from-blue-50/90 via-white to-blue-50/90 border border-blue-200/80 shadow-sm mb-4">
       <div class="flex items-center justify-between gap-3 relative z-10">
@@ -2691,6 +3041,7 @@ function renderAllProducts() {
       <h1 class="font-display font-extrabold text-2xl text-blue-800">Catálogo</h1>
       <span class="text-sm text-blue-400 font-semibold">${all.length} en total</span>
     </div>
+    ${renderStoreBand()}
     ${productListSection(all)}
   </div>`;
   $('#app').innerHTML = html;
@@ -4159,14 +4510,17 @@ async function fetchAppwriteProducts() {
   var apiBase = window.location.origin.indexOf('localhost') >= 0
     ? 'http://localhost:3000'
     : window.location.origin;
-  // Fetch products and catalog (categories/subcategories) in parallel
-  var [prodRes, catRes] = await Promise.all([
+  // Fetch products, catalog (categories/subcategories) and vendors in parallel
+  var [prodRes, catRes, venRes] = await Promise.all([
     fetch(apiBase + '/api/public-data/products?limit=1000', { cache: 'no-store' }),
-    fetch(apiBase + '/api/public-data/catalog', { cache: 'no-store' })
+    fetch(apiBase + '/api/public-data/catalog', { cache: 'no-store' }),
+    fetch(apiBase + '/api/public-data/vendors', { cache: 'no-store' }).catch(function(){ return { json: function(){ return { vendors: [] }; } }; })
   ]);
   var prodData = await prodRes.json();
   var raw = Array.isArray(prodData) ? prodData : (prodData.products || []);
   var catData = await catRes.json();
+  // Vendors
+  try { var venData = await venRes.json(); _vendors = (venData && Array.isArray(venData.vendors)) ? venData.vendors.map(function(v){ return { id: v.id, name: v.name || 'Tienda asociada', color: v.color || '#f97316', logoUrl: v.logoUrl || '', phone: v.phone || '' }; }) : []; } catch(e) { _vendors = []; }
   // Build lookup maps: id -> name, and store category/subcategory data with images
   var catMap = {};
   var subMap = {};
@@ -4186,6 +4540,8 @@ async function fetchAppwriteProducts() {
   }
   return raw.map(function(p) {
     var img = resolveAppwriteImage(p.IMAGEURL || p.image || '', apiBase);
+    var img2 = resolveAppwriteImage(p.IMAGEURL2 || p.image2 || '', apiBase);
+    var img3 = resolveAppwriteImage(p.IMAGEURL3 || p.image3 || '', apiBase);
     // Resolve SKU same way as web: SKU field > FEATURES > TAGS > jumpseller_id > $id
     var resolvedSku = p.SKU || '';
     if (!resolvedSku) {
@@ -4209,13 +4565,16 @@ async function fetchAppwriteProducts() {
       priceB: p.WHOLESALEPRICE || p.PRICE || 0,
       stock: (p.STOCK == null) ? 999 : p.STOCK,
       category: catMap[p.CATEGORYID] || p.category || 'Sin Categoria',
-      image: img,
+      image: img || img2 || img3,
+      image2: img2,
+      image3: img3,
       CATEGORYID: p.CATEGORYID || '',
       subcategoryId: p.SUBCATEGORYID || '',
       subcategory: subMap[p.SUBCATEGORYID] || p.subcategory || '',
       BRAND: p.BRAND || '',
       DESCRIPTION: p.DESCRIPTION || '',
       PACKQTY: p.PACKQTY || null,
+      VENDOR_ID: p.VENDOR_ID || '',
       _createdAt: p.$createdAt || 0
     };
   });

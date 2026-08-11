@@ -1,8 +1,9 @@
 'use client';
 
-import { Search, X, Plus, Package, ChevronRight, ChevronLeft, RefreshCw, ChevronDown, Sparkles, Loader2, Trash2 } from 'lucide-react';
+import { Search, X, Plus, Package, ChevronRight, ChevronLeft, RefreshCw, ChevronDown, Sparkles, Loader2, Trash2, Wrench, ImageOff } from 'lucide-react';
 import { Product, Category } from '@/types/admin';
 import { resolveStorageImageUrl } from '@/lib/product-images';
+import { useState } from 'react';
 
 type StockFilter = 'all' | 'instock' | 'low' | 'out';
 
@@ -31,6 +32,15 @@ interface Props {
   hasMore: boolean;
   onNextPage: () => void;
   onPrevPage: () => void;
+  // Fotos rotas / sin imagen
+  brokenImages?: Record<string, string[]>;
+  brokenOnly?: boolean;
+  onBrokenOnlyChange?: (v: boolean) => void;
+  onSyncBrokenImages?: () => void;
+  syncingImages?: boolean;
+  syncProgress?: { checked: number; broken: number };
+  noImageOnly?: boolean;
+  onNoImageOnlyChange?: (v: boolean) => void;
 }
 
 const fmt = (n: number) =>
@@ -53,7 +63,12 @@ export default function MobileProductList({
   stockFilter, onStockFilterChange,
   onEdit, onEnhanceProduct, onAdd, onDelete, deleteId, aiLoading, globalTotal, onRefresh,
   currentPage, hasMore, onNextPage, onPrevPage,
+  brokenImages = {}, brokenOnly = false, onBrokenOnlyChange, onSyncBrokenImages, syncingImages = false, syncProgress,
+  noImageOnly = false, onNoImageOnlyChange,
 }: Props) {
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const brokenCount = Object.keys(brokenImages).length;
+  const noImageCount = allProducts.filter(p => !p.IMAGEURL).length;
   const counts: Record<StockFilter, number> = {
     all: allProducts.length,
     instock: allProducts.filter(p => (p.STOCK ?? 0) > 0).length,
@@ -125,6 +140,60 @@ export default function MobileProductList({
         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
       </div>
 
+      {/* Herramientas + filtros de imagen */}
+      <div className="flex gap-2 flex-wrap items-center">
+        <div className="relative">
+          <button onClick={() => setToolsOpen(v => !v)}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium shadow-sm active:scale-95 transition">
+            <Wrench className="w-4 h-4 text-gray-500" /> Herramientas
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${toolsOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {toolsOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setToolsOpen(false)} />
+              <div className="absolute left-0 mt-2 z-30 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl ring-1 ring-black/5 p-2 flex flex-col max-h-[70vh] overflow-y-auto">
+                <p className="px-2.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Imágenes</p>
+                <button onClick={() => { setToolsOpen(false); onSyncBrokenImages?.(); }} disabled={syncingImages || allProducts.length === 0}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition text-left disabled:opacity-40">
+                  <ImageOff className={`w-4 h-4 ${brokenCount > 0 ? 'text-red-500' : 'text-gray-400'}`} />
+                  {syncingImages ? 'Verificando…' : 'Verificar fotos'}
+                  {brokenCount > 0 && !syncingImages && (
+                    <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">{brokenCount}</span>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+        {noImageCount > 0 && onNoImageOnlyChange && (
+          <button onClick={() => onNoImageOnlyChange(!noImageOnly)}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition active:scale-95 ${
+              noImageOnly ? 'bg-gray-700 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
+            }`}>
+            Sin imagen
+            <span className={`text-[10px] font-bold px-1.5 rounded-full ${noImageOnly ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'}`}>{noImageCount}</span>
+          </button>
+        )}
+        {brokenCount > 0 && onBrokenOnlyChange && (
+          <button onClick={() => onBrokenOnlyChange(!brokenOnly)}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition active:scale-95 ${
+              brokenOnly ? 'bg-red-600 text-white shadow-sm' : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
+            <ImageOff className="w-3.5 h-3.5" />
+            Fotos rotas
+            <span className={`text-[10px] font-bold px-1 rounded-full ${brokenOnly ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'}`}>{brokenCount}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Progreso de verificación */}
+      {syncingImages && syncProgress && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-medium text-gray-500">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Verificando fotos {syncProgress.checked}/{allProducts.flatMap(p => [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean)).length} · {syncProgress.broken} rotas
+        </div>
+      )}
+
       {/* Lista de tarjetas */}
       {isLoading && products.length === 0 ? (
         <div className="space-y-3">
@@ -156,11 +225,16 @@ export default function MobileProductList({
             <div key={p.$id}
               className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-3 flex gap-3 items-center text-left active:scale-[0.98] active:bg-gray-50 transition">
               <button onClick={() => onEdit(p)} className="flex-1 flex gap-3 items-center text-left min-w-0">
-                <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center relative">
                   {p.IMAGEURL ? (
                     <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     <Package className="w-6 h-6 text-gray-300" />
+                  )}
+                  {(brokenImages[p.$id]?.length ?? 0) > 0 && (
+                    <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center" title={`${brokenImages[p.$id].length} imagen(es) rota(s)`}>
+                      <ImageOff className="w-2.5 h-2.5 text-white" />
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

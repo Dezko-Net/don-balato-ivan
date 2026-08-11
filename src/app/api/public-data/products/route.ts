@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
     const tag = searchParams.get('tag') || undefined;
     const search = searchParams.get('search') || undefined;
     const brand = searchParams.get('brand') || undefined;
+    const vendorId = searchParams.get('vendorId') || undefined;
     const ofertasOnly = searchParams.get('ofertasOnly') === 'true';
     // mode=paquetes|embalajes: catálogo por paquete (PACKQTY>1, precio de pack)
     const mode = searchParams.get('mode') || undefined;
@@ -136,6 +137,11 @@ export async function GET(request: NextRequest) {
 
     if (brand) {
       modeProducts = modeProducts.filter(p => productMatchesBrand(p, brand));
+    }
+    if (vendorId) {
+      modeProducts = vendorId === '__main__'
+        ? modeProducts.filter(p => !p.VENDOR_ID)
+        : modeProducts.filter(p => p.VENDOR_ID === vendorId);
     }
 
     // Calculate Category, Subcategory and SubSubcategory Counts (across all active products in DB)

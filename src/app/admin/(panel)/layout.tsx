@@ -95,6 +95,7 @@ const NAV_GROUPS: NavGroup[] = [
   ]},
   { label: 'General', defaultOpen: false, items: [
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
+    { href: '/admin/vendors', label: 'Tiendas Aliadas', icon: Ico.Mayoristas },
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
       { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },
       { href: '/admin/vip',           label: 'VIP',            icon: Ico.Usuarios },
@@ -952,7 +953,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {[
                   { label: 'Ir al Dashboard', icon: '🏠', href: '/admin/dashboard' },
                   { label: 'Configuración', icon: '⚙️', href: '/admin/settings' },
-                  { label: 'Ver tienda', icon: '🛍️', href: '/' },
+                  { label: 'Ver Tiendas', icon: '🛍️', href: '/admin/vendors' },
                 ].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => closeUserMenu()} className="um-item" style={{
                     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',

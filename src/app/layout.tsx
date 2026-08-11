@@ -99,6 +99,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Importmap para el tema Pebble (Plantilla 5) — resuelve @theme/ a archivos locales */}
         {/* biome-ignore lint: intentional dangerouslySetInnerHTML for importmap */}
         <script type="importmap" dangerouslySetInnerHTML={{ __html: pebbleImportMap }} />
+        {/* Handler global: oculta imágenes rotas con placeholder de iniciales */}
+        {/* biome-ignore lint: intentional dangerouslySetInnerHTML for global img error handler */}
+        <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('error',function(e){var el=e.target;if(el&&el.tagName==='IMG'&&!el.dataset.badImg){el.dataset.badImg='1';var alt=(el.alt||'?').trim();var initials=alt.split(/\\s+/).filter(Boolean).slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase()||'DB';var ph=document.createElement('div');ph.className=(el.className||'')+' img-placeholder';ph.style.cssText='display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e3f2ff 0%,#fff8d6 100%);color:#5a96d8;font-weight:700;letter-spacing:.05em;border-radius:inherit;width:100%;height:100%;font-size:14px';ph.textContent=initials;if(el.parentNode)el.parentNode.replaceChild(ph,el);}},true);` }} />
       </head>
       <body>
         <ClientFetchCache />

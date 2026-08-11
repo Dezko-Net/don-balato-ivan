@@ -34,6 +34,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   const { getSectionTemplate } = useTemplate();
   const isAdmin =
     pathname.startsWith('/admin') ||
+    pathname.startsWith('/vendor') ||
     pathname.startsWith('/pos-admin') ||
     pathname.startsWith('/pos') ||
     pathname.startsWith('/erp') ||

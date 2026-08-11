@@ -97,6 +97,28 @@ export function useCartItemPrice(item: CartItem): {
       };
     }
 
+    // 3.5. 📦 Precio por volumen — % descuento (PACK_DISCOUNT_PCT + PACK_MIN_PACKS)
+    if (!result) {
+      const pct = Number(item.product.PACK_DISCOUNT_PCT) || 0;
+      const minPacks = Number(item.product.PACK_MIN_PACKS) || 0;
+      if (pct > 0 && minPacks > 0 && item.quantity >= minPacks && !isDisableDiscounts(item.product)) {
+        const basePrice = resolveProductDisplayPrice(item.product, apertura).displayPrice;
+        const discounted = Math.round(basePrice * (1 - pct / 100));
+        if (discounted > 0 && discounted < basePrice) {
+          result = {
+            unitPrice: discounted,
+            pricing: {
+              displayPrice: discounted,
+              originalPrice: basePrice,
+              hasDiscount: true,
+              discountPercent: pct,
+              fromApertura: false,
+            },
+          };
+        }
+      }
+    }
+
     // 4. Regular Wholesale rules
     const pFeatures = Array.isArray(item.product.FEATURES) ? item.product.FEATURES.join('\n') : item.product.FEATURES || '';
     const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
@@ -156,12 +178,20 @@ export function useCartPricing(items: CartItem[]) {
       } else if (hasVolumePricing(item.product)) {
         // 📦 Precios por volumen: el nivel (detalle/mayor/caja) según cantidad
         unit = resolveVolumeUnitPrice(item.product, item.quantity);
-      } else if (hasConfiguredWholesale && qtyMatches) {
-        unit = item.product.WHOLESALEPRICE!;
-      } else if (!hasConfiguredWholesale && item.wholesalePrice && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
-        unit = item.wholesalePrice;
       } else {
-        unit = resolveProductDisplayPrice(item.product, apertura).displayPrice;
+        // 📦 % descuento por volumen (PACK_DISCOUNT_PCT + PACK_MIN_PACKS)
+        const pct = Number(item.product.PACK_DISCOUNT_PCT) || 0;
+        const minPacks = Number(item.product.PACK_MIN_PACKS) || 0;
+        if (pct > 0 && minPacks > 0 && item.quantity >= minPacks) {
+          const baseUnit = resolveProductDisplayPrice(item.product, apertura).displayPrice;
+          unit = Math.round(baseUnit * (1 - pct / 100));
+        } else if (hasConfiguredWholesale && qtyMatches) {
+          unit = item.product.WHOLESALEPRICE!;
+        } else if (!hasConfiguredWholesale && item.wholesalePrice && (item.isPack || !item.product.WHOLESALEMINQUANTITY || item.product.WHOLESALEMINQUANTITY <= 1 || item.quantity >= item.product.WHOLESALEMINQUANTITY)) {
+          unit = item.wholesalePrice;
+        } else {
+          unit = resolveProductDisplayPrice(item.product, apertura).displayPrice;
+        }
       }
 
       subtotal += unit * item.quantity;

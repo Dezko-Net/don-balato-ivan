@@ -12,6 +12,7 @@ import Link from 'next/link';
 import ProductPhotoUploader from '@/components/admin/ProductPhotoUploader';
 import MobileProductList from '@/components/admin/mobile/MobileProductList';
 import MobileProductEditor from '@/components/admin/mobile/MobileProductEditor';
+import PriceInput from '@/components/PriceInput';
 import { generateProductTitle, generateProductDescription, generateProductAiPack } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures, getDisableDiscountsFromFeatures, setDisableDiscountsInFeatures } from '@/lib/product-features';
 // Lottie imports removed to prevent React 19 crashes
@@ -124,7 +125,9 @@ export default function ProductsPage() {
   const [KeniaMessages, setKeniaMessages] = useState<{role: string; content: string}[]>([]);
   const [KeniaInput, setKeniaInput] = useState('');
   const [KeniaLoading, setKeniaLoading] = useState(false);
-  const [brokenImages, setBrokenImages] = useState<Record<string, string[]>>({});
+  const [brokenImages, setBrokenImages] = useState<Record<string, string[]>>(() => {
+    try { return JSON.parse(localStorage.getItem('admin_broken_images') || '{}'); } catch { return {}; }
+  });
   const [brokenOnly, setBrokenOnly] = useState(false);
   const [syncingImages, setSyncingImages] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ checked: 0, broken: 0 });
@@ -1022,6 +1025,9 @@ export default function ProductsPage() {
         sku: d._sku || '',
       };
       if ((d as Product).section != null) optionalFields.section = (d as Product).section;
+      // Precio por volumen: campos de descuento por cantidad
+      optionalFields.PACK_MIN_PACKS = Math.round(Number(d.PACK_MIN_PACKS)) || 0;
+      optionalFields.PACK_DISCOUNT_PCT = Math.round(Number(d.PACK_DISCOUNT_PCT)) || 0;
       // IMAGEURL4/5 no existen en el schema — no enviarlos
       
       // Check if stock is being restocked (from 0 to >0) on edit
@@ -1675,11 +1681,12 @@ export default function ProductsPage() {
     if (products.length === 0) return;
     setSyncingImages(true);
     setBrokenImages({});
+    try { localStorage.removeItem('admin_broken_images'); } catch {}
     setSyncProgress({ checked: 0, broken: 0 });
     const result: Record<string, string[]> = {};
     let checked = 0;
     let broken = 0;
-    const BATCH = 10;
+    const BATCH = 20;
     const allImages = products.flatMap(p =>
       [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3]
         .filter(Boolean)
@@ -1687,31 +1694,24 @@ export default function ProductsPage() {
     );
     for (let i = 0; i < allImages.length; i += BATCH) {
       const batch = allImages.slice(i, i + BATCH);
-      await Promise.all(batch.map(async ({ productId, url }) => {
-        try {
-          const res = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-          // no-cors always returns opaque, so we need a different approach
-          // Use img tag loading via promise
-          return new Promise<void>((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve();
-            img.onerror = () => {
-              if (!result[productId]) result[productId] = [];
-              result[productId].push(url);
-              broken++;
-              resolve();
-            };
-            img.src = url;
-          });
-        } catch {
-          if (!result[productId]) result[productId] = [];
-          result[productId].push(url);
-          broken++;
-        }
-      }));
+      await Promise.all(batch.map(({ productId, url }) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => {
+            if (!result[productId]) result[productId] = [];
+            result[productId].push(url);
+            broken++;
+            resolve();
+          };
+          img.src = url;
+        })
+      ));
       checked += batch.length;
       setSyncProgress({ checked, broken });
-      setBrokenImages({ ...result });
+      const snapshot = { ...result };
+      setBrokenImages(snapshot);
+      try { localStorage.setItem('admin_broken_images', JSON.stringify(snapshot)); } catch {}
     }
     setSyncingImages(false);
   };
@@ -1950,7 +1950,8 @@ export default function ProductsPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Precio venta (CLP) <span className="text-red-500">*</span></label>
-                    <input type="number" value={modal.data.PRICE || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value) || 0, WHOLESALEPRICE: Number(e.target.value) || 0 } } : m)}
+                    <PriceInput value={modal.data.PRICE || ''} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, PRICE: v, WHOLESALEPRICE: v } } : m)}
+                      placeholder="$0"
                       className={`w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 ${!modal.data.PRICE ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
                     {(() => {
                       const price = Number(modal.data.PRICE) || 0;
@@ -2094,11 +2095,6 @@ export default function ProductsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Cant. por paquete</label>
-                    <input type="number" value={modal.data.PACKQTY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PACKQTY: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-                  </div>
-                  <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">SKU</label>
                     <input type="text" value={modal.data._sku ?? ''}
                       onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _sku: e.target.value } } : m)}
@@ -2218,17 +2214,77 @@ export default function ProductsPage() {
                           className="w-full px-3 py-2 border border-red-200 bg-red-50/40 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
                         <p className="text-[10px] text-gray-400 mt-1">Si es menor que el precio de venta, se muestra como oferta en la tienda.</p>
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Precio mayorista</label>
-                        <input type="number" value={modal.data.WHOLESALEPRICE || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value) || 0 } } : m)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-                        <p className="text-[10px] text-gray-400 mt-1">Se iguala al precio de venta si cambias el precio arriba.</p>
+                    </div>
+
+                    {/* ══ Precio por volumen ══ */}
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">Precio por volumen</p>
+                          <p className="text-[11px] text-gray-500">Ofrece un precio menor cuando compran cierta cantidad</p>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={!!(modal.data.WHOLESALEMINQUANTITY && modal.data.WHOLESALEMINQUANTITY > 0) || !!(modal.data.PACK_MIN_PACKS && modal.data.PACK_DISCOUNT_PCT)}
+                            onChange={e => {
+                              if (!e.target.checked) {
+                                setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: 0, WHOLESALEPRICE: 0, PACK_MIN_PACKS: 0, PACK_DISCOUNT_PCT: 0 } } : m);
+                              } else {
+                                setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: m.data.WHOLESALEMINQUANTITY || 5 } } : m);
+                              }
+                            }}
+                            className="w-4 h-4 accent-gray-900" />
+                          <span className="text-xs font-semibold text-gray-700">Activar</span>
+                        </label>
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Cant. mínima mayorista</label>
-                        <input type="number" value={modal.data.WHOLESALEMINQUANTITY || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: Number(e.target.value) || 0 } } : m)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-                      </div>
+                      {((modal.data.WHOLESALEMINQUANTITY && modal.data.WHOLESALEMINQUANTITY > 0) || (modal.data.PACK_MIN_PACKS && modal.data.PACK_DISCOUNT_PCT)) && (
+                        <>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad mínima</label>
+                              <input type="number" min="2" value={modal.data.WHOLESALEMINQUANTITY || modal.data.PACK_MIN_PACKS || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => {
+                                const v = Number(e.target.value) || 0;
+                                setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: v, PACK_MIN_PACKS: v } } : m);
+                              }}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Ej: 5" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de descuento</label>
+                              <select value={(modal.data.PACK_DISCOUNT_PCT && modal.data.PACK_DISCOUNT_PCT > 0) ? 'pct' : 'fixed'}
+                                onChange={e => {
+                                  if (e.target.value === 'pct') {
+                                    setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: 0, PACK_DISCOUNT_PCT: m.data.PACK_DISCOUNT_PCT || 10 } } : m);
+                                  } else {
+                                    setModal(m => m ? { ...m, data: { ...m.data, PACK_DISCOUNT_PCT: 0, WHOLESALEPRICE: m.data.WHOLESALEPRICE || Math.round((modal.data.PRICE || 0) * 0.9) } } : m);
+                                  }
+                                }}
+                                className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
+                                <option value="fixed">Precio fijo</option>
+                                <option value="pct">% Descuento</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                {(modal.data.PACK_DISCOUNT_PCT && modal.data.PACK_DISCOUNT_PCT > 0) ? '% de descuento' : 'Precio unitario'}
+                              </label>
+                              {(modal.data.PACK_DISCOUNT_PCT && modal.data.PACK_DISCOUNT_PCT > 0) ? (
+                                <input type="number" min="1" max="90" value={modal.data.PACK_DISCOUNT_PCT || ''} onFocus={e => { if (Number(e.target.value) === 0) e.target.value = ''; }} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PACK_DISCOUNT_PCT: Number(e.target.value) || 0 } } : m)}
+                                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Ej: 10" />
+                              ) : (
+                                <PriceInput value={modal.data.WHOLESALEPRICE || ''} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: v } } : m)}
+                                  placeholder="$0"
+                                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-gray-700 bg-gray-100 rounded-lg px-3 py-2">
+                            {(modal.data.PACK_DISCOUNT_PCT && modal.data.PACK_DISCOUNT_PCT > 0) ? (
+                              <>Compra <strong>{modal.data.WHOLESALEMINQUANTITY || modal.data.PACK_MIN_PACKS}+</strong> → <strong>{modal.data.PACK_DISCOUNT_PCT}% off</strong> ({fmt(Math.round((modal.data.PRICE || 0) * (1 - (modal.data.PACK_DISCOUNT_PCT || 0) / 100)))} c/u)</>
+                            ) : (
+                              <>Compra <strong>{modal.data.WHOLESALEMINQUANTITY}+</strong> → <strong>{fmt(modal.data.WHOLESALEPRICE || 0)} c/u</strong></>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                     <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition">
                       <input type="checkbox" checked={!!modal.data.DISABLE_DISCOUNTS}
@@ -3755,6 +3811,14 @@ export default function ProductsPage() {
           hasMore={currentPage < totalPages}
           onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
           onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
+          brokenImages={brokenImages}
+          brokenOnly={brokenOnly}
+          onBrokenOnlyChange={setBrokenOnly}
+          onSyncBrokenImages={syncBrokenImages}
+          syncingImages={syncingImages}
+          syncProgress={syncProgress}
+          noImageOnly={noImageOnly}
+          onNoImageOnlyChange={setNoImageOnly}
         />
       )}
     </div>

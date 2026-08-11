@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { serverListDocuments, serverUpdateDocument } from '@/lib/appwrite-server';
-import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { ORDERS_COLLECTION_ID, VENDOR_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { orderCode, region, comuna, address, additionalInfo, shippingAgency } = body as {
+    const { orderCode, customerName, customerRut, customerEmail, region, comuna, address, additionalInfo, shippingAgency } = body as {
       orderCode: string;
+      customerName?: string;
+      customerRut?: string;
+      customerEmail?: string;
       region: string;
       comuna: string;
       address: string;
@@ -23,21 +26,31 @@ export async function POST(request: NextRequest) {
 
     const qEqual = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [orderCode] });
     const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
-    const res = await serverListDocuments(ORDERS_COLLECTION_ID, [qEqual, qLimit1]);
-
+    let collectionId = ORDERS_COLLECTION_ID;
+    let res = await serverListDocuments(collectionId, [qEqual, qLimit1]);
     if (!res.documents || res.documents.length === 0) {
-      return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
+      collectionId = VENDOR_ORDERS_COLLECTION_ID;
+      res = await serverListDocuments(collectionId, [qEqual, qLimit1]);
     }
+    if (!res.documents || res.documents.length === 0) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
 
     const order = res.documents[0] as any;
 
-    await serverUpdateDocument(ORDERS_COLLECTION_ID, order.$id, {
+    const customerFields = {
+      ...(customerName?.trim() ? { CUSTOMERNAME: customerName.trim() } : {}),
+      ...(customerRut?.trim() ? { CUSTOMERRUT: customerRut.trim() } : {}),
+      ...(customerEmail?.trim() ? { CUSTOMEREMAIL: customerEmail.trim() } : {}),
+    };
+    // Nunca degradar payment_review a processing: el comprobante ya fue enviado.
+    const nextStatus = order.STATUS === 'payment_review' || order.PAYMENTPROOFURL ? 'payment_review' : 'processing';
+    await serverUpdateDocument(collectionId, order.$id, {
+      ...customerFields,
       REGION: region,
       COMUNA: comuna,
       ADDRESS: address,
       ADDITIONALINFO: additionalInfo || '',
       SHIPPINGAGENCY: shippingAgency || '',
-      STATUS: 'processing',
+      STATUS: nextStatus,
       UPDATEDAT: Date.now(),
     });
 

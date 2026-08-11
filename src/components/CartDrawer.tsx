@@ -47,14 +47,37 @@ export default function CartDrawer({ open, onClose }: Props) {
               <p style={{ margin: 0, fontSize: 13, color: '#999' }}>Agrega productos para continuar</p>
             </div>
           ) : (
-            items.map(item => (
-              <CartDrawerRow
-                key={item.product.$id}
-                item={item}
-                updateQuantity={updateQuantity}
-                removeItem={removeItem}
-              />
-            ))
+            (() => {
+              const groups: { key: string; name: string; isMain: boolean; items: typeof items }[] = [];
+              const groupMap = new Map<string, number>();
+              items.forEach(item => {
+                const vId = (item.product as any).VENDOR_ID || '__MAIN__';
+                const vName = (item.product as any).VENDOR_NAME || 'Don Balato Ivan';
+                const isMain = !(item.product as any).VENDOR_ID;
+                if (!groupMap.has(vId)) {
+                  groupMap.set(vId, groups.length);
+                  groups.push({ key: vId, name: vName, isMain, items: [] });
+                }
+                groups[groupMap.get(vId)!].items.push(item);
+              });
+              return groups.map(group => (
+                <div key={group.key} style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0 4px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: group.isMain ? '#92400e' : '#7c3aed', background: group.isMain ? '#fef3c7' : '#f5f3ff', border: `1px solid ${group.isMain ? '#fde68a' : '#ddd6fe'}`, borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>
+                      {group.isMain ? '🐱' : '🏪'} {group.name}
+                    </span>
+                  </div>
+                  {group.items.map(item => (
+                    <CartDrawerRow
+                      key={item.product.$id}
+                      item={item}
+                      updateQuantity={updateQuantity}
+                      removeItem={removeItem}
+                    />
+                  ))}
+                </div>
+              ));
+            })()
           )}
         </div>
 
@@ -68,10 +91,22 @@ export default function CartDrawer({ open, onClose }: Props) {
               style={{ display: 'block', width: '100%', padding: '12px 0', background: '#fff', color: '#3483fa', border: '1.5px solid #3483fa', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none', marginBottom: 8 }}>
               Ver carrito
             </Link>
-            <Link href="/checkout" onClick={onClose}
-              style={{ display: 'block', width: '100%', padding: '12px 0', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>
-              Ir a pagar
-            </Link>
+            {(() => {
+              const groups: { key: string; name: string; isMain: boolean }[] = [];
+              const seen = new Set<string>();
+              items.forEach(item => {
+                const vId = (item.product as any).VENDOR_ID || '__MAIN__';
+                const vName = (item.product as any).VENDOR_NAME || 'Don Balato Ivan';
+                const isMain = !(item.product as any).VENDOR_ID;
+                if (!seen.has(vId)) { seen.add(vId); groups.push({ key: vId, name: vName, isMain }); }
+              });
+              return groups.map(group => (
+                <Link key={group.key} href={`/checkout?vendor=${encodeURIComponent(group.key)}`} onClick={onClose}
+                  style={{ display: 'block', width: '100%', padding: '10px 0', background: group.isMain ? '#3483fa' : '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, textAlign: 'center', textDecoration: 'none', marginBottom: 6 }}>
+                  {group.isMain ? '🐱' : '🏪'} Pagar {group.name}
+                </Link>
+              ));
+            })()}
           </div>
         )}
       </div>
