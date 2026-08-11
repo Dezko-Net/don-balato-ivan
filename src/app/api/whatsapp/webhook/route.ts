@@ -653,6 +653,7 @@ export async function POST(req: NextRequest) {
 
     let userText = "";
     let interactiveId = "";
+    let inboundMediaUrl = "";
     let inlineDataParts: any[] = [];
 
     if (msgType === "text") {
@@ -1023,7 +1024,7 @@ export async function POST(req: NextRequest) {
               await addToHistory(
                 fromPhone,
                 "user",
-                "[Imagen Comprobante]",
+                `[Imagen Comprobante]\n${fileUrl}`,
                 msgId,
               );
               await addToHistory(
@@ -1036,6 +1037,17 @@ export async function POST(req: NextRequest) {
               return NextResponse.json({ status: "comprobante_uploaded" });
             }
 
+            // Guardar una copia de las imágenes no asociadas a comprobantes para
+            // que el panel admin pueda mostrarlas dentro de la conversación.
+            if (!pendingOrderId || !isComprobante) {
+              try {
+                const mediaUpload = await serverUploadFile(MEDIA_BUCKET_ID, buffer, `whatsapp_${Date.now()}.jpg`);
+                inboundMediaUrl = getPublicFileUrl(MEDIA_BUCKET_ID, mediaUpload.$id);
+                userText = `${userText || 'Imagen recibida por WhatsApp'}\n${inboundMediaUrl}`;
+              } catch (mediaError) {
+                console.warn('[WhatsApp] No se pudo guardar imagen para el panel:', mediaError);
+              }
+            }
             const base64 = Buffer.from(buffer).toString("base64");
             inlineDataParts.push({
               inline_data: {
@@ -3735,27 +3747,17 @@ ${products.join("\n") || "Sin productos."}`;
           return NextResponse.json({ status: "spam_blocked" });
         }
         if (usageCheck.adminTakeover || usageCheck.escalated) {
-          // Admin tomó control o Balatin escaló: responder UNA sola vez y luego silencio total
-          const lastStallTs = usageCheck.lastStallReplyTs || 0;
-          if (lastStallTs === 0) {
-            const takeoverReply =
-              "¡Miau! Dame un segundito que estoy revisando un par de cosas con el equipo de tienda para poder ayudarte mejor con esto. ¡Ahorita vuelvo contigo!";
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              takeoverReply,
-              `stall-${Date.now()}`,
-            );
-            await sendWhatsAppMessage(fromPhone, takeoverReply, WA_TOKEN);
-            const MAIN_ADMIN_PHONE = (
-              keniaConfig.adminAlertPhone || "56992139185"
-            ).replace(/\D/g, "");
-            const adminNotif = `📩 *Cliente esperando respuesta*\n+${fromPhone} escribió: "${userText}"\n\n🔗 ${SITE_URL}/admin/ia/whatsapp`;
+          const MAIN_ADMIN_PHONE = (
+            keniaConfig.adminAlertPhone || "56992139185"
+          ).replace(/\D/g, "");
+          const adminNotif = `📩 *Cliente esperando respuesta*\n+${fromPhone} escribió: "${userText.slice(0, 300)}"\n\n🔗 Conversación: ${SITE_URL}/admin/ia/whatsapp?phone=${encodeURIComponent(fromPhone)}\n💬 WhatsApp: https://wa.me/${fromPhone}`;
+          const nowWaiting = Date.now();
+          const lastWaitingNotice = usageCheck.lastStallReplyTs || 0;
+          if (nowWaiting - lastWaitingNotice > 3 * 60 * 1000) {
             await sendWhatsAppMessage(MAIN_ADMIN_PHONE, adminNotif, WA_TOKEN);
-            await recordKeniaUsage(fromPhone, { lastStallReplyTs: Date.now() });
+            await recordKeniaUsage(fromPhone, { lastStallReplyTs: nowWaiting });
           }
-          // Después del primer mensaje: silencio total, solo guardar el mensaje del cliente
-          return NextResponse.json({ status: "admin_takeover" });
+          return NextResponse.json({ status: "admin_takeover_silent" });
         }
         // Bloqueo normal (manual): NO responder nada, solo guardar mensaje y notificar admin (throttled)
         const nowBlocked = Date.now();
@@ -4575,6 +4577,20 @@ El cliente te mandó todos sus datos de envío juntos. Debes EXTRAER los datos y
       }
     }
 
+    const lastAssistantReply = [...history]
+      .reverse()
+      .find((message) => message.role === "assistant")?.content || "";
+    const normalizeReply = (value: string) =>
+      value.toLowerCase().replace(/[\s\W]+/g, " ").trim();
+    const repeatedReplyDetected =
+      !isAdmin &&
+      Boolean(lastAssistantReply) &&
+      normalizeReply(lastAssistantReply) === normalizeReply(aiReply);
+    if (repeatedReplyDetected) {
+      aiReply =
+        "Recibí tu mensaje. Voy a pedirle ayuda al equipo para revisar tu caso y no te haré seguir repitiendo la información.";
+    }
+
     // Save assistant reply to history
     await addToHistory(fromPhone, "assistant", aiReply, msgId);
 
@@ -4611,13 +4627,17 @@ El cliente te mandó todos sus datos de envío juntos. Debes EXTRAER los datos y
       const askAdminMatch = rawText.match(askAdminRegex);
       const escalateRegex = /\[ACTION:ESCALATE_ADMIN\]([\s\S]*?)\[\/ACTION\]/;
 
-      if (askAdminMatch) {
-        const questionSummary =
-          askAdminMatch[1]?.trim() || "Tiene una duda que no puedo responder";
+      if (askAdminMatch || repeatedReplyDetected) {
+        const questionSummary = repeatedReplyDetected
+          ? `La respuesta del bot se estaba repitiendo. Último mensaje del cliente: "${userText.slice(0, 240)}"`
+          : askAdminMatch?.[1]?.trim() || "Tiene una duda que no puedo responder";
         const customerNameDisp = customerName
           ? `${customerName} (+${fromPhone})`
           : `+${fromPhone}`;
-        const alertMsg = `🚨 *BALATIN NECESITA AYUDA*\n\nEl cliente ${customerNameDisp} me preguntó esto y no sé qué decirle:\n"${questionSummary}"\n\n¿Qué le digo? (Respóndeme "dile que..." y yo le paso el mensaje tal cual )`;
+        const conversationLink = `${SITE_URL}/admin/ia/whatsapp?phone=${encodeURIComponent(fromPhone)}`;
+        const alertMsg = `🚨 *BALATIN NECESITA AYUDA*\n\nEl cliente ${customerNameDisp} me preguntó esto y no sé qué decirle:\n"${questionSummary}"\n\n¿Qué le digo? (Respóndeme "dile que..." y yo le paso el mensaje tal cual )\n\n🔗 *Abrir conversación:* ${conversationLink}\n💬 *Hablar por WhatsApp:* https://wa.me/${fromPhone}`;
+        await setKeniaBlocked(fromPhone, true, "admin_takeover");
+        await recordKeniaUsage(fromPhone, { escalated: true });
         await sendWhatsAppMessage(MAIN_ADMIN_PHONE, alertMsg, WA_TOKEN);
       } else if (escalateRegex.test(rawText)) {
         // Fallback for old prompt structure

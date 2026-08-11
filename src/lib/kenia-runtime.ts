@@ -303,13 +303,19 @@ async function fetchConfigFromAppwrite(): Promise<KeniaAppwriteConfigData> {
 }
 
 async function saveConfigToAppwrite(config: KeniaAppwriteConfigData) {
+  const payload = { NAME: 'kenia_config', config: JSON.stringify(config) };
   try {
-    await serverUpdateDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID, {
-      config: JSON.stringify(config),
-    });
+    await serverUpdateDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID, { config: payload.config });
     _configCache = { data: config, ts: Date.now() };
-  } catch (e) {
-    console.error('[KeniaConfig] Failed to save config to Appwrite:', e);
+    return;
+  } catch (updateError) {
+    try {
+      await serverCreateDocument(THEME_CONFIG_COLLECTION_ID, DOCUMENT_ID, payload);
+      _configCache = { data: config, ts: Date.now() };
+      return;
+    } catch (createError) {
+      console.error('[KeniaConfig] Failed to upsert config in Appwrite:', createError || updateError);
+    }
   }
 }
 
@@ -397,7 +403,9 @@ export async function getKeniaUsage(phone: string, blockedPhonesOverride?: strin
     isBlocked = blockedPhonesOverride.includes(cleaned);
   } else {
     const dbConfig = await fetchConfigFromAppwrite();
-    isBlocked = dbConfig.blockedPhones.includes(cleaned);
+    // El estado por teléfono también queda guardado en kenia_usage_*; sirve como
+    // fallback si el documento global kenia_config aún no pudo crearse.
+    isBlocked = dbConfig.blockedPhones.includes(cleaned) || entry?.blocked === true;
   }
   return {
     phone: cleaned,

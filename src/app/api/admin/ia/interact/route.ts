@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addToHistory, sendWhatsAppMessage, getHistory, clearHistory } from '@/lib/whatsapp';
-import { normalizePhone, getKeniaConfig, getKeniaUsage, recordKeniaUsage } from '@/lib/kenia-runtime';
+import { normalizePhone, getKeniaConfig, getKeniaUsage, recordKeniaUsage, setKeniaBlocked } from '@/lib/kenia-runtime';
 import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { getGeminiAuthHeaders, buildGeminiUrl } from '@/lib/google-auth';
@@ -124,8 +124,9 @@ export async function POST(req: NextRequest) {
     // 8. Enviar respuesta por WhatsApp
     await sendWhatsAppMessage(phone, aiReply, token);
     await addToHistory(phone, 'assistant', aiReply);
+    await setKeniaBlocked(phone, false);
 
-    return NextResponse.json({ success: true, reply: aiReply });
+    return NextResponse.json({ success: true, reply: aiReply, reactivated: true });
   } catch (error: any) {
     console.error('[interact] Error:', error);
     return NextResponse.json({ success: false, error: error?.message || 'Error al interactuar' }, { status: 500 });

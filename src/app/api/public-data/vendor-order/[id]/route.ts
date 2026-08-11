@@ -12,13 +12,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const userId = request.nextUrl.searchParams.get('userId') || '';
     const email = request.nextUrl.searchParams.get('email') || '';
+    const hasOwnerQuery = Boolean(userId || email);
     const ownsOrder = (userId && order.USERID === userId) || (email && order.CUSTOMEREMAIL === email);
-    if (!ownsOrder) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
+    // El ID del pedido ya funciona como identificador público del enlace de confirmación.
+    // Si vienen credenciales, igual se valida que correspondan al pedido.
+    if (hasOwnerQuery && !ownsOrder) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
 
     let branding: any = null;
     try {
       const vendor = await serverGetDocument(VENDORS_COLLECTION_ID, order.VENDOR_ID) as any;
-      branding = { name: vendor.NAME || 'Tienda asociada', color: vendor.BRAND_COLOR || '#f97316', secondaryColor: vendor.BRAND_SECONDARY_COLOR || '#fb923c', logoUrl: vendor.LOGO_URL || '', address: vendor.STORE_ADDRESS || '', phone: vendor.STORE_PHONE || '', email: vendor.STORE_EMAIL || vendor.EMAIL || '', website: vendor.STORE_WEBSITE || '' };
+      branding = { name: vendor.NAME || 'Tienda asociada', color: vendor.BRAND_COLOR || '#f97316', secondaryColor: vendor.BRAND_SECONDARY_COLOR || '#fb923c', logoUrl: vendor.LOGO_URL || '', address: vendor.STORE_ADDRESS || '', phone: vendor.STORE_PHONE || '', email: vendor.STORE_EMAIL || vendor.EMAIL || '', website: vendor.STORE_WEBSITE || '', bankAccountHolder: vendor.BANK_ACCOUNT_HOLDER || '', bankRut: vendor.BANK_RUT || '', bankName: vendor.BANK_NAME || '', bankAccountType: vendor.BANK_ACCOUNT_TYPE || '', bankAccountNumber: vendor.BANK_ACCOUNT_NUMBER || '', bankEmail: vendor.BANK_EMAIL || '' };
     } catch {}
     return NextResponse.json({ order, branding });
   } catch (error: any) {

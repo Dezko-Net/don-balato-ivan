@@ -125,7 +125,7 @@ export async function sendWhatsAppMessage(to: string, text: string, token: strin
     const res = await fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${finalToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),

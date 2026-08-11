@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addToHistory, sendWhatsAppMessage } from '@/lib/whatsapp';
-import { normalizePhone } from '@/lib/kenia-runtime';
+import { normalizePhone, setKeniaBlocked } from '@/lib/kenia-runtime';
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
 
     await sendWhatsAppMessage(phone, text, token);
     await addToHistory(phone, 'assistant', text);
-    return NextResponse.json({ success: true });
+    await setKeniaBlocked(phone, false);
+    return NextResponse.json({ success: true, reactivated: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'No se pudo enviar el mensaje de Balatin' }, { status: 500 });
   }

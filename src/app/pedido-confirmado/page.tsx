@@ -105,14 +105,26 @@ function ConfirmadoInner() {
   const [uploaded, setUploaded] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isVendorOrder, setIsVendorOrder] = useState(false);
+  const [vendorBank, setVendorBank] = useState<any>(null);
 
   const load = useCallback(async () => {
     if (!orderId) { setIsLoading(false); return; }
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const doc = await databases.getDocument(databaseId, ORDERS_COLLECTION, orderId);
-      const o = doc as unknown as Order;
+      let o: Order;
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const doc = await databases.getDocument(databaseId, ORDERS_COLLECTION, orderId);
+        o = doc as unknown as Order;
+      } catch {
+        const vendorRes = await fetch(`/api/public-data/vendor-order/${encodeURIComponent(orderId)}`);
+        const vendorData = await vendorRes.json();
+        if (!vendorRes.ok || !vendorData?.order) throw new Error(vendorData?.error || 'Pedido no encontrado');
+        o = vendorData.order as Order;
+        setIsVendorOrder(true);
+        setVendorBank(vendorData.branding || vendorData.vendor || null);
+      }
       setOrder(o);
       if (o.ITEMS) {
         try {
@@ -138,6 +150,16 @@ function ConfirmadoInner() {
     if (!file || !order) return;
     setUploading(true);
     try {
+      if (isVendorOrder) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const vendorProof = await fetch(`/api/public-data/vendor-order/${encodeURIComponent(order.$id)}/upload-proof`, { method: 'POST', body: formData });
+        const vendorData = await vendorProof.json().catch(() => null);
+        if (!vendorProof.ok || !vendorData?.ok) throw new Error(vendorData?.error || 'No se pudo subir el comprobante');
+        setUploaded(true);
+        setOrder(prev => prev ? { ...prev, PAYMENTPROOFURL: vendorData.proofUrl, STATUS: 'payment_review' } : null);
+        return;
+      }
       const { storage, databases } = getServices();
       const { bucketId, databaseId, endpoint, projectId } = getAppwriteConfig();
       const created = await storage.createFile(bucketId || MEDIA_BUCKET_ID, ID.unique(), file);
@@ -207,12 +229,20 @@ function ConfirmadoInner() {
     );
   }
 
-  const isPending = order.STATUS === 'pending';
-  const isStockPending = order.STATUS === 'pending_stock';
-  const isStockConfirmed = order.STATUS === 'paid';
-  const isSuccess = uploaded || (order.STATUS !== 'pending' && order.STATUS !== 'cancelled' && order.STATUS !== 'pending_stock' && order.STATUS !== 'processing' && order.STATUS !== 'payment_review' && order.STATUS !== 'negotiation');
-  const BANK = loadBankDetails();
-  const status = STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#374151', bg: '#f3f4f6', border: '#e5e7eb' };
+  const pageStatus = isVendorOrder ? (uploaded || order.PAYMENTPROOFURL ? 'payment_review' : 'paid') : order.STATUS;
+  const isPending = pageStatus === 'pending';
+  const isStockPending = pageStatus === 'pending_stock';
+  const isStockConfirmed = pageStatus === 'paid';
+  const isSuccess = uploaded || (pageStatus !== 'pending' && pageStatus !== 'cancelled' && pageStatus !== 'pending_stock' && pageStatus !== 'processing' && pageStatus !== 'payment_review' && pageStatus !== 'negotiation');
+  const BANK = vendorBank ? [
+    { key: 'holder', label: 'Titular', value: vendorBank.bankAccountHolder || 'Consultar con la tienda', icon: <User size={14} /> },
+    { key: 'rut', label: 'RUT', value: vendorBank.bankRut || '—', icon: <Hash size={14} /> },
+    { key: 'bank', label: 'Banco', value: vendorBank.bankName || '—', icon: <Building2 size={14} /> },
+    { key: 'type', label: 'Tipo de cuenta', value: vendorBank.bankAccountType || '—', icon: <CreditCard size={14} /> },
+    { key: 'number', label: 'N° de cuenta', value: vendorBank.bankAccountNumber || '—', icon: <Hash size={14} /> },
+    { key: 'email', label: 'Email', value: vendorBank.bankEmail || '—', icon: <Mail size={14} /> },
+  ] : loadBankDetails();
+  const status = STATUS_MAP[pageStatus] || { label: pageStatus, color: '#374151', bg: '#f3f4f6', border: '#e5e7eb' };
   const showTimer = isStockConfirmed && order.EXPIRESAT && !uploaded;
 
   return (
@@ -260,7 +290,7 @@ function ConfirmadoInner() {
         </div>
 
         {/* ── Timeline ── */}
-        {order.STATUS !== 'cancelled' && (() => {
+        {pageStatus !== 'cancelled' && (() => {
           const steps = [
             { key: 'processing', label: 'Comprobando Stock', icon: <Upload size={14} /> },
             { key: 'paid',       label: 'Stock Confirmado', icon: <CheckCircle2 size={14} /> },
@@ -270,7 +300,7 @@ function ConfirmadoInner() {
             { key: 'delivered',  label: 'Entregado',        icon: <Truck size={14} /> },
           ];
           const statusOrder = ['processing', 'paid', 'payment_review', 'payment_confirmed', 'shipped', 'delivered'];
-          const effStatus = (order.STATUS === 'pending' || order.STATUS === 'pending_stock') ? 'processing' : order.STATUS;
+          const effStatus = (pageStatus === 'pending' || pageStatus === 'pending_stock') ? 'processing' : pageStatus;
           const currentIdx = statusOrder.indexOf(effStatus);
           return (
             <div className="pk-cc-card" style={{ borderRadius: 20, padding: '24px 20px', marginBottom: 16 }}>
@@ -305,7 +335,7 @@ function ConfirmadoInner() {
         })()}
 
         {/* ── Stock pending message ── */}
-        {(isStockPending || isPending || order.STATUS === 'processing') && !isStockConfirmed && (
+        {(isStockPending || isPending || pageStatus === 'processing') && !isStockConfirmed && (
           <div className="pk-cc-card" style={{ borderRadius: 20, padding: '28px 24px', marginBottom: 16, textAlign: 'center' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: '#eff6ff', marginBottom: 14 }}>
               <Clock size={28} color="#2563eb" />
@@ -375,7 +405,7 @@ function ConfirmadoInner() {
         )}
 
         {/* ── Upload proof ── */}
-        {(isStockConfirmed || order.STATUS === 'processing' || order.STATUS === 'payment_review') && (
+        {(isStockConfirmed || pageStatus === 'processing' || pageStatus === 'payment_review') && (
           <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: `1.5px solid ${uploaded ? '#bbf7d0' : '#dbeafe'}`, marginBottom: 16 }}>
             <h2 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
               <Upload size={18} color={uploaded ? '#16a34a' : '#2563eb'} /> Comprobante de pago
@@ -569,7 +599,9 @@ function ConfirmadoInner() {
         </div>
 
         {/* ── Actions ── */}
-        <button onClick={() => generateOrderPdf(order, items)}
+        <button onClick={() => generateOrderPdf(order, items, undefined, undefined, vendorBank ? {
+          name: vendorBank.name || 'Tienda asociada', color: vendorBank.color || '#f97316', secondaryColor: vendorBank.secondaryColor || '#fb923c', logoUrl: vendorBank.logoUrl || '', address: vendorBank.address || '', phone: vendorBank.phone || '', email: vendorBank.email || ''
+        } : undefined)}
           style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 0', background: '#fff', color: '#2563eb', border: '1.5px solid #dbeafe', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12, transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#bfdbfe'; }}
           onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#dbeafe'; }}>

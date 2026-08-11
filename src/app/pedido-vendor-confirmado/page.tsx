@@ -21,7 +21,7 @@ function formatPrice(n: number) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n || 0);
 }
 
-function OrderBlock({ id, isPrimary }: { id: string; isPrimary: boolean }) {
+function OrderBlock({ id, isPrimary, ownerQuery }: { id: string; isPrimary: boolean; ownerQuery: string }) {
   const [order, setOrder] = useState<VendorOrderData | null>(null);
   const [vendorName, setVendorName] = useState('');
   const [bank, setBank] = useState<Record<string, string>>({});
@@ -31,14 +31,14 @@ function OrderBlock({ id, isPrimary }: { id: string; isPrimary: boolean }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/public-data/vendor-order/${id}`);
+      const res = await fetch(`/api/public-data/vendor-order/${id}${ownerQuery}`);
       const data = await res.json();
       setOrder(data.order);
       setVendorName(data.vendorName || '');
       setBank(data.bank || {});
       setUploaded(!!data.order?.PAYMENTPROOFURL);
     } catch { /* noop */ }
-  }, [id]);
+  }, [id, ownerQuery]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -145,18 +145,24 @@ function VendorOrderConfirmedInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id') || '';
   const extraIds = (searchParams.get('vendorOrders') || '').split(',').filter(Boolean);
+  const userId = searchParams.get('userId') || '';
+  const email = searchParams.get('email') || '';
+  const ownerQuery = `?userId=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`;
   const allIds = [id, ...extraIds].filter(Boolean);
+
+  useEffect(() => {
+    if (!id) return;
+    // Esta ruta legacy no debe renderizar una segunda confirmación: abre directamente la original.
+    window.location.replace(`/pedido-confirmado?id=${encodeURIComponent(id)}${ownerQuery.replace('?', '&')}`);
+  }, [id, ownerQuery]);
 
   if (!id) return <div style={{ padding: 40, textAlign: 'center', fontFamily: FF }}>Pedido no encontrado.</div>;
 
   return (
-    <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#eef4ff 0%,#f6f9ff 46%,#f8fafc 100%)', padding: '32px 16px' }}>
-      <div style={{ maxWidth: 480, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 6px', textAlign: 'center' }}>¡Pedido recibido!</h1>
-        <p style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', margin: '0 0 24px' }}>
-          {allIds.length > 1 ? 'Tu carrito incluía productos de distintos vendedores, así que generamos un pedido por cada uno.' : 'Sube tu comprobante para que confirmen tu pedido.'}
-        </p>
-        {allIds.map((oid, i) => <OrderBlock key={oid} id={oid} isPrimary={i === 0} />)}
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: FF }}>
+      <div style={{ textAlign: 'center', color: '#64748b' }}>
+        <div style={{ width: 40, height: 40, margin: '0 auto 14px', border: '4px solid #dbeafe', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontSize: 14, fontWeight: 700 }}>Abriendo la confirmación original...</p>
       </div>
     </div>
   );

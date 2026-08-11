@@ -222,6 +222,7 @@ export default function AdminIAWhatsAppPage() {
   const selectedPhoneRef = useRef('');
   const threadRequestRef = useRef(0);
   const threadsRequestRef = useRef(0);
+  const requestedPhoneHandledRef = useRef(false);
 
   const selectedSummary = useMemo(
     () => threads.find((item) => item.phone === selectedPhone) || null,
@@ -369,6 +370,16 @@ export default function AdminIAWhatsAppPage() {
     }
     loadThreads(false);
   }, [loadThreads]);
+
+  useEffect(() => {
+    if (requestedPhoneHandledRef.current || threads.length === 0) return;
+    const requestedPhone = new URLSearchParams(window.location.search).get('phone')?.replace(/\D/g, '') || '';
+    if (requestedPhone && threads.some((item) => item.phone === requestedPhone)) {
+      requestedPhoneHandledRef.current = true;
+      setSelectedPhone(requestedPhone);
+      setMobileView('chat');
+    }
+  }, [threads]);
 
   useEffect(() => {
     setDraft('');
@@ -969,7 +980,7 @@ export default function AdminIAWhatsAppPage() {
           <div className="wa-side-head">
             <div style={{ display:'flex', alignItems:'center', gap:11, minWidth:0 }}>
               <div style={{ position:'relative', flexShrink:0 }}>
-                <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785925265101-pegada-1785925258751.png" alt="Balatin" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:'2px solid rgba(255,255,255,0.5)' }} />
+                <img src="https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/08/1785972481804-pegada-1785972473282.png" alt="Balatin" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:'2px solid rgba(255,255,255,0.5)' }} />
                 <span style={{ position:'absolute', bottom:0, right:0, width:12, height:12, borderRadius:'50%', background: keniaOn ? '#4ade80' : '#9ca3af', border:'2px solid #06a983' }} />
               </div>
               <div style={{ minWidth:0 }}>
@@ -1164,6 +1175,8 @@ export default function AdminIAWhatsAppPage() {
                   <>
                     {thread.messages.map((msg, idx) => {
                       const isOut = msg.role === 'assistant';
+                      const mediaUrl = msg.text.match(/https?:\/\/\S+/)?.[0] || '';
+                      const displayText = msg.text.replace(/https?:\/\/\S+/g, '').trim();
                       const prev = thread.messages[idx - 1];
                       const showDateDiv = !prev || new Date(msg.createdAt).toDateString() !== new Date(prev.createdAt).toDateString();
                       const msgDate = new Date(msg.createdAt);
@@ -1176,7 +1189,8 @@ export default function AdminIAWhatsAppPage() {
                           <div style={{ display:'flex', justifyContent: isOut ? 'flex-end' : 'flex-start', marginBottom:2 }}>
                             <div className={`wa-bubble ${isOut ? 'out' : 'in'} ${!msg.readByAdmin ? 'unread-admin' : ''}`}>
                               {!isOut && <p style={{ fontSize:11, fontWeight:800, color:'#00a884', marginBottom:3 }}>Cliente</p>}
-                              <span style={{ whiteSpace:'pre-wrap' }}>{msg.text}</span>
+                              {mediaUrl && <img src={mediaUrl} alt="Imagen enviada por WhatsApp" style={{ display:'block', maxWidth:'min(280px, 100%)', maxHeight:320, objectFit:'contain', borderRadius:10, marginBottom: displayText ? 8 : 0, background:'#f8fafc' }} />}
+                              {displayText && <span style={{ whiteSpace:'pre-wrap' }}>{displayText}</span>}
                               <div className="wa-bubble-meta">
                                 <span>{timeStr}</span>
                                 {isOut && <CheckCheck className="h-3.5 w-3.5" style={{ color: msg.readByUser ? '#53bdeb' : 'rgba(15,23,42,0.4)' }} />}

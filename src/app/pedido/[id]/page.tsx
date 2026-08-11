@@ -160,13 +160,12 @@ export default function PedidoPage() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isWholesale, setIsWholesale] = useState(false);
+  const [vendorBranding, setVendorBranding] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
-  const [confirming, setConfirming] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
   const [agencies, setAgencies] = useState<{ name: string }[]>([]);
   const [showAgencyChange, setShowAgencyChange] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState('');
@@ -420,7 +419,14 @@ export default function PedidoPage() {
         try {
           doc = await databases.getDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, id);
           wholesale = true;
-        } catch { throw new Error('Order not found'); }
+        } catch {
+          const query = new URLSearchParams({ userId: user?.id || '', email: user?.email || '' });
+          const vendorRes = await fetch(`/api/public-data/vendor-order/${encodeURIComponent(id)}?${query.toString()}`);
+          const vendorData = await vendorRes.json().catch(() => null);
+          if (!vendorRes.ok || !vendorData?.order) throw new Error('Order not found');
+          doc = vendorData.order;
+          setVendorBranding(vendorData.branding || null);
+        }
       }
       setIsWholesale(wholesale);
       const o = doc as unknown as Order;
@@ -444,9 +450,15 @@ export default function PedidoPage() {
       }
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
-  }, [id]);
+  }, [id, user]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // No consultar vendor_orders hasta que la sesión tenga identidad; de lo
+    // contrario el primer render envía userId/email vacíos y genera un falso
+    // "Order not found" en consola.
+    if (authLoading || !user) return;
+    load();
+  }, [load, authLoading, user]);
 
   useEffect(() => {
     if (order?.PAYMENTPROOFURL) {
@@ -871,27 +883,6 @@ export default function PedidoPage() {
       alert('Error al anular el pedido. Intenta de nuevo.');
     } finally {
       setCancelling(false);
-    }
-  }
-
-  async function handleConfirmDelivery() {
-    if (!order || confirming) return;
-    if (!window.confirm('¿Confirmas que recibiste tu pedido correctamente?')) return;
-    setConfirming(true);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
-      await databases.updateDocument(databaseId, coll, id, {
-        STATUS: 'delivered',
-        UPDATEDAT: Date.now(),
-      });
-      setConfirmed(true);
-      await load();
-    } catch {
-      alert('Error al confirmar la entrega. Intenta de nuevo.');
-    } finally {
-      setConfirming(false);
     }
   }
 
@@ -1887,35 +1878,6 @@ export default function PedidoPage() {
           </div>
         </div>
 
-        {/* ── Delivery confirmation ── */}
-        {order.STATUS === 'shipped' && !confirmed && (
-          <div className="bg-indigo-50/30 border border-indigo-100 rounded-3xl p-5 md:p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                <Truck size={18} className="text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-sm font-extrabold text-indigo-900">Tu pedido fue despachado</p>
-                <p className="text-xs text-indigo-500">¿Ya lo recibiste? Por favor, confirma la entrega.</p>
-              </div>
-            </div>
-            <button onClick={handleConfirmDelivery} disabled={confirming}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition duration-300 disabled:opacity-50">
-              <Package size={15} />
-              {confirming ? 'Confirmando...' : 'Confirmar que recibí mi pedido'}
-            </button>
-          </div>
-        )}
-
-        {/* Delivered confirmation */}
-        {(order.STATUS === 'delivered' || confirmed) && (
-          <div className="bg-green-50/20 border border-green-200 rounded-3xl p-5 md:p-6 text-center">
-            <CheckCircle size={28} className="text-green-600 mx-auto mb-2" />
-            <p className="text-sm font-bold text-green-800">Entrega confirmada</p>
-            <p className="text-xs text-green-600 mt-0.5">Gracias por confirmar la recepción de tu pedido.</p>
-          </div>
-        )}
-
         {/* Purchase Protection */}
         <div className="bg-green-50/20 border border-green-200 rounded-3xl p-4 flex items-start gap-3">
           <Shield size={18} className="text-green-600 shrink-0 mt-0.5" />
@@ -1927,9 +1889,9 @@ export default function PedidoPage() {
         {/* Action Buttons */}
         <div className="space-y-3">
           {/* Download PDF */}
-          <button onClick={() => generateOrderPdf(order, items)}
-            className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-250 rounded-2xl font-semibold flex items-center justify-center gap-2 text-xs transition">
-            <FileText size={15} /> Descargar comprobante en PDF
+          <button onClick={() => generateOrderPdf(order, items, undefined, undefined, vendorBranding || undefined)}
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 rounded-2xl font-bold flex items-center justify-center gap-2 text-xs transition shadow-sm">
+            <FileText size={16} /> Imprimir / guardar pedido en PDF
           </button>
 
           <div className="flex flex-col sm:flex-row gap-3">

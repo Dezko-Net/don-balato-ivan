@@ -159,7 +159,7 @@ function CheckoutInner() {
 
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
-      router.replace('/login?redirect=/checkout');
+      router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     }
   }, [authLoading, isLoggedIn, router]);
 
@@ -976,11 +976,13 @@ function CheckoutInner() {
       items.forEach(it => removeItem(it.product.$id));
       const extraVendorIds = vendorOrderResults.map(v => v.orderId).filter(id => id !== orderId);
       const extraParam = extraVendorIds.length ? `&vendorOrders=${extraVendorIds.join(',')}` : '';
+      const ownerParams = user?.id || form.email ? `&userId=${encodeURIComponent(user?.id || '')}&email=${encodeURIComponent(form.email || '')}` : '';
       if (ownItems.length > 0) {
-        router.push(`/pedido-confirmado?id=${orderId}${extraParam}`);
+        router.push(`/pedido-confirmado?id=${orderId}${extraParam}${ownerParams}`);
       } else {
-        // Carrito 100% de productos de vendors: no se creó pedido propio.
-        router.push(`/pedido-vendor-confirmado?id=${orderId}${extraParam}`);
+        // Checkout web de vendors: usa exactamente la página original de felicitaciones.
+        // /confirmar-pedido queda reservado para los pedidos de WhatsApp.
+        router.push(`/pedido-confirmado?id=${orderId}${extraParam}${ownerParams}`);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al crear pedido');

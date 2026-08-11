@@ -331,7 +331,9 @@ export default function VendorOrdersPage() {
               const ageMs = Date.now() - date.getTime();
               const ageH = Math.floor(ageMs / 3600000);
               const ageD = Math.floor(ageH / 24);
-              const ageStr = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+              const relativeAge = ageH < 1 ? 'ahora' : ageH < 24 ? `${ageH}h` : `${ageD}d ${ageH % 24}h`;
+              const exactDate = date.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+              const ageStr = `${relativeAge} · ${exactDate}`;
               let items: any[] = [];
               try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
               const totalItemQty = items.reduce((s: number, it: any) => s + (it.qty || it.quantity || 1), 0);
@@ -347,7 +349,7 @@ export default function VendorOrdersPage() {
                       <span className="font-mono text-xs text-gray-900 font-bold">{order.ORDERCODE || '—'}</span>
                       <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full ${isWa ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>{isWa ? 'WhatsApp' : 'Web'}</span>
                     </div>
-                    <span className="text-xs text-gray-500 font-bold">{ageStr}</span>
+                    <span className="text-[10px] text-gray-500 font-bold text-right leading-tight">{ageStr}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
