@@ -28,11 +28,11 @@ interface VendorOrder {
 /* ─────────── Status config (mismas etiquetas y colores del admin) ─────────── */
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   all:               { label: 'Todos',                bg: 'bg-gray-100',    text: 'text-gray-700' },
-  pending:           { label: 'Recibido',             bg: 'bg-orange-100',  text: 'text-orange-700' },
+  pending:           { label: 'Stock Confirmado',    bg: 'bg-orange-100',  text: 'text-orange-700' },
   payment_review:    { label: 'Revisando Pago',       bg: 'bg-blue-100',    text: 'text-blue-700' },
   payment_confirmed: { label: 'Pago Confirmado',      bg: 'bg-green-100',   text: 'text-green-700' },
   shipped:           { label: 'Embalado',              bg: 'bg-violet-100',  text: 'text-violet-700' },
-  delivered:         { label: 'Entregado',            bg: 'bg-green-100',   text: 'text-green-700' },
+  delivered:         { label: 'Entregado a Agencia',  bg: 'bg-green-100',   text: 'text-green-700' },
   negotiation:       { label: 'Negociando',           bg: 'bg-pink-100',    text: 'text-pink-700' },
   cancelled:         { label: 'Cancelado',            bg: 'bg-red-100',     text: 'text-red-700' },
 };
@@ -50,11 +50,11 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
 };
 
 const SHORT_LABEL: Record<string, string> = {
-  pending:           'Recibido',
+  pending:           'Stock Conf.',
   payment_review:    'Rev. Pago',
-  paid:              'Pago Conf.',
-  preparing:         'Preparando',
-  shipped:           'Enviado',
+  paid:              'Stock Conf.',
+  preparing:         'Embalado',
+  shipped:           'Embalado',
   delivered:         'Entregado',
   cancelled:         'Cancelado',
 };
@@ -65,8 +65,7 @@ const FILTER_KEYS = ['all', ...STATUS_OPTIONS];
 // El checkout usa estados internos; en la vista del vendor se muestran con
 // las etiquetas públicas del flujo para que ningún pedido desaparezca del timeline.
 function normalizeVendorStatus(status: string) {
-  if (status === 'processing') return 'pending';
-  if (status === 'paid') return 'payment_confirmed';
+  if (status === 'processing' || status === 'paid') return 'pending';
   if (status === 'checklist' || status === 'preparing') return 'shipped';
   return status;
 }
@@ -122,13 +121,14 @@ export default function VendorOrdersPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleStatusChange = async (id: string, status: string) => {
+    const persistedStatus = status === 'pending' ? 'paid' : status;
     setUpdatingId(id);
-    setOrders(prev => prev.map(o => o.$id === id ? { ...o, STATUS: status } : o));
+    setOrders(prev => prev.map(o => o.$id === id ? { ...o, STATUS: persistedStatus } : o));
     try {
       const res = await fetch(`/api/vendor/orders/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: persistedStatus }),
       });
       if (!res.ok) throw new Error('No se pudo actualizar el estado');
     } catch (err: any) {
@@ -621,7 +621,7 @@ export default function VendorOrdersPage() {
                   {STATUS_OPTIONS.map(s => {
                     const cfg = STATUS_CONFIG[s] || { label: s, bg: 'bg-gray-100', text: 'text-gray-700' };
                     const sc = STATUS_COLORS[s] || { color: '#6b7280', bg: '#f3f4f6' };
-                    const isActive = selectedOrder.STATUS === s;
+                    const isActive = selectedDisplayStatus === s;
                     return (
                       <button key={s} onClick={() => handleStatusChange(selectedOrder.$id, s)} disabled={updatingId === selectedOrder.$id}
                         className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition disabled:opacity-50 ${isActive ? 'ring-2 ring-offset-1' : ''}`}
