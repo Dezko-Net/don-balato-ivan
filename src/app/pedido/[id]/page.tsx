@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink, MessageSquare, Box } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
-import { WHOLESALE_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { WHOLESALE_ORDERS_COLLECTION_ID, VENDOR_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
@@ -171,6 +171,9 @@ export default function PedidoPage() {
   const [showAgencyChange, setShowAgencyChange] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState('');
   const [savingAgency, setSavingAgency] = useState(false);
+  const [shippingEditOpen, setShippingEditOpen] = useState(false);
+  const [shippingDraft, setShippingDraft] = useState({ rut: '', email: '', address: '', comuna: '', region: '', additionalInfo: '' });
+  const [savingShipping, setSavingShipping] = useState(false);
 
   // ── Customer edit/cancel (max 2 cambios) ──
   const [editOpen, setEditOpen] = useState(false);
@@ -219,6 +222,7 @@ export default function PedidoPage() {
         try {
           const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
             Query.equal('CATEGORYID', categoryId),
+            ...(isVendorOrder && (order as any)?.VENDOR_ID ? [Query.equal('VENDOR_ID', (order as any).VENDOR_ID)] : []),
             Query.limit(50)
           ]);
           prods = res.documents;
@@ -232,6 +236,7 @@ export default function PedidoPage() {
           if (firstWord) {
             const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
               Query.search('NAME', firstWord),
+              ...(isVendorOrder && (order as any)?.VENDOR_ID ? [Query.equal('VENDOR_ID', (order as any).VENDOR_ID)] : []),
               Query.limit(30)
             ]);
             prods = res.documents;
@@ -243,6 +248,7 @@ export default function PedidoPage() {
       if (prods.length === 0) {
         try {
           const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            ...(isVendorOrder && (order as any)?.VENDOR_ID ? [Query.equal('VENDOR_ID', (order as any).VENDOR_ID)] : []),
             Query.limit(50)
           ]);
           prods = res.documents;
@@ -362,7 +368,11 @@ export default function PedidoPage() {
       const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNT || 0);
       const editCount = (order as any).CUSTOMEREDITCOUNT || 0;
 
-      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+      const coll = isVendorOrder
+        ? VENDOR_ORDERS_COLLECTION_ID
+        : isWholesale
+          ? WHOLESALE_ORDERS_COLLECTION_ID
+          : ORDERS_COLLECTION;
       await databases.updateDocument(databaseId, coll, order.$id, {
         ITEMS: JSON.stringify(parsedItems),
         SUBTOTAL: newSubtotal,
@@ -426,7 +436,10 @@ export default function PedidoPage() {
           const vendorRes = await fetch(`/api/public-data/vendor-order/${encodeURIComponent(id)}?${query.toString()}`);
           const vendorData = await vendorRes.json().catch(() => null);
           if (!vendorRes.ok || !vendorData?.order) throw new Error('Order not found');
-          doc = vendorData.order;
+          doc = {
+            ...vendorData.order,
+            STATUS: ['pending', 'pending_stock'].includes(String(vendorData.order.STATUS)) ? 'paid' : vendorData.order.STATUS,
+          };
           vendorOrder = true;
           setVendorBranding(vendorData.branding || null);
         }
@@ -510,34 +523,83 @@ export default function PedidoPage() {
     }
   }, [order?.PAYMENTPROOFURL, order?.SHIPPINGPROOFURL]);
 
-  // Load agencies
+  // Load only the agencies enabled by this store.
   useEffect(() => {
+    if (!order) return;
     (async () => {
       try {
-        const res = await fetch('/api/agencies');
+        const vendorId = isVendorOrder ? String((order as any).VENDOR_ID || '') : '__MAIN__';
+        const res = await fetch(`/api/agencies?vendorId=${encodeURIComponent(vendorId)}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.agencies) setAgencies(data.agencies);
       } catch {}
     })();
-  }, []);
+  }, [order, isVendorOrder]);
 
   async function handleChangeAgency() {
     if (!order || !selectedAgency || savingAgency) return;
     setSavingAgency(true);
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
-      await databases.updateDocument(databaseId, coll, id, {
-        SHIPPINGAGENCY: selectedAgency,
-        AGENCYCHANGED: true,
-      });
+      if (isVendorOrder) {
+        const query = new URLSearchParams({ userId: user?.id || '', email: user?.email || '' });
+        const response = await fetch(`/api/public-data/vendor-order/${encodeURIComponent(id)}?${query.toString()}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ SHIPPINGAGENCY: selectedAgency }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(result?.error || 'No se pudo cambiar la agencia');
+      } else {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+        await databases.updateDocument(databaseId, coll, id, {
+          SHIPPINGAGENCY: selectedAgency,
+          AGENCYCHANGED: true,
+        });
+      }
       setOrder(prev => prev ? { ...prev, SHIPPINGAGENCY: selectedAgency, AGENCYCHANGED: true } : prev);
       setShowAgencyChange(false);
-    } catch {
-      alert('Error al cambiar la agencia. Intenta de nuevo.');
+    } catch (error: any) {
+      alert(error?.message || 'Error al cambiar la agencia. Intenta de nuevo.');
     } finally {
       setSavingAgency(false);
+    }
+  }
+
+  async function handleSaveShipping() {
+    if (!order || savingShipping) return;
+    setSavingShipping(true);
+    try {
+      const updateData = {
+        CUSTOMERRUT: shippingDraft.rut,
+        CUSTOMEREMAIL: shippingDraft.email,
+        ADDRESS: shippingDraft.address,
+        COMUNA: shippingDraft.comuna,
+        REGION: shippingDraft.region,
+        ADDITIONALINFO: shippingDraft.additionalInfo,
+      };
+      if (isVendorOrder) {
+        const query = new URLSearchParams({ userId: user?.id || '', email: user?.email || '' });
+        const response = await fetch(`/api/public-data/vendor-order/${encodeURIComponent(id)}?${query.toString()}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(result?.error || 'No se pudieron guardar los datos');
+      } else {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+        await databases.updateDocument(databaseId, coll, id, updateData);
+      }
+      setOrder(prev => prev ? { ...prev, ...updateData } : prev);
+      setShippingEditOpen(false);
+    } catch (error: any) {
+      alert(error?.message || 'No se pudieron guardar los datos de envío.');
+    } finally {
+      setSavingShipping(false);
     }
   }
 
@@ -700,7 +762,28 @@ export default function PedidoPage() {
     const q = productSearch.trim();
     if (q.length < 2) { setProductResults([]); return; }
     setSearchingProducts(true);
+    const vendorId = isVendorOrder ? String((order as any)?.VENDOR_ID || '') : '';
+    const belongsToOrderVendor = (product: any) => !isVendorOrder || String(product?.VENDOR_ID || '') === vendorId;
     try {
+      const serverParams = new URLSearchParams({ search: q, limit: '50' });
+      if (isVendorOrder && vendorId) serverParams.set('vendorId', vendorId);
+      const serverResponse = await fetch(`/api/public-data/products?${serverParams.toString()}`, { cache: 'no-store' });
+      if (serverResponse.ok) {
+        const serverData = await serverResponse.json().catch(() => null);
+        const serverProducts = Array.isArray(serverData?.products)
+          ? serverData.products.filter(belongsToOrderVendor).slice(0, 20) as Product[]
+          : [];
+        if (serverProducts.length > 0) {
+          setProductResults(serverProducts);
+          const stockMap: Record<string, number> = {};
+          for (const p of serverProducts as any[]) {
+            if (p?.$id && Number.isFinite(Number(p?.STOCK))) stockMap[String(p.$id)] = Number(p.STOCK);
+          }
+          if (Object.keys(stockMap).length) setProductStockById(prev => ({ ...prev, ...stockMap }));
+          return;
+        }
+      }
+
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
@@ -734,7 +817,18 @@ export default function PedidoPage() {
           }
         } catch {}
 
-        const list = merged.slice(0, 20);
+        let list = merged.filter(belongsToOrderVendor).slice(0, 20);
+        if (list.length === 0) {
+          const fallbackRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            ...(isVendorOrder && vendorId ? [Query.equal('VENDOR_ID', vendorId)] : []),
+            Query.limit(200),
+          ]);
+          const qq = q.toLowerCase();
+          list = (fallbackRes.documents as any[]).filter((p: any) => {
+            const hay = `${String(p?.NAME || '')} ${getProductSku(p)} ${getProductBarcode(p)} ${String(p?.TAGS || '')} ${String(p?.FEATURES || '')}`.toLowerCase();
+            return belongsToOrderVendor(p) && hay.includes(qq);
+          }).slice(0, 20) as Product[];
+        }
         setProductResults(list);
         // cachear stock para usarlo en límites de cantidad
         const stockMap: Record<string, number> = {};
@@ -754,7 +848,7 @@ export default function PedidoPage() {
             const tags = Array.isArray(p?.TAGS) ? p.TAGS.join(',') : (p?.TAGS || '');
             const feats = Array.isArray(p?.FEATURES) ? p.FEATURES.join('\n') : (p?.FEATURES || '');
             const hay = `${name}\n${sku}\n${barcode}\n${String(tags).toLowerCase()}\n${String(feats).toLowerCase()}`;
-            return hay.includes(qq);
+            return belongsToOrderVendor(p) && hay.includes(qq);
           })
           .slice(0, 20);
         setProductResults(list);
@@ -824,7 +918,8 @@ export default function PedidoPage() {
         body: JSON.stringify({
           orderId: id,
           draftItems,
-          isWholesale
+          isWholesale,
+          isVendorOrder
         })
       });
 
@@ -852,12 +947,16 @@ export default function PedidoPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      const coll = isWholesale ? WHOLESALE_ORDERS_COLLECTION_ID : ORDERS_COLLECTION;
+      const coll = isVendorOrder
+        ? VENDOR_ORDERS_COLLECTION_ID
+        : isWholesale
+          ? WHOLESALE_ORDERS_COLLECTION_ID
+          : ORDERS_COLLECTION;
       const latestDoc = await databases.getDocument(databaseId, coll, id);
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
-      const unmodifiableStatuses = ['paid', 'negotiation', 'shipped', 'delivered', 'cancelled'];
+      const unmodifiableStatuses = ['payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'delivered', 'cancelled'];
       if (unmodifiableStatuses.includes(latest.STATUS)) {
         alert('No puedes anular el pedido si ya está verificado, en proceso de preparación o anulado.');
         return;
@@ -930,9 +1029,18 @@ export default function PedidoPage() {
     }
   }
 
-  const isPending = order.STATUS === 'pending' || order.STATUS === 'pending_stock';
+  const canEditBeforePayment = ['pending', 'pending_stock', 'processing', 'paid'].includes(order.STATUS);
   const isStockConfirmed = order.STATUS === 'paid';
-  const BANK = getBankDetails();
+  const BANK = isVendorOrder && vendorBranding
+    ? {
+        'Titular': vendorBranding.bankAccountHolder || 'No configurado',
+        'RUT': vendorBranding.bankRut || 'No configurado',
+        'Banco': vendorBranding.bankName || 'No configurado',
+        'Tipo de cuenta': vendorBranding.bankAccountType || 'Cuenta Vista',
+        'N° de cuenta': vendorBranding.bankAccountNumber || 'No configurado',
+        'Email': vendorBranding.bankEmail || 'No configurado',
+      }
+    : getBankDetails();
   const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
   const isReadyRetiro = order.STATUS === 'shipped' && isRetiro;
   const status = isReadyRetiro
@@ -941,7 +1049,7 @@ export default function PedidoPage() {
   const showTimer = isStockConfirmed && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || ['paid', 'payment_confirmed', 'shipped', 'delivered'].includes(order.STATUS);
   const customerEditCount = getCustomerEditCount(order);
-  const canCustomerModify = !['paid', 'payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS) && order.STATUS !== 'pending_stock';
+  const canCustomerModify = !['payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
   // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
   const hasMissingItems = items.some(it => !!(it as any).missing);
   const canChooseReplacement = hasMissingItems && !['payment_confirmed', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
@@ -1789,8 +1897,13 @@ export default function PedidoPage() {
           <div className="flex flex-col gap-1.5 text-sm text-gray-600">
             <p className="font-bold text-gray-900 text-base">{order.CUSTOMERNAME}</p>
             <p>{order.CUSTOMERPHONE}{order.CUSTOMEREMAIL ? ` · ${order.CUSTOMEREMAIL}` : ''}</p>
-            <p>{order.ADDRESS}</p>
+            <p>{isRetiro && isVendorOrder && vendorBranding?.address ? vendorBranding.address : order.ADDRESS}</p>
             <p>{order.COMUNA}, {order.REGION}</p>
+            {isRetiro && isVendorOrder && vendorBranding?.address && (
+              <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mt-1">
+                Retiro en la tienda: {vendorBranding.address}
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-2 font-semibold text-blue-600 text-xs">
               <Truck size={14} />
               <span>{order.SHIPPINGAGENCY}</span>
@@ -1820,17 +1933,58 @@ export default function PedidoPage() {
               </div>
             )}
 
+            {canEditBeforePayment && (
+              shippingEditOpen ? (
+                <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <p className="text-xs font-bold text-slate-900">Editar datos de envío</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      ['rut', 'RUT'], ['email', 'Email'], ['address', 'Dirección'],
+                      ['comuna', 'Comuna'], ['region', 'Región'], ['additionalInfo', 'Información adicional'],
+                    ].map(([key, label]) => (
+                      <label key={key} className={key === 'address' || key === 'additionalInfo' ? 'sm:col-span-2 text-[11px] font-bold text-slate-600' : 'text-[11px] font-bold text-slate-600'}>
+                        {label}
+                        <input
+                          value={shippingDraft[key as keyof typeof shippingDraft]}
+                          onChange={e => setShippingDraft(prev => ({ ...prev, [key]: e.target.value }))}
+                          className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 bg-white outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleSaveShipping} disabled={savingShipping} className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">
+                      {savingShipping ? 'Guardando...' : 'Guardar datos'}
+                    </button>
+                    <button onClick={() => setShippingEditOpen(false)} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold">Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setShippingDraft({ rut: order.CUSTOMERRUT || '', email: order.CUSTOMEREMAIL || '', address: order.ADDRESS || '', comuna: order.COMUNA || '', region: order.REGION || '', additionalInfo: order.ADDITIONALINFO || '' });
+                    setShippingEditOpen(true);
+                  }}
+                  className="mt-3.5 px-3 py-1.5 bg-slate-50 text-slate-600 border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-slate-100 transition self-start"
+                >
+                  <Pencil size={12} /> Editar datos de envío
+                </button>
+              )
+            )}
+
             {/* Agency change option */}
-            {isPending && !order.AGENCYCHANGED && (
+            {canEditBeforePayment && !order.AGENCYCHANGED && (
               showAgencyChange ? (
                 <div className="mt-4 p-4 bg-blue-50/20 border border-blue-100 rounded-2xl">
                   <p className="text-xs font-bold text-blue-900 mb-2">Selecciona nueva agencia de envío</p>
                   <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)}
                     className="w-full px-3 py-2 border border-blue-200 rounded-xl text-xs font-bold text-blue-700 bg-white mb-3 outline-none focus:ring-2 focus:ring-blue-300">
                     <option value="">Seleccionar agencia</option>
-                    {agencies.map(a => (
-                      <option key={a.name} value={a.name}>{a.name}</option>
-                    ))}
+                    {agencies
+                      .filter(a => a.name.trim().toUpperCase() !== 'RETIRO EN TIENDA')
+                      .map(a => (
+                        <option key={a.name} value={a.name}>{a.name}</option>
+                      ))}
                   </select>
                   <div className="flex gap-2">
                     <button onClick={handleChangeAgency} disabled={!selectedAgency || savingAgency}

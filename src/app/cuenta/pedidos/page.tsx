@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Package, ChevronRight, ArrowLeft, Loader2, Search, Receipt, RefreshCw, ShoppingCart, Clock, CheckCircle, MessageSquare, Truck, XCircle, Upload } from 'lucide-react';
+import { Package, ChevronRight, ArrowLeft, Loader2, Search, Receipt, ShoppingCart, Clock, CheckCircle, MessageSquare, Truck, XCircle, Upload } from 'lucide-react';
 import { formatPrice } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
@@ -40,18 +40,25 @@ export default function MisPedidosPage() {
 
   // No forzar login - mostrar prompt si no está logueado
 
-  useEffect(() => {
+  const loadOrders = useCallback(async (showLoading = true) => {
     if (!isLoggedIn || !user) return;
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/public-data/my-orders?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email || '')}`);
-        const data = await res.json();
-        setOrders(data.orders || []);
-      } catch (e) { console.error('Error fetching orders:', e); }
-      finally { setLoading(false); }
-    })();
+    if (showLoading) setLoading(true);
+    try {
+      const res = await fetch(`/api/public-data/my-orders?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email || '')}&_=${Date.now()}`, { cache: 'no-store' });
+      const data = await res.json();
+      setOrders(data.orders || []);
+    } catch (e) {
+      console.error('Error fetching orders:', e);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }, [isLoggedIn, user]);
+
+  useEffect(() => {
+    loadOrders();
+    const interval = window.setInterval(() => loadOrders(false), 15000);
+    return () => window.clearInterval(interval);
+  }, [loadOrders]);
 
   if (authLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#eff6ff 0%,#fff 280px)' }}>
@@ -194,7 +201,7 @@ export default function MisPedidosPage() {
               let items: any[] = [];
               try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
               const qty = items.reduce((s: number, i: any) => s + (i.qty || 1), 0);
-              const date = new Date(order.CREATEDAT || order.$createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+              const date = new Date(order.CREATEDAT || order.$createdAt).toLocaleString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
               const isWaiting = true;
 
               // Color scheme per status

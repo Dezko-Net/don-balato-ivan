@@ -5,6 +5,7 @@ const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://
 const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan';
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a62e7440033d2278d28';
 const ORDERS_COLLECTION = 'orders';
+const VENDOR_ORDERS_COLLECTION = 'vendor_orders';
 const PRODUCTS_COLLECTION = 'products';
 const API_KEY = process.env.APPWRITE_API_KEY || '';
 
@@ -38,8 +39,8 @@ function getCustomerEditCount(o: any): number {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderId, draftItems, isWholesale } = body as { orderId: string; draftItems: any[]; isWholesale?: boolean };
-    const targetCollection = isWholesale ? 'wholesale_orders' : ORDERS_COLLECTION;
+    const { orderId, draftItems, isWholesale, isVendorOrder } = body as { orderId: string; draftItems: any[]; isWholesale?: boolean; isVendorOrder?: boolean };
+    const targetCollection = isVendorOrder ? VENDOR_ORDERS_COLLECTION : isWholesale ? 'wholesale_orders' : ORDERS_COLLECTION;
 
     if (!orderId || !Array.isArray(draftItems)) {
       return NextResponse.json({ error: 'Faltan parámetros requeridos o formato incorrecto.' }, { status: 400 });
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     const latest = await serverGetDocument(targetCollection, orderId);
     
     // 2. Validar que el estado permita modificaciones
-    const unmodifiableStatuses = ['paid', 'payment_confirmed', 'negotiation', 'shipped', 'delivered', 'cancelled'];
+    const unmodifiableStatuses = ['payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'delivered', 'cancelled'];
     if (unmodifiableStatuses.includes(latest.STATUS)) {
       return NextResponse.json({
         error: 'No puedes modificar el pedido si ya está verificado, en proceso de preparación o anulado.'
@@ -98,6 +99,11 @@ export async function POST(req: NextRequest) {
       if (delta === 0) continue;
 
       const productDoc = await serverGetDocument(PRODUCTS_COLLECTION, pid);
+      if (isVendorOrder && String(productDoc.VENDOR_ID || '') !== String(latest.VENDOR_ID || '')) {
+        return NextResponse.json({
+          error: `El producto "${String(productDoc.NAME || pid)}" no pertenece a la tienda de este pedido.`
+        }, { status: 400 });
+      }
       const currentStock = Number(productDoc.STOCK ?? 0);
       const name = String(productDoc.NAME || pid);
 

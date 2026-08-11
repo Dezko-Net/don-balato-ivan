@@ -1032,6 +1032,28 @@ async function submitCustomerOrder() {
   });
   var total = targetCart.reduce(function(sum, i) { return sum + i.qty * i.price; }, 0);
 
+  // Revalidar el carrito contra el stock actual justo antes de crear el pedido.
+  // El carrito puede llevar días en localStorage y los productos pueden haber
+  // sido eliminados o agotados mientras tanto.
+  try {
+    var stockValidation = await fetch((window.location.origin.indexOf('localhost') >= 0 ? 'http://localhost:3000' : window.location.origin) + '/api/checkout/stock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'validate', items: orderItems.map(function(i) { return { id: i.id, qty: i.qty, name: i.name, sku: i.sku }; }) })
+    });
+    var stockResult = await stockValidation.json().catch(function() { return null; });
+    if (!stockValidation.ok || !stockResult || !stockResult.ok) {
+      showToast((stockResult && stockResult.error) || 'Algunos productos cambiaron de disponibilidad. Actualiza tu carrito e inténtalo nuevamente.');
+      setSubmittingCustomerOrder(false);
+      return;
+    }
+  } catch (stockError) {
+    console.error('Error revalidando stock antes del pedido:', stockError);
+    showToast('No pudimos verificar el stock. Inténtalo nuevamente.');
+    setSubmittingCustomerOrder(false);
+    return;
+  }
+
   var orderCode = '';
   var orderId = '';
   var saveError = false;
