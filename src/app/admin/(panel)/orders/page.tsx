@@ -144,6 +144,56 @@ function OrdersContent() {
   const [statsCache, setStatsCache] = useState<{ totalToday: number; countToday: number; topCustomer: { name: string; total: number } | null; avgTicket: number; totalPaid: number; countPaid: number; byStatus: Record<string, number>; byStatusAll: Record<string, number>; byStatusYesterday: Record<string, number>; byStatusDayBefore: Record<string, number>; allOrdersRaw: any[]; totalYesterday: number; countYesterday: number; totalAll: number; countAll: number; } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // ── Full orders cache for global search & totals ──
+  // Fetches ALL orders in batches of 100, cached in sessionStorage for 5 min.
+  // Used when the user types a search term (so it searches across ALL orders,
+  // not just the current page of 10) and for computing historical totals.
+  const ALL_ORDERS_CACHE_KEY = 'yaxsel_admin_all_orders_v1';
+  const ALL_ORDERS_CACHE_TTL = 5 * 60 * 1000;
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [allOrdersLoading, setAllOrdersLoading] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
+  const [searchPage, setSearchPage] = useState(1);
+  const SEARCH_PAGE_SIZE = 50;
+
+  const fetchAllOrders = useCallback(async (force = false): Promise<any[]> => {
+    if (!force) {
+      try {
+        const raw = sessionStorage.getItem(ALL_ORDERS_CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Date.now() - parsed.ts < ALL_ORDERS_CACHE_TTL && parsed.data) {
+            setAllOrders(parsed.data);
+            return parsed.data;
+          }
+        }
+      } catch {}
+    }
+    setAllOrdersLoading(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const all: any[] = [];
+      let cursor: string | null = null;
+      for (let batch = 0; batch < 100; batch++) {
+        const queries: any[] = [Query.orderDesc('CREATEDAT'), Query.limit(100)];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+        const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, queries);
+        all.push(...resp.documents);
+        if (resp.documents.length < 100) break;
+        cursor = resp.documents[resp.documents.length - 1].$id;
+      }
+      setAllOrders(all);
+      try { sessionStorage.setItem(ALL_ORDERS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: all })); } catch {}
+      return all;
+    } catch (e: any) {
+      console.error('Fetch all orders error:', e);
+      return [];
+    } finally {
+      setAllOrdersLoading(false);
+    }
+  }, []);
+
   // Load stats — cacheado en sessionStorage 3 min (≈92 lecturas por refresco;
   // sin el cache, cada visita/navegación al panel repetía todas las consultas)
   const STATS_CACHE_KEY = 'yaxsel_admin_orders_stats_v1';
@@ -373,12 +423,37 @@ function OrdersContent() {
   useEffect(() => {
     autoDeliverShippedOrders();
     loadStats();
+    // Pre-cargar todos los pedidos en caché para búsqueda global y totales
+    fetchAllOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Debounced global search ──
+  // When the user types a search term, switch to "search mode" which filters
+  // through ALL cached orders instead of just the current page of 10.
+  // When the search is cleared, go back to normal server-side pagination.
+  useEffect(() => {
+    const term = search.trim();
+    if (!term) {
+      setSearchActive(false);
+      setSearchPage(1);
+      return;
+    }
+    const t = setTimeout(() => {
+      setSearchActive(true);
+      setSearchPage(1);
+      // Ensure we have the full cache; if not loaded yet, fetch now
+      if (allOrders.length === 0) {
+        fetchAllOrders();
+      }
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));
+  const toggleSelectAll = () => setSelected(s => s.size === displayedOrders.length ? new Set() : new Set(displayedOrders.map(o => o.$id)));
 
   const bulkDeleteOrders = async () => {
     if (selected.size === 0) return;
@@ -724,7 +799,11 @@ function OrdersContent() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const sortedFiltered = [...orders].sort((a, b) => {
+  // ── Source list for filtering ──
+  // In search mode we use the full cached list; otherwise the current page.
+  const sourceOrders = searchActive ? allOrders : orders;
+
+  const sortedFiltered = [...sourceOrders].sort((a, b) => {
     const mul = sortDir === 'asc' ? 1 : -1;
     if (sortBy === 'total') return (a.TOTAL - b.TOTAL) * mul;
     const ta = a.CREATEDAT || new Date(a.$createdAt).getTime();
@@ -732,8 +811,8 @@ function OrdersContent() {
     return (ta - tb) * mul;
   });
 
-  const paymentMethods = ['all', ...Array.from(new Set(orders.map(o => o.PAYMENTMETHOD || 'Sin método').filter(Boolean)))];
-  const regions = ['all', ...Array.from(new Set(orders.map(o => (o as any).REGION || '').filter(Boolean))).sort()];
+  const paymentMethods = ['all', ...Array.from(new Set(sourceOrders.map(o => o.PAYMENTMETHOD || 'Sin método').filter(Boolean)))];
+  const regions = ['all', ...Array.from(new Set(sourceOrders.map(o => (o as any).REGION || '').filter(Boolean))).sort()];
 
   const filtered = sortedFiltered.filter(o => {
     if (filterUserId && o.USERID !== filterUserId) return false;
@@ -747,6 +826,16 @@ function OrdersContent() {
         o.CUSTOMEREMAIL?.toLowerCase().includes(q) ||
         o.adminNotes?.toLowerCase().includes(q)
       )) return false;
+    }
+    // In search mode, also apply the active status filter client-side
+    if (searchActive && activeFilter !== 'all') {
+      if (activeFilter === 'paid_group') {
+        if (!['processing', 'paid', 'payment_review', 'negotiation', 'shipped', 'checklist', 'delivered'].includes(o.STATUS)) return false;
+      } else if (activeFilter === 'processing') {
+        if (!['pending', 'pending_stock', 'processing'].includes(o.STATUS)) return false;
+      } else {
+        if (o.STATUS !== activeFilter) return false;
+      }
     }
     if (!trackingPending && dateFilter !== 'all' && (dateFilter !== 'custom' || customDateStart || customDateEnd)) {
       const ts = o.CREATEDAT || new Date(o.$createdAt).getTime();
@@ -794,6 +883,66 @@ function OrdersContent() {
     if (pickupReady && !(o.STATUS === 'shipped' && isPickup(o.SHIPPINGAGENCY))) return false;
     return true;
   });
+
+  // ── Client-side pagination for search mode ──
+  // In normal mode, the server returns PAGE_SIZE (10) orders per page.
+  // In search mode, we have ALL matching orders in `filtered` and paginate
+  // client-side with a larger page size (50) for faster browsing.
+  const displayedOrders = searchActive
+    ? filtered.slice((searchPage - 1) * SEARCH_PAGE_SIZE, searchPage * SEARCH_PAGE_SIZE)
+    : filtered;
+  const searchTotalPages = searchActive ? Math.ceil(filtered.length / SEARCH_PAGE_SIZE) : 0;
+
+  // ── Historical totals computed from the full cached orders list ──
+  // Uses `allOrders` (cached in sessionStorage for 5 min) so it doesn't
+  // consume extra Appwrite reads on every render.
+  const salesTotals = (() => {
+    if (allOrders.length === 0) return null;
+    const nowCLT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+    const startToday = new Date(nowCLT.getFullYear(), nowCLT.getMonth(), nowCLT.getDate(), 0, 0, 0, 0).getTime();
+    const startYesterday = startToday - 86400000;
+    // Week starts on Monday
+    const dayOfWeek = nowCLT.getDay(); // 0=Sun, 1=Mon...
+    const startWeek = startToday - ((dayOfWeek === 0 ? 6 : dayOfWeek - 1) * 86400000);
+    const startMonth = new Date(nowCLT.getFullYear(), nowCLT.getMonth(), 1).getTime();
+    const paidStatuses = new Set(['processing', 'paid', 'payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'checklist', 'delivered']);
+
+    let totalToday = 0, countToday = 0, paidToday = 0;
+    let totalYesterday = 0, countYesterday = 0, paidYesterday = 0;
+    let totalWeek = 0, countWeek = 0, paidWeek = 0;
+    let totalMonth = 0, countMonth = 0, paidMonth = 0;
+    let totalAll = 0, countAll = 0, paidAll = 0;
+
+    for (const o of allOrders) {
+      const ts = o.CREATEDAT || new Date(o.$createdAt).getTime();
+      const total = o.TOTAL || 0;
+      const isPaid = paidStatuses.has(o.STATUS);
+      // All-time (exclude cancelled)
+      if (o.STATUS !== 'cancelled') {
+        totalAll += total;
+        countAll++;
+        if (isPaid) paidAll += total;
+      }
+      if (ts >= startToday) {
+        totalToday += total; countToday++;
+        if (isPaid) paidToday += total;
+      } else if (ts >= startYesterday) {
+        totalYesterday += total; countYesterday++;
+        if (isPaid) paidYesterday += total;
+      }
+      if (ts >= startWeek) {
+        totalWeek += total; countWeek++;
+        if (isPaid) paidWeek += total;
+      }
+      if (ts >= startMonth) {
+        totalMonth += total; countMonth++;
+        if (isPaid) paidMonth += total;
+      }
+    }
+    return { totalToday, countToday, paidToday, totalYesterday, countYesterday, paidYesterday,
+             totalWeek, countWeek, paidWeek, totalMonth, countMonth, paidMonth,
+             totalAll, countAll, paidAll };
+  })();
 
   return (
     <div className="space-y-3 sm:space-y-5">
@@ -1039,6 +1188,61 @@ function OrdersContent() {
             </div>
             <p className="text-lg sm:text-2xl font-extrabold text-gray-900 tracking-tight">{fmt(statsCache.avgTicket)}</p>
             <p className="text-[10px] text-gray-400 font-medium mt-1">por pedido pagado</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Totales de Ventas (histórico) ──
+          Calculado desde la caché completa de pedidos (sessionStorage 5 min).
+          No consume lecturas adicionales de Appwrite en cada render. */}
+      {salesTotals && (
+        <div className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden bg-white">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+            <div className="flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+              <h3 className="text-sm font-bold text-gray-900">Totales de Ventas</h3>
+            </div>
+            <button onClick={() => fetchAllOrders(true)} disabled={allOrdersLoading}
+              className="text-xs text-indigo-600 font-bold hover:text-indigo-800 disabled:opacity-50 flex items-center gap-1">
+              <RefreshCw className={`w-3.5 h-3.5 ${allOrdersLoading ? 'animate-spin' : ''}`} /> Actualizar
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-gray-100">
+            {/* Hoy */}
+            <div className="bg-white p-3 sm:p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Hoy</p>
+              <p className="text-lg sm:text-xl font-extrabold text-indigo-600 mt-1">{fmt(salesTotals.totalToday)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{salesTotals.countToday} pedidos</p>
+              <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Confirmado: {fmt(salesTotals.paidToday)}</p>
+            </div>
+            {/* Ayer */}
+            <div className="bg-white p-3 sm:p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Ayer</p>
+              <p className="text-lg sm:text-xl font-extrabold text-gray-700 mt-1">{fmt(salesTotals.totalYesterday)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{salesTotals.countYesterday} pedidos</p>
+              <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Confirmado: {fmt(salesTotals.paidYesterday)}</p>
+            </div>
+            {/* Esta semana */}
+            <div className="bg-white p-3 sm:p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Esta Semana</p>
+              <p className="text-lg sm:text-xl font-extrabold text-violet-600 mt-1">{fmt(salesTotals.totalWeek)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{salesTotals.countWeek} pedidos</p>
+              <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Confirmado: {fmt(salesTotals.paidWeek)}</p>
+            </div>
+            {/* Este mes */}
+            <div className="bg-white p-3 sm:p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Este Mes</p>
+              <p className="text-lg sm:text-xl font-extrabold text-amber-600 mt-1">{fmt(salesTotals.totalMonth)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{salesTotals.countMonth} pedidos</p>
+              <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Confirmado: {fmt(salesTotals.paidMonth)}</p>
+            </div>
+            {/* Histórico */}
+            <div className="bg-white p-3 sm:p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Histórico</p>
+              <p className="text-lg sm:text-xl font-extrabold text-emerald-600 mt-1">{fmt(salesTotals.totalAll)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{salesTotals.countAll} pedidos</p>
+              <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Confirmado: {fmt(salesTotals.paidAll)}</p>
+            </div>
           </div>
         </div>
       )}
@@ -2063,7 +2267,7 @@ Email: donbalatosoporte@gmail.com`;
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Mobile View: Modern Cards */}
         <div className="block sm:hidden p-2 space-y-2">
-          {isLoading ? (
+          {(searchActive ? allOrdersLoading : isLoading) ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="p-4 space-y-3 animate-pulse">
                 <div className="flex justify-between"><div className="h-4 w-24 bg-gray-100 rounded" /><div className="h-4 w-16 bg-gray-100 rounded" /></div>
@@ -2071,10 +2275,10 @@ Email: donbalatosoporte@gmail.com`;
                 <div className="h-4 w-32 bg-gray-100 rounded" />
               </div>
             ))
-          ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 text-sm">No se encontraron pedidos</div>
+          ) : displayedOrders.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm">{searchActive && allOrdersLoading ? 'Buscando en todos los pedidos...' : 'No se encontraron pedidos'}</div>
           ) : (
-            filtered.map(order => {
+            displayedOrders.map(order => {
               const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
               const ageMs = Date.now() - date.getTime();
               const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
@@ -2211,7 +2415,7 @@ Email: donbalatosoporte@gmail.com`;
           {/* Toolbar: seleccionar todo + orden */}
           <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/70">
             <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input type="checkbox" checked={filtered.length > 0 && selected.size === filtered.length}
+              <input type="checkbox" checked={displayedOrders.length > 0 && selected.size === displayedOrders.length}
                 onChange={toggleSelectAll}
                 className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
               <span className="text-xs font-semibold text-gray-500">{selected.size > 0 ? `${selected.size} seleccionado${selected.size !== 1 ? 's' : ''}` : 'Seleccionar todo'}</span>
@@ -2240,7 +2444,7 @@ Email: donbalatosoporte@gmail.com`;
 
           {/* Lista de tarjetas horizontales */}
           <div className="p-3 space-y-2.5">
-            {isLoading ? (
+            {(searchActive ? allOrdersLoading : isLoading) ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-stretch rounded-2xl border-2 border-gray-100 overflow-hidden animate-pulse">
                   <div className="w-[76px] bg-gray-100" />
@@ -2252,10 +2456,10 @@ Email: donbalatosoporte@gmail.com`;
                   </div>
                 </div>
               ))
-            ) : filtered.length === 0 ? (
-              <div className="p-12 text-center text-gray-400 text-sm">No se encontraron pedidos</div>
+            ) : displayedOrders.length === 0 ? (
+              <div className="p-12 text-center text-gray-400 text-sm">{searchActive && allOrdersLoading ? 'Buscando en todos los pedidos...' : 'No se encontraron pedidos'}</div>
             ) : (
-                filtered.map(order => {
+                displayedOrders.map(order => {
                   const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
                   const isUpdating = updatingId === order.$id;
                   const ageMs = Date.now() - date.getTime();
@@ -2428,26 +2632,26 @@ Email: donbalatosoporte@gmail.com`;
               )}
           </div>
           {/* Barra resumen (PC) */}
-          {filtered.length > 0 && !isLoading && (() => {
-            const totalSum = filtered.reduce((s, o) => s + o.TOTAL, 0);
-            const subtotalSum = filtered.reduce((s, o) => s + (o.SUBTOTAL || o.TOTAL), 0);
-            const shippingSum = filtered.reduce((s, o) => s + (o.SHIPPINGCOST || 0), 0);
-            const paidOrders = filtered.filter(o => ['paid','processing','shipped','delivered'].includes(o.STATUS));
+          {displayedOrders.length > 0 && !(searchActive ? allOrdersLoading : isLoading) && (() => {
+            const totalSum = displayedOrders.reduce((s, o) => s + o.TOTAL, 0);
+            const subtotalSum = displayedOrders.reduce((s, o) => s + (o.SUBTOTAL || o.TOTAL), 0);
+            const shippingSum = displayedOrders.reduce((s, o) => s + (o.SHIPPINGCOST || 0), 0);
+            const paidOrders = displayedOrders.filter(o => ['paid','processing','shipped','delivered'].includes(o.STATUS));
             const avgTicket = paidOrders.length > 0 ? Math.round(paidOrders.reduce((s,o)=>s+o.TOTAL,0)/paidOrders.length) : 0;
-            const couponDiscount = filtered.reduce((s, o) => s + (o.DISCOUNTAMOUNT || 0), 0);
+            const couponDiscount = displayedOrders.reduce((s, o) => s + (o.DISCOUNTAMOUNT || 0), 0);
             const byCustomer: Record<string, { name: string; total: number }> = {};
-            for (const o of filtered) {
+            for (const o of displayedOrders) {
               const key = o.CUSTOMERRUT || o.CUSTOMERNAME || 'anon';
               if (!byCustomer[key]) byCustomer[key] = { name: o.CUSTOMERNAME || key, total: 0 };
               byCustomer[key].total += o.TOTAL;
             }
             const top = Object.values(byCustomer).sort((a, b) => b.total - a.total)[0];
-            const totalItems = filtered.reduce((s, o) => { try { return s + (JSON.parse(o.ITEMS || '[]') as any[]).reduce((a: number, i: any) => a + (i.quantity || 1), 0); } catch { return s; } }, 0);
-            const avgItems = filtered.length > 0 ? (totalItems / filtered.length).toFixed(1) : null;
+            const totalItems = displayedOrders.reduce((s, o) => { try { return s + (JSON.parse(o.ITEMS || '[]') as any[]).reduce((a: number, i: any) => a + (i.quantity || 1), 0); } catch { return s; } }, 0);
+            const avgItems = displayedOrders.length > 0 ? (totalItems / displayedOrders.length).toFixed(1) : null;
             return (
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5 border-t-2 border-gray-200 bg-gray-50">
                 <div>
-                  <p className="text-sm font-bold text-gray-700">{filtered.length} pedido{filtered.length !== 1 ? 's' : ''}</p>
+                  <p className="text-sm font-bold text-gray-700">{searchActive ? filtered.length : displayedOrders.length} pedido{(searchActive ? filtered.length : displayedOrders.length) !== 1 ? 's' : ''}</p>
                   {top && Object.keys(byCustomer).length > 1 && (
                     <p className="text-[10px] text-gray-400 mt-0.5 font-normal truncate max-w-[160px]">Top: {top.name.split(' ')[0]} {fmt(top.total)}</p>
                   )}
@@ -2482,12 +2686,12 @@ Email: donbalatosoporte@gmail.com`;
         </div>
         
         <EpicPagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(totalCount / PAGE_SIZE)}
-          onPageChange={(page) => load(page)}
-          isLoading={isLoading}
-          pageSize={PAGE_SIZE}
-          totalItems={totalCount}
+          currentPage={searchActive ? searchPage : currentPage}
+          totalPages={searchActive ? searchTotalPages : Math.ceil(totalCount / PAGE_SIZE)}
+          onPageChange={(page) => searchActive ? setSearchPage(page) : load(page)}
+          isLoading={searchActive ? allOrdersLoading : isLoading}
+          pageSize={searchActive ? SEARCH_PAGE_SIZE : PAGE_SIZE}
+          totalItems={searchActive ? filtered.length : totalCount}
           className="border-t border-gray-100"
         />
       </div>
