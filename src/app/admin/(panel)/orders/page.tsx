@@ -905,7 +905,11 @@ function OrdersContent() {
     const dayOfWeek = nowCLT.getDay(); // 0=Sun, 1=Mon...
     const startWeek = startToday - ((dayOfWeek === 0 ? 6 : dayOfWeek - 1) * 86400000);
     const startMonth = new Date(nowCLT.getFullYear(), nowCLT.getMonth(), 1).getTime();
-    const paidStatuses = new Set(['processing', 'paid', 'payment_review', 'payment_confirmed', 'negotiation', 'shipped', 'checklist', 'delivered']);
+    // "Confirmado" = solo pedidos con pago confirmado (payment_confirmed y
+    // todo lo que viene después: shipped, checklist, delivered).
+    // NO incluye processing, paid (Stock Confirmado), payment_review ni
+    // negotiation, porque en esos estados el pago aún no está confirmado.
+    const paidStatuses = new Set(['payment_confirmed', 'shipped', 'checklist', 'delivered']);
 
     let totalToday = 0, countToday = 0, paidToday = 0;
     let totalYesterday = 0, countYesterday = 0, paidYesterday = 0;
