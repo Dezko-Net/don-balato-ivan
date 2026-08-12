@@ -72,6 +72,27 @@ function getInitials(name?: string) {
   return words.slice(0, 2).map(word => word[0]?.toUpperCase()).join('') || 'SN';
 }
 
+async function compressChecklistImage(file: File): Promise<File> {
+  if (!file.type.startsWith('image/')) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) return file;
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.72));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
+
 export default function ChecklistPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,18 +161,18 @@ export default function ChecklistPage() {
 
   return (
     <div className="min-h-full bg-slate-50/70 pb-10">
-      <section className="relative overflow-hidden border-b border-slate-200 bg-slate-950 text-white">
-        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-500/20 blur-3xl" />
-        <div className="absolute -left-20 bottom-0 h-44 w-44 rounded-full bg-violet-500/20 blur-3xl" />
+      <section className="relative overflow-hidden border-b border-slate-200 bg-white text-slate-900">
+        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-100/70 blur-3xl" />
+        <div className="absolute -left-20 bottom-0 h-44 w-44 rounded-full bg-violet-100/70 blur-3xl" />
         <div className="relative mx-auto max-w-6xl px-4 pb-6 pt-5 sm:px-6 sm:pb-8 sm:pt-7">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">
                 <ShieldCheck className="h-4 w-4" />
                 Control de despacho
               </div>
               <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Checklist de bultos</h1>
-              <p className="mt-1 max-w-lg text-sm leading-relaxed text-slate-300">
+              <p className="mt-1 max-w-lg text-sm leading-relaxed text-slate-500">
                 Fotografía, valida y deja cada pedido listo antes de entregarlo al transporte.
               </p>
             </div>
@@ -159,7 +180,7 @@ export default function ChecklistPage() {
               onClick={loadOrders}
               disabled={isLoading}
               aria-label="Actualizar pedidos"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white backdrop-blur transition hover:bg-white/15 active:scale-95 disabled:opacity-60"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95 disabled:opacity-60"
             >
               <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
@@ -242,9 +263,9 @@ export default function ChecklistPage() {
 
 function MetricCard({ label, value, icon, tone }: { label: string; value: number; icon: React.ReactNode; tone: 'violet' | 'amber' | 'cyan' }) {
   const tones = {
-    violet: 'bg-violet-400/15 text-violet-200 ring-violet-300/20',
-    amber: 'bg-amber-400/15 text-amber-200 ring-amber-300/20',
-    cyan: 'bg-cyan-400/15 text-cyan-200 ring-cyan-300/20',
+    violet: 'bg-violet-50 text-violet-700 ring-violet-200',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-200',
+    cyan: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
   };
   return (
     <div className={`rounded-2xl p-3 ring-1 backdrop-blur ${tones[tone]}`}>
@@ -252,7 +273,7 @@ function MetricCard({ label, value, icon, tone }: { label: string; value: number
         {icon}
         <span className="truncate">{label}</span>
       </div>
-      <p className="mt-1 text-2xl font-black text-white">{value}</p>
+      <p className="mt-1 text-2xl font-black text-slate-900">{value}</p>
     </div>
   );
 }
@@ -359,6 +380,9 @@ function ChecklistDetail({ order, onBack }: { order: Order; onBack: () => void }
   const [editingBultos, setEditingBultos] = useState(!Number((order as any).BULTOCOUNT || 0));
   const [error, setError] = useState('');
   const [previewPhoto, setPreviewPhoto] = useState<BoxPhoto | null>(null);
+  const [cameraBulto, setCameraBulto] = useState<number | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const isChecklist = order.STATUS === 'checklist';
@@ -366,6 +390,60 @@ function ChecklistDetail({ order, onBack }: { order: Order; onBack: () => void }
   const completedCount = new Set(validPhotos.map(photo => photo.bulto)).size;
   const allPhotosReady = bultoCount > 0 && completedCount === bultoCount;
   const progress = bultoCount ? Math.round((completedCount / bultoCount) * 100) : 0;
+
+  const stopCamera = useCallback(() => {
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+    cameraStreamRef.current = null;
+    setCameraBulto(null);
+  }, []);
+
+  useEffect(() => {
+    if (cameraBulto === null || !cameraStreamRef.current || !cameraVideoRef.current) return;
+    cameraVideoRef.current.srcObject = cameraStreamRef.current;
+    cameraVideoRef.current.play().catch(() => {});
+  }, [cameraBulto]);
+
+  useEffect(() => () => {
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+  }, []);
+
+  const openCamera = async (bultoNum: number) => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      fileInputRefs.current[bultoNum]?.click();
+      return;
+    }
+    try {
+      cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+      cameraStreamRef.current = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1600 }, height: { ideal: 1200 } },
+        audio: false,
+      });
+      setCameraBulto(bultoNum);
+    } catch {
+      setError('No se pudo abrir la cámara del navegador. Revisa el permiso o selecciona una foto desde el dispositivo.');
+      fileInputRefs.current[bultoNum]?.click();
+    }
+  };
+
+  const captureCameraPhoto = async () => {
+    const video = cameraVideoRef.current;
+    if (!video || cameraBulto === null || !video.videoWidth || !video.videoHeight) return;
+    const maxWidth = 1600;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(async blob => {
+      if (!blob || cameraBulto === null) return;
+      const file = new File([blob], `bulto_${cameraBulto}.jpg`, { type: 'image/jpeg' });
+      const bulto = cameraBulto;
+      stopCamera();
+      await handleFileUpload(bulto, file);
+    }, 'image/jpeg', 0.72);
+  };
 
   const saveBultoCount = async (count: number) => {
     setSavingCount(true);
@@ -397,9 +475,10 @@ function ChecklistDetail({ order, onBack }: { order: Order; onBack: () => void }
     setError('');
     try {
       const formData = new FormData();
+      const optimizedFile = await compressChecklistImage(file);
       formData.append('orderId', order.$id);
       formData.append('bultoIndex', String(bultoNum));
-      formData.append('file', file);
+      formData.append('file', optimizedFile);
       const response = await fetch('/api/admin/orders/upload-box-photos', { method: 'POST', body: formData });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'No se pudo subir la foto');
@@ -468,22 +547,22 @@ function ChecklistDetail({ order, onBack }: { order: Order; onBack: () => void }
       </header>
 
       <main className="mx-auto max-w-3xl space-y-4 px-3 py-4 sm:px-6">
-        <section className="overflow-hidden rounded-3xl bg-slate-950 p-4 text-white shadow-xl shadow-slate-200 sm:p-5">
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm sm:p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold text-slate-400">Avance del checklist</p>
+              <p className="text-xs font-semibold text-slate-500">Avance del checklist</p>
               <p className="mt-1 text-3xl font-black">{isChecklist ? 100 : progress}%</p>
             </div>
             <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${allPhotosReady || isChecklist ? 'bg-emerald-400/15 text-emerald-300' : 'bg-violet-400/15 text-violet-300'}`}>
               {allPhotosReady || isChecklist ? <ShieldCheck className="h-6 w-6" /> : <Package className="h-6 w-6" />}
             </div>
           </div>
-          <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400 transition-all duration-500" style={{ width: `${isChecklist ? 100 : progress}%` }} />
           </div>
-          <div className="mt-3 flex items-center justify-between text-xs text-slate-300">
+          <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
             <span>{bultoCount ? `${completedCount} de ${bultoCount} bultos fotografiados` : 'Define la cantidad de bultos'}</span>
-            <span className="font-bold text-white">{isChecklist ? 'Validado' : allPhotosReady ? 'Listo para confirmar' : 'En preparación'}</span>
+            <span className="font-bold text-slate-800">{isChecklist ? 'Validado' : allPhotosReady ? 'Listo para confirmar' : 'En preparación'}</span>
           </div>
         </section>
 
@@ -553,7 +632,7 @@ function ChecklistDetail({ order, onBack }: { order: Order; onBack: () => void }
                   uploading={uploadingBulto === bultoNum}
                   disabled={isChecklist || uploadingBulto !== null}
                   inputRef={element => { fileInputRefs.current[bultoNum] = element; }}
-                  onChoose={() => fileInputRefs.current[bultoNum]?.click()}
+                  onChoose={() => openCamera(bultoNum)}
                   onFile={file => handleFileUpload(bultoNum, file)}
                   onDelete={() => handleDeletePhoto(bultoNum)}
                   onPreview={photo => setPreviewPhoto(photo)}
@@ -590,6 +669,23 @@ function ChecklistDetail({ order, onBack }: { order: Order; onBack: () => void }
             >
               {confirming ? <><RefreshCw className="h-5 w-5 animate-spin" />Confirmando checklist...</> : allPhotosReady ? <><Sparkles className="h-5 w-5" />Confirmar {bultoCount} bulto(s) y finalizar</> : <><Camera className="h-5 w-5" />Faltan {bultoCount - completedCount} foto(s)</>}
             </button>
+          </div>
+        </div>
+      )}
+
+      {cameraBulto !== null && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 p-3 text-white">
+          <div className="flex items-center justify-between pb-3">
+            <p className="text-sm font-black">Foto del bulto {cameraBulto}</p>
+            <button onClick={stopCamera} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10" aria-label="Cerrar cámara"><X className="h-5 w-5" /></button>
+          </div>
+          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-3xl bg-black">
+            <video ref={cameraVideoRef} autoPlay muted playsInline className="h-full w-full object-contain" />
+            <div className="pointer-events-none absolute inset-8 rounded-3xl border-2 border-white/60" />
+          </div>
+          <div className="flex items-center justify-center gap-4 py-4">
+            <button onClick={stopCamera} className="rounded-2xl bg-white/10 px-5 py-3 text-xs font-bold">Cancelar</button>
+            <button onClick={captureCameraPhoto} className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-cyan-500 shadow-lg shadow-cyan-500/30 active:scale-90" aria-label="Tomar foto"><Camera className="h-7 w-7" /></button>
           </div>
         </div>
       )}
@@ -633,7 +729,6 @@ function PhotoSlot({ bultoNum, photo, uploading, disabled, inputRef, onChoose, o
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={event => {
           const file = event.target.files?.[0];
