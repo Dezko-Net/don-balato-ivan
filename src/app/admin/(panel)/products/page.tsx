@@ -1690,21 +1690,23 @@ export default function ProductsPage() {
     const allImages = products.flatMap(p =>
       [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3]
         .filter(Boolean)
-        .map(url => ({ productId: p.$id, url: url! }))
+        .map(url => ({ productId: p.$id, rawUrl: url!, resolvedUrl: resolveStorageImageUrl(url) }))
     );
     for (let i = 0; i < allImages.length; i += BATCH) {
       const batch = allImages.slice(i, i + BATCH);
-      await Promise.all(batch.map(({ productId, url }) =>
+      await Promise.all(batch.map(({ productId, rawUrl, resolvedUrl }) =>
         new Promise<void>((resolve) => {
           const img = new Image();
           img.onload = () => resolve();
           img.onerror = () => {
             if (!result[productId]) result[productId] = [];
-            result[productId].push(url);
+            result[productId].push(rawUrl);
             broken++;
             resolve();
           };
-          img.src = url;
+          // Usar la URL resuelta (proxy /api/image) para la verificación,
+          // no la URL cruda que puede ser un file ID inválido en el browser.
+          img.src = resolvedUrl;
         })
       ));
       checked += batch.length;
