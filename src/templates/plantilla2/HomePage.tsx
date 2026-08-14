@@ -545,7 +545,7 @@ function FeaturedCarousel({ products, delay = 0 }: { products: Product[]; delay?
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '52%', zIndex: 1, overflow: 'hidden', animation: 'fc-imgfade 0.55s cubic-bezier(0.22,1,0.36,1) both' }}>
           <div style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none', background: 'linear-gradient(to right, #ffffff 0%, rgba(255,255,255,0.55) 20%, transparent 44%)' }} />
           <div style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 24%, transparent 70%, rgba(255,255,255,0.6) 100%)' }} />
-          <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} fill style={{ objectFit: 'cover' }} unoptimized />
+          <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} fill style={{ objectFit: 'cover' }} />
         </div>
       </Link>
 
@@ -605,7 +605,7 @@ function CardCarousel({ products, label }: { products: Product[]; label?: string
               <div style={{ position: 'relative', flex: '0 0 62%', background: '#fafafa', overflow: 'hidden' }}>
                 {hasDisc && <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2, background: '#1d1d1f', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>-{discPct}%</div>}
                 <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(to bottom, transparent 55%, rgba(250,250,250,0.9) 100%)' }} />
-                {p.IMAGEURL && <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 10, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.08))' }} unoptimized />}
+                {p.IMAGEURL && <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 10, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.08))' }} />}
               </div>
               {/* Info area */}
               <div style={{ flex: 1, padding: '8px 12px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -920,7 +920,7 @@ export default function HomePage2() {
           databases.listDocuments(databaseId, LIVE_STREAMS_COLLECTION, [Query.equal('isActive', true), Query.limit(1)]).catch(() => ({ documents: [] })),
           bannersPromise,
         ]);
-        setProducts(pRes.documents as unknown as Product[]);
+        setProducts((pRes.documents as unknown as Product[]).filter((p: any) => !p.VENDOR_ID));
         const cats = cRes.documents as unknown as Category[];
         setCategories(cats.filter(c => c.name && c.$id));
         // Load subcategories
@@ -1592,10 +1592,10 @@ export default function HomePage2() {
                     <div key={banner.$id} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: i === heroIdx ? (heroImageReady ? 1 : 0) : 0, transition: 'opacity .4s ease', zIndex: i === heroIdx ? 1 : 0 }}>
                       {banner.LINKURL ? (
                         <Link href={banner.LINKURL} style={{ display: 'block', width: '100%', height: '100%', lineHeight: 0 }}>
-                          <Image src={resolveStorageImageUrl(banner.IMAGEURL)} alt={banner.TITLE || `Banner ${i + 1}`} fill className="te-hero-img" style={{ objectFit: 'cover' }} priority={i === 0} sizes="100vw" onLoad={() => setHeroImageReady(true)} onError={() => setHeroImageReady(true)} unoptimized />
+                          <Image src={resolveStorageImageUrl(banner.IMAGEURL)} alt={banner.TITLE || `Banner ${i + 1}`} fill className="te-hero-img" style={{ objectFit: 'cover' }} priority={i === 0} sizes="100vw" onLoad={() => setHeroImageReady(true)} onError={() => setHeroImageReady(true)} />
                         </Link>
                       ) : (
-                        <Image src={resolveStorageImageUrl(banner.IMAGEURL)} alt={banner.TITLE || `Banner ${i + 1}`} fill className="te-hero-img" style={{ objectFit: 'cover' }} priority={i === 0} sizes="100vw" onLoad={() => setHeroImageReady(true)} onError={() => setHeroImageReady(true)} unoptimized />
+                        <Image src={resolveStorageImageUrl(banner.IMAGEURL)} alt={banner.TITLE || `Banner ${i + 1}`} fill className="te-hero-img" style={{ objectFit: 'cover' }} priority={i === 0} sizes="100vw" onLoad={() => setHeroImageReady(true)} onError={() => setHeroImageReady(true)} />
                       )}
                     </div>
                   ))}
@@ -2115,7 +2115,7 @@ export default function HomePage2() {
                                 onMouseMove={e => { const el = e.currentTarget; el.style.transition = 'box-shadow .3s'; const r = el.getBoundingClientRect(); const rx = ((e.clientY - r.top) / r.height - 0.5) * 8; const ry = ((e.clientX - r.left) / r.width - 0.5) * -8; el.style.transform = `perspective(500px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-2px) scale(1.02)`; }}
                                 onMouseLeave={e => { const el = e.currentTarget; el.style.transition = ''; el.style.transform = ''; }}>
                                 <div className="offer-side-img" style={{ position: 'relative', height: 130, background: '#f8f8f8' }}>
-                                  {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill style={{ objectFit: 'contain', padding: 8 }} sizes="155px" unoptimized /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>}
+                                  {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill style={{ objectFit: 'contain', padding: 8 }} sizes="155px" /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>}
                                   <span style={{ position: 'absolute', bottom: 6, left: 6, background: '#00a650', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>{discPct}% OFF</span>
                                 </div>
                                 <div style={{ padding: '8px 10px 10px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -2295,9 +2295,9 @@ export default function HomePage2() {
                             <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
                               <div className="pc-img-wrap" style={{ position: 'relative', height: imgH, overflow: 'hidden', background: '#f8f8f8' }}>
                                 <div className="card-img pc-img-primary" style={{ position: 'absolute', inset: 0, zIndex: 1, transition: 'opacity .45s cubic-bezier(.4,0,.2,1), transform .5s cubic-bezier(.4,0,.2,1)' }}>
-                                  {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, color: '#ccc' }}>📦</span>}
+                                  {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, color: '#ccc' }}>📦</span>}
                                 </div>
-                                {img2 && <div className="pc-img-secondary" style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 2, transition: 'opacity .45s cubic-bezier(.4,0,.2,1)' }}><Image src={img2} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} unoptimized /></div>}
+                                {img2 && <div className="pc-img-secondary" style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 2, transition: 'opacity .45s cubic-bezier(.4,0,.2,1)' }}><Image src={img2} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} /></div>}
                                 {/* ── Badges ── */}
                                 <div style={{ position: 'absolute', bottom: 8, left: 8, zIndex: 3, display: 'flex', flexDirection: 'column', gap: 4 }}>
                                   {hasDisc && <span className="pc-badge" style={{ background: 'linear-gradient(135deg,#ff416c,#ff4b2b)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 6, boxShadow: '0 2px 8px rgba(255,65,108,0.25)', animation: pulse ? 'badgeBounce 2s ease-in-out infinite' : 'none', backdropFilter: 'blur(4px)' }}>-{discPct}%</span>}
@@ -2367,9 +2367,9 @@ export default function HomePage2() {
                             <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
                               <div className="pc-img-wrap" style={{ position: 'relative', height: imgH, overflow: 'hidden', background: '#f8f8f8' }}>
                                 <div className="card-img pc-img-primary" style={{ position: 'absolute', inset: 0, zIndex: 1, transition: 'opacity .45s cubic-bezier(.4,0,.2,1), transform .5s cubic-bezier(.4,0,.2,1)' }}>
-                                  {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, color: '#ccc' }}>📦</span>}
+                                  {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, color: '#ccc' }}>📦</span>}
                                 </div>
-                                {img2 && <div className="pc-img-secondary" style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 2, transition: 'opacity .45s cubic-bezier(.4,0,.2,1)' }}><Image src={img2} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} unoptimized /></div>}
+                                {img2 && <div className="pc-img-secondary" style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 2, transition: 'opacity .45s cubic-bezier(.4,0,.2,1)' }}><Image src={img2} alt={p.NAME || ''} fill quality={100} sizes="220px" style={{ objectFit: imgFit }} /></div>}
                                 <div style={{ position: 'absolute', bottom: 8, left: 8, zIndex: 3, display: 'flex', flexDirection: 'column', gap: 4 }}>
                                   {hasDisc && <span className="pc-badge" style={{ background: 'linear-gradient(135deg,#ff416c,#ff4b2b)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 6, boxShadow: '0 2px 8px rgba(255,65,108,0.25)', animation: pulse ? 'badgeBounce 2s ease-in-out infinite' : 'none', backdropFilter: 'blur(4px)' }}>-{discPct}%</span>}
                                   {hasWholesale && <span className="pc-badge" style={{ background: 'linear-gradient(135deg,#FFD54F,#FF8F00)', color: '#4E342E', fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 6, boxShadow: '0 2px 6px rgba(255,143,0,0.2)' }}>MAYOREO</span>}
@@ -2565,7 +2565,7 @@ export default function HomePage2() {
                             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = fcShadow; }}>
                             <div style={{ position: 'relative', paddingBottom: '80%', background: '#f8f8f8' }}>
-                              {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill style={{ objectFit: 'contain', padding: 8 }} sizes={`${Math.round(100 / fcCols)}vw`} unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>📦</span>}
+                              {p.IMAGEURL ? <Image src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME || ''} fill style={{ objectFit: 'contain', padding: 8 }} sizes={`${Math.round(100 / fcCols)}vw`} /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>📦</span>}
                               {hasDisc && <span style={{ position: 'absolute', bottom: 8, left: 8, background: '#e53935', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 5 }}>-{discPct}%</span>}
                             </div>
                             <div style={{ padding: '10px 12px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>

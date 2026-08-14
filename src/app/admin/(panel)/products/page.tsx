@@ -628,13 +628,13 @@ export default function ProductsPage() {
         databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(100)]),
       ]);
 
-      const docs = prodRes.documents as unknown as Product[];
+      const docs = (prodRes.documents as unknown as Product[]).filter((p: any) => !p.VENDOR_ID);
       setProducts(docs);
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);
 
       try {
-        sessionStorage.setItem('admin_products_all_v3', JSON.stringify({
+        sessionStorage.setItem('admin_products_all_v4', JSON.stringify({
           products: docs,
           categories: cr.documents,
           subcategories: subRes.documents,
@@ -662,12 +662,12 @@ export default function ProductsPage() {
         setSearch(querySearch);
       }
     }
-    const cached = sessionStorage.getItem('admin_products_all_v3');
+    const cached = sessionStorage.getItem('admin_products_all_v4');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         if (parsed.products && parsed.products.length > 0) {
-          setProducts(parsed.products);
+          setProducts(parsed.products.filter((p: any) => !p.VENDOR_ID));
           setCategories(parsed.categories || []);
           setSubcategories(parsed.subcategories || []);
           setIsLoading(false);

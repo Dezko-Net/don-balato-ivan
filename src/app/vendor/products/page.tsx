@@ -320,6 +320,12 @@ export default function VendorProductsPage() {
             <p className="text-xs sm:text-sm text-gray-500">{products.length} producto{products.length !== 1 ? 's' : ''} en tu tienda</p>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => load()} disabled={isLoading}
+              title="Actualizar lista"
+              className="flex items-center gap-1.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3 py-2.5 rounded-xl shadow-sm transition disabled:opacity-50">
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              <span className="hidden sm:inline">Actualizar</span>
+            </button>
             <button onClick={purgeCache} disabled={purging}
               className="flex items-center gap-1.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3 py-2.5 rounded-xl shadow-sm transition disabled:opacity-50">
               {purging ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -581,60 +587,6 @@ export default function VendorProductsPage() {
               </div>
             </div>
 
-            {/* Precio por volumen */}
-            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-gray-900">Precio por volumen</p>
-                  <p className="text-[11px] text-gray-500">Ofrece un precio menor cuando compran cierta cantidad</p>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.volPricingEnabled}
-                    onChange={e => setForm(f => ({ ...f, volPricingEnabled: e.target.checked, volMinQty: e.target.checked && !f.volMinQty ? '5' : f.volMinQty }))}
-                    className="w-4 h-4 accent-gray-900" />
-                  <span className="text-xs font-semibold text-gray-700">Activar</span>
-                </label>
-              </div>
-              {form.volPricingEnabled && (
-                <>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad mínima</label>
-                      <input type="number" min="2" value={form.volMinQty} onChange={e => setForm(f => ({ ...f, volMinQty: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Ej: 5" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
-                      <select value={form.volDiscountType} onChange={e => setForm(f => ({ ...f, volDiscountType: e.target.value as 'fixed' | 'pct' }))}
-                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
-                        <option value="fixed">Precio fijo</option>
-                        <option value="pct">% Descuento</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        {form.volDiscountType === 'pct' ? '% de descuento' : 'Precio unitario'}
-                      </label>
-                      {form.volDiscountType === 'pct' ? (
-                        <input type="number" min="1" max="90" value={form.volPct} onChange={e => setForm(f => ({ ...f, volPct: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Ej: 10" />
-                      ) : (
-                        <PriceInput value={form.volPrice} onChange={v => setForm(f => ({ ...f, volPrice: String(v) }))}
-                          placeholder="$0"
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-gray-700 bg-gray-100 rounded-lg px-3 py-2">
-                    {form.volDiscountType === 'pct' ? (
-                      <>Compra <strong>{form.volMinQty || 0}+</strong> → <strong>{form.volPct || 0}% off</strong> ({formatPrice(Math.round((Number(form.price) || 0) * (1 - (Number(form.volPct) || 0) / 100)))} c/u)</>
-                    ) : (
-                      <>Compra <strong>{form.volMinQty || 0}+</strong> → <strong>{formatPrice(Number(form.volPrice) || 0)} c/u</strong></>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -815,62 +767,6 @@ export default function VendorProductsPage() {
               )}
             </div>
 
-            {/* Precio por volumen — mobile */}
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-gray-900">Precio por volumen</p>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.volPricingEnabled}
-                    onChange={e => setForm(f => ({ ...f, volPricingEnabled: e.target.checked, volMinQty: e.target.checked && !f.volMinQty ? '5' : f.volMinQty }))}
-                    className="w-4 h-4 accent-gray-900" />
-                  <span className="text-xs font-semibold text-gray-700">Activar</span>
-                </label>
-              </div>
-              {form.volPricingEnabled && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Cantidad mínima</label>
-                    <input type="number" min="2" value={form.volMinQty} onChange={e => setForm(f => ({ ...f, volMinQty: e.target.value }))}
-                      placeholder="Ej: 5"
-                      className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-gray-900" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de descuento</label>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setForm(f => ({ ...f, volDiscountType: 'fixed' }))}
-                        className={`flex-1 py-3 rounded-2xl text-sm font-semibold transition ${form.volDiscountType === 'fixed' ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}>
-                        Precio fijo
-                      </button>
-                      <button type="button" onClick={() => setForm(f => ({ ...f, volDiscountType: 'pct' }))}
-                        className={`flex-1 py-3 rounded-2xl text-sm font-semibold transition ${form.volDiscountType === 'pct' ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}>
-                        % Descuento
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {form.volDiscountType === 'pct' ? '% de descuento' : 'Precio unitario'}
-                    </label>
-                    {form.volDiscountType === 'pct' ? (
-                      <input type="number" min="1" max="90" value={form.volPct} onChange={e => setForm(f => ({ ...f, volPct: e.target.value }))}
-                        placeholder="Ej: 10"
-                        className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-gray-900" />
-                    ) : (
-                      <PriceInput value={form.volPrice} onChange={v => setForm(f => ({ ...f, volPrice: String(v) }))}
-                        placeholder="$0"
-                        className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-base font-semibold focus:outline-none focus:ring-2 focus:ring-gray-900" />
-                    )}
-                  </div>
-                  <div className="text-[11px] text-gray-700 bg-gray-100 rounded-lg px-3 py-2">
-                    {form.volDiscountType === 'pct' ? (
-                      <>Compra <strong>{form.volMinQty || 0}+</strong> → <strong>{form.volPct || 0}% off</strong></>
-                    ) : (
-                      <>Compra <strong>{form.volMinQty || 0}+</strong> → <strong>{formatPrice(Number(form.volPrice) || 0)} c/u</strong></>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         )}
 

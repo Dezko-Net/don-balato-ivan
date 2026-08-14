@@ -39,7 +39,10 @@ const getCachedHomeData = unstable_cache(
         Query.greaterThan('STOCK', 0),
         Query.orderDesc('$createdAt'),
         Query.limit(80)
-      ]).catch(() => ({ documents: [] })),
+      ]).catch(() => ({ documents: [] })).then((r: any) => ({
+        ...r,
+        documents: (r.documents || []).filter((p: any) => !p.VENDOR_ID)
+      })),
       
       databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
         Query.equal('offerType', 'destacado_temporal'),
@@ -64,7 +67,10 @@ const getCachedHomeData = unstable_cache(
         Query.greaterThan('STOCK', 0),
         Query.orderAsc('PRICE'),
         Query.limit(12)
-      ]).catch(() => ({ documents: [] }))
+      ]).catch(() => ({ documents: [] })).then((r: any) => ({
+        ...r,
+        documents: (r.documents || []).filter((p: any) => !p.VENDOR_ID)
+      }))
     ]);
 
     const result = {
@@ -89,7 +95,7 @@ export async function GET() {
   try {
     const data = await getCachedHomeData();
     return NextResponse.json(data, {
-      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400' }
+      headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400' }
     });
   } catch (error: any) {
     console.error('[API public-data/home] Error:', error);

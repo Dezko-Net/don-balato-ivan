@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || undefined;
     const brand = searchParams.get('brand') || undefined;
     const vendorId = searchParams.get('vendorId') || undefined;
+    const includeVendorProducts = searchParams.get('includeVendorProducts') === 'true';
     const ofertasOnly = searchParams.get('ofertasOnly') === 'true';
     // mode=paquetes|embalajes: catálogo por paquete (PACKQTY>1, precio de pack)
     const mode = searchParams.get('mode') || undefined;
@@ -142,6 +143,10 @@ export async function GET(request: NextRequest) {
       modeProducts = vendorId === '__main__'
         ? modeProducts.filter(p => !p.VENDOR_ID)
         : modeProducts.filter(p => p.VENDOR_ID === vendorId);
+    } else if (!includeVendorProducts) {
+      // Tienda principal de Don Balato: ocultar productos de vendors
+      // (solo se muestran en la storefront del vendor correspondiente)
+      modeProducts = modeProducts.filter(p => !p.VENDOR_ID);
     }
 
     // Calculate Category, Subcategory and SubSubcategory Counts (across all active products in DB)
