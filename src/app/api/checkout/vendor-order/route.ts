@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
       SHIPPINGAGENCY: shippingAgency || '',
       SUBTOTAL: computedSubtotal,
       TOTAL: total,
-      // La revalidación server-side de stock se ejecuta antes de crear este pedido;
-      // por eso el cliente queda inmediatamente en Stock Confirmado y puede pagar.
-      STATUS: 'paid',
+      // El pedido nace en pending (Stock Confirmado). El cliente debe subir
+      // su comprobante de transferencia para pasar a payment_review.
+      STATUS: 'pending',
       PARENTORDERID: parentOrderId || '',
       CREATEDAT: now,
       UPDATEDAT: now,

@@ -84,6 +84,7 @@ export function useProductsCache({
     if (tag) params.set('tag', tag);
     if (brand) params.set('brand', brand);
     if (vendorId) params.set('vendorId', vendorId);
+    else params.set('includeVendorProducts', 'true');
     if (priceMin !== undefined) params.set('priceMin', String(priceMin));
     if (priceMax !== undefined) params.set('priceMax', String(priceMax));
     if (ofertasOnly) params.set('ofertasOnly', 'true');
@@ -95,7 +96,7 @@ export function useProductsCache({
   // LEGACY MODE: download everything once, filter/sort/paginate client-side.
   // ===========================================================================
   // Global SWR Key: Fetch EVERYTHING exactly once per session (only when NOT paginated).
-  const globalKey = (isClient && !serverPaginated) ? `/api/public-data/products?limit=10000` : null;
+  const globalKey = (isClient && !serverPaginated) ? `/api/public-data/products?limit=10000&includeVendorProducts=true` : null;
 
   const { data, error, isValidating, mutate } = useSWR(globalKey, fetcher, {
     revalidateOnFocus: false,

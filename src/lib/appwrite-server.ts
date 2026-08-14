@@ -142,11 +142,20 @@ export async function serverDeleteDocument(
 
 export async function serverUploadFile(
   bucketId: string,
-  file: File | Blob | ArrayBuffer,
+  file: File | Blob | ArrayBuffer | Buffer,
   fileName: string = 'upload.jpg'
 ): Promise<{ $id: string }> {
   const formData = new FormData();
-  const blob = file instanceof ArrayBuffer ? new Blob([file]) : file;
+  let blob: Blob;
+  if (file instanceof ArrayBuffer) {
+    blob = new Blob([file]);
+  } else if (Buffer.isBuffer(file)) {
+    blob = new Blob([file]);
+  } else if (file instanceof Blob) {
+    blob = file;
+  } else {
+    blob = file;
+  }
   formData.append('file', blob, fileName);
   formData.append('fileId', 'unique()');
   const res = await fetch(

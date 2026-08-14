@@ -4,6 +4,7 @@ import { serverListDocuments, serverUpdateDocument, serverUploadFile, getPublicF
 import { ORDERS_COLLECTION_ID, VENDOR_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 import { parsePaymentProofs, serializePaymentProofs, MAX_PAYMENT_PROOFS } from '@/lib/payment-proofs';
+import { compressImageKeepFormat } from '@/lib/image-compression';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,9 +31,13 @@ export async function POST(request: NextRequest) {
 
     const order = res.documents[0] as any;
 
-    // Upload file to Appwrite storage
-    const arrayBuffer = await file.arrayBuffer();
-    const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, arrayBuffer, file.name);
+    // Upload file to storage (comprimido)
+    const originalBuffer = Buffer.from(await file.arrayBuffer());
+    const { buffer: compressedBuffer, format } = await compressImageKeepFormat(originalBuffer);
+    const originalName = file.name || 'proof.jpg';
+    const baseName = originalName.replace(/\.[^.]+$/, '');
+    const fileName = `${baseName}.${format}`;
+    const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, compressedBuffer, fileName);
     const fileId = (uploaded as any).$id;
     const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, fileId);
 

@@ -108,7 +108,7 @@ export default function VendorOrdersPage() {
     setIsLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/vendor/orders');
+      const res = await fetch('/api/vendor/orders', { cache: 'no-store' });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Error al cargar pedidos');
       setOrders(data?.orders || []);
@@ -119,6 +119,22 @@ export default function VendorOrdersPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const handleFocus = () => load();
+    const handleVisibility = () => { if (document.visibilityState === 'visible') load(); };
+    const handlePopState = () => load();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('popstate', handlePopState);
+    const interval = setInterval(() => load(), 15000);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('popstate', handlePopState);
+      clearInterval(interval);
+    };
+  }, [load]);
 
   const handleStatusChange = async (id: string, status: string) => {
     const persistedStatus = status === 'pending' ? 'paid' : status;

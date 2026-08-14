@@ -42,7 +42,11 @@ export async function POST(request: NextRequest) {
       ...(customerEmail?.trim() ? { CUSTOMEREMAIL: customerEmail.trim() } : {}),
     };
     // Nunca degradar payment_review a processing: el comprobante ya fue enviado.
-    const nextStatus = order.STATUS === 'payment_review' || order.PAYMENTPROOFURL ? 'payment_review' : 'processing';
+    // Para vendor_orders: pending → payment_review si ya subió comprobante, sino mantener pending.
+    const isVendorOrder = collectionId === VENDOR_ORDERS_COLLECTION_ID;
+    const nextStatus = order.STATUS === 'payment_review' || order.PAYMENTPROOFURL
+      ? 'payment_review'
+      : isVendorOrder ? order.STATUS : 'processing';
     await serverUpdateDocument(collectionId, order.$id, {
       ...customerFields,
       REGION: region,

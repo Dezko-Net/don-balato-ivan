@@ -40,9 +40,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (!VALID_STATUSES.includes(status)) {
         return NextResponse.json({ error: 'Estado inválido' }, { status: 400 });
       }
-      if (existing.STATUS === 'cancelled' && status !== 'cancelled') {
-        return NextResponse.json({ error: 'Un pedido cancelado no puede reactivarse' }, { status: 400 });
-      }
       updateData.STATUS = status;
     }
     if (adminNotes !== undefined) updateData.ADMINNOTES = adminNotes;

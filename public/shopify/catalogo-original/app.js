@@ -620,8 +620,11 @@ function renderCartActions() {
 
 function startCartGroupCheckout(groupId, recipient) {
   var group = getCartGroups().find(function(g) { return g.id === groupId; });
-  if (!group || cartTotal() < getMinPurchase()) {
-    showToast('Compra mínima: ' + formatPrice(getMinPurchase()));
+  if (!group) { showToast('No se encontró el grupo del carrito'); return; }
+  var groupTotal = cartGroupTotal(group);
+  var vendorMin = (group.id !== '__main__' && _vendors.find(function(v) { return v.id === group.id; })) ? (_vendors.find(function(v) { return v.id === group.id; }).minPurchaseAmount || 0) : getMinPurchase();
+  if (groupTotal < vendorMin) {
+    showToast('Compra mínima de ' + group.name + ': ' + formatPrice(vendorMin));
     return;
   }
   selectedCartGroupId = groupId;
@@ -632,16 +635,19 @@ function startCartGroupCheckout(groupId, recipient) {
   }
   if (recipient === 'vendor') {
     selectedCartVendor = _vendors.find(function(v) { return v.id === groupId; }) || null;
-    selectedAttendant = null;
-    var vendorStep1 = document.getElementById('modalStep1');
-    var vendorStep2 = document.getElementById('modalStep2');
-    var vendorOptions = document.getElementById('attendantOptions');
-    if (vendorOptions) {
-      var vendorLogo = selectedCartVendor && selectedCartVendor.logoUrl ? '<img src="' + escapeHtml(selectedCartVendor.logoUrl) + '" alt="' + escapeHtml(group.name) + '" class="w-full h-full object-contain rounded-full">' : '<span class="text-4xl">🏪</span>';
-      vendorOptions.innerHTML = '<button type="button" onclick="selectVendorContact()" class="attendant-btn group flex flex-col items-center gap-3 mx-auto transition-all duration-200 active:scale-90"><div class="w-24 h-24 rounded-full border-4 flex items-center justify-center bg-white transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg overflow-hidden" style="border-color:' + (group.color || '#f97316') + '">' + vendorLogo + '</div><div class="text-center"><div class="font-bold text-gray-800 text-sm">' + escapeHtml(group.name) + '</div><div class="text-[10px] font-medium mt-0.5" style="color:' + (group.color || '#f97316') + '">Atención de la tienda</div></div></button>';
+    if (!selectedCartVendor || !selectedCartVendor.phone) {
+      showToast('Esta tienda no tiene teléfono configurado. Contacta al administrador.');
+      return;
     }
-    if (vendorStep1) vendorStep1.classList.remove('hidden');
-    if (vendorStep2) vendorStep2.classList.add('hidden');
+    selectedAttendant = 'vendor';
+    var step1 = document.getElementById('modalStep1');
+    var step2 = document.getElementById('modalStep2');
+    if (step1) step1.classList.add('hidden');
+    if (step2) step2.classList.remove('hidden');
+    fillCustomerFormFromCache();
+    var modal = document.getElementById('customerFormModal');
+    if (modal) modal.classList.remove('hidden');
+    setTimeout(function() { var nameInput = document.getElementById('custName'); if (nameInput) nameInput.focus(); }, 100);
   } else {
     selectedCartVendor = null;
     selectedAttendant = Number(recipient);
@@ -651,9 +657,9 @@ function startCartGroupCheckout(groupId, recipient) {
     var s2 = document.getElementById('modalStep2');
     if (s1) s1.classList.add('hidden');
     if (s2) s2.classList.remove('hidden');
+    var modal2 = document.getElementById('customerFormModal');
+    if (modal2) modal2.classList.remove('hidden');
   }
-  var modal = document.getElementById('customerFormModal');
-  if (modal) modal.classList.remove('hidden');
 }
 window.startCartGroupCheckout = startCartGroupCheckout;
 function selectVendorContact() {
@@ -738,8 +744,8 @@ function renderCart() {
   $('#cartTotal').textContent = formatPrice(cartTotal());
   initCartReservationTimer();
 
-  // Show min purchase warning
-  const total = cartTotal();
+  // Show min purchase warning — por grupo (vendor o Don Balato)
+  const groups = getCartGroups();
   let warn = $('#minWarn');
   if (!warn) {
     warn = document.createElement('div');
@@ -748,10 +754,25 @@ function renderCart() {
     const totalEl = $('#cartTotal').closest('.flex');
     if (totalEl) totalEl.parentNode.insertBefore(warn, totalEl);
   }
-  if (total < getMinPurchase()) {
-    const missing = getMinPurchase() - total;
-    warn.innerHTML = `<span>⚠️ Faltan <strong class="underline">${formatPrice(missing)}</strong> para la compra mínima ($50K)</span>`;
-    warn.className = 'text-xs text-center mb-3 px-3.5 py-2 rounded-xl font-extrabold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-xs flex items-center justify-center gap-1.5';
+  // Verificar cada grupo contra su propio mínimo
+  const unmetGroups = groups.filter(function(g) {
+    const gTotal = cartGroupTotal(g);
+    const gMin = (g.id !== '__main__' && _vendors.find(function(v) { return v.id === g.id; }))
+      ? (_vendors.find(function(v) { return v.id === g.id; }).minPurchaseAmount || 0)
+      : getMinPurchase();
+    return gTotal < gMin;
+  });
+  if (unmetGroups.length > 0) {
+    const msgs = unmetGroups.map(function(g) {
+      const gTotal = cartGroupTotal(g);
+      const gMin = (g.id !== '__main__' && _vendors.find(function(v) { return v.id === g.id; }))
+        ? (_vendors.find(function(v) { return v.id === g.id; }).minPurchaseAmount || 0)
+        : getMinPurchase();
+      const missing = gMin - gTotal;
+      return '<div>⚠️ ' + escapeHtml(g.name) + ': faltan <strong class="underline">' + formatPrice(missing) + '</strong></div>';
+    });
+    warn.innerHTML = msgs.join('');
+    warn.className = 'text-xs text-center mb-3 px-3.5 py-2 rounded-xl font-extrabold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-xs flex flex-col items-center justify-center gap-1';
   } else {
     warn.innerHTML = `<span>✓ Compra mínima alcanzada</span>`;
     warn.className = 'text-xs text-center mb-3 px-3.5 py-2 rounded-xl font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200/90 shadow-xs flex items-center justify-center gap-1.5';
@@ -774,8 +795,17 @@ function setSubmittingCustomerOrder(value) {
 }
 function sendWhatsApp() {
   if (cart.length === 0) { showToast('Carrito vacio'); return; }
-  if (cartTotal() < getMinPurchase()) {
-    showToast(`Compra minima: $${getMinPurchase().toLocaleString('es-CL')}`);
+  // Validar mínimo por grupo
+  const groups = getCartGroups();
+  const unmet = groups.filter(function(g) {
+    const gTotal = cartGroupTotal(g);
+    const gMin = (g.id !== '__main__' && _vendors.find(function(v) { return v.id === g.id; }))
+      ? (_vendors.find(function(v) { return v.id === g.id; }).minPurchaseAmount || 0)
+      : getMinPurchase();
+    return gTotal < gMin;
+  });
+  if (unmet.length > 0) {
+    showToast('Falta alcanzar el mínimo de compra de: ' + unmet.map(function(g) { return g.name; }).join(', '));
     return;
   }
   // Render attendant options (step 1) — 3 circular selectors
@@ -929,8 +959,11 @@ function sendToBalatin() {
   var balatinCart = balatinGroup ? balatinGroup.items.map(function(row) { return row.item; }) : cart.slice();
   var balatinTotal = balatinCart.reduce(function(sum, i) { return sum + i.qty * i.price; }, 0);
   if (balatinCart.length === 0) { showToast('Carrito vacio'); return; }
-  if (balatinTotal < getMinPurchase()) {
-    showToast(`Compra minima: $${getMinPurchase().toLocaleString('es-CL')}`);
+  var balatinMin = (balatinGroup && balatinGroup.id !== '__main__' && _vendors.find(function(v) { return v.id === balatinGroup.id; }))
+    ? (_vendors.find(function(v) { return v.id === balatinGroup.id; }).minPurchaseAmount || 0)
+    : getMinPurchase();
+  if (balatinTotal < balatinMin) {
+    showToast(`Compra minima: $${balatinMin.toLocaleString('es-CL')}`);
     return;
   }
 
@@ -1112,7 +1145,11 @@ async function submitCustomerOrder() {
   });
   waMsg += '\n----------------------------------------\n';
   waMsg += '*Total: ' + formatPrice(total) + '*';
-  if (!isVendorOrder) waMsg += '\n\n' + siteUrl + '/verificar-stock?code=' + orderCode;
+  if (!isVendorOrder) {
+    waMsg += '\n\n' + siteUrl + '/verificar-stock?code=' + orderCode;
+  } else if (orderCode) {
+    waMsg += '\n\n*Completa tus datos y sube tu comprobante aquí:*\n' + siteUrl + '/confirmar-pedido?code=' + orderCode;
+  }
 
   var recipientNumber = isVendorOrder ? normalizeChileanPhone(attendant.phone) : attendant.number;
   var waUrl = 'https://wa.me/' + recipientNumber + '?text=' + encodeURIComponent(waMsg);
@@ -1179,7 +1216,7 @@ function saveLocalOrder(orderCode, orderId, items, total, cashier) {
       items: items.map(function(i) { return { name: i.name, qty: i.qty, price: i.price, image: i.image || '' }; }),
       total: total,
       cashier: cashier || '',
-      status: 'pending_stock',
+      status: 'pending',
       createdAt: new Date().toISOString()
     });
     localStorage.setItem('myOrders', JSON.stringify(orders.slice(0, 50)));
@@ -1298,34 +1335,34 @@ function hidePendingOrderBanner() {
 
 // === My Orders view ===
 var ORDER_STATUS_LABELS = {
-  'pending': 'Pendiente',
-  'pending_stock': 'Verificando stock',
-  'payment_review': 'Pago en revisión',
-  'paid': 'Pagado',
-  'payment_confirmed': 'Pago confirmado',
+  'pending': 'Stock Confirmado',
+  'pending_stock': 'Stock Confirmado',
+  'payment_review': 'Revisando Pago',
+  'paid': 'Stock Confirmado',
+  'payment_confirmed': 'Pago Confirmado',
   'processing': 'Procesando',
-  'shipped': 'Entregado a agencia',
-  'delivered': 'Entregado',
+  'shipped': 'Embalado',
+  'delivered': 'Entregado a Agencia',
   'negotiation': 'Negociando',
   'cancelled': 'Cancelado'
 };
 var ORDER_STATUS_COLORS = {
-  'pending': '#f59e0b',
-  'pending_stock': '#f59e0b',
-  'payment_review': '#8b5cf6',
-  'paid': '#3b82f6',
-  'payment_confirmed': '#22c55e',
+  'pending': '#fb923c',
+  'pending_stock': '#fb923c',
+  'payment_review': '#2563eb',
+  'paid': '#fb923c',
+  'payment_confirmed': '#059669',
   'processing': '#3b82f6',
-  'shipped': '#06b6d4',
+  'shipped': '#8b5cf6',
   'delivered': '#22c55e',
   'negotiation': '#f97316',
   'cancelled': '#ef4444'
 };
 var ORDER_STATUS_ICONS = {
-  'pending': '⏳',
-  'pending_stock': '🔍',
+  'pending': '📦',
+  'pending_stock': '📦',
   'payment_review': '🔍',
-  'paid': '💳',
+  'paid': '📦',
   'payment_confirmed': '✅',
   'processing': '📦',
   'shipped': '🚚',
@@ -4534,7 +4571,7 @@ async function fetchAppwriteProducts() {
     : window.location.origin;
   // Fetch products, catalog (categories/subcategories) and vendors in parallel
   var [prodRes, catRes, venRes] = await Promise.all([
-    fetch(apiBase + '/api/public-data/products?limit=1000', { cache: 'no-store' }),
+    fetch(apiBase + '/api/public-data/products?limit=1000&includeVendorProducts=true', { cache: 'no-store' }),
     fetch(apiBase + '/api/public-data/catalog', { cache: 'no-store' }),
     fetch(apiBase + '/api/public-data/vendors', { cache: 'no-store' }).catch(function(){ return { json: function(){ return { vendors: [] }; } }; })
   ]);
@@ -4542,7 +4579,7 @@ async function fetchAppwriteProducts() {
   var raw = Array.isArray(prodData) ? prodData : (prodData.products || []);
   var catData = await catRes.json();
   // Vendors
-  try { var venData = await venRes.json(); _vendors = (venData && Array.isArray(venData.vendors)) ? venData.vendors.map(function(v){ return { id: v.id, name: v.name || 'Tienda asociada', color: v.color || '#f97316', logoUrl: v.logoUrl || '', phone: v.phone || '' }; }) : []; } catch(e) { _vendors = []; }
+  try { var venData = await venRes.json(); _vendors = (venData && Array.isArray(venData.vendors)) ? venData.vendors.map(function(v){ return { id: v.id, name: v.name || 'Tienda asociada', color: v.color || '#f97316', logoUrl: v.logoUrl || '', phone: v.phone || '', minPurchaseAmount: v.minPurchaseAmount || 0 }; }) : []; } catch(e) { _vendors = []; }
   // Build lookup maps: id -> name, and store category/subcategory data with images
   var catMap = {};
   var subMap = {};

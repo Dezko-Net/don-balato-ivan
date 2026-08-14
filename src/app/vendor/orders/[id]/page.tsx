@@ -62,6 +62,7 @@ export default function VendorOrderDetailPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [catalogProducts, setCatalogProducts] = useState<Record<string, any>>({});
   const [branding, setBranding] = useState<any>(null);
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -87,6 +88,20 @@ export default function VendorOrderDetailPage() {
   useEffect(() => {
     fetch('/api/vendor/profile').then(res => res.json()).then(data => setBranding(data.vendor || null)).catch(() => {});
   }, []);
+
+  const addressForMap = order ? [order.ADDRESS, order.COMUNA, order.REGION].filter(Boolean).join(', ') : '';
+  useEffect(() => {
+    if (!addressForMap) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressForMap)}&limit=1&countrycodes=cl`, { headers: { 'Accept-Language': 'es' } });
+        const data = await res.json();
+        if (!cancelled && data?.[0]) setMapCoords({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [addressForMap]);
 
   useEffect(() => {
     if (!order) return;
@@ -137,6 +152,10 @@ export default function VendorOrderDetailPage() {
   const status = STATUS_STYLE[order.STATUS] || { color: '#6b7280', bg: '#f3f4f6', border: '#e5e7eb' };
   const address = [order.ADDRESS, order.COMUNA, order.REGION].filter(Boolean).join(', ');
   const mapQuery = encodeURIComponent(`${address || 'Chile'}, Chile`);
+
+  const mapSrc = mapCoords
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.008},${mapCoords.lat - 0.006},${mapCoords.lng + 0.008},${mapCoords.lat + 0.006}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`
+    : `https://www.openstreetmap.org/export/embed.html?bbox=-70.68,-33.47,-70.62,-33.43&layer=mapnik&marker=-33.45,-70.65`;
   const shippingText = [order.CUSTOMERNAME, order.CUSTOMERRUT, order.CUSTOMERPHONE, order.CUSTOMEREMAIL, address, order.SHIPPINGAGENCY].filter(Boolean).join('\n');
   const ageHours = Math.max(0, Math.floor((Date.now() - new Date(order.CREATEDAT || order.$createdAt || Date.now()).getTime()) / 3600000));
   const ageLabel = ageHours < 1 ? 'Ahora' : ageHours < 24 ? `${ageHours}h` : `${Math.floor(ageHours / 24)}d ${ageHours % 24}h`;
@@ -198,7 +217,7 @@ export default function VendorOrderDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
         <div className="lg:col-span-2 space-y-4 sm:space-y-5">
-          {address && <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"><div className="px-4 sm:px-5 py-3.5 border-b border-gray-100 flex items-center gap-2"><MapPin className="w-4 h-4 text-indigo-500" /><h2 className="text-sm font-bold text-gray-900">Ubicación de entrega</h2></div><div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3"><p className="text-[10px] font-bold uppercase text-emerald-700 mb-1">Dirección ingresada</p><p className="text-xs font-semibold text-gray-800">{order.ADDRESS || '—'}</p><p className="text-[11px] text-gray-500">{[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</p></div><div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3"><p className="text-[10px] font-bold uppercase text-indigo-700 mb-1">Mapa de entrega</p><p className="text-xs text-gray-600">Verifica que la ubicación corresponda a la dirección indicada.</p></div></div><div className="aspect-[16/9] sm:aspect-[21/9] w-full"><iframe title="Mapa de entrega" width="100%" height="100%" style={{ border: 0 }} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&q=${mapQuery}`} /></div></div>}
+          {address && <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"><div className="px-4 sm:px-5 py-3.5 border-b border-gray-100 flex items-center gap-2"><MapPin className="w-4 h-4 text-indigo-500" /><h2 className="text-sm font-bold text-gray-900">Ubicación de entrega</h2></div><div className="p-3 sm:p-4"><div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3"><p className="text-[10px] font-bold uppercase text-emerald-700 mb-1">Dirección ingresada</p><p className="text-xs font-semibold text-gray-800">{order.ADDRESS || '—'}</p><p className="text-[11px] text-gray-500">{[order.COMUNA, order.REGION].filter(Boolean).join(', ')}</p></div></div></div>}
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5"><div className="flex items-center justify-between mb-3"><h2 className="text-sm font-bold text-gray-900">Productos del pedido</h2><span className="text-xs text-gray-400">{items.length} producto{items.length !== 1 ? 's' : ''}</span></div><div className="space-y-2">{items.map((item, index) => { const qty = item.qty || item.quantity || 1; const price = item.price || item.unitPrice || 0; const catalog = catalogProducts[item.id || item.productId] || {}; const stock = catalog.STOCK; return <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"><div className="w-12 h-12 rounded-lg bg-white border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">{item.img || item.image ? <img src={item.img || item.image} alt="" className="w-full h-full object-contain" /> : <Package className="w-5 h-5 text-gray-300" />}</div><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-gray-900 truncate">{item.name || item.title || 'Producto'}</p><p className="text-xs text-gray-500">{qty} × {formatPrice(price)}</p>{stock !== undefined && <p className="text-[10px] text-gray-400 mt-0.5">Stock: {stock === 99999 ? 'Ilimitado' : stock} disp</p>}</div><p className="text-sm font-bold text-gray-900">{formatPrice(item.total || qty * price)}</p></div>; })}</div></div>
         </div>

@@ -821,17 +821,6 @@ export default function WholesaleOrderDetailPage() {
                     <p className="text-[11px] text-gray-500">{[order.COMUNA, order.REGION].filter(Boolean).join(', ') || '—'}</p>
                   </div>
                 </div>
-                <div className="aspect-[16/9] sm:aspect-[21/9] w-full">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    allowFullScreen
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(`${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}, Chile`)}`}>
-                  </iframe>
-                </div>
               </div>
             )}
 

@@ -5088,7 +5088,7 @@ export default function HomePage1() {
             Query.greaterThan('STOCK', 0),
             Query.limit(500),
           ]).catch(() => ({ documents: [] }));
-          allProducts = (prodRes.documents as unknown as Product[]).filter((p: any) => !p.VENDOR_ID);
+          allProducts = (prodRes.documents as unknown as Product[]);
         }
         // Agrupar productos por categorÃ­a en memoria
         const productsPerCat = cats.map(c =>
@@ -5759,7 +5759,6 @@ export default function HomePage1() {
         ]);
         const counts: Record<string, number> = {};
         for (const doc of res.documents) {
-          if ((doc as any).VENDOR_ID) continue;
           const cat = (doc as any).CATEGORYID;
           counts[cat] = (counts[cat] || 0) + 1;
         }

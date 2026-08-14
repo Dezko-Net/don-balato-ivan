@@ -18,7 +18,11 @@ export async function GET(req: NextRequest) {
     if (status) queries.push(Query.equal('STATUS', status));
     if (cursor) queries.push(Query.cursorAfter(cursor));
     const res = await serverListDocuments(VENDOR_ORDERS_COLLECTION_ID, queries);
-    return NextResponse.json({ orders: res.documents, total: res.total });
+    const response = NextResponse.json({ orders: res.documents, total: res.total });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (err: any) {
     console.error('[vendor/orders GET]', err);
     return NextResponse.json({ error: 'Error al listar pedidos' }, { status: 500 });
