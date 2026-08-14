@@ -10,6 +10,7 @@ const branding = (vendor: any) => ({
   brandColor: vendor.BRAND_COLOR || '#f97316', brandSecondaryColor: vendor.BRAND_SECONDARY_COLOR || '#fb923c',
   logoUrl: vendor.LOGO_URL || '', storeAddress: vendor.STORE_ADDRESS || '',
   storePhone: vendor.STORE_PHONE || '', storeEmail: vendor.STORE_EMAIL || vendor.EMAIL || '', storeWebsite: vendor.STORE_WEBSITE || '',
+  minPurchaseAmount: vendor.MIN_PURCHASE_AMOUNT || 0,
 });
 
 export async function GET(req: NextRequest) {
@@ -25,8 +26,8 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
     const data: Record<string, unknown> = { UPDATEDAT: Date.now() };
-    for (const [input, field] of Object.entries({ brandColor: 'BRAND_COLOR', brandSecondaryColor: 'BRAND_SECONDARY_COLOR', logoUrl: 'LOGO_URL', storeAddress: 'STORE_ADDRESS', storePhone: 'STORE_PHONE', storeEmail: 'STORE_EMAIL', storeWebsite: 'STORE_WEBSITE' })) {
-      if (body[input] !== undefined) data[field] = String(body[input] || '').trim();
+    for (const [input, field] of Object.entries({ brandColor: 'BRAND_COLOR', brandSecondaryColor: 'BRAND_SECONDARY_COLOR', logoUrl: 'LOGO_URL', storeAddress: 'STORE_ADDRESS', storePhone: 'STORE_PHONE', storeEmail: 'STORE_EMAIL', storeWebsite: 'STORE_WEBSITE', minPurchaseAmount: 'MIN_PURCHASE_AMOUNT' })) {
+      if (body[input] !== undefined) data[field] = input === 'minPurchaseAmount' ? Math.max(0, Number(body[input]) || 0) : String(body[input] || '').trim();
     }
     const vendor = await serverUpdateDocument(VENDORS_COLLECTION_ID, session.vendorId, data);
     return NextResponse.json({ ok: true, vendor: branding(vendor) });

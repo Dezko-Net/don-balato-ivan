@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Save, Image as ImageIcon, Store, Upload } from 'lucide-react';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, ID } from '@/lib/appwrite';
 
-type Profile = { name: string; email: string; brandColor: string; brandSecondaryColor: string; logoUrl: string; storeAddress: string; storePhone: string; storeEmail: string };
-const EMPTY: Profile = { name: '', email: '', brandColor: '#f97316', brandSecondaryColor: '#fb923c', logoUrl: '', storeAddress: '', storePhone: '', storeEmail: '' };
+type Profile = { name: string; email: string; brandColor: string; brandSecondaryColor: string; logoUrl: string; storeAddress: string; storePhone: string; storeEmail: string; minPurchaseAmount: number | string };
+const EMPTY: Profile = { name: '', email: '', brandColor: '#f97316', brandSecondaryColor: '#fb923c', logoUrl: '', storeAddress: '', storePhone: '', storeEmail: '', minPurchaseAmount: 0 };
 
 export default function VendorSettingsPage() {
   const [profile, setProfile] = useState<Profile>(EMPTY);
@@ -47,6 +47,10 @@ export default function VendorSettingsPage() {
       {profile.logoUrl && <div className="h-24 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center"><img src={profile.logoUrl} alt="Logo" className="max-h-20 max-w-[240px] object-contain" /></div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {([['storeAddress', 'Dirección de la tienda'], ['storePhone', 'Teléfono público'], ['storeEmail', 'Email público']] as const).map(([key, label]) => <label key={key} className="text-xs font-semibold text-gray-600">{label}<input value={profile[key]} onChange={e => set(key, e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" /></label>)}
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-gray-600">Mínimo de compra (CLP)<input type="number" min="0" value={profile.minPurchaseAmount} onChange={e => set('minPurchaseAmount', e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" placeholder="Ej: 15000" /></label>
+        <p className="text-[11px] text-gray-400 mt-1">El cliente debe llegar a este monto para poder pagar en tu tienda.</p>
       </div>
       {message && <p className={`text-sm ${message.startsWith('Perfil') ? 'text-emerald-600' : 'text-red-600'}`}>{message}</p>}
       <button onClick={save} disabled={saving} className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60" style={{ background: profile.brandColor }}><Save className="w-4 h-4" />{saving ? 'Guardando...' : 'Guardar identidad'}</button>
