@@ -18,7 +18,7 @@ const STORAGE_KEYS = { cart: `db_cart_${CLIENT_ID}`, adminAuth: `db_admin_auth_$
 
 // === Firebase Firestore (DonBalatoIvan) ===
 const firebaseConfig = {
-  apiKey: "AIzaSyCIEgaE6Smuyz1YxfoKNXIgq76crN_Me7A",
+  apiKey: "",
   authDomain: "donbalatoivanchile.firebaseapp.com",
   projectId: "donbalatoivanchile",
   storageBucket: "donbalatoivanchile.firebasestorage.app",
@@ -34,7 +34,7 @@ const geminaiConfig = {
   appId: "1:786029583380:web:d46a7d85aef100ce05db01",
   databaseURL: "https://geminai-449212-default-rtdb.firebaseio.com",
   storageBucket: "geminai-449212.firebasestorage.app",
-  apiKey: "AIzaSyA4GeWM_SyPK9VQiZSFfDIULw2jlVXx4rI",
+  apiKey: "",
   authDomain: "geminai-449212.firebaseapp.com",
   messagingSenderId: "786029583380"
 };
