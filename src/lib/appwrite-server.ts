@@ -150,7 +150,7 @@ export async function serverUploadFile(
   if (file instanceof ArrayBuffer) {
     blob = new Blob([file]);
   } else if (Buffer.isBuffer(file)) {
-    blob = new Blob([file]);
+    blob = new Blob([new Uint8Array(file)]);
   } else if (file instanceof Blob) {
     blob = file;
   } else {
