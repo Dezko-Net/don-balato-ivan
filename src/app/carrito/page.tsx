@@ -20,7 +20,7 @@ const FF = '"DM Sans",system-ui,sans-serif';
 function CarritoPageContent() {
   const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings, getEffectivePrice, clearCart } = useCart();
 
-  const belowMinimum = isBelowMinimumOrder(subtotal);
+  const belowMinimum = isBelowMinimumOrder(subtotal, MINIMUM_ORDER_CLP);
 
   const { user, isLoggedIn } = useAuth();
   const router = useRouter();
@@ -396,7 +396,7 @@ function CarritoPageContent() {
 
                 {belowMinimum && (
                   <p style={{ margin: '0 0 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', lineHeight: 1.45 }}>
-                    ⚠ {minimumOrderMessage(subtotal)}
+                    ⚠ {minimumOrderMessage(subtotal, MINIMUM_ORDER_CLP)}
                   </p>
                 )}
 

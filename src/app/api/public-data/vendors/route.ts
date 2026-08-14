@@ -20,6 +20,7 @@ export async function GET() {
       phone: v.STORE_PHONE || v.PUBLIC_PHONE || '',
       email: v.STORE_EMAIL || v.PUBLIC_EMAIL || '',
       address: v.STORE_ADDRESS || '',
+      minPurchaseAmount: v.MIN_PURCHASE_AMOUNT || 0,
     })) });
   } catch (error: any) {
     console.error('[API public-data/vendors]', error);

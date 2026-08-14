@@ -19,7 +19,7 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { Query, ID } from 'appwrite';
 import Image from 'next/image';
 import Link from 'next/link';
-import { isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
+import { isBelowMinimumOrder, minimumOrderMessage, MINIMUM_ORDER_CLP } from '@/lib/order-rules';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import DynamicCheckout from '@/components/DynamicCheckout';
 
@@ -151,7 +151,9 @@ function CheckoutInner() {
   const comunas = form.region ? CHILE_REGIONES[form.region] || [] : [];
   const totalDiscount = discountParam + couponDiscount;
   const total = Math.max(0, subtotal - totalDiscount);
-  const belowMinimum = isBelowMinimumOrder(total);
+  const [vendorMinPurchase, setVendorMinPurchase] = useState(0);
+  const effectiveMinimum = vendorFilter && vendorFilter !== '__MAIN__' && vendorMinPurchase > 0 ? vendorMinPurchase : MINIMUM_ORDER_CLP;
+  const belowMinimum = isBelowMinimumOrder(total, effectiveMinimum);
 
   useEffect(() => {
     if (items.length === 0 && !submittedRef.current) router.push('/carrito');
@@ -177,6 +179,20 @@ function CheckoutInner() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!vendorFilter || vendorFilter === '__MAIN__') { setVendorMinPurchase(0); return; }
+    (async () => {
+      try {
+        const res = await fetch('/api/public-data/vendors');
+        const data = await res.json();
+        const v = data.vendors?.find((x: any) => x.id === vendorFilter);
+        setVendorMinPurchase(v?.minPurchaseAmount || 0);
+      } catch {
+        setVendorMinPurchase(0);
+      }
+    })();
+  }, [vendorFilter]);
 
   // Fetch public coupons (using server SDK with API key to bypass read permissions)
   useEffect(() => {
@@ -550,7 +566,7 @@ function CheckoutInner() {
     if (!form.region || !form.comuna) { setError('Selecciona región y comuna'); return; }
     if (!form.name || !form.rut || !form.phone) { setError('Completa todos los campos obligatorios'); return; }
     if (belowMinimum) {
-      setError(minimumOrderMessage(total));
+      setError(minimumOrderMessage(total, effectiveMinimum));
       return;
     }
     
@@ -1689,7 +1705,7 @@ function CheckoutInner() {
                 </div>
                 {belowMinimum && (
                   <p style={{ margin: '0 22px 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', fontFamily: FF, lineHeight: 1.45 }}>
-                    ⚠ {minimumOrderMessage(total)}
+                    ⚠ {minimumOrderMessage(total, effectiveMinimum)}
                   </p>
                 )}
 
