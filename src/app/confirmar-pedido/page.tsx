@@ -149,25 +149,29 @@ function ConfirmarPedidoContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!region || !comuna || !address) { setError('Completa región, comuna y dirección'); return; }
-    if (!file) { setError('Sube tu comprobante de pago'); return; }
+    if (!customerName.trim()) { setError('Por favor ingresa tu nombre completo'); return; }
+    if (!region || !comuna || !address.trim()) { setError('Completa región, comuna y dirección'); return; }
+    const hasExistingProof = !!(order?.PAYMENTPROOFURL);
+    if (!file && !hasExistingProof) { setError('Sube tu comprobante de pago'); return; }
     setSaving(true);
     setError('');
     try {
-      const formData = new FormData();
-      formData.append('orderCode', code || '');
-      formData.append('file', file);
-      const proofRes = await fetch('/api/catalogo/upload-proof', { method: 'POST', body: formData });
-      const proofData = await proofRes.json();
-      if (proofData.error) { setError(proofData.error); return; }
+      if (file) {
+        const formData = new FormData();
+        formData.append('orderCode', code || '');
+        formData.append('file', file);
+        const proofRes = await fetch('/api/catalogo/upload-proof', { method: 'POST', body: formData });
+        const proofData = await proofRes.json();
+        if (proofData.error) { setError(proofData.error); setSaving(false); return; }
+      }
 
       const shipRes = await fetch('/api/catalogo/shipping-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderCode: code, customerName: customerName.trim(), customerRut: customerRut.trim(), customerEmail: customerEmail.trim(), region, comuna, address, additionalInfo, shippingAgency: agency }),
+        body: JSON.stringify({ orderCode: code, customerName: customerName.trim(), customerRut: customerRut.trim(), customerEmail: customerEmail.trim(), region, comuna, address: address.trim(), additionalInfo: additionalInfo.trim(), shippingAgency: agency }),
       });
       const shipData = await shipRes.json();
-      if (shipData.error) { setError(shipData.error); return; }
+      if (shipData.error) { setError(shipData.error); setSaving(false); return; }
 
       setSuccess(true);
     } catch (e: any) {
@@ -326,6 +330,15 @@ function ConfirmarPedidoContent() {
               <h2 className="font-bold text-gray-900">Comprobante de pago</h2>
             </div>
             <p className="text-sm text-gray-500 mb-3">Sube una foto o captura de tu transferencia.</p>
+            {order?.PAYMENTPROOFURL && !file && (
+              <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-800 font-semibold">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px]">✓</span>
+                  <span>Comprobante ya adjuntado</span>
+                </div>
+                <span className="text-[11px] text-emerald-600 font-normal">Puedes subir uno nuevo abajo si deseas</span>
+              </div>
+            )}
             {!file ? (
               <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-indigo-200 rounded-2xl py-8 px-4 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 transition text-center">
                 <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -354,14 +367,14 @@ function ConfirmarPedidoContent() {
               <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm7-2h6m-3-3v6" /></svg>
               <h2 className="font-bold text-gray-900">Tus datos</h2>
             </div>
-            <p className="text-xs text-gray-500 mb-4">Opcional: complétalos para que la tienda pueda identificarte y contactarte correctamente.</p>
+            <p className="text-xs text-gray-500 mb-4">Completa tus datos para identificar tu compra y coordinar la entrega.</p>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-bold text-gray-700 mb-1 block">Nombre completo <span className="text-gray-400 font-normal">(opcional)</span></label>
-                <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nombres y apellidos" autoComplete="name" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none text-sm" />
+                <label className="text-sm font-bold text-gray-700 mb-1 block">Nombre completo <span className="text-indigo-600">*</span></label>
+                <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nombres y apellidos" autoComplete="name" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none text-sm" />
               </div>
               <div>
-                <label className="text-sm font-bold text-gray-700 mb-1 block">RUT <span className="text-gray-400 font-normal">(opcional)</span></label>
+                <label className="text-sm font-bold text-gray-700 mb-1 block">RUT <span className="text-gray-400 font-normal">(para el despacho)</span></label>
                 <input type="text" value={customerRut} onChange={e => setCustomerRut(e.target.value)} placeholder="Ej: 12.345.678-9" autoComplete="off" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none text-sm" />
               </div>
               <div>

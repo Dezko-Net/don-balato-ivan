@@ -110,6 +110,7 @@ export const AGENCIES_COLLECTION_ID = 'shipping_agencies';
 export const COTIZACION_COLLECTION_ID = 'cotizaciones';
 export const VENDORS_COLLECTION_ID = 'vendors';
 export const VENDOR_ORDERS_COLLECTION_ID = 'vendor_orders';
+export { MEDIA_BUCKET_ID, ORDER_BOX_PHOTOS_BUCKET_ID } from '@/lib/appwrite';
 
 // Backward-compatible exports (reads config at call time for SSR safety)
 export const DATABASE_ID = typeof window !== 'undefined'

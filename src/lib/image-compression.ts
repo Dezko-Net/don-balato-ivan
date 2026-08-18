@@ -44,7 +44,7 @@ export async function compressImageKeepFormat(buffer: Buffer): Promise<{ buffer:
   });
 
   let output: Buffer;
-  switch (format) {
+  switch (format as string) {
     case 'png':
       output = await resized.png({ quality: QUALITY, compressionLevel: 9 }).toBuffer();
       break;

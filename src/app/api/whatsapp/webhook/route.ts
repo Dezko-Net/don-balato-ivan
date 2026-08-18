@@ -722,11 +722,11 @@ export async function POST(req: NextRequest) {
               : null;
             let orderCode = pendingOrderId || "";
 
-            // Balatin flow: if user is in awaiting_payment step, use the balatin order
+            // Balatin flow: if user is in Balatin order flow, use the balatin order
             if (
               !pendingOrderId &&
               usageState.balatinOrderFlow === true &&
-              usageState.balatinStep === "awaiting_payment"
+              usageState.balatinOrderId
             ) {
               pendingOrderId = usageState.balatinOrderId || null;
               orderCode = usageState.balatinOrderCode || "";
@@ -795,11 +795,9 @@ export async function POST(req: NextRequest) {
               }
             }
 
-            // Use Gemini Vision to verify the image is actually a payment receipt
-            // Skip vision check for Balatin flow (paused per user request)
+            // Skip vision check for Balatin flow (assume image is the transfer receipt)
             const isBalatinFlow =
-              usageState.balatinOrderFlow === true &&
-              usageState.balatinStep === "awaiting_payment";
+              usageState.balatinOrderFlow === true;
             let isComprobante = false;
             if (pendingOrderId && !isBalatinFlow) {
               try {
@@ -876,103 +874,28 @@ export async function POST(req: NextRequest) {
                   },
                 );
 
-                const customerName = usageState.customerName || "";
-
-                // Check if customer already has shipping data from a previous order
-                let prevData: any = null;
-                try {
-                  const cleanedPhoneForLookup = fromPhone.replace(/\D/g, "");
-                  const qOrderDescPrev = JSON.stringify({
-                    method: "orderDesc",
-                    attribute: "$createdAt",
-                  });
-                  const qPhonePrev = JSON.stringify({
-                    method: "contains",
-                    attribute: "CUSTOMERPHONE",
-                    values: [cleanedPhoneForLookup],
-                  });
-                  const qLimitPrev = JSON.stringify({
-                    method: "limit",
-                    values: [10],
-                  });
-                  const prevOrders = await serverListDocuments(
-                    ORDERS_COLLECTION_ID,
-                    [qOrderDescPrev, qPhonePrev, qLimitPrev],
-                  );
-                  // Find the most recent order that has all required shipping data (email optional)
-                  prevData = (prevOrders.documents || []).find(
-                    (o: any) =>
-                      o.CUSTOMERRUT &&
-                      o.ADDRESS &&
-                      o.COMUNA &&
-                      o.REGION &&
-                      o.SHIPPINGAGENCY,
-                  );
-                } catch (e) {
-                  console.warn(
-                    "[Balatin Catalog Flow] Could not fetch previous orders for data lookup:",
-                    e,
-                  );
-                }
-
-                if (prevData) {
-                  // Returning customer with full data — copy to new order and go straight to confirmation
-                  try {
-                    await serverUpdateDocument(
-                      ORDERS_COLLECTION_ID,
-                      pendingOrderId,
-                      {
-                        CUSTOMERRUT: prevData.CUSTOMERRUT,
-                        ADDRESS: prevData.ADDRESS,
-                        COMUNA: prevData.COMUNA,
-                        REGION: prevData.REGION,
-                        SHIPPINGAGENCY: prevData.SHIPPINGAGENCY,
-                        CUSTOMEREMAIL: prevData.CUSTOMEREMAIL,
-                        CUSTOMERNAME: prevData.CUSTOMERNAME || customerName,
-                      },
-                    );
-                  } catch (e) {
-                    console.warn(
-                      "[Balatin Catalog Flow] Could not copy previous data to new order:",
-                      e,
-                    );
-                  }
-
-                  await recordKeniaUsage(fromPhone, {
-                    balatinComprobanteReceived: true,
-                    balatinStep: "awaiting_data_confirm",
-                  });
-
-                  const emailLine = prevData.CUSTOMEREMAIL
-                    ? `\n• *Email:* ${prevData.CUSTOMEREMAIL}`
-                    : "";
-                  const dataMsg = `¡Comprobante recibido, ${customerName}! \n\nNuestro equipo va a revisar tu pago. Cuando esté confirmado, te avisaré por este medio.\n\nTengo tus datos de tu pedido anterior:\n\n• *RUT:* ${prevData.CUSTOMERRUT}\n• *Dirección:* ${prevData.ADDRESS}\n• *Comuna:* ${prevData.COMUNA}\n• *Región:* ${prevData.REGION}\n• *Agencia:* ${prevData.SHIPPINGAGENCY}${emailLine}\n\n¿Usamos estos mismos datos? Responde *CORRECTO* para confirmar, o dime qué quieres cambiar. `;
-                  await sendWhatsAppMessage(fromPhone, dataMsg, WA_TOKEN);
-                  await addToHistory(
-                    fromPhone,
-                    "user",
-                    "[Imagen Comprobante]",
-                    msgId,
-                  );
-                  await addToHistory(
-                    fromPhone,
-                    "assistant",
-                    dataMsg,
-                    `balatin-data-${Date.now()}`,
-                  );
-                  await markAsRead(msgId, WA_TOKEN);
-                  return NextResponse.json({
-                    status: "balatin_comprobante_saved_returning",
-                  });
-                }
-
-                // New customer or no previous data — ask for all data
                 await recordKeniaUsage(fromPhone, {
                   balatinComprobanteReceived: true,
-                  balatinStep: "awaiting_data",
+                  balatinStep: "comprobante_received",
                 });
 
-                const dataMsg = `¡Comprobante recibido, ${customerName}! Nuestro equipo va a revisar tu pago. Cuando este confirmado, te avisare por este medio.\n\nMientras tanto, necesito tus datos para el envio:\n\n• *RUT* (ej: 12.345.678-9 o 12345678-9)\n• *Direccion* (calle, numero, depto)\n• *Comuna*\n• *Region*\n• *Agencia de envio* (Starken, Pullman Cargo, Varmontt, BluExpress, CYC, TVP, Cruz del Sur, Tramar, 5SUR, Mena, CACEM, JT Transportes, o retiro en tienda)\n• Email (opcional)\n\nPuedes escribirlos todos juntos o uno por uno, como prefieras.\n\nCuando termines, escribe *TERMINE*.`;
+                // Check if order already has shipping address
+                let orderDoc: any = null;
+                try {
+                  const { serverGetDocument } = await import("@/lib/appwrite-server");
+                  orderDoc = await serverGetDocument(ORDERS_COLLECTION_ID, pendingOrderId);
+                } catch (e) {}
+
+                const hasShipping = orderDoc?.ADDRESS && orderDoc?.COMUNA;
+                const confirmLink = `${SITE_URL}/confirmar-pedido?code=${orderCode}`;
+
+                let dataMsg = "";
+                if (hasShipping) {
+                  dataMsg = `¡Comprobante recibido! 📸✨\n\nTu pedido *${orderCode}* ya tiene todos los datos registrados. Nuestro equipo revisará tu pago y te avisaremos por este medio en cuanto esté confirmado. ¡Muchas gracias por tu compra! 🐾`;
+                } else {
+                  dataMsg = `¡Comprobante recibido! 📸✨\n\nPara que podamos despachar tu pedido *${orderCode}*, por favor ingresa tus datos de envío en este enlace:\n\n👉 ${confirmLink}\n\n¡Solo te tomará un minuto! 🚚`;
+                }
+
                 await sendWhatsAppMessage(fromPhone, dataMsg, WA_TOKEN);
                 await addToHistory(
                   fromPhone,
@@ -1137,8 +1060,8 @@ export async function POST(req: NextRequest) {
       isAdmin = false;
     }
 
-    // ── BALATIN CATALOG FLOW (no AI, programmed logic) ──────────────────────────
-    // Detect catalog order message: "*Hola Balatin!* ... Codigo: WA-XXXX"
+    // ── BALATIN CATALOG FLOW (direct link architecture) ──────────────────────────
+    // Detect catalog order message: "*Hola Balatin!* ... Codigo: WA-XXXX" or any message containing WA-XXXX
     const balatinCatalogMatch = userText.match(/\*\s*Hola\s+Balatin!?\s*\*/i);
     const catCodeMatch = userText.match(
       /(?:Codigo|C[oó]digo)[:\s]*\*?(WA-\d{4,8})\*?/i,
@@ -1157,24 +1080,11 @@ export async function POST(req: NextRequest) {
       console.log(
         `[Balatin Catalog Flow] Detected catalog order: ${orderCode} from ${fromPhone}`,
       );
-      console.log(
-        `[Balatin Catalog Flow] balatinCatalogMatch:`,
-        !!balatinCatalogMatch,
-        "catCodeMatch:",
-        !!catCodeMatch,
-        "waCodeMatch:",
-        !!waCodeMatch,
-      );
-      console.log(
-        `[Balatin Catalog Flow] userText first 100 chars:`,
-        userText.substring(0, 100),
-      );
 
       try {
-        const { serverListDocuments, serverUpdateDocument, serverGetDocument } =
+        const { serverListDocuments, serverUpdateDocument } =
           await import("@/lib/appwrite-server");
         const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
-        const { isNightNow, santiagoHour } = await import("@/lib/night-mode");
 
         // Find the order
         const qEqual = JSON.stringify({
@@ -1187,20 +1097,12 @@ export async function POST(req: NextRequest) {
           qEqual,
           qLimit1,
         ]);
-        console.log(
-          `[Balatin Catalog Flow] Order search result:`,
-          res.documents?.length || 0,
-          "documents found for code",
-          orderCode,
-        );
 
         if (res.documents && res.documents.length > 0) {
           const order = res.documents[0] as any;
           const orderId = order.$id;
-          const night = isNightNow();
-          const hour = santiagoHour();
 
-          // Link phone to order (LINKED_WHATSAPP may not exist as attribute, so try without it)
+          // Link phone to order
           try {
             await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
               CUSTOMERPHONE: `+${cleanedFrom}`,
@@ -1212,246 +1114,86 @@ export async function POST(req: NextRequest) {
             );
           }
 
-          // Check if customer already has a name from a previous order
-          let existingCustomerName = usage.customerName || "";
-          if (!existingCustomerName) {
-            try {
-              const qOrderDescPrev = JSON.stringify({
-                method: "orderDesc",
-                attribute: "$createdAt",
-              });
-              const qPhonePrev = JSON.stringify({
-                method: "contains",
-                attribute: "CUSTOMERPHONE",
-                values: [cleanedFrom],
-              });
-              const qLimitPrev = JSON.stringify({
-                method: "limit",
-                values: [5],
-              });
-              const prevOrders = await serverListDocuments(
-                ORDERS_COLLECTION_ID,
-                [qOrderDescPrev, qPhonePrev, qLimitPrev],
-              );
-              const prevWithName = (prevOrders.documents || []).find(
-                (o: any) =>
-                  o.CUSTOMERNAME && String(o.CUSTOMERNAME).trim().length >= 2,
-              );
-              if (prevWithName) {
-                existingCustomerName = String(prevWithName.CUSTOMERNAME).trim();
-                console.log(
-                  `[Balatin Catalog Flow] Found existing customer name from previous order: ${existingCustomerName}`,
-                );
-              }
-            } catch (e) {
-              console.warn(
-                "[Balatin Catalog Flow] Could not fetch previous orders for name lookup:",
-                e,
-              );
-            }
-          }
+          // Get order total
+          const orderTotal = Number(order?.TOTAL || order?.SUBTOTAL || 0);
 
-          // If we already know the customer's name, skip name collection and update the order
-          if (existingCustomerName) {
-            // Save the name to the new order
-            try {
-              await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-                CUSTOMERNAME: existingCustomerName,
-              });
-            } catch (e) {
-              console.warn(
-                "[Balatin Catalog Flow] Could not save existing name to new order:",
-                e,
-              );
-            }
-
-            // Get order total
-            let orderTotal = 0;
-            try {
-              const orderDoc: any = await serverGetDocument(
-                ORDERS_COLLECTION_ID,
-                orderId,
-              );
-              orderTotal = Number(orderDoc?.TOTAL || orderDoc?.SUBTOTAL || 0);
-            } catch (e) {}
-
-            await recordKeniaUsage(fromPhone, {
-              isGuestWithOrders: true,
-              isRegistered: true,
-              customerName: existingCustomerName,
-              balatinOrderFlow: true,
-              balatinOrderId: orderId,
-              balatinOrderCode: orderCode,
-              balatinStep: "awaiting_payment",
-              balatinComprobanteReceived: false,
-            });
-
-            await markAsRead(msgId, WA_TOKEN);
-            await addToHistory(fromPhone, "user", userText, msgId);
-
-            const night = isNightNow();
-            if (night) {
-              // Night: returning customer, skip name, go straight to payment
-              const welcomeMsg = `¡Hola, ${existingCustomerName}! ¡Qué bueno verte de nuevo!\n\n¡Ya tomé tu pedido *${orderCode}*! Como ya te conozco, no necesito pedirte tus datos de nuevo. \n\nPara continuar, haz la transferencia:\n\n *Datos para la transferencia:*\nTitular: DON BALATO IVAN\nRUT: 78.267.426-9\nBanco: Mercado Pago (Cuenta Vista)\nCuenta: 1037879898\nEmail: donbalatosoporte@gmail.com\n\nMonto total: $${orderTotal.toLocaleString("es-CL")}\n\nCuando transfieras, mándame la *foto del comprobante* por aquí. `;
-              await sendWhatsAppMessage(fromPhone, welcomeMsg, WA_TOKEN);
-              await addToHistory(
-                fromPhone,
-                "assistant",
-                welcomeMsg,
-                `balatin-returning-${Date.now()}`,
-              );
-              return NextResponse.json({
-                status: "balatin_catalog_returning_night",
-              });
-            } else {
-              // Day: returning customer, verify stock first, then payment
-              await recordKeniaUsage(fromPhone, {
-                balatinStep: "awaiting_stock_confirmation",
-              });
-
-              const dayMsg = `¡Hola, ${existingCustomerName}! ¡Qué bueno verte de nuevo!\n\n¡Ya tomé tu pedido *${orderCode}*! Ahora mismo estamos verificando el stock de tus productos.\n\nEn cuanto la cajera lo confirme, te aviso altiro para seguir. ¡Un momentito! `;
-              await sendWhatsAppMessage(fromPhone, dayMsg, WA_TOKEN);
-              await addToHistory(
-                fromPhone,
-                "assistant",
-                dayMsg,
-                `balatin-returning-day-${Date.now()}`,
-              );
-
-              // Notify admin (cajera) about new order - single template with URL button
-              const verifyLink = `${SITE_URL}/verificar-stock?code=${orderCode}`;
-              try {
-                const { sendWhatsAppTemplate } = await import("@/lib/whatsapp");
-                await recordKeniaUsage(STOCK_VERIFIER_PHONE, {
-                  pendingOrderId: orderId,
-                });
-                const components = [
-                  {
-                    type: "body",
-                    parameters: [
-                      { type: "text", text: String(orderCode) },
-                      { type: "text", text: existingCustomerName },
-                    ],
-                  },
-                  {
-                    type: "button",
-                    sub_type: "url",
-                    index: 0,
-                    parameters: [{ type: "text", text: String(orderCode) }],
-                  },
-                ];
-                await sendWhatsAppTemplate(
-                  STOCK_VERIFIER_PHONE,
-                  "confirmar_stock_balatin",
-                  "es_CL",
-                  components,
-                  WA_TOKEN,
-                );
-              } catch (tplErr) {
-                console.error(
-                  "[Balatin Catalog Flow] Error sending template to admin:",
-                  tplErr,
-                );
-                const adminMsg = ` *PEDIDO NUEVO* #${orderCode}\n\nCliente: ${existingCustomerName}\nTeléfono: +${cleanedFrom}\n\n *Confirma el stock aquí:*\n${verifyLink}`;
-                await sendWhatsAppMessage(
-                  STOCK_VERIFIER_PHONE,
-                  adminMsg,
-                  WA_TOKEN,
-                );
-              }
-
-              return NextResponse.json({
-                status: "balatin_catalog_returning_day",
-              });
-            }
-          }
-
-          // New customer — ask for name
-          // Mark this user as a Balatin catalog customer in usage
           await recordKeniaUsage(fromPhone, {
             isGuestWithOrders: true,
-            isRegistered: false,
             balatinOrderFlow: true,
             balatinOrderId: orderId,
             balatinOrderCode: orderCode,
-            balatinStep: night ? "awaiting_name_night" : "awaiting_name_day",
+            balatinStep: "link_sent",
+            balatinComprobanteReceived: false,
           });
 
           await markAsRead(msgId, WA_TOKEN);
           await addToHistory(fromPhone, "user", userText, msgId);
 
-          if (night) {
-            // Night flow (6pm-9am): no stock verification, go straight to data
-            const nightMsg = `¡Hola! Soy Balatin, el gato de la suerte de Don Balato Iván.\n\n¡Ya tomé tu pedido *${orderCode}*! Para ir adelantando, ¿me das tu *nombre completo* por favor?`;
-            await sendWhatsAppMessage(fromPhone, nightMsg, WA_TOKEN);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              nightMsg,
-              `balatin-night-${Date.now()}`,
+          const confirmLink = `${SITE_URL}/confirmar-pedido?code=${orderCode}`;
+          const welcomeMsg = `¡Hola! 🐾 Soy Balatin, el gato de la suerte de Don Balato Iván.\n\n` +
+            `¡Ya tomé tu pedido *${orderCode}*! 🎉\n\n` +
+            `💰 *Datos para la transferencia:*\n` +
+            `• Titular: DON BALATO IVAN\n` +
+            `• RUT: 78.267.426-9\n` +
+            `• Banco: Mercado Pago (Cuenta Vista)\n` +
+            `• N° Cuenta: 1037879898\n` +
+            `• Email: donbalatosoporte@gmail.com\n` +
+            `• Monto total: $${orderTotal.toLocaleString("es-CL")}\n\n` +
+            `👉 *Completa tus datos de envío y sube tu comprobante aquí:*\n` +
+            `${confirmLink}\n\n` +
+            `En ese enlace podrás ingresar tu nombre, RUT, dirección de despacho y adjuntar la foto del comprobante de forma rápida y segura. ¡Muchas gracias! ✨`;
+
+          await sendWhatsAppMessage(fromPhone, welcomeMsg, WA_TOKEN);
+          await addToHistory(
+            fromPhone,
+            "assistant",
+            welcomeMsg,
+            `balatin-link-${Date.now()}`,
+          );
+
+          // Notify admin (cajera) about new order
+          const verifyLink = `${SITE_URL}/verificar-stock?code=${orderCode}`;
+          try {
+            const { sendWhatsAppTemplate } = await import("@/lib/whatsapp");
+            await recordKeniaUsage(STOCK_VERIFIER_PHONE, {
+              pendingOrderId: orderId,
+            });
+            const components = [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: String(orderCode) },
+                  { type: "text", text: "Cliente Catálogo" },
+                ],
+              },
+              {
+                type: "button",
+                sub_type: "url",
+                index: 0,
+                parameters: [{ type: "text", text: String(orderCode) }],
+              },
+            ];
+            await sendWhatsAppTemplate(
+              STOCK_VERIFIER_PHONE,
+              "confirmar_stock_balatin",
+              "es_CL",
+              components,
+              WA_TOKEN,
             );
-            return NextResponse.json({ status: "balatin_catalog_night" });
-          } else {
-            // Day flow (9am-6pm): verify stock, ask for name while waiting
-            const dayMsg = `¡Hola! Soy Balatin, el gato de la suerte de Don Balato Iván.\n\n¡Ya tomé tu pedido *${orderCode}*! Ahora mismo estamos verificando el stock de tus productos.\n\nMientras tanto, ¿me darías tu *nombre completo* por favor?`;
-            await sendWhatsAppMessage(fromPhone, dayMsg, WA_TOKEN);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              dayMsg,
-              `balatin-day-${Date.now()}`,
+          } catch (tplErr) {
+            console.error(
+              "[Balatin Catalog Flow] Error sending template to admin:",
+              tplErr,
             );
-
-            // Notify admin (cajera) about new order - single template with URL button
-            const verifyLink = `${SITE_URL}/verificar-stock?code=${orderCode}`;
-            try {
-              const { sendWhatsAppTemplate } = await import("@/lib/whatsapp");
-              const { recordKeniaUsage } = await import("@/lib/kenia-runtime");
-
-              // Store the pending order ID for the cajera so when she clicks CONFIRMAR STOCK we know which order
-              await recordKeniaUsage(STOCK_VERIFIER_PHONE, {
-                pendingOrderId: orderId,
-              });
-
-              const components = [
-                {
-                  type: "body",
-                  parameters: [
-                    { type: "text", text: String(orderCode) },
-                    { type: "text", text: "(pendiente de nombre)" },
-                  ],
-                },
-                {
-                  type: "button",
-                  sub_type: "url",
-                  index: 0,
-                  parameters: [{ type: "text", text: String(orderCode) }],
-                },
-              ];
-
-              await sendWhatsAppTemplate(
-                STOCK_VERIFIER_PHONE,
-                "confirmar_stock_balatin",
-                "es_CL",
-                components,
-                WA_TOKEN,
-              );
-            } catch (tplErr) {
-              console.error(
-                "[Balatin Catalog Flow] Error sending template to admin:",
-                tplErr,
-              );
-              // Fallback: plain text
-              const adminMsg = ` *PEDIDO NUEVO* #${orderCode}\n\nCliente: (pendiente de nombre)\nTeléfono: +${cleanedFrom}\n\n *Confirma el stock aquí:*\n${verifyLink}`;
-              await sendWhatsAppMessage(
-                STOCK_VERIFIER_PHONE,
-                adminMsg,
-                WA_TOKEN,
-              );
-            }
-
-            return NextResponse.json({ status: "balatin_catalog_day" });
+            const adminMsg = `📦 *PEDIDO NUEVO* #${orderCode}\n\nCliente: Catálogo Web\nTeléfono: +${cleanedFrom}\n\n🔗 *Verificar stock / gestionar:*\n${verifyLink}`;
+            await sendWhatsAppMessage(
+              STOCK_VERIFIER_PHONE,
+              adminMsg,
+              WA_TOKEN,
+            );
           }
+
+          return NextResponse.json({ status: "balatin_catalog_link_sent" });
         } else {
           console.warn(
             `[Balatin Catalog Flow] Order ${orderCode} not found in DB`,
@@ -1462,499 +1204,60 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── BALATIN NAME COLLECTION (no AI) ─────────────────────────────────────────
-    // If user is in Balatin flow and we're waiting for their name
-    if (
-      usage.balatinOrderFlow === true &&
-      usage.balatinStep &&
-      usage.balatinStep.startsWith("awaiting_name")
-    ) {
+    // ── BALATIN ACTIVE ORDER CHAT HANDLER (direct reminder, no confusing loops) ─────────
+    if (usage.balatinOrderFlow === true && usage.balatinOrderId) {
       const orderId = usage.balatinOrderId;
-      const orderCode = usage.balatinOrderCode;
-      const name = userText.trim();
+      const orderCode = usage.balatinOrderCode || "";
 
-      if (
-        name.length >= 2 &&
-        name.length <= 80 &&
-        !/^(finalizar|termin[eé]|modo|admin|cliente|hola|balatin)/i.test(name)
-      ) {
-        try {
-          const { serverUpdateDocument } =
-            await import("@/lib/appwrite-server");
-          const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
-          const { isNightNow } = await import("@/lib/night-mode");
-
-          // Save name to order
-          await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId!, {
-            CUSTOMERNAME: name,
-          });
-
-          // Get order total for the payment message
-          let orderTotal = 0;
-          try {
-            const { serverGetDocument } = await import("@/lib/appwrite-server");
-            const orderDoc: any = await serverGetDocument(
-              ORDERS_COLLECTION_ID,
-              orderId!,
-            );
-            orderTotal = Number(orderDoc?.TOTAL || orderDoc?.SUBTOTAL || 0);
-          } catch (e) {
-            console.warn(
-              "[Balatin Catalog Flow] Could not fetch order total:",
-              e,
-            );
-          }
-
-          await markAsRead(msgId, WA_TOKEN);
-          await addToHistory(fromPhone, "user", userText, msgId);
-
-          const night = isNightNow();
-          if (night) {
-            // Night: go to payment first, then data
-            await recordKeniaUsage(fromPhone, {
-              customerName: name,
-              balatinStep: "awaiting_payment",
-              balatinComprobanteReceived: false,
-            });
-
-            const payMsg = `¡Gracias, ${name}! \n\nPara continuar con tu pedido, haz la transferencia:\n\n *Datos para la transferencia:*\nTitular: DON BALATO IVAN\nRUT: 78.267.426-9\nBanco: Mercado Pago (Cuenta Vista)\nCuenta: 1037879898\nEmail: donbalatosoporte@gmail.com\n\nMonto total: $${orderTotal.toLocaleString("es-CL")}\n\nCuando transfieras, mándame la *foto del comprobante* por aquí. `;
-            await sendWhatsAppMessage(fromPhone, payMsg, WA_TOKEN);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              payMsg,
-              `balatin-pay-${Date.now()}`,
-            );
-
-            return NextResponse.json({ status: "balatin_name_saved_night" });
-          } else {
-            // Day: name saved, waiting for stock confirmation
-            await recordKeniaUsage(fromPhone, {
-              customerName: name,
-              balatinStep: "awaiting_stock_confirmation",
-            });
-
-            const waitMsg = `¡Gracias, ${name}! \n\nYa anoté tu nombre. Estamos verificando el stock de tu pedido, en cuanto la cajera lo confirme te aviso altiro para seguir. ¡Un momentito! `;
-            await sendWhatsAppMessage(fromPhone, waitMsg, WA_TOKEN);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              waitMsg,
-              `balatin-wait-${Date.now()}`,
-            );
-
-            return NextResponse.json({ status: "balatin_name_saved_day" });
-          }
-        } catch (e) {
-          console.error("[Balatin Catalog Flow] Error saving name:", e);
-        }
+      // Ignore auto-replies
+      const isAutoReply =
+        /gracias por tu mensaje.*no podemos responder/i.test(userText);
+      if (isAutoReply) {
+        await markAsRead(msgId, WA_TOKEN);
+        return NextResponse.json({ status: "balatin_auto_reply_ignored" });
       }
-    }
 
-    // ── BALATIN PAYMENT STEP (waiting for comprobante image) ────────────────────
-    if (
-      usage.balatinOrderFlow === true &&
-      usage.balatinStep === "awaiting_payment"
-    ) {
-      const customerName = usage.customerName || "";
+      try {
+        const { serverGetDocument } = await import("@/lib/appwrite-server");
+        const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
+        const orderDoc: any = await serverGetDocument(
+          ORDERS_COLLECTION_ID,
+          orderId,
+        ).catch(() => null);
 
-      // If it's an image, let the image handler below process it (it will save comprobante and move to awaiting_data)
-      if (msgType === "image") {
-        // Fall through to image handler
-      } else {
-        // Not an image — remind the client to send the comprobante photo
-        const remindMsg = `¡Perfecto, ${customerName}! \n\nCuando termines la transferencia, mándame la *foto del comprobante* por aquí. `;
-        await sendWhatsAppMessage(fromPhone, remindMsg, WA_TOKEN);
+        const confirmLink = `${SITE_URL}/confirmar-pedido?code=${orderCode}`;
+        const isComplete =
+          orderDoc &&
+          (orderDoc.STATUS === "payment_review" ||
+            orderDoc.STATUS === "payment_confirmed" ||
+            orderDoc.STATUS === "processing" ||
+            orderDoc.STATUS === "shipped" ||
+            orderDoc.STATUS === "delivered" ||
+            (orderDoc.ADDRESS && orderDoc.PAYMENTPROOFURL));
+
+        let replyMsg = "";
+        if (isComplete) {
+          replyMsg = `¡Hola! 🐾 Tu pedido *${orderCode}* ya tiene tus datos y comprobante registrados.\n\n` +
+            `Nuestro equipo está gestionando tu compra. En cuanto tengamos novedades te avisaremos por este medio. ¡Muchas gracias por tu preferencia! ✨`;
+        } else {
+          replyMsg = `¡Hola! 🐾 Recuerda que para procesar tu pedido *${orderCode}*, debes ingresar tus datos de envío y subir tu comprobante de transferencia en el siguiente enlace:\n\n` +
+            `👉 ${confirmLink}\n\n` +
+            `Ahí puedes completar tu nombre, RUT, dirección y adjuntar la captura del pago. ¡Cualquier consulta aquí estoy! ✨`;
+        }
+
+        await markAsRead(msgId, WA_TOKEN);
         await addToHistory(fromPhone, "user", userText, msgId);
+        await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
         await addToHistory(
           fromPhone,
           "assistant",
-          remindMsg,
-          `balatin-remind-${Date.now()}`,
-        );
-        await markAsRead(msgId, WA_TOKEN);
-        return NextResponse.json({ status: "balatin_payment_remind" });
-      }
-    }
-
-    // ── BALATIN DATA CONFIRM (returning customer confirms or changes previous data) ──
-    if (
-      usage.balatinOrderFlow === true &&
-      usage.balatinStep === "awaiting_data_confirm"
-    ) {
-      const orderId = usage.balatinOrderId;
-      const orderCode = usage.balatinOrderCode;
-      const customerName = usage.customerName || "";
-      const wantsConfirm =
-        /\b(correcto|correcta|ok|si|s[ií]|est[aá] bien|perfecto|los mismos|igual)\b/i.test(
-          userText.trim().toLowerCase(),
+          replyMsg,
+          `balatin-reminder-${Date.now()}`,
         );
 
-      if (wantsConfirm && userText.trim().length <= 25) {
-        // Confirm — check all data is present
-        try {
-          const { serverGetDocument } = await import("@/lib/appwrite-server");
-          const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
-          const orderDoc: any = await serverGetDocument(
-            ORDERS_COLLECTION_ID,
-            orderId!,
-          );
-
-          const missingFields: string[] = [];
-          if (!orderDoc?.CUSTOMERRUT) missingFields.push("RUT");
-          if (!orderDoc?.ADDRESS) missingFields.push("dirección");
-          if (!orderDoc?.COMUNA) missingFields.push("comuna");
-          if (!orderDoc?.REGION) missingFields.push("región");
-          if (!orderDoc?.SHIPPINGAGENCY) missingFields.push("agencia de envío");
-          // Email is optional — not required
-
-          if (missingFields.length > 0) {
-            // Some data missing — go to normal data collection, clear buffer
-            await recordKeniaUsage(fromPhone, {
-              balatinStep: "awaiting_data",
-              balatinDataBuffer: "",
-            });
-            const missingMsg = `¡Casi! Me faltan algunos datos:\n\n${missingFields.map((f) => `• ${f}`).join("\n")}\n\nMándamelos y escribe *TERMINÉ*. `;
-            await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
-            await addToHistory(fromPhone, "user", userText, msgId);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              missingMsg,
-              `balatin-missing-${Date.now()}`,
-            );
-            await markAsRead(msgId, WA_TOKEN);
-            return NextResponse.json({ status: "balatin_missing_data" });
-          } else {
-            // All data present — done!
-            const doneMsg = `¡Perfecto, ${customerName}! \n\nTu pedido *${orderCode}* está listo:\n Comprobante recibido\n Datos de envío guardados\n\nNuestro equipo va a revisar tu pago. Cuando esté confirmado, te avisaré por aquí.\n\nTe mantendré informado en cada paso:\n Pago confirmado\n Pedido armado/embalado\n Entregado a la agencia (con foto y código de seguimiento)\n\nCualquier consulta sobre tu pedido, escríbeme por aquí nomás. ¡Gracias por confiar en este gatito! `;
-            await sendWhatsAppMessage(fromPhone, doneMsg, WA_TOKEN);
-            await addToHistory(fromPhone, "user", userText, msgId);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              doneMsg,
-              `balatin-done-${Date.now()}`,
-            );
-            await recordKeniaUsage(fromPhone, {
-              balatinStep: "completed",
-              balatinDataBuffer: "",
-            });
-            await markAsRead(msgId, WA_TOKEN);
-            return NextResponse.json({ status: "balatin_completed" });
-          }
-        } catch (e) {
-          console.error(
-            "[Balatin Catalog Flow] Error checking data on confirm:",
-            e,
-          );
-        }
-      }
-
-      // Not confirming — user wants to change something. Go to normal data collection.
-      await recordKeniaUsage(fromPhone, {
-        balatinStep: "awaiting_data",
-        balatinDataBuffer: userText,
-      });
-      const changeMsg = `¡Entendido! Dime qué datos quieres cambiar. Puedes mandarlos todos juntos o uno por uno.\n\nCuando termines, escribe *TERMINÉ*.`;
-      await sendWhatsAppMessage(fromPhone, changeMsg, WA_TOKEN);
-      await addToHistory(fromPhone, "user", userText, msgId);
-      await addToHistory(
-        fromPhone,
-        "assistant",
-        changeMsg,
-        `balatin-change-${Date.now()}`,
-      );
-      await markAsRead(msgId, WA_TOKEN);
-      return NextResponse.json({ status: "balatin_data_change" });
-    }
-
-    // ── BALATIN DATA COLLECTION (accumulate without AI, parse on "terminé") ────
-    if (
-      usage.balatinOrderFlow === true &&
-      usage.balatinStep === "awaiting_data"
-    ) {
-      const orderId = usage.balatinOrderId;
-      const orderCode = usage.balatinOrderCode;
-      const customerName = usage.customerName || "";
-
-      // Check if user wrote "correcto" to confirm their data
-      // Nota: \b no funciona con acentos en JS, usamos (^|[^a-z]) en vez de \b
-      const wantsConfirm =
-        /(?:^|[^a-z])(correcto|correcta|ok|si|s[ií]|est[aá] bien|perfecto)(?:[^a-z]|$)/i.test(
-          userText.trim().toLowerCase(),
-        );
-
-      // Check if user wrote "terminé/acabé/finalizar" to trigger AI parsing
-      // Nota: \b no funciona con acentos en JS, usamos (^|[^a-z]) en vez de \b
-      const wantsParse =
-        /(?:^|[^a-z])(termin[eé]|acab[eé]|finalizar|listo|ya)(?:[^a-z]|$)/i.test(
-          userText.trim().toLowerCase(),
-        );
-
-      if (wantsConfirm && userText.trim().length <= 20) {
-        // User is confirming their data — check if all required data is present
-        try {
-          const { serverGetDocument } = await import("@/lib/appwrite-server");
-          const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
-          const orderDoc: any = await serverGetDocument(
-            ORDERS_COLLECTION_ID,
-            orderId!,
-          );
-
-          const missingFields: string[] = [];
-          if (!orderDoc?.CUSTOMERRUT) missingFields.push("RUT");
-          if (!orderDoc?.ADDRESS) missingFields.push("dirección");
-          if (!orderDoc?.COMUNA) missingFields.push("comuna");
-          if (!orderDoc?.REGION) missingFields.push("región");
-          if (!orderDoc?.SHIPPINGAGENCY) missingFields.push("agencia de envío");
-          // Email is optional — not required
-
-          if (missingFields.length > 0) {
-            await recordKeniaUsage(fromPhone, { balatinDataBuffer: "" });
-            const missingMsg = `¡Casi! Me faltan algunos datos aún:\n\n${missingFields.map((f) => `• ${f}`).join("\n")}\n\nMándamelos y escribe *TERMINÉ*. `;
-            await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
-            await addToHistory(fromPhone, "user", userText, msgId);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              missingMsg,
-              `balatin-missing-${Date.now()}`,
-            );
-            await markAsRead(msgId, WA_TOKEN);
-            return NextResponse.json({ status: "balatin_missing_data" });
-          } else {
-            // Everything complete!
-            const doneMsg = `¡Perfecto, ${customerName}! \n\nTu pedido *${orderCode}* está listo:\n Comprobante recibido\n Datos de envío guardados\n\nNuestro equipo va a revisar tu pago. Cuando esté confirmado, te avisaré por aquí.\n\nTe mantendré informado en cada paso:\n Pago confirmado\n Pedido armado/embalado\n Entregado a la agencia (con foto y código de seguimiento)\n\nCualquier consulta sobre tu pedido, escríbeme por aquí nomás. ¡Gracias por confiar en este gatito! `;
-            await sendWhatsAppMessage(fromPhone, doneMsg, WA_TOKEN);
-            await addToHistory(fromPhone, "user", userText, msgId);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              doneMsg,
-              `balatin-done-${Date.now()}`,
-            );
-            await recordKeniaUsage(fromPhone, {
-              balatinStep: "completed",
-              balatinDataBuffer: "",
-            });
-            await markAsRead(msgId, WA_TOKEN);
-            return NextResponse.json({ status: "balatin_completed" });
-          }
-        } catch (e) {
-          console.error(
-            "[Balatin Catalog Flow] Error checking data on confirm:",
-            e,
-          );
-        }
-      }
-
-      if (wantsParse) {
-        // Parse shipping data locally (no AI needed — saves tokens + more reliable)
-        const accumulatedData = (
-          (usage.balatinDataBuffer || "") +
-          "\n" +
-          userText
-        ).trim();
-
-          // ── Parser inteligente de datos de envío ──
-          const parsed = parseShippingData(accumulatedData);
-          const customerRut = parsed.rut;
-          let shippingAgency = parsed.agency;
-          const customerEmail = parsed.email;
-          let comuna = parsed.comuna;
-          let region = parsed.region;
-          let address = parsed.address;
-
-        // Save to order
-        try {
-          const { serverGetDocument, serverUpdateDocument } =
-            await import("@/lib/appwrite-server");
-          const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
-          const orderDoc: any = await serverGetDocument(
-            ORDERS_COLLECTION_ID,
-            orderId!,
-          );
-
-          const updates: Record<string, any> = {};
-          if (customerRut) updates.CUSTOMERRUT = customerRut;
-          if (address) updates.ADDRESS = address;
-          if (comuna) updates.COMUNA = comuna;
-          if (region) updates.REGION = region;
-          if (shippingAgency) updates.SHIPPINGAGENCY = shippingAgency;
-          if (customerEmail) updates.CUSTOMEREMAIL = customerEmail;
-
-          if (Object.keys(updates).length > 0) {
-            await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId!, updates);
-            console.log(
-              "[Balatin Data Parse] Saved shipping data locally:",
-              updates,
-            );
-          }
-
-          // Check what's still missing
-          const missingFields: string[] = [];
-          if (!customerRut && !orderDoc?.CUSTOMERRUT) missingFields.push("RUT");
-          if (!address && !orderDoc?.ADDRESS) missingFields.push("dirección");
-          if (!comuna && !orderDoc?.COMUNA) missingFields.push("comuna");
-          if (!region && !orderDoc?.REGION) missingFields.push("región");
-          if (!shippingAgency && !orderDoc?.SHIPPINGAGENCY)
-            missingFields.push("agencia de envío");
-
-          await addToHistory(fromPhone, "user", userText, msgId);
-
-          if (missingFields.length > 0) {
-            const missingMsg = `¡Casi! No pude identificar algunos datos:\n\n${missingFields.map((f) => `• ${f}`).join("\n")}\n\nMándamelos por favor. `;
-            await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              missingMsg,
-              `balatin-missing-${Date.now()}`,
-            );
-          } else {
-            // Show summary and ask for confirmation
-            const fmtRut = customerRut || orderDoc?.CUSTOMERRUT || "";
-            const fmtAddr = address || orderDoc?.ADDRESS || "";
-            const fmtComuna = comuna || orderDoc?.COMUNA || "";
-            const fmtRegion = region || orderDoc?.REGION || "";
-            const fmtAgency = shippingAgency || orderDoc?.SHIPPINGAGENCY || "";
-
-            const summaryMsg = `¡Excelente, ${customerName}! He recibido tus datos de envío.\n\nAquí tienes un resumen de la información que me entregaste para tu pedido ${orderCode}:\n\n• *RUT:* ${fmtRut}\n• *Nombre completo:* ${customerName}\n• *Dirección:* ${fmtAddr}\n• *Comuna:* ${fmtComuna}\n• *Región:* ${fmtRegion}\n• *Agencia de envío:* ${fmtAgency}\n\n¿Estos datos están correctos, ${customerName}? Responde *CORRECTO* para confirmar.`;
-            await sendWhatsAppMessage(fromPhone, summaryMsg, WA_TOKEN);
-            await addToHistory(
-              fromPhone,
-              "assistant",
-              summaryMsg,
-              `balatin-summary-${Date.now()}`,
-            );
-          }
-
-          await recordKeniaUsage(fromPhone, { balatinDataBuffer: "" });
-          await markAsRead(msgId, WA_TOKEN);
-          return NextResponse.json({ status: "balatin_data_parsed_locally" });
-        } catch (e) {
-          console.error(
-            "[Balatin Data Parse] Error saving shipping data locally:",
-            e,
-          );
-          // Fall through to AI as fallback
-          (usage as any)._balatinDataMode = true;
-          (usage as any)._balatinOrderId = orderId;
-          (usage as any)._balatinOrderCode = orderCode;
-          (usage as any)._balatinAccumulatedData = accumulatedData;
-          await recordKeniaUsage(fromPhone, { balatinDataBuffer: "" });
-        }
-      } else {
-        // Not "terminé" — accumulate the data without calling AI (save API tokens)
-        // Ignorar mensajes automaticos de WhatsApp (respuesta fuera de horario)
-        const isAutoReply =
-          /gracias por tu mensaje.*no podemos responder/i.test(userText);
-        if (isAutoReply) {
-          await markAsRead(msgId, WA_TOKEN);
-          return NextResponse.json({ status: "balatin_auto_reply_ignored" });
-        }
-
-        const currentBuffer = usage.balatinDataBuffer || "";
-        const newBuffer = currentBuffer
-          ? currentBuffer + "\n" + userText
-          : userText;
-        await recordKeniaUsage(fromPhone, { balatinDataBuffer: newBuffer });
-
-        // Auto-parse: si el buffer acumulado ya tiene suficientes datos (RUT +
-        // direccion o comuna + region), intentar parsear sin esperar TERMINÉ.
-        // Esto resuelve el caso donde el cliente manda todo junto pero no
-        // escribe "terminé".
-        const lowerBuf = newBuffer.toLowerCase();
-        const hasRut = /\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/.test(newBuffer);
-        const hasAddress = /\b(calle|direccion|direcci[oó]n|avenida|av\.?|pasaje|depto|departamento|n°|numero|n[uú]mero)\b/i.test(newBuffer) || /\b\w+\s+\d+\b/.test(newBuffer);
-        const hasComuna = /\b(comuna|ciudad)\b/i.test(newBuffer) || /\b(santiago|la serena|coquimbo|valpara[íi]so|vi[ñn]a|concepci[oó]n|puente alto|maip[uú]|providencia|las condes|florida|melipilla|talca|rancagua)\b/i.test(lowerBuf);
-        const hasRegion = /\b(regi[oó]n|metropolitana|valpara[íi]so|biob[íi]o|araucan[íi]a|o ?higgins|maule|[ñn]uble|los lagos|ays[eé]n|magallanes|antofagasta|atacama|coquimbo|tarapac[aá]|arica|los r[íi]os)\b/i.test(lowerBuf);
-        const hasAgency = /\b(starken|pullman|varmontt|bluexpress|blu express|cyc|tvp|cruz del sur|tramar|5 ?sur|mena|cacem|jt transportes|retiro)\b/i.test(lowerBuf);
-        const hasEmail = /[\w.+-]+@[\w-]+\.[\w.-]+/.test(newBuffer);
-
-        // Si tiene al menos 3 datos clave, intentar parsear automaticamente
-        const dataScore = [hasRut, hasAddress, hasComuna, hasRegion, hasAgency, hasEmail].filter(Boolean).length;
-        if (dataScore >= 3) {
-          // Simular que el cliente escribio TERMINÉ para disparar el parser
-          const fakeTerminéText = newBuffer + "\nTERMINÉ";
-          // Re-ejecutar la logica de parseo reutilizando el codigo de wantsParse
-          // Para no duplicar codigo, seteamos el buffer y llamamos recursivamente
-          // con el texto "TERMINÉ"
-          await recordKeniaUsage(fromPhone, { balatinDataBuffer: "" });
-
-          // Parsear directamente (mismo codigo de wantsParse arriba)
-          const accumulatedData = fakeTerminéText;
-          const parsed = parseShippingData(accumulatedData);
-          const customerRut = parsed.rut;
-          let shippingAgency = parsed.agency;
-          const customerEmail = parsed.email;
-          let comuna = parsed.comuna;
-          let region = parsed.region;
-          let address = parsed.address;
-
-          try {
-            const { serverGetDocument, serverUpdateDocument } = await import("@/lib/appwrite-server");
-            const { ORDERS_COLLECTION_ID } = await import("@/lib/appwrite-admin");
-            const orderDoc: any = await serverGetDocument(ORDERS_COLLECTION_ID, orderId!);
-
-            const updates: Record<string, any> = {};
-            if (customerRut) updates.CUSTOMERRUT = customerRut;
-            if (address) updates.ADDRESS = address;
-            if (comuna) updates.COMUNA = comuna;
-            if (region) updates.REGION = region;
-            if (shippingAgency) updates.SHIPPINGAGENCY = shippingAgency;
-            if (customerEmail) updates.CUSTOMEREMAIL = customerEmail;
-
-            if (Object.keys(updates).length > 0) {
-              await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId!, updates);
-            }
-
-            const missingFields: string[] = [];
-            if (!customerRut && !orderDoc?.CUSTOMERRUT) missingFields.push("RUT");
-            if (!address && !orderDoc?.ADDRESS) missingFields.push("direccion");
-            if (!comuna && !orderDoc?.COMUNA) missingFields.push("comuna");
-            if (!region && !orderDoc?.REGION) missingFields.push("region");
-            if (!shippingAgency && !orderDoc?.SHIPPINGAGENCY) missingFields.push("agencia de envio");
-
-            await addToHistory(fromPhone, "user", userText, msgId);
-
-            if (missingFields.length > 0) {
-              const missingMsg = `¡Casi! No pude identificar algunos datos:\n\n${missingFields.map((f) => `• ${f}`).join("\n")}\n\nMandamelos por favor.`;
-              await sendWhatsAppMessage(fromPhone, missingMsg, WA_TOKEN);
-              await addToHistory(fromPhone, "assistant", missingMsg, `balatin-missing-${Date.now()}`);
-            } else {
-              const fmtRut = customerRut || orderDoc?.CUSTOMERRUT || "";
-              const fmtAddr = address || orderDoc?.ADDRESS || "";
-              const fmtComuna = comuna || orderDoc?.COMUNA || "";
-              const fmtRegion = region || orderDoc?.REGION || "";
-              const fmtAgency = shippingAgency || orderDoc?.SHIPPINGAGENCY || "";
-
-              const summaryMsg = `¡Excelente, ${customerName}! He recibido tus datos de envio.\n\nAqui tienes un resumen para tu pedido ${orderCode}:\n\n• *RUT:* ${fmtRut}\n• *Nombre completo:* ${customerName}\n• *Direccion:* ${fmtAddr}\n• *Comuna:* ${fmtComuna}\n• *Region:* ${fmtRegion}\n• *Agencia de envio:* ${fmtAgency}\n\n¿Estos datos estan correctos, ${customerName}? Responde *CORRECTO* para confirmar.`;
-              await sendWhatsAppMessage(fromPhone, summaryMsg, WA_TOKEN);
-              await addToHistory(fromPhone, "assistant", summaryMsg, `balatin-summary-${Date.now()}`);
-            }
-
-            await markAsRead(msgId, WA_TOKEN);
-            return NextResponse.json({ status: "balatin_data_auto_parsed" });
-          } catch (e) {
-            console.error("[Balatin Auto-Parse] Error:", e);
-            // Fall through to normal ack
-          }
-        }
-
-        // Brief programmed acknowledgment (no AI)
-        const ackMsg = `¡Anotado! Sigue mandándome tus datos. Cuando termines, escribe *TERMINÉ*.`;
-        await sendWhatsAppMessage(fromPhone, ackMsg, WA_TOKEN);
-        await addToHistory(fromPhone, "user", userText, msgId);
-        await addToHistory(
-          fromPhone,
-          "assistant",
-          ackMsg,
-          `balatin-ack-${Date.now()}`,
-        );
-        await markAsRead(msgId, WA_TOKEN);
-        return NextResponse.json({ status: "balatin_data_buffered" });
+        return NextResponse.json({ status: "balatin_order_reminder" });
+      } catch (e) {
+        console.error("[Balatin Chat Handler] Error:", e);
       }
     }
 
@@ -1962,8 +1265,6 @@ export async function POST(req: NextRequest) {
     const userTextLower = userText.toLowerCase().trim();
 
     // Auto-link catalog orders: detect WA-XXXX code in message (legacy fallback)
-    // Note: The main Balatin catalog flow is handled above.
-    // This is a fallback for messages that contain a WA- code but weren't caught by the Balatin flow
     const catMatch = userText.match(/WA-\d{6,8}/i);
     if (catMatch && !usage.balatinOrderFlow) {
       try {
@@ -1991,12 +1292,14 @@ export async function POST(req: NextRequest) {
           }
           await markAsRead(msgId, WA_TOKEN);
 
-          // Respect night mode: don't say "verificando" at night
-          const { isNightNow } = await import("@/lib/night-mode");
-          const night = isNightNow();
-          const replyMsg = night
-            ? `¡Hola! 🐾 Recibí tu pedido *${catMatch[0]}*. Ya registré tu número. Como estamos fuera de horario de atención, lo dejamos listo para verificar a primera hora. ¿Me das tu *nombre completo* por favor?`
-            : `¡Hola! 🐾 Recibí tu pedido *${catMatch[0]}*. Ya registré tu número de WhatsApp. Estamos verificando la disponibilidad de los productos y te avisamos muy pronto. ✨`;
+          const orderTotal = Number(order?.TOTAL || order?.SUBTOTAL || 0);
+          const confirmLink = `${SITE_URL}/confirmar-pedido?code=${catMatch[0]}`;
+          const replyMsg = `¡Hola! 🐾 Recibí tu pedido *${catMatch[0]}*.\n\n` +
+            `💰 *Monto total:* $${orderTotal.toLocaleString("es-CL")}\n\n` +
+            `👉 *Completa tus datos de envío y sube tu comprobante aquí:*\n` +
+            `${confirmLink}\n\n` +
+            `¡Muchas gracias! ✨`;
+
           await sendWhatsAppMessage(fromPhone, replyMsg, WA_TOKEN);
           await addToHistory(fromPhone, "user", userText, msgId);
           await addToHistory(
