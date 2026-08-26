@@ -20,8 +20,6 @@ const FF = '"DM Sans",system-ui,sans-serif';
 function CarritoPageContent() {
   const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings, getEffectivePrice, clearCart } = useCart();
 
-  const belowMinimum = isBelowMinimumOrder(subtotal, MINIMUM_ORDER_CLP);
-
   const { user, isLoggedIn } = useAuth();
   const router = useRouter();
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
@@ -35,6 +33,14 @@ function CarritoPageContent() {
       .then(data => setVendors(Array.isArray(data?.vendors) ? data.vendors : []))
       .catch(() => setVendors([]));
   }, []);
+
+  const commonVendorId = (() => {
+    const ids = [...new Set(items.map(i => (i.product as any).VENDOR_ID || '__MAIN__'))];
+    return ids.length === 1 ? ids[0] : '__MAIN__';
+  })();
+  const vendorMinPurchase = commonVendorId !== '__MAIN__' ? (vendors.find(v => v.id === commonVendorId)?.minPurchaseAmount || 0) : 0;
+  const effectiveMinimum = commonVendorId !== '__MAIN__' && vendorMinPurchase > 0 ? vendorMinPurchase : MINIMUM_ORDER_CLP;
+  const belowMinimum = isBelowMinimumOrder(subtotal, effectiveMinimum);
 
   const getStoreMeta = (product: any) => {
     const vendorId = product?.VENDOR_ID || '';
@@ -396,7 +402,7 @@ function CarritoPageContent() {
 
                 {belowMinimum && (
                   <p style={{ margin: '0 0 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', lineHeight: 1.45 }}>
-                    ⚠ {minimumOrderMessage(subtotal, MINIMUM_ORDER_CLP)}
+                    ⚠ {minimumOrderMessage(subtotal, effectiveMinimum)}
                   </p>
                 )}
 
@@ -452,7 +458,7 @@ function CarritoPageContent() {
                   <span
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '14px 0', background: '#e5e7eb', color: '#9ca3af', textAlign: 'center', borderRadius: 12, fontSize: 15, fontWeight: 700, boxSizing: 'border-box', cursor: 'not-allowed' }}
                   >
-                    Mínimo {formatPrice(MINIMUM_ORDER_CLP)}
+                    Mínimo {formatPrice(effectiveMinimum)}
                   </span>
                 ) : (
                   (() => {

@@ -406,14 +406,22 @@ function getProducts() {
       seen.add(p.sku);
       // Filtro por tienda seleccionada
       if (selectedStore) {
-        const pVendor = p.VENDOR_ID || '';
+        const liveProduct = allProducts.find(function(live) {
+          return live && (live.sku === p.sku || live.id === p.id || live.name === p.name);
+        });
+        const pVendor = p.VENDOR_ID || (liveProduct && liveProduct.VENDOR_ID) || '';
         if (selectedStore === '__main__' && pVendor) return false;
         if (selectedStore !== '__main__' && pVendor !== selectedStore) return false;
       }
       return true;
     })
     .map(p => {
-      const merged = overrides[p.sku] ? { ...p, ...overrides[p.sku] } : p;
+      const liveProduct = allProducts.find(function(live) {
+        return live && (live.sku === p.sku || live.id === p.id || live.name === p.name);
+      });
+      const merged = overrides[p.sku] ? { ...p, ...overrides[p.sku] } : { ...p };
+      if (!merged.VENDOR_ID && liveProduct && liveProduct.VENDOR_ID) merged.VENDOR_ID = liveProduct.VENDOR_ID;
+      if (!merged.VENDOR_NAME && liveProduct && liveProduct.VENDOR_NAME) merged.VENDOR_NAME = liveProduct.VENDOR_NAME;
       if (!merged.image) {
         const rawImage = merged.IMAGEURL || merged.IMAGEURL2 || merged.IMAGEURL3 || '';
         if (rawImage) {
@@ -565,11 +573,57 @@ function setQty(sku, mode, value) {
 function cartTotal() {
   return cart.reduce((s, i) => s + i.qty * i.price, 0);
 }
+
+// Sincroniza el carrito persistido con el catálogo vivo. Los productos que ya
+// no existen o están agotados se eliminan para que el cliente pueda continuar.
+function syncCartWithLiveProducts() {
+  if (!Array.isArray(allProducts) || allProducts.length === 0 || cart.length === 0) return 0;
+  const productsBySku = {};
+  allProducts.forEach(function(p) { if (p && p.sku) productsBySku[String(p.sku)] = p; });
+  const previousLength = cart.length;
+  cart = cart.reduce(function(validItems, item) {
+    const product = productsBySku[String(item.sku)];
+    const stock = product && Number(product.stock);
+    if (!product || (Number.isFinite(stock) && stock <= 0)) return validItems;
+    const maxQty = stock < 99999 ? stock : 99999;
+    item.id = product.id || item.id || '';
+    item.image = product.image || '';
+    item.name = product.name || item.name || '';
+    item.price = getPrice(product);
+    item.vendorId = product.VENDOR_ID || item.vendorId || '';
+    item.qty = Math.min(Math.max(1, Number(item.qty) || 1), maxQty);
+    validItems.push(item);
+    return validItems;
+  }, []);
+  const removed = previousLength - cart.length;
+  if (removed > 0) {
+    saveCart();
+    showToast(removed === 1 ? 'Se quitó un producto agotado del carrito' : `${removed} productos agotados se quitaron del carrito`);
+  }
+  return removed;
+}
+
+async function refreshCartBeforeOpen() {
+  try {
+    const liveProducts = await fetchAppwriteProducts();
+    if (liveProducts.length > 0) {
+      allProducts = liveProducts;
+      await loadFirestoreData();
+      syncCartWithLiveProducts();
+      renderCart();
+    }
+  } catch (e) {
+    console.warn('No se pudo actualizar el carrito con el catálogo vivo', e);
+  }
+}
+
 function openCart() {
   $('#cartDrawer').classList.remove('hidden');
   $('#bottomNav').style.display = 'none';
   document.body.style.overflow = 'hidden';
   renderCart();
+  // Actualizar productos cada vez que el cliente abre el carrito.
+  refreshCartBeforeOpen();
 }
 function closeCart() {
   $('#cartDrawer').classList.add('hidden');
@@ -597,6 +651,26 @@ function cartGroupTotal(group) {
   return group.items.reduce(function(total, row) { return total + row.item.qty * row.item.price; }, 0);
 }
 
+function cartGroupMinimum(group) {
+  if (!group || group.id === '__main__') return getMinPurchase();
+  var vendor = _vendors.find(function(v) { return v.id === group.id; });
+  return vendor ? (vendor.minPurchaseAmount || 0) : 0;
+}
+
+function vendorBadge(product) {
+  var liveProduct = product && allProducts.find(function(p) {
+    return p && (p.sku === product.sku || p.id === product.id || p.name === product.name);
+  });
+  var vendorId = (product && product.VENDOR_ID) || (liveProduct && liveProduct.VENDOR_ID);
+  var rawName = (product && product.VENDOR_NAME) || (liveProduct && liveProduct.VENDOR_NAME) || '';
+  var vendor = vendorId ? _vendors.find(function(v) { return v.id === vendorId; }) : null;
+  var isMain = !vendorId || rawName.toLowerCase() === 'don balato ivan';
+  var name = (vendor && vendor.name) || rawName || 'Don Balato Ivan';
+  var color = isMain ? '#d97706' : (vendor ? vendor.color : '#7c3aed');
+  var icon = isMain ? '🐱' : '🏪';
+  return '<div class="inline-flex items-center max-w-full px-2 py-0.5 rounded-full text-[10px] font-extrabold truncate" style="background:' + color + '18;color:' + color + ';border:1px solid ' + color + '45">' + icon + ' ' + escapeHtml(name) + '</div>';
+}
+
 function renderCartGroupHeader(group) {
   const main = group.id === '__main__';
   const recipient = main ? 'main' : 'vendor';
@@ -622,7 +696,7 @@ function startCartGroupCheckout(groupId, recipient) {
   var group = getCartGroups().find(function(g) { return g.id === groupId; });
   if (!group) { showToast('No se encontró el grupo del carrito'); return; }
   var groupTotal = cartGroupTotal(group);
-  var vendorMin = (group.id !== '__main__' && _vendors.find(function(v) { return v.id === group.id; })) ? (_vendors.find(function(v) { return v.id === group.id; }).minPurchaseAmount || 0) : getMinPurchase();
+  var vendorMin = cartGroupMinimum(group);
   if (groupTotal < vendorMin) {
     showToast('Compra mínima de ' + group.name + ': ' + formatPrice(vendorMin));
     return;
@@ -756,18 +830,12 @@ function renderCart() {
   }
   // Verificar cada grupo contra su propio mínimo
   const unmetGroups = groups.filter(function(g) {
-    const gTotal = cartGroupTotal(g);
-    const gMin = (g.id !== '__main__' && _vendors.find(function(v) { return v.id === g.id; }))
-      ? (_vendors.find(function(v) { return v.id === g.id; }).minPurchaseAmount || 0)
-      : getMinPurchase();
-    return gTotal < gMin;
+    return cartGroupTotal(g) < cartGroupMinimum(g);
   });
   if (unmetGroups.length > 0) {
     const msgs = unmetGroups.map(function(g) {
       const gTotal = cartGroupTotal(g);
-      const gMin = (g.id !== '__main__' && _vendors.find(function(v) { return v.id === g.id; }))
-        ? (_vendors.find(function(v) { return v.id === g.id; }).minPurchaseAmount || 0)
-        : getMinPurchase();
+      const gMin = cartGroupMinimum(g);
       const missing = gMin - gTotal;
       return '<div>⚠️ ' + escapeHtml(g.name) + ': faltan <strong class="underline">' + formatPrice(missing) + '</strong></div>';
     });
@@ -797,12 +865,9 @@ function sendWhatsApp() {
   if (cart.length === 0) { showToast('Carrito vacio'); return; }
   // Validar mínimo por grupo
   const groups = getCartGroups();
-  const unmet = groups.filter(function(g) {
-    const gTotal = cartGroupTotal(g);
-    const gMin = (g.id !== '__main__' && _vendors.find(function(v) { return v.id === g.id; }))
-      ? (_vendors.find(function(v) { return v.id === g.id; }).minPurchaseAmount || 0)
-      : getMinPurchase();
-    return gTotal < gMin;
+  const targetGroups = selectedCartGroupId ? groups.filter(function(g) { return g.id === selectedCartGroupId; }) : groups;
+  const unmet = targetGroups.filter(function(g) {
+    return cartGroupTotal(g) < cartGroupMinimum(g);
   });
   if (unmet.length > 0) {
     showToast('Falta alcanzar el mínimo de compra de: ' + unmet.map(function(g) { return g.name; }).join(', '));
@@ -2740,6 +2805,7 @@ function renderHome() {
               </div>
               <div class="p-3">
                 <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-1 mb-1.5">${escapeHtml(p.name)}</div>
+                ${vendorBadge(p)}
                 <div class="flex items-center justify-between">
                   <span class="price-chip text-base">${formatPrice(getPrice(p))}</span>
                   <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
@@ -2769,6 +2835,7 @@ function renderHome() {
               </div>
               <div class="p-3">
                 <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-1 mb-1.5">${escapeHtml(p.name)}</div>
+                ${vendorBadge(p)}
                 <div class="flex items-center justify-between">
                   <span class="price-chip text-base text-emerald-600 font-extrabold">${formatPrice(getPrice(p))}</span>
                   <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
@@ -2795,6 +2862,7 @@ function renderHome() {
               </div>
               <div class="p-3">
                 <div class="text-xs text-blue-700 font-semibold leading-tight line-clamp-2 mb-1.5 min-h-[2rem]">${escapeHtml(p.name)}</div>
+                ${vendorBadge(p)}
                 <div class="flex items-center justify-between">
                   <span class="price-chip text-base">${formatPrice(getPrice(p))}</span>
                   <button onclick="event.stopPropagation(); addToCart('${escapeHtml(p.sku)}')" class="fab-add w-8 h-8 rounded-full flex items-center justify-center flex-none" aria-label="Agregar">
@@ -3163,6 +3231,7 @@ function renderProductGrid(products, preSorted = false) {
         </div>
         <div class="p-3 flex-1 flex flex-col">
           <div class="font-semibold text-blue-800 text-sm leading-tight line-clamp-2 min-h-[2.25rem]">${escapeHtml(p.name)}</div>
+          ${vendorBadge(p)}
           ${p.subcategory ? `<div class="text-[10px] text-blue-400 mt-1 uppercase tracking-wide font-semibold">${escapeHtml(p.subcategory)}</div>` : '<div class="mt-1"></div>'}
           <div class="mt-2 flex items-end justify-between gap-1">
             <div>
@@ -4634,6 +4703,8 @@ async function fetchAppwriteProducts() {
       DESCRIPTION: p.DESCRIPTION || '',
       PACKQTY: p.PACKQTY || null,
       VENDOR_ID: p.VENDOR_ID || '',
+      VENDOR_NAME: p.VENDOR_NAME || (p.VENDOR_ID ? '' : 'Don Balato Ivan'),
+      VENDOR_IS_MAIN: p.VENDOR_IS_MAIN !== false && !p.VENDOR_ID,
       _createdAt: p.$createdAt || 0
     };
   });
@@ -4662,6 +4733,7 @@ async function init() {
     }
   });
   saveCart();
+  syncCartWithLiveProducts();
 
   const minPurchEl = document.getElementById('minPurchaseDisplay');
   if (minPurchEl) minPurchEl.textContent = `Compra mínima • $${getMinPurchase().toLocaleString('es-CL')}`;

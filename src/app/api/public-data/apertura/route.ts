@@ -63,7 +63,7 @@ export async function GET() {
     const data = await getCachedAperturaSettings();
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
+        'Cache-Control': 'public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400'
       }
     });
   } catch (error: any) {

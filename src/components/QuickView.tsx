@@ -106,7 +106,7 @@ export default function QuickView({ product, onClose }: Props) {
               {/* Main image */}
               <div style={{ position: 'relative', flex: 1, minHeight: 360 }}>
                 {images[imgIdx] ? (
-                  <Image src={images[imgIdx]} alt={productName} fill style={{ objectFit: 'contain', padding: 20 }} sizes="400px" unoptimized />
+                  <Image src={images[imgIdx]} alt={productName} fill style={{ objectFit: 'contain', padding: 20 }} sizes="400px" />
                 ) : (
                   <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72 }}>📦</span>
                 )}
@@ -138,7 +138,7 @@ export default function QuickView({ product, onClose }: Props) {
                     <div key={i} className={`qv-thumb ${i === imgIdx ? 'qv-thumb-active' : ''}`}
                       onClick={() => setImgIdx(i)}
                       style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', position: 'relative', background: '#fff' }}>
-                      <Image src={img} alt="" fill style={{ objectFit: 'contain', padding: 4 }} sizes="48px" unoptimized />
+                      <Image src={img} alt="" fill style={{ objectFit: 'contain', padding: 4 }} sizes="48px" />
                     </div>
                   ))}
                 </div>

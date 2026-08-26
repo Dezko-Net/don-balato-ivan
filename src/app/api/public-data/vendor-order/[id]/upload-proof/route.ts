@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { serverGetDocument, serverUpdateDocument, serverUploadFile, getServerFileUrl } from '@/lib/appwrite-server';
 import { VENDOR_ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
+import { compressImageKeepFormat } from '@/lib/image-compression';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!(file instanceof File)) return NextResponse.json({ error: 'Falta el archivo' }, { status: 400 });
     if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: 'El archivo supera los 10MB' }, { status: 400 });
 
-    const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, file, file.name);
+    const originalBuffer = Buffer.from(await file.arrayBuffer());
+    const { buffer: compressedBuffer, format } = await compressImageKeepFormat(originalBuffer);
+    const originalName = file.name || 'proof.jpg';
+    const baseName = originalName.replace(/\.[^.]+$/, '');
+    const fileName = `${baseName}.${format}`;
+    const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, compressedBuffer, fileName);
     const proofUrl = getServerFileUrl(MEDIA_BUCKET_ID, uploaded.$id);
 
     const shouldChangeStatus = ['pending', 'pending_stock', 'processing', 'paid'].includes(order.STATUS);

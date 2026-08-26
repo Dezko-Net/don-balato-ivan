@@ -514,7 +514,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,#fdf2f8,#fce7f3,#fdf2f8)', backgroundSize: '200% 100%', animation: 'skeletonShimmer 1.5s ease infinite' }} />
         )}
         {categoryBg
-          ? <Image src={categoryBg} alt={categoryName} fill unoptimized style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
+          ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
           : null}
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, transparent 0%, transparent 50%, #f5f5f5 100%)` }} />
         <style>{`@keyframes skeletonShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
@@ -533,7 +533,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               backdropFilter: 'blur(8px)',
             }}>
               {categoryIcon && (
-                <Image src={categoryIcon} alt={categoryName} width={44} height={44} unoptimized style={{ objectFit: 'contain' }} />
+                <Image src={categoryIcon} alt={categoryName} width={44} height={44} style={{ objectFit: 'contain' }} />
               )}
               <div>
                 <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT_DARK }}>{categoryName}</p>
@@ -572,7 +572,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                       borderRadius: 8, background: '#fff', cursor: 'pointer', padding: 0, overflow: 'hidden',
                       transition: 'all .15s', boxShadow: selectedImg === i ? `0 0 0 1px ${ORANGE_PRIMARY}` : 'none',
                     }}>
-                    <Image src={img} alt="" width={56} height={56} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
+                    <Image src={img} alt="" width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
                   </button>
                 ))}
               </div>

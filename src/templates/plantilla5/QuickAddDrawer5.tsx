@@ -202,7 +202,7 @@ export default function QuickAddDrawer5({ product, onClose }: Props) {
                   <div className="swiper-wrapper media-gallery__carousel-wrapper" style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '1rem' }}>
                     {images.map((img, i) => (
                       <div key={i} className="product-media media media-zoom-reveal swiper-slide media-gallery__item loaded is-revealed" style={{ flex: '0 0 60%', scrollSnapAlign: 'start', borderRadius: '2rem', overflow: 'hidden', position: 'relative', aspectRatio: '0.75' }}>
-                        <Image src={img} alt={productName} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 400px" unoptimized />
+                        <Image src={img} alt={productName} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 400px" />
                       </div>
                     ))}
                     {images.length === 0 && (

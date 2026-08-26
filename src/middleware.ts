@@ -50,6 +50,19 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // 🔒 Bloquear /preview/plantilla para todo el mundo excepto admin autenticado.
+  // Las plantillas cargan assets pesados (videos, PNGs) que consumen bandwidth
+  // de Vercel. Sin esto, cualquiera puede entrar a /preview/plantilla/12 y
+  // consumir 150MB por visita. Solo admin/vendor necesita ver previews.
+  if (pathname.startsWith('/preview/plantilla')) {
+    const allCookies = request.cookies.getAll();
+    const hasAdminSession = allCookies.some(c => c.name.startsWith('a_session_') || c.name === 'cookieFallback');
+    const hasVendorSession = request.cookies.get('vendor_session')?.value;
+    if (!hasAdminSession && !hasVendorSession) {
+      return new NextResponse('Acceso denegado. Se requiere autenticación de administrador.', { status: 403 });
+    }
+  }
+
   // CORS para sync-firebase-products (catálogo Firebase → Appwrite)
   if (pathname === '/api/admin/sync-firebase-products') {
     if (request.method === 'OPTIONS') {

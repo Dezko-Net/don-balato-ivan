@@ -245,7 +245,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,#e5e7eb,#d1d5db,#e5e7eb)', backgroundSize: '200% 100%', animation: 'skeletonShimmer 1.5s ease infinite' }} />
         )}
         {categoryBg
-          ? <Image src={categoryBg} alt={categoryName} fill unoptimized style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
+          ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
           : null}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 50%, rgba(235,235,235,0.95) 100%)' }} />
         <style>{`@keyframes skeletonShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -310,7 +310,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
             boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
           }}>
             {categoryIcon && (
-              <Image src={categoryIcon} alt={categoryName} width={44} height={44} unoptimized style={{ objectFit: 'contain' }} />
+              <Image src={categoryIcon} alt={categoryName} width={44} height={44} style={{ objectFit: 'contain' }} />
             )}
             <div>
               <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#333' }}>{categoryName}</p>
@@ -350,7 +350,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
                     borderRadius: 4, background: '#f9f9f9', cursor: 'pointer', padding: 0, overflow: 'hidden',
                     transition: 'border-color .15s',
                   }}>
-                    <Image src={img} alt="" width={76} height={76} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }} />
+                    <Image src={img} alt="" width={76} height={76} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }} />
                   </button>
                 ))}
               </div>
@@ -630,7 +630,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = 'none')}
                   >
                     <div style={{ position: 'relative', height: 148, background: '#f9f9f9' }}>
-                      {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="object-contain p-2" unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>📦</span>}
+                      {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="object-contain p-2" /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>📦</span>}
                       {rhasDisc && rPricing.fromApertura && (
                         <span style={{ position: 'absolute', top: 6, left: 6, zIndex: 2 }}>
                           <AperturaDiscountBadge percent={rdisc} size="sm" />

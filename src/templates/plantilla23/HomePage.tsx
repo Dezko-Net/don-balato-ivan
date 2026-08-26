@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PLANTILLA 23 â€” Shopify Theme Capturado por FOLLA v2
    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -6274,7 +6274,7 @@ export default function HomePage23() {
                         )}
                         <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => window.location.href = `/productos/${p.$id}`}>
                           {getProductImageUrl(p) ? (
-                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
+                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" />
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#fce7f3' }}>ðŸ›ï¸</div>
                           )}

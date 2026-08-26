@@ -3,22 +3,23 @@
 import { useEffect } from 'react';
 
 const CACHE_RULES: Record<string, number> = {
-  '/api/public-data/products': 300000,       // 5 minutes
-  '/api/public-data/catalog': 600000,        // 10 minutes
-  '/api/agencies': 600000,                   // 10 minutes
-  '/api/public-data/hotspots': 300000,       // 5 minutes
-  '/api/public-data/home': 300000,           // 5 minutes
-  '/api/public-data/subcategories': 600000,  // 10 minutes
-  '/api/public-data/product-detail': 120000, // 2 minutes
-  '/api/public-data/apertura': 600000,       // 10 minutes
-  '/api/public-data/combos': 600000,         // 10 minutes
+  '/api/public-data/products': 600000,       // 10 minutes
+  '/api/public-data/catalog': 1800000,       // 30 minutes
+  '/api/agencies': 1800000,                  // 30 minutes
+  '/api/public-data/hotspots': 600000,       // 10 minutes
+  '/api/public-data/home': 600000,           // 10 minutes
+  '/api/public-data/subcategories': 1800000, // 30 minutes
+  '/api/public-data/product-detail': 300000, // 5 minutes
+  '/api/public-data/apertura': 1800000,      // 30 minutes
+  '/api/public-data/combos': 1800000,        // 30 minutes
   // Endpoints por usuario: la key del caché es la URL completa (incluye userId),
   // así que no hay riesgo de servirle a un usuario los datos de otro.
   '/api/public-data/my-orders-status': 86_400_000, // 24h — el evento 'orders-updated' refresca si hay cambio real
   '/api/public-data/canje-info': 600000,     // 10 minutes
-  '/api/store-settings': 600000,             // 10 minutes
-  '/api/ofertas': 300000,                    // 5 minutes
-  '/api/theme-config': 300000,               // 5 minutes
+  '/api/store-settings': 1800000,            // 30 minutes
+  '/api/ofertas': 600000,                    // 10 minutes
+  '/api/theme-config': 600000,               // 10 minutes
+  '/api/template': 1800000,                  // 30 minutes — las plantillas casi nunca cambian
 };
 
 export default function ClientFetchCache() {

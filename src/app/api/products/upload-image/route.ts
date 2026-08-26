@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverUploadFile, getServerFileUrl, serverUpdateDocument, serverListDocuments, cleanStorageUrl } from '@/lib/appwrite-server';
 import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { compressImageKeepFormat } from '@/lib/image-compression';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,9 +15,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'No se envió archivo' }, { status: 400 });
     }
 
-    // Upload to Appwrite Storage
-    const arrayBuffer = await file.arrayBuffer();
-    const uploaded = await serverUploadFile('media', arrayBuffer, file.name || 'upload.jpg');
+    // Comprimir imagen antes de subir
+    const originalBuffer = Buffer.from(await file.arrayBuffer());
+    const { buffer: compressedBuffer, format } = await compressImageKeepFormat(originalBuffer);
+
+    // Nombre del archivo con extensión correcta
+    const originalName = file.name || 'upload.jpg';
+    const baseName = originalName.replace(/\.[^.]+$/, '');
+    const fileName = `${baseName}.${format}`;
+
+    // Upload to Storage (imagen comprimida)
+    const uploaded = await serverUploadFile('media', compressedBuffer, fileName);
     const imageUrl = cleanStorageUrl(getServerFileUrl('media', uploaded.$id));
 
     // If productName or productId provided, update the product
@@ -50,11 +59,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const originalSizeKB = Math.round(originalBuffer.length / 1024);
+    const compressedSizeKB = Math.round(compressedBuffer.length / 1024);
+    const savings = Math.round((1 - compressedBuffer.length / originalBuffer.length) * 100);
+
     return NextResponse.json({
       success: true,
       imageUrl,
       fileId: uploaded.$id,
       message: 'Imagen subida exitosamente',
+      compression: {
+        originalSize: `${originalSizeKB} KB`,
+        compressedSize: `${compressedSizeKB} KB`,
+        savings: `${savings}%`,
+        format,
+      },
     });
   } catch (error: any) {
     console.error('Error uploading image:', error);

@@ -76,6 +76,7 @@ export const getCachedAllProducts = unstable_cache(
     const normalized = allProducts.map(p => {
       const np = normalizeProductImages(p as any) as any;
       if (p.VENDOR_ID && vendorNames[p.VENDOR_ID]) {
+        np.VENDOR_ID = p.VENDOR_ID;
         np.VENDOR_NAME = vendorNames[p.VENDOR_ID];
         np.VENDOR_IS_MAIN = false;
       } else {

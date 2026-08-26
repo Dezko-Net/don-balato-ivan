@@ -35,22 +35,22 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // API routes - no caché de navegador pero sí CDN (s-maxage)
+        // API routes - caché de navegador largo + CDN largo
         source: '/api/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+            value: 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
           },
         ],
       },
       {
-        // Páginas HTML - caché de navegador corto + CDN largo
+        // Páginas HTML - caché de navegador largo + CDN largo
         source: '/((?!_next|api|favicon.ico).*)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
+            value: 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400',
           },
         ],
       },

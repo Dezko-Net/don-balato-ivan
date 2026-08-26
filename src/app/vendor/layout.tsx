@@ -259,13 +259,13 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
           {/* Logo desktop */}
           <div className="hidden lg:block sf-logo-animate" style={{ width: 200, height: 48, flexShrink: 0, position: 'relative', alignSelf: 'flex-end', marginBottom: 0, marginLeft: 'auto' }}>
             <Link href="/vendor/products" style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-              <Image src={LOGO_URL} alt="Yaxsel" fill style={{ objectFit: 'contain', objectPosition: 'left bottom' }} unoptimized />
+              <Image src={LOGO_URL} alt="Yaxsel" fill style={{ objectFit: 'contain', objectPosition: 'left bottom' }} />
             </Link>
           </div>
 
           {/* Logo mobile */}
           <div className="lg:hidden" style={{ width: 120, height: 36, flexShrink: 0, position: 'relative' }}>
-            <Image src={LOGO_URL} alt="Yaxsel" fill style={{ objectFit: 'contain', objectPosition: 'left center' }} unoptimized />
+            <Image src={LOGO_URL} alt="Yaxsel" fill style={{ objectFit: 'contain', objectPosition: 'left center' }} />
           </div>
 
           {/* Spacer */}

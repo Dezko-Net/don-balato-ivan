@@ -152,7 +152,11 @@ function CheckoutInner() {
   const totalDiscount = discountParam + couponDiscount;
   const total = Math.max(0, subtotal - totalDiscount);
   const [vendorMinPurchase, setVendorMinPurchase] = useState(0);
-  const effectiveMinimum = vendorFilter && vendorFilter !== '__MAIN__' && vendorMinPurchase > 0 ? vendorMinPurchase : MINIMUM_ORDER_CLP;
+  const commonVendorId = vendorFilter || (() => {
+    const ids = [...new Set(items.map(i => (i.product as any).VENDOR_ID || '__MAIN__'))];
+    return ids.length === 1 ? ids[0] : '__MAIN__';
+  })();
+  const effectiveMinimum = commonVendorId !== '__MAIN__' && vendorMinPurchase > 0 ? vendorMinPurchase : MINIMUM_ORDER_CLP;
   const belowMinimum = isBelowMinimumOrder(total, effectiveMinimum);
 
   useEffect(() => {
@@ -181,18 +185,18 @@ function CheckoutInner() {
   }, []);
 
   useEffect(() => {
-    if (!vendorFilter || vendorFilter === '__MAIN__') { setVendorMinPurchase(0); return; }
+    if (commonVendorId === '__MAIN__') { setVendorMinPurchase(0); return; }
     (async () => {
       try {
         const res = await fetch('/api/public-data/vendors');
         const data = await res.json();
-        const v = data.vendors?.find((x: any) => x.id === vendorFilter);
+        const v = data.vendors?.find((x: any) => x.id === commonVendorId);
         setVendorMinPurchase(v?.minPurchaseAmount || 0);
       } catch {
         setVendorMinPurchase(0);
       }
     })();
-  }, [vendorFilter]);
+  }, [commonVendorId]);
 
   // Fetch public coupons (using server SDK with API key to bypass read permissions)
   useEffect(() => {
@@ -1843,8 +1847,8 @@ function CheckoutInner() {
         {/* Modal de Selección de Agencia */}
         {showAgencyModal && typeof document !== 'undefined' && createPortal(
           <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
-            <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
+            <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+              <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative', overflowY: 'auto' }}>
                 <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(37,99,235,0.2)` }}>
                   <Truck size={32} color={PINK} strokeWidth={2.5} />
                 </div>
@@ -1855,7 +1859,7 @@ function CheckoutInner() {
                 <div style={{ margin: '0 0 20px', padding: '10px 14px', borderRadius: 12, background: '#fff3e0', border: '1px solid #ffe0b2', fontSize: 12, color: '#e65c00', fontFamily: FF, fontWeight: 600, lineHeight: 1.5, textAlign: 'center' }}>
                   📦 El envío se paga contraentrega al recibir tu pedido
                 </div>
-                <div className="ck-modal-agency-grid">
+                <div className="ck-modal-agency-grid" style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 6 }}>
                   {agencies.map(a => (
                     <button
                       key={a.name}

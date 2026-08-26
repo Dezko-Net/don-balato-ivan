@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverUploadFile, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { ORDER_BOX_PHOTOS_BUCKET_ID } from '@/lib/appwrite';
+import { ORDER_BOX_PHOTOS_BUCKET_ID } from '@/lib/appwrite-admin';
 import { revalidateTag } from 'next/cache';
+import { compressImageKeepFormat } from '@/lib/image-compression';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,10 +63,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El bulto no está dentro de la cantidad configurada' }, { status: 400 });
     }
 
-    // Subir archivo al bucket
-    const extension = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5) || 'jpg';
-    const fileName = `bulto_${orderId}_${bultoNum}_${Date.now()}.${extension}`;
-    const uploaded = await serverUploadFile(ORDER_BOX_PHOTOS_BUCKET_ID, file, fileName);
+    // Subir archivo al bucket (comprimido)
+    const originalBuffer = Buffer.from(await file.arrayBuffer());
+    const { buffer: compressedBuffer, format } = await compressImageKeepFormat(originalBuffer);
+    const fileName = `bulto_${orderId}_${bultoNum}_${Date.now()}.${format}`;
+    const uploaded = await serverUploadFile(ORDER_BOX_PHOTOS_BUCKET_ID, compressedBuffer, fileName);
     const fileUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1'}/storage/buckets/${ORDER_BOX_PHOTOS_BUCKET_ID}/files/${uploaded.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'donbalatoivan'}`;
 
     let boxPhotos = parseBoxPhotos(order.BOXPHOTOS);

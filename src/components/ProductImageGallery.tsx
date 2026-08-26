@@ -42,7 +42,7 @@ export default function ProductImageGallery({ product, alt, onImageClick, sizes 
         style={{ position: 'relative', aspectRatio: '1 / 1', width: '100%', cursor: onImageClick ? 'pointer' : 'default', background: '#fff', overflow: 'hidden' }}
       >
         {activeImage ? (
-          <Image src={activeImage} alt={productAlt} fill sizes={sizes} unoptimized style={{ objectFit: 'contain', backgroundColor: '#fff' }} />
+          <Image src={activeImage} alt={productAlt} fill sizes={sizes} style={{ objectFit: 'contain', backgroundColor: '#fff' }} />
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: compact ? 36 : 48, color: '#facc15' }}>📦</div>
         )}
@@ -62,7 +62,7 @@ export default function ProductImageGallery({ product, alt, onImageClick, sizes 
               }}
               style={{ width: compact ? 21 : 34, height: compact ? 21 : 34, padding: 2, borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `${index === activeIndex ? 2 : 1}px solid ${index === activeIndex ? '#eab308' : '#e5e7eb'}`, background: '#fff', boxShadow: index === activeIndex ? '0 0 0 2px rgba(234,179,8,0.14)' : 'none', opacity: index === activeIndex ? 1 : 0.78, transition: 'all 0.18s ease' }}
             >
-              <Image src={image} alt="" width={compact ? 17 : 30} height={compact ? 17 : 30} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%', display: 'block', background: '#fff' }} />
+              <Image src={image} alt="" width={compact ? 17 : 30} height={compact ? 17 : 30} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%', display: 'block', background: '#fff' }} />
             </button>
           ))}
         </div>
@@ -95,7 +95,7 @@ export function ProductThumbnails({ images, activeIndex, onIndexChange, compact 
           }}
           style={{ width: compact ? 20 : 28, height: compact ? 20 : 28, padding: 2, borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `${index === activeIndex ? 2 : 1}px solid ${index === activeIndex ? '#3b82f6' : '#e5e7eb'}`, background: '#fff', opacity: index === activeIndex ? 1 : 0.6, transition: 'all 0.18s ease' }}
         >
-          <Image src={image} alt="" width={compact ? 16 : 24} height={compact ? 16 : 24} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%', display: 'block' }} />
+          <Image src={image} alt="" width={compact ? 16 : 24} height={compact ? 16 : 24} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%', display: 'block' }} />
         </button>
       ))}
     </div>

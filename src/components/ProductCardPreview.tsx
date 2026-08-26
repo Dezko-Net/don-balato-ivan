@@ -122,7 +122,7 @@ export default function ProductCardPreview({ product, onClose, isPackMode }: Pro
           }}
         >
           {getProductImageUrl(product) ? (
-            <Image src={getProductImageUrl(product)} alt={product.NAME} fill style={{ objectFit: 'contain' }} sizes="100vw" priority unoptimized />
+            <Image src={getProductImageUrl(product)} alt={product.NAME} fill style={{ objectFit: 'contain' }} sizes="100vw" priority />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 64 }}>📦</div>
           )}

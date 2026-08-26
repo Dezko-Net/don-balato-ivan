@@ -66,7 +66,7 @@ export default function RecentlyViewed({ excludeId }: { excludeId?: string }) {
             >
               <div style={{ position: 'relative', width: '100%', height: 140, background: '#f9f9f9' }}>
                 {p.IMAGEURL ? (
-                  <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 8 }} sizes="160px" unoptimized />
+                  <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 8 }} sizes="160px" />
                 ) : (
                   <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>📦</span>
                 )}

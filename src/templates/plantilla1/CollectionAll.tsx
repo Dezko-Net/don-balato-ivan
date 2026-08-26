@@ -703,7 +703,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     ) : null}
                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
                       {getProductImageUrl(p) ? (
-                        <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
+                        <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#eed9c4' }}>📦</div>
                       )}
@@ -778,7 +778,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     )}
                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
                       {getProductImageUrl(p) ? (
-                        <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" unoptimized />
+                        <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#e0e7ff' }}>🛍️</div>
                       )}

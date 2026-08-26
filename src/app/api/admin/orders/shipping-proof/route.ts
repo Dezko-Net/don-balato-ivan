@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { serverUpdateDocument, serverUploadFile, getPublicFileUrl } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
+import { MEDIA_BUCKET_ID } from '@/lib/appwrite-admin';
+import { compressImageKeepFormat } from '@/lib/image-compression';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +22,12 @@ export async function POST(request: NextRequest) {
 
     // Upload shipping proof photo
     if (file) {
-      const arrayBuffer = await file.arrayBuffer();
-      const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, arrayBuffer, file.name);
+      const originalBuffer = Buffer.from(await file.arrayBuffer());
+      const { buffer: compressedBuffer, format } = await compressImageKeepFormat(originalBuffer);
+      const originalName = file.name || 'shipping-proof.jpg';
+      const baseName = originalName.replace(/\.[^.]+$/, '');
+      const fileName = `${baseName}.${format}`;
+      const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, compressedBuffer, fileName);
       const fileId = (uploaded as any).$id;
       const fileUrl = getPublicFileUrl(MEDIA_BUCKET_ID, fileId);
       updates.SHIPPINGPROOFURL = fileUrl;
