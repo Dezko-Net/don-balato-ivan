@@ -156,6 +156,14 @@ function OrdersContent() {
   const [searchPage, setSearchPage] = useState(1);
   const SEARCH_PAGE_SIZE = 50;
 
+  // Lookup de orden por id que funciona tanto en modo paginación normal
+  // (orders = página actual del servidor) como en modo búsqueda (allOrders).
+  // Antes todos los modales/drawer buscaban solo en `orders`, por lo que en
+  // modo búsqueda los pedidos que no estaban en la página actual del servidor
+  // no abrían (el .find() retornaba null y el modal retornaba null).
+  const findOrderById = (id: string) =>
+    orders.find(o => o.$id === id) || allOrders.find((o: any) => o.$id === id);
+
   const fetchAllOrders = useCallback(async (force = false): Promise<any[]> => {
     if (!force) {
       try {
@@ -513,7 +521,7 @@ function OrdersContent() {
   const updateStatus = async (orderId: string, newStatus: string) => {
     // Client-side validation: cannot set to "delivered" without shipping proof or tracking
     if (newStatus === 'delivered') {
-      const orderBefore = orders.find(o => o.$id === orderId);
+      const orderBefore = findOrderById(orderId);
       const hasShippingProof = !!(orderBefore as any)?.SHIPPINGPROOFURL;
       const hasTrackingNumber = !!(orderBefore as any)?.TRACKINGNUMBER;
       if (!hasShippingProof && !hasTrackingNumber) {
@@ -522,9 +530,10 @@ function OrdersContent() {
       }
     }
     setUpdatingId(orderId);
-    const orderBefore = orders.find(o => o.$id === orderId);
+    const orderBefore = findOrderById(orderId);
     const prevStatus = orderBefore?.STATUS;
     setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: newStatus as OrderStatus } : o));
+    setAllOrders(prev => prev.map((o: any) => o.$id === orderId ? { ...o, STATUS: newStatus } : o));
     try {
       const res = await fetch('/api/admin/orders/update-status', {
         method: 'POST',
@@ -542,7 +551,10 @@ function OrdersContent() {
         await notifyOrderStatusChange(orderBefore, prevStatus, newStatus).catch(() => {});
       }
     } catch (e: any) {
-      if (prevStatus) setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: prevStatus as OrderStatus } : o));
+      if (prevStatus) {
+        setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: prevStatus as OrderStatus } : o));
+        setAllOrders(prev => prev.map((o: any) => o.$id === orderId ? { ...o, STATUS: prevStatus } : o));
+      }
       alert('Error: ' + e.message);
     }
     finally { setUpdatingId(null); }
@@ -1585,7 +1597,7 @@ function OrdersContent() {
 
       {/* WhatsApp Shortcuts Modal — send pre-written messages to customer */}
       {waShortcutOrderId && (() => {
-        const sOrder = orders.find(o => o.$id === waShortcutOrderId);
+        const sOrder = findOrderById(waShortcutOrderId);
         if (!sOrder) return null;
         const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.donbalatomayorista.cl';
         const customerPhone = (sOrder.CUSTOMERPHONE || '').replace(/[^0-9]/g, '');
@@ -1693,7 +1705,7 @@ Email: donbalatosoporte@gmail.com`;
 
       {/* Timeline Modal — vertical timeline to change order status */}
       {timelineOrderId && (() => {
-        const tOrder = orders.find(o => o.$id === timelineOrderId);
+        const tOrder = findOrderById(timelineOrderId);
         if (!tOrder) return null;
         const effStatus = (tOrder.STATUS === 'pending' || tOrder.STATUS === 'pending_stock') ? 'processing' : tOrder.STATUS;
         const currentIdx = STATUS_FLOW.indexOf(effStatus);
@@ -1882,7 +1894,7 @@ Email: donbalatosoporte@gmail.com`;
 
       {/* Quick Drawer (Cortina lateral) */}
       {drawerOrderId && (() => {
-        const order = orders.find(o => o.$id === drawerOrderId);
+        const order = findOrderById(drawerOrderId);
         if (!order) return null;
         
         const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
