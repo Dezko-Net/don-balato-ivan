@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     // (necesario para /api/image?url=... — sin esto, Next.js 15 en Vercel
     // rechaza la URL y devuelve 404 al optimizador).
     localPatterns: [
-      { pathname: '/api/image', search: '?url=*' },
+      { pathname: '/api/image' },
     ],
     // Reducir tamaño de imágenes optimizadas para ahorrar bandwidth
     formats: ['image/avif', 'image/webp'],
