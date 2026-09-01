@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Product } from '@/types';
 import { resolveStorageImageUrl } from '@/lib/product-images';
@@ -27,6 +27,7 @@ type Props = {
 export default function ProductImageGallery({ product, alt, onImageClick, sizes = '(max-width: 768px) 50vw, 25vw', compact = false, hideThumbnails = false, activeIndex: controlledIndex, onActiveIndexChange }: Props) {
   const images: string[] = useMemo(() => getProductImages(product), [product]);
   const [internalIndex, setInternalIndex] = useState(0);
+  const [imgError, setImgError] = useState(false);
   const activeIndex = controlledIndex ?? internalIndex;
   const setActiveIndex = (i: number) => {
     if (onActiveIndexChange) onActiveIndexChange(i);
@@ -35,14 +36,17 @@ export default function ProductImageGallery({ product, alt, onImageClick, sizes 
   const activeImage = images[activeIndex] || images[0];
   const productAlt = alt || product.NAME || 'Producto';
 
+  // Reset error state when the active image changes
+  useEffect(() => { setImgError(false); }, [activeImage]);
+
   return (
     <div style={{ width: '100%', position: 'relative', zIndex: 2 }}>
       <div
         onClick={() => onImageClick?.(activeImage)}
         style={{ position: 'relative', aspectRatio: '1 / 1', width: '100%', cursor: onImageClick ? 'pointer' : 'default', background: '#fff', overflow: 'hidden' }}
       >
-        {activeImage ? (
-          <Image src={activeImage} alt={productAlt} fill sizes={sizes} style={{ objectFit: 'contain', backgroundColor: '#fff' }} />
+        {activeImage && !imgError ? (
+          <Image src={activeImage} alt={productAlt} fill sizes={sizes} style={{ objectFit: 'contain', backgroundColor: '#fff' }} onError={() => setImgError(true)} />
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: compact ? 36 : 48, color: '#facc15' }}>📦</div>
         )}
@@ -100,4 +104,41 @@ export function ProductThumbnails({ images, activeIndex, onIndexChange, compact 
       ))}
     </div>
   );
+}
+
+/**
+ * SafeImage — Next.js <Image> con fallback automático.
+ * Si la imagen falla (404, timeout, etc.) muestra un emoji/placeholder
+ * en vez de una imagen rota. Úsalo en map() de productos donde no puedes
+ * tener useState por item.
+ */
+export function SafeImage({
+  src,
+  alt,
+  fill,
+  sizes,
+  style,
+  fallback = '📦',
+  fallbackColor = '#facc15',
+  fallbackBg = '#fff',
+}: {
+  src: string;
+  alt: string;
+  fill?: boolean;
+  sizes?: string;
+  style?: React.CSSProperties;
+  fallback?: string;
+  fallbackColor?: string;
+  fallbackBg?: string;
+}) {
+  const [errored, setErrored] = useState(false);
+  useEffect(() => { setErrored(false); }, [src]);
+  if (!src || errored) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%', fontSize: 42, color: fallbackColor, background: fallbackBg, ...style }}>
+        {fallback}
+      </div>
+    );
+  }
+  return <Image src={src} alt={alt} fill={fill} sizes={sizes} style={style} onError={() => setErrored(true)} />;
 }

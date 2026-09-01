@@ -19,7 +19,7 @@ import { useFavorites } from '@/context/FavoritesContext';
 
 import ProductCardPreview from '@/components/ProductCardPreview';
 import ImageZoomModal from '@/components/ImageZoomModal';
-import ProductImageGallery, { getProductImages, ProductThumbnails } from '@/components/ProductImageGallery';
+import ProductImageGallery, { getProductImages, ProductThumbnails, SafeImage } from '@/components/ProductImageGallery';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice, isDisableDiscounts } from '@/lib/apertura-promo';
@@ -703,7 +703,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     ) : null}
                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
                       {getProductImageUrl(p) ? (
-                        <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" />
+                        <SafeImage src={getProductImageUrl(p)} alt={p.NAME} fill sizes="224px" style={{ objectFit: 'cover' }} fallback="📦" fallbackColor="#eed9c4" />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#eed9c4' }}>📦</div>
                       )}
@@ -778,7 +778,7 @@ function ProductosInner({ lockCategoryId, catalogMode }: { lockCategoryId?: stri
                     )}
                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f8f9fa', cursor: 'pointer', overflow: 'hidden' }} onClick={() => handleCardImageClick(p)}>
                       {getProductImageUrl(p) ? (
-                        <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="224px" />
+                        <SafeImage src={getProductImageUrl(p)} alt={p.NAME} fill sizes="224px" style={{ objectFit: 'cover' }} fallback="🛍️" fallbackColor="#e0e7ff" />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 42, color: '#e0e7ff' }}>🛍️</div>
                       )}

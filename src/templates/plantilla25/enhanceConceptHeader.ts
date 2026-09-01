@@ -15,6 +15,8 @@
    Todo con la MISMA marcación/clases del tema para que se vea idéntico.
    ══════════════════════════════════════════════════════════════════ */
 
+import { resolveStorageImageUrl } from '@/lib/product-images';
+
 export type EnhCategory = { $id: string; name: string; order?: number; BACKGROUND_IMAGE_URL?: string };
 export type EnhSubcategory = { $id: string; name: string; categoryId?: string; parentSubcategoryId?: string; order?: number };
 
@@ -202,7 +204,7 @@ function wireLiveBuscar(form: HTMLFormElement): void {
       return;
     }
     const cards = items.map(p => {
-      const img = p.IMAGEURL || p.IMAGEURL2 || '';
+      const img = resolveStorageImageUrl(p.IMAGEURL) || resolveStorageImageUrl(p.IMAGEURL2) || '';
       const price = priceOf(p);
       return `<li>
         <a href="/productos/${esc(p.$id)}" class="flex items-center gap-4 w-full">
@@ -321,7 +323,7 @@ async function loadCategoryPreview(
     const elegidos = all.slice(0, max);
 
     const cards = elegidos.map(p => {
-      const img = p.IMAGEURL || p.IMAGEURL2 || '';
+      const img = resolveStorageImageUrl(p.IMAGEURL) || resolveStorageImageUrl(p.IMAGEURL2) || '';
       const price = priceOf(p);
       const tag = subNameById[p.SUBCATEGORYID || p.subcategoryId] || '';
       return `<a class="drawer__preview-card group flex flex-col gap-2 p-2.5 bg-white rounded-2xl border border-neutral-200/80 text-neutral-900 no-underline shadow-sm hover:shadow-md transition-all duration-300" href="/productos/${esc(p.$id)}">
@@ -2159,9 +2161,10 @@ export function enhanceConceptCombos(
       }
 
       // Imagen individual de cada tarjeta
-      if (prod.IMAGEURL) {
+      const resolvedImg = resolveStorageImageUrl(prod.IMAGEURL);
+      if (resolvedImg) {
         card.querySelectorAll('img').forEach(img => {
-          (img as HTMLImageElement).src = prod.IMAGEURL!;
+          (img as HTMLImageElement).src = resolvedImg;
           (img as HTMLImageElement).removeAttribute('srcset');
           (img as HTMLImageElement).style.opacity = '1';
           (img as HTMLImageElement).style.visibility = 'visible';
