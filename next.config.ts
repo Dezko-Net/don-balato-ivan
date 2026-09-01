@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**' },
       { protocol: 'http',  hostname: '**' },
     ],
+    // Permitir que /_next/image optimice URLs locales con query strings
+    // (necesario para /api/image?url=... — sin esto, Next.js 15 en Vercel
+    // rechaza la URL y devuelve 404 al optimizador).
+    localPatterns: [
+      { pathname: '/api/image', search: '?url=*' },
+    ],
     // Reducir tamaño de imágenes optimizadas para ahorrar bandwidth
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 86400,
